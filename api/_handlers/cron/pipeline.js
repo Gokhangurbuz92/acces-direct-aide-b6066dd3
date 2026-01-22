@@ -51,7 +51,26 @@ export async function GET(request) {
 
     try {
         // ==========================================
-        // STEP 1: INGESTION (Fetch & Dedupe)
+        // STEP 0: CORE INGESTION (Structures & Aids)
+        // ==========================================
+        // These can run in parallel or sequence. 
+        // We call the handlers internally or via local fetch if needed.
+        // For simplicity in a serverless environment, we'll trigger them sequentially.
+
+        // Structures
+        try {
+            const structuresHandler = await import('./ingest-structures.js');
+            await structuresHandler.default({ query: { secret: process.env.CRON_SECRET } }, { status: () => ({ json: () => { } }) });
+        } catch (e) { console.error("Pipeline: Ingest Structures failed", e); }
+
+        // Aids
+        try {
+            const aidsHandler = await import('./ingest-aids.js');
+            await aidsHandler.default({ query: { secret: process.env.CRON_SECRET } }, { status: () => ({ json: () => { } }) });
+        } catch (e) { console.error("Pipeline: Ingest Aids failed", e); }
+
+        // ==========================================
+        // STEP 1: RSS INGESTION (Current logic)
         // ==========================================
         const sources = await prisma.rssSource.findMany({ where: { enabled: true } });
 

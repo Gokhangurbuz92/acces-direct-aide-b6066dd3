@@ -12,13 +12,21 @@ model Aide {
   id                    String   @id @default(uuid())
   slug                  String?  @unique
   titre                 String
-  categorie             String?
   est_urgent            Boolean  @default(false)
-  sources               Json?    // [{nom, url, type}]
+  
+  // Relations taxonomy
+  category              AidCategory? @relation(fields: [categoryId], references: [id])
+  categoryId            String?
+  situations            LifeSituation[]
+  
+  // Legacy fields (kept for compatibility or simpler filtering)
+  categorie             String?
+  situations_vie        String[]
+  
   territoires           String[]
   departements          String[]
   audiences             String[]
-  situations_vie        String[]
+  
   date_verification     DateTime?
   delai_indicatif       String?
   cest_quoi             String?  @db.Text
@@ -37,6 +45,41 @@ model Aide {
   summary_falc          String?  @db.Text
   mots_cles             String[]
   structures_links      String[] // Names of human-readable structures
+  
+  // Source info
+  source                AidSource? @relation(fields: [sourceId], references: [id])
+  sourceId              String?
+  source_name           String?
+  source_url            String?
+  
+  providerName          String?
+  providerType          String? // CAF, Ville, etc.
+}
+
+model AidCategory {
+  id    String @id @default(uuid())
+  slug  String @unique
+  label String
+  aides Aide[]
+}
+
+model LifeSituation {
+  id    String @id @default(uuid())
+  slug  String @unique
+  label String
+  aides Aide[]
+}
+
+model AidSource {
+  id            String    @id @default(uuid())
+  name          String
+  kind          String?   // json, csv, api, rss
+  baseUrl       String?
+  license       String?
+  refreshPolicy String?
+  lastRunAt     DateTime?
+  lastStatus    String?
+  aides         Aide[]
 }
 
 model Structure {

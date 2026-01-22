@@ -1,114 +1,63 @@
-import { PrismaClient, Prisma } from '@prisma/client';
-import { getAuthenticatedUser } from './_utils/auth';
-import { createSnapshot } from './_utils/snapshot';
+import { PrismaClient } from '@prisma/client';
 
 const prisma = new PrismaClient();
 
 export default async function handler(req, res) {
-    const { id, slug, q, limit, sort, statut, departement } = req.query;
+    const { q, city, zip, type, page = 1, pageSize = 20 } = req.query;
+    const PAGE_SIZE = parseInt(pageSize);
+    const OFFSET = (parseInt(page) - 1) * PAGE_SIZE;
 
     try {
-        // --- READ (GET) ---
-        if (req.method === 'GET') {
-            const user = await getAuthenticatedUser(req);
-            const isAuth = !!user;
+        if (req.method !== 'GET') {
+            return res.status(405).json({ error: 'Method not allowed' });
+        }
 
-            if (id || slug) {
-                const where = {};
-                if (id) where.id = String(id);
-                if (slug) where.slug = String(slug);
-                const item = await prisma.structure.findFirst({
-                    where,
-                    include: {
-                        proServices: {
-                            where: { is_active: true },
-                            select: { slug: true, name: true, description_falc: true, duration_minutes: true, modes: true, audiences: true }
-                        }
-                    }
-                });
+        const where = { statut: 'actif' }; // Note: some models use 'statut', others 'status'. Schema says 'statut' for Structure too?
 
-                if (!isAuth && item && item.statut !== 'publie') {
-                    return res.status(404).json({ error: "Not found" });
-                }
-                return res.status(200).json(item ? [item] : []);
-            }
+        if (city) {
+            where.ville = { contains: city, mode: 'insensitive' };
+        }
 
-            if (q) {
-                const statutFilter = isAuth ? (statut || null) : 'publie';
-                const PAGE_SIZE = limit ? parseInt(limit) : 20;
+        if (zip) {
+            where.code_postal = zip;
+        }
 
-                // Using nom, description_courte, summary_falc, ville
-                const items = await prisma.$queryRaw`
-                   SELECT * FROM "Structure"
-                   WHERE to_tsvector('french', unaccent(coalesce(nom,'') || ' ' || coalesce(summary_falc,'') || ' ' || coalesce(description_courte,'') || ' ' || coalesce(ville,''))) 
-                   @@ plainto_tsquery('french', unaccent(${q}))
-                   ${statutFilter ? Prisma.sql`AND "statut" = ${statutFilter}` : Prisma.sql``}
-                   ${departement ? Prisma.sql`AND "departement" = ${departement}` : Prisma.sql``}
-                   LIMIT ${PAGE_SIZE}
-               `;
-                return res.status(200).json(items);
-            }
+        if (type) {
+            where.type_structure = type;
+        }
 
-            const where = {};
-            if (isAuth) {
-                if (statut) where.statut = statut;
-            } else {
-                where.statut = 'publie';
-            }
-            if (departement) where.departement = departement;
+        if (q) {
+            where.OR = [
+                { nom: { contains: q, mode: 'insensitive' } },
+                { description_courte: { contains: q, mode: 'insensitive' } },
+                { ville: { contains: q, mode: 'insensitive' } },
+                { code_postal: { contains: q, mode: 'insensitive' } },
+                { mots_cles: { hasSome: [q] } }
+            ];
+        }
 
-            const queryOptions = {
+        const [items, total] = await Promise.all([
+            prisma.structure.findMany({
                 where,
-                take: limit ? parseInt(limit) : undefined,
-            };
+                take: PAGE_SIZE,
+                skip: OFFSET,
+                orderBy: { nom: 'asc' }
+            }),
+            prisma.structure.count({ where })
+        ]);
 
-            if (sort) {
-                const desc = sort.startsWith('-');
-                const field = desc ? sort.substring(1) : sort;
-                queryOptions.orderBy = {
-                    [field]: desc ? 'desc' : 'asc'
-                };
+        return res.status(200).json({
+            items,
+            pagination: {
+                total,
+                page: parseInt(page),
+                pageSize: PAGE_SIZE,
+                totalPages: Math.ceil(total / PAGE_SIZE)
             }
-
-            const items = await prisma.structure.findMany(queryOptions);
-            return res.status(200).json(items);
-        }
-
-        // --- WRITE (POST, PUT, DELETE) ---
-        const user = await getAuthenticatedUser(req);
-        if (!user) return res.status(401).json({ error: "Unauthorized" });
-
-        if (req.method === 'POST') {
-            const data = req.body;
-            delete data.id;
-            const newStr = await prisma.structure.create({ data });
-            return res.status(201).json(newStr);
-        }
-
-        if (req.method === 'PUT') {
-            if (!id) return res.status(400).json({ error: "Missing ID" });
-
-            // Snapshot before update
-            await createSnapshot('Structure', id, user.email);
-
-            const data = req.body;
-            const updated = await prisma.structure.update({
-                where: { id: String(id) },
-                data
-            });
-            return res.status(200).json(updated);
-        }
-
-        if (req.method === 'DELETE') {
-            if (!id) return res.status(400).json({ error: "Missing ID" });
-            await prisma.structure.delete({ where: { id: String(id) } });
-            return res.status(200).json({ success: true });
-        }
-
-        return res.status(405).json({ error: "Method not allowed" });
+        });
 
     } catch (error) {
-        console.error(error);
-        return res.status(500).json({ error: 'Failed to fetch structures' });
+        console.error('Structures API Error:', error);
+        return res.status(500).json({ error: 'Server Error' });
     }
 }

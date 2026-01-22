@@ -1,0 +1,132 @@
+
+import crypto from 'crypto';
+
+// Encryption Algorithm
+const ALGORITHM = 'aes-256-gcm';
+const IV_LENGTH = 16; // AES block size
+const AUTH_TAG_LENGTH = 16;
+// Key Management
+// Key MUST be 32 bytes (64 hex class)
+const ENCRYPTION_KEY = process.env.ENCRYPTION_KEY
+    ? Buffer.from(process.env.ENCRYPTION_KEY, 'hex')
+    : null;
+
+if (!ENCRYPTION_KEY || ENCRYPTION_KEY.length !== 32) {
+    // Strict validation: Key must be present and 32 bytes.
+    // User requirement: "Validation stricte... Aucune clé fallback".
+    throw new Error("⛔ FATAL: ENCRYPTION_KEY environment variable (32 bytes hex) is REQUIRED. Server cannot start without it.");
+}
+
+// Rotation Strategy:
+// To rotate keys:
+// 1. Set NEW_KEY in env.
+// 2. Update logic to try decrypting with NEW_KEY first, then OLD_KEY? 
+//    Or usually: Decrypt with OLD, Encrypt with NEW.
+//    For MVP, simplistic single key. 
+//    Future: Store 'key_version' prefix in ciphertext (e.g. v1:iv:tag:data).
+
+/**
+ * Encrypts a text using AES-256-GCM
+ * Returns: IV:AuthTag:EncryptedData (hex string)
+ */
+export function encrypt(text) {
+    if (!text) return null;
+    if (!ENCRYPTION_KEY) throw new Error("Missing ENCRYPTION_KEY");
+
+    const iv = crypto.randomBytes(IV_LENGTH);
+    const cipher = crypto.createCipheriv(ALGORITHM, ENCRYPTION_KEY, iv);
+
+    let encrypted = cipher.update(text, 'utf8', 'hex');
+    encrypted += cipher.final('hex');
+
+    const authTag = cipher.getAuthTag().toString('hex');
+
+    // Format: iv:authTag:encrypted
+    return `${iv.toString('hex')}:${authTag}:${encrypted}`;
+}
+
+/**
+ * Decrypts a text using AES-256-GCM
+ */
+export function decrypt(encryptedText) {
+    if (!encryptedText) return null;
+    if (!ENCRYPTION_KEY) throw new Error("Missing ENCRYPTION_KEY");
+
+    const parts = encryptedText.split(':');
+    if (parts.length !== 3) {
+        // Handle legacy or invalid data gracefully or throw?
+        // Return null to avoid crashing on bad data
+        return null;
+    }
+
+    const [ivHex, authTagHex, contentHex] = parts;
+
+    try {
+        const decipher = crypto.createDecipheriv(
+            ALGORITHM,
+            ENCRYPTION_KEY,
+            Buffer.from(ivHex, 'hex')
+        );
+
+        decipher.setAuthTag(Buffer.from(authTagHex, 'hex'));
+
+        let decrypted = decipher.update(contentHex, 'hex', 'utf8');
+        decrypted += decipher.final('utf8');
+
+        return decrypted;
+    } catch (e) {
+        console.error("Decryption failed", e.message);
+        return null; // Tampered or wrong key
+    }
+}
+
+/**
+ * Hashes text using SHA-256 for blind indexing
+ */
+export function hash(text) {
+    if (!text) return null;
+    // We can use a salt if we want, but blind index usually needs deterministic hash for lookup.
+    // If strict privacy, maybe pepper? 'process.env.HASH_PEPPER'
+    // For Lot 5, standard SHA-256 of input should suffice unless specified.
+    return crypto.createHash('sha256').update(text).digest('hex');
+}
+
+/**
+ * Encrypts a Buffer using AES-256-GCM
+ * Returns: Buffer [IV(16) + AuthTag(16) + EncryptedData]
+ */
+export function encryptBuffer(buffer) {
+    if (!ENCRYPTION_KEY) throw new Error("Missing ENCRYPTION_KEY");
+
+    const iv = crypto.randomBytes(IV_LENGTH);
+    const cipher = crypto.createCipheriv(ALGORITHM, ENCRYPTION_KEY, iv);
+
+    const encrypted = Buffer.concat([cipher.update(buffer), cipher.final()]);
+    const tag = cipher.getAuthTag();
+
+    return Buffer.concat([iv, tag, encrypted]);
+}
+
+/**
+ * Decrypts a Buffer [IV(16) + AuthTag(16) + EncryptedData]
+ * Returns: Buffer (Decrypted)
+ */
+export function decryptBuffer(encryptedBuffer) {
+    if (!ENCRYPTION_KEY) throw new Error("Missing ENCRYPTION_KEY");
+
+    if (encryptedBuffer.length < IV_LENGTH + AUTH_TAG_LENGTH) return null;
+
+    const iv = encryptedBuffer.subarray(0, IV_LENGTH);
+    const tag = encryptedBuffer.subarray(IV_LENGTH, IV_LENGTH + AUTH_TAG_LENGTH);
+    const text = encryptedBuffer.subarray(IV_LENGTH + AUTH_TAG_LENGTH);
+
+    try {
+        const decipher = crypto.createDecipheriv(ALGORITHM, ENCRYPTION_KEY, iv);
+        decipher.setAuthTag(tag);
+
+        return Buffer.concat([decipher.update(text), decipher.final()]);
+    } catch (e) {
+        console.error("Buffer Decryption failed", e.message);
+        return null;
+    }
+}

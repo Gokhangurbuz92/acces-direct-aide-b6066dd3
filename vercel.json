@@ -15,10 +15,10 @@
             "has": [
                 {
                     "type": "host",
-                    "value": "www.accesdirectaide.fr"
+                    "value": "accesdirectaide.fr"
                 }
             ],
-            "destination": "https://accesdirectaide.fr/:path*",
+            "destination": "https://www.accesdirectaide.fr/:path*",
             "permanent": true
         },
         {

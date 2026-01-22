@@ -13,9 +13,8 @@ import {
   ArrowRight,
   FileText,
   Clock,
-  loader2,
-  CheckCircle2,
-  Loader2
+  Loader2,
+  CheckCircle2
 } from 'lucide-react';
 import EmptyState from '@/components/ui/EmptyState';
 

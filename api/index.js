@@ -8,12 +8,14 @@ export default async function handler(req, res) {
     const url = new URL(req.url, `https://${req.headers.host}`);
     let path = url.pathname || "";
 
+    console.log(`Router: Requesting ${req.url} -> Pathname: ${path}`);
+
     // Normalise:
-    //  - "/api/cron/ingest-structures" -> "cron/ingest-structures"
-    //  - "/api" -> ""
     path = path.replace(/^\/api(\/|$)/, "/");
     path = path.replace(/^\/+/, "");
     path = path.replace(/\/+$/, "");
+
+    console.log(`Router: Normalized Path: "${path}"`);
 
     if (url.searchParams.get("debug") === "1") {
         return res.status(200).json({ pathname: url.pathname, path });

@@ -1,6 +1,6 @@
 import { PrismaClient } from '@prisma/client';
-import { getAuthenticatedUser } from './_utils/auth';
-import { createSnapshot } from './_utils/snapshot';
+import { getAuthenticatedUser } from '../_utils/auth';
+import { createSnapshot } from '../_utils/snapshot';
 
 const prisma = new PrismaClient();
 

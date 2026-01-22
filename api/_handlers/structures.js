@@ -1,4 +1,4 @@
-import { PrismaClient } from '@prisma/client';
+import { PrismaClient, Prisma } from '@prisma/client';
 
 const prisma = new PrismaClient();
 
@@ -12,39 +12,57 @@ export default async function handler(req, res) {
             return res.status(405).json({ error: 'Method not allowed' });
         }
 
-        const where = { statut: 'actif' }; // Note: some models use 'statut', others 'status'. Schema says 'statut' for Structure too?
+        // Base filter for non-search queries or counting
+        const where = { statut: 'actif' };
+        if (city) where.ville = { contains: city, mode: 'insensitive' };
+        if (zip) where.code_postal = zip;
+        if (type && type !== '_all') where.type_structure = type;
 
-        if (city) {
-            where.ville = { contains: city, mode: 'insensitive' };
-        }
-
-        if (zip) {
-            where.code_postal = zip;
-        }
-
-        if (type) {
-            where.type_structure = type;
-        }
+        let items;
+        let total;
 
         if (q) {
-            where.OR = [
-                { nom: { contains: q, mode: 'insensitive' } },
-                { description_courte: { contains: q, mode: 'insensitive' } },
-                { ville: { contains: q, mode: 'insensitive' } },
-                { code_postal: { contains: q, mode: 'insensitive' } },
-                { mots_cles: { hasSome: [q] } }
-            ];
-        }
+            // Weighted FTS using Raw Query
+            items = await prisma.$queryRaw`
+        SELECT *, 
+          ts_rank_cd(
+            setweight(to_tsvector('french', unaccent(coalesce(nom,''))), 'A') ||
+            setweight(to_tsvector('french', unaccent(coalesce(description_courte,''))), 'C') ||
+            setweight(to_tsvector('french', unaccent(array_to_string(mots_cles, ' '))), 'B'),
+            plainto_tsquery('french', unaccent(${q}))
+          ) AS rank
+        FROM "Structure"
+        WHERE statut = 'actif'
+          AND (
+            to_tsvector('french', unaccent(coalesce(nom,'') || ' ' || coalesce(description_courte,'') || ' ' || coalesce(array_to_string(mots_cles, ' '))))
+            @@ plainto_tsquery('french', unaccent(${q}))
+          )
+        ORDER BY rank DESC
+        LIMIT ${PAGE_SIZE} OFFSET ${OFFSET}
+      `;
 
-        const [items, total] = await Promise.all([
-            prisma.structure.findMany({
-                where,
-                take: PAGE_SIZE,
-                skip: OFFSET,
-                orderBy: { nom: 'asc' }
-            }),
-            prisma.structure.count({ where })
-        ]);
+            const countRes = await prisma.$queryRaw`
+        SELECT count(*) FROM "Structure"
+        WHERE statut = 'actif'
+          AND (
+            to_tsvector('french', unaccent(coalesce(nom,'') || ' ' || coalesce(description_courte,'') || ' ' || coalesce(array_to_string(mots_cles, ' '))))
+            @@ plainto_tsquery('french', unaccent(${q}))
+          )
+      `;
+            total = Number(countRes[0].count);
+        } else {
+            const results = await Promise.all([
+                prisma.structure.findMany({
+                    where,
+                    take: PAGE_SIZE,
+                    skip: OFFSET,
+                    orderBy: { nom: 'asc' }
+                }),
+                prisma.structure.count({ where })
+            ]);
+            items = results[0];
+            total = results[1];
+        }
 
         return res.status(200).json({
             items,
@@ -58,6 +76,6 @@ export default async function handler(req, res) {
 
     } catch (error) {
         console.error('Structures API Error:', error);
-        return res.status(500).json({ error: 'Server Error' });
+        return res.status(500).json({ error: 'Server Error', details: error.message });
     }
 }

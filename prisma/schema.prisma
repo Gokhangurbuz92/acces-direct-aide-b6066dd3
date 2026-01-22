@@ -61,6 +61,7 @@ model AidCategory {
   slug  String @unique
   label String
   aides Aide[]
+  demarches Demarche[] @relation("DemarcheToCategory")
 }
 
 model LifeSituation {
@@ -68,6 +69,7 @@ model LifeSituation {
   slug  String @unique
   label String
   aides Aide[]
+  demarches Demarche[] @relation("DemarcheToSituation")
 }
 
 model AidSource {
@@ -145,6 +147,12 @@ model Demarche {
   id                    String   @id @default(uuid())
   slug                  String?  @unique
   titre                 String
+  
+  // Relations taxonomy
+  category              AidCategory? @relation("DemarcheToCategory", fields: [categoryId], references: [id])
+  categoryId            String?
+  situations            LifeSituation[] @relation("DemarcheToSituation")
+  
   categorie             String?
   description_courte    String?  @db.Text
   departements          String[]

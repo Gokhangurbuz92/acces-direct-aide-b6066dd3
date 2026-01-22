@@ -291,6 +291,8 @@ function PagesContent() {
                 <Route path="/aide/:slug" element={<AideDetail />} />
 
                 <Route path="/aides" element={<Aides />} />
+                <Route path="/categories/:slug" element={<Aides />} />
+                <Route path="/situations/:slug" element={<Aides />} />
 
                 <Route path="/annuaire" element={<Annuaire />} />
 

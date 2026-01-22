@@ -12,7 +12,10 @@ export default async function handler(req, res) {
             orderBy: { label: 'asc' },
             include: {
                 _count: {
-                    select: { aides: { where: { statut: 'publie' } } }
+                    select: {
+                        aides: { where: { statut: 'publie' } },
+                        demarches: { where: { statut: 'publie' } }
+                    }
                 }
             }
         });
@@ -21,7 +24,10 @@ export default async function handler(req, res) {
             orderBy: { label: 'asc' },
             include: {
                 _count: {
-                    select: { aides: { where: { statut: 'publie' } } }
+                    select: {
+                        aides: { where: { statut: 'publie' } },
+                        demarches: { where: { statut: 'publie' } }
+                    }
                 }
             }
         });
@@ -31,13 +37,17 @@ export default async function handler(req, res) {
                 id: c.id,
                 slug: c.slug,
                 label: c.label,
-                count: c._count.aides
+                count: c._count.aides + c._count.demarches,
+                aidesCount: c._count.aides,
+                demarchesCount: c._count.demarches
             })),
             situations: situations.map(s => ({
                 id: s.id,
                 slug: s.slug,
                 label: s.label,
-                count: s._count.aides
+                count: s._count.aides + s._count.demarches,
+                aidesCount: s._count.aides,
+                demarchesCount: s._count.demarches
             }))
         });
     } catch (error) {

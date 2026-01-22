@@ -50,7 +50,7 @@
             "destination": "/api/blocked"
         },
         {
-            "source": "/api/:path*",
+            "source": "/api/(.*)",
             "destination": "/api"
         },
         {

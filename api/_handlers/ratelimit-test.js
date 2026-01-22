@@ -1,4 +1,4 @@
-import { checkRateLimit } from './_utils/rateLimit.js';
+import { checkRateLimit } from '../_utils/rateLimit.js';
 
 export default async function handler(req, res) {
     if (process.env.VITE_PUBLIC_DIAGNOSTICS !== 'true') {

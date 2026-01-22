@@ -60,13 +60,17 @@ export async function GET(request) {
         // Structures
         try {
             const structuresHandler = await import('./ingest-structures.js');
-            await structuresHandler.default({ query: { secret: process.env.CRON_SECRET } }, { status: () => ({ json: () => { } }) });
+            await structuresHandler.default({ query: { secret: process.env.CRON_SECRET } }, {
+                status: () => ({ json: (d) => { if (d && d.created) stats.ingested += d.created; } })
+            });
         } catch (e) { console.error("Pipeline: Ingest Structures failed", e); }
 
         // Aids
         try {
             const aidsHandler = await import('./ingest-aids.js');
-            await aidsHandler.default({ query: { secret: process.env.CRON_SECRET } }, { status: () => ({ json: () => { } }) });
+            await aidsHandler.default({ query: { secret: process.env.CRON_SECRET } }, {
+                status: () => ({ json: (d) => { if (d && d.created) stats.ingested += d.created; } })
+            });
         } catch (e) { console.error("Pipeline: Ingest Aids failed", e); }
 
         // ==========================================

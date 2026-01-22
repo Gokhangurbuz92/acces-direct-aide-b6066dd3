@@ -21,9 +21,23 @@ function slugify(text) {
 
 export async function GET(request) {
     // 1. Authorization
-    // 1. Authorization
-    if (process.env.CRON_SECRET && request.headers.get('authorization') !== `Bearer ${process.env.CRON_SECRET}`) {
-        console.warn("Unauthorized Cron Attempt");
+    if (!process.env.CRON_SECRET) {
+        console.error("CRITICAL: CRON_SECRET environment variable is not defined.");
+        return new Response('Server configuration error', { status: 500 });
+    }
+
+    const urlObj = new URL(request.url);
+    const secret = urlObj.searchParams.get('secret');
+    const vercelCronHeader = request.headers.get('x-vercel-cron');
+    const authHeader = request.headers.get('authorization');
+
+    const isAuthorized =
+        secret === process.env.CRON_SECRET ||
+        vercelCronHeader === '1' ||
+        authHeader === `Bearer ${process.env.CRON_SECRET}`;
+
+    if (!isAuthorized) {
+        console.warn("Unauthorized Pipeline Attempt");
         return new Response('Unauthorized', { status: 401 });
     }
 

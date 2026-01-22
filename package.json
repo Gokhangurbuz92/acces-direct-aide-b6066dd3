@@ -9,8 +9,7 @@
     "db:deploy": "prisma migrate deploy",
     "postinstall": "prisma generate",
     "lint": "eslint .",
-    "preview": "vite preview",
-    "check:base44": "node scripts/verify-base44.js"
+    "preview": "vite preview"
   },
   "dependencies": {
     "@hookform/resolvers": "^4.1.2",

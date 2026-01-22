@@ -5,8 +5,19 @@ import url from 'url';
 const sanitizePath = (path) => path.replace(/^\/api\//, '').split('?')[0];
 
 export default async function handler(req, res) {
-    const parsedUrl = url.parse(req.url, true);
-    const path = sanitizePath(parsedUrl.pathname);
+    const url = new URL(req.url, `https://${req.headers.host}`);
+    let path = url.pathname || "";
+
+    // Normalise:
+    //  - "/api/cron/ingest-structures" -> "cron/ingest-structures"
+    //  - "/api" -> ""
+    path = path.replace(/^\/api(\/|$)/, "/");
+    path = path.replace(/^\/+/, "");
+    path = path.replace(/\/+$/, "");
+
+    if (url.searchParams.get("debug") === "1") {
+        return res.status(200).json({ pathname: url.pathname, path });
+    }
 
     // Dynamic import mapping
     // This allows us to route requests to the correct file in _handlers

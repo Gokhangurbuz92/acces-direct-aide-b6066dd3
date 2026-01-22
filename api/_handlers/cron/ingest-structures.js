@@ -24,15 +24,19 @@ function slugify(text) {
         .replace(/-+$/, '');
 }
 
-export async function GET(request) {
-    // 1. Authorization (Vercel Cron compatible)
-    const urlObj = new URL(request.url);
-    const secret = urlObj.searchParams.get('secret');
-    const vercelCronHeader = request.headers.get('x-vercel-cron');
+export default async function handler(req, res) {
+    // 1. Authorization
+    if (!process.env.CRON_SECRET) {
+        console.error("CRITICAL: CRON_SECRET environment variable is not defined.");
+        return res.status(500).json({ error: 'Server configuration error' });
+    }
+
+    const secret = req.query?.secret || new URL(req.url, 'http://localhost').searchParams.get('secret');
+    const vercelCronHeader = req.headers['x-vercel-cron'];
 
     if (secret !== process.env.CRON_SECRET && vercelCronHeader !== '1') {
         console.warn("Unauthorized Ingest-Structures Attempt");
-        return new Response('Unauthorized', { status: 401 });
+        return res.status(401).json({ error: 'Unauthorized' });
     }
 
     const runId = crypto.randomUUID();
@@ -47,13 +51,13 @@ export async function GET(request) {
         for (const dataset of DATASETS) {
             console.log(`Pipeline Structures: Ingesting ${dataset.name}`);
 
-            const res = await fetch(dataset.url);
-            if (!res.ok) {
-                stats.errors.push(`${dataset.id}: HTTP ${res.status}`);
+            const response = await fetch(dataset.url);
+            if (!response.ok) {
+                stats.errors.push(`${dataset.id}: HTTP ${response.status}`);
                 continue;
             }
 
-            const data = await res.json();
+            const data = await response.json();
             const records = data.records || [];
 
             for (const record of records) {
@@ -79,17 +83,16 @@ export async function GET(request) {
                     });
 
                     if (existing) {
-                        // UPDATE (Keep manual overrides if any?)
+                        // UPDATE
                         await prisma.structure.update({
                             where: { id: existing.id },
                             data: {
                                 last_sync: new Date(),
                                 import_batch: runId,
-                                // We update basic fields if they are blank in DB
                                 telephone: existing.telephone || f.tel || f.telephone || null,
                                 email: existing.email || f.mail || f.email || null,
                                 site_web: existing.site_web || f.url || f.site_internet || null,
-                                raw_data_hash: hash // ensure hash is set
+                                raw_data_hash: hash
                             }
                         });
                         stats.updated++;
@@ -109,7 +112,7 @@ export async function GET(request) {
                                 source_url: dataset.url,
                                 raw_data_hash: hash,
                                 import_batch: runId,
-                                statut: "brouillon", // Valve 3 will promote it
+                                statut: "brouillon",
                                 import_status: "active"
                             }
                         });
@@ -123,7 +126,7 @@ export async function GET(request) {
                                     latitude: geo.lat,
                                     longitude: geo.lng,
                                     geoloc_status: "success",
-                                    quality_score: 80 // Base bonus for geocoding success
+                                    quality_score: 80
                                 }
                             });
                         } else {
@@ -133,7 +136,7 @@ export async function GET(request) {
                             });
                         }
 
-                        // Valve 3: Publish (Conditional Auto-Promote)
+                        // Valve 3: Publish
                         if (dataset.trust_level === "OFFICIAL") {
                             const updated = await prisma.structure.findUnique({ where: { id: newStructure.id } });
                             if (updated.quality_score >= 80) {
@@ -169,11 +172,8 @@ export async function GET(request) {
 
     } catch (globalErr) {
         console.error("Structures Pipeline Global Error:", globalErr);
-        return new Response(JSON.stringify({ error: globalErr.message }), { status: 500 });
+        return res.status(500).json({ error: globalErr.message });
     }
 
-    return new Response(JSON.stringify(stats), {
-        status: 200,
-        headers: { 'Content-Type': 'application/json' }
-    });
+    return res.status(200).json(stats);
 }

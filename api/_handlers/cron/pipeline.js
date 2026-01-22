@@ -21,11 +21,10 @@ function slugify(text) {
 
 export async function GET(request) {
     // 1. Authorization
+    // 1. Authorization
     if (process.env.CRON_SECRET && request.headers.get('authorization') !== `Bearer ${process.env.CRON_SECRET}`) {
-        // console.warn("Unauthorized Cron Attempt");
-        // return new Response('Unauthorized', { status: 401 }); 
-        // In dev/test scenarios without secret, we might allow it. 
-        // For strict prod, uncomment return.
+        console.warn("Unauthorized Cron Attempt");
+        return new Response('Unauthorized', { status: 401 });
     }
 
     const runId = crypto.randomUUID();

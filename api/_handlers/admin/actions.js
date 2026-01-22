@@ -1,10 +1,15 @@
 import { PrismaClient } from '@prisma/client';
+import { verifyAdmin } from '../../_utils/auth.js';
 
 const prisma = new PrismaClient();
 
 export default async function handler(req, res) {
     if (req.method !== 'POST') {
         return res.status(405).json({ error: 'Method Not Allowed' });
+    }
+
+    if (!verifyAdmin(req)) {
+        return res.status(401).json({ error: 'Unauthorized: Admin Token Required' });
     }
 
     const { action, ids } = req.body;

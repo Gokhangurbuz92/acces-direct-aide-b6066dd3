@@ -58,7 +58,14 @@ export default async function handler(req, res) {
         } else if (path === 'public/suggest-structure') {
             handlerModule = await import('./_handlers/public/suggest-structure.js');
         } else if (path === 'public/stats') {
+        } else if (path === 'public/stats') {
             handlerModule = await import('./_handlers/public/stats.js');
+
+            // Admin Auth (New P0 Fix)
+        } else if (path === 'auth/login') {
+            handlerModule = await import('./_handlers/auth/login.js');
+        } else if (path === 'auth/me') {
+            handlerModule = await import('./_handlers/auth/me.js');
 
             // Pro Handlers
         } else if (path === 'pro/messages') {
@@ -77,6 +84,8 @@ export default async function handler(req, res) {
             handlerModule = await import('./_handlers/cron/ingest-rss.js');
         } else if (path === 'cron/pipeline') {
             handlerModule = await import('./_handlers/cron/pipeline.js');
+        } else if (path === 'cron/ingest-structures') {
+            handlerModule = await import('./_handlers/cron/ingest-structures.js');
         } else if (path === 'cron/purge') {
             handlerModule = await import('./_handlers/cron/purge.js');
 

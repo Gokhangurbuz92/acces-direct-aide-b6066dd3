@@ -277,6 +277,12 @@ export default function StructureDetail() {
             {/* Actions rapides */}
             <Card>
               <CardContent className="p-6 space-y-3">
+                <Button className="w-full bg-blue-600 hover:bg-blue-700" asChild>
+                  <Link to={createPageUrl('AppointmentRequest') + `?structure_id=${structure.id}`}>
+                    <Calendar className="mr-2 h-4 w-4" />
+                    Prendre rendez-vous
+                  </Link>
+                </Button>
                 {structure.is_pro_enabled && (
                   <Button className="w-full bg-indigo-600 hover:bg-indigo-700 mb-2" disabled>
                     <Calendar className="mr-2 h-4 w-4" />

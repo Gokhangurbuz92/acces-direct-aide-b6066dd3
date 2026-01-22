@@ -66,6 +66,24 @@ model Structure {
   summary_falc          String?  @db.Text
   mots_cles             String[]
 
+  // --- Automation Fields (Phase 3) ---
+  siret           String?   @unique
+  source_id       String?
+  source_url      String?
+  raw_data_hash   String?   @unique
+  
+  import_status   String    @default("pending") // pending, active, failed
+  import_batch    String?
+  last_sync       DateTime  @default(now())
+  
+  quality_score   Int       @default(50)
+  auto_publish    Boolean   @default(false)
+  
+  geoloc_status   String?   // pending, success, failed
+  latitude        Float?
+  longitude       Float?
+
+  // Relations
   // Lot 4: Pro Module
   is_pro_enabled     Boolean   @default(false)
   settings_json      Json?     @default("{}")
@@ -74,6 +92,10 @@ model Structure {
   invitations        Invitation[]
   availabilities     Availability[]
   appointments       Appointment[]
+
+  @@index([source_id])
+  @@index([raw_data_hash])
+  @@index([siret])
 }
 
 model Demarche {

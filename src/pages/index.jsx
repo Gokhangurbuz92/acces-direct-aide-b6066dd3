@@ -10,6 +10,14 @@ import AdminAideEdit from "./AdminAideEdit";
 
 import AdminAides from "./AdminAides";
 
+import AdminAppointments from "./AdminAppointments";
+
+import AdminStructures from "./AdminStructures";
+
+import AdminDemarcheEdit from "./AdminDemarcheEdit";
+
+import AdminDemarches from "./AdminDemarches";
+
 import AdminGuideSync from "./AdminGuideSync";
 
 import AdminMessages from "./AdminMessages";
@@ -21,6 +29,8 @@ import AdminSources from "./AdminSources";
 import AdminSync from "./AdminSync";
 
 import AdminTestSync from "./AdminTestSync";
+
+import AppointmentRequest from "./AppointmentRequest";
 
 import AideDetail from "./AideDetail";
 
@@ -85,6 +95,8 @@ import SubventionDossier from "./SubventionDossier";
 
 import ProAppointments from "./pro/Appointments";
 import ProAppointmentDetail from "./pro/AppointmentDetail";
+
+import RequireAuth from "@/components/RequireAuth";
 
 import { BrowserRouter as Router, Route, Routes, useLocation, Navigate } from 'react-router-dom';
 import { apiClient } from '@/api/client';
@@ -257,10 +269,23 @@ function PagesContent() {
                 <Route path="/adminrecentsyncs" element={<AdminRoute><AdminRecentSyncs /></AdminRoute>} />
 
                 <Route path="/adminsources" element={<AdminRoute><AdminSources /></AdminRoute>} />
+                <Route path="/adminrecentsyncs" element={<RequireAuth><AdminRecentSyncs /></RequireAuth>} />
 
-                <Route path="/adminsync" element={<AdminRoute><AdminSync /></AdminRoute>} />
+                <Route path="/adminsources" element={<RequireAuth><AdminSources /></RequireAuth>} />
 
-                <Route path="/admintestsync" element={<AdminRoute><AdminTestSync /></AdminRoute>} />
+                <Route path="/adminsync" element={<RequireAuth><AdminSync /></RequireAuth>} />
+
+                <Route path="/admintestsync" element={<RequireAuth><AdminTestSync /></RequireAuth>} />
+
+                <Route path="/appointmentrequest" element={<AppointmentRequest />} />
+
+                <Route path="/adminappointments" element={<RequireAuth><AdminAppointments /></RequireAuth>} />
+
+                <Route path="/adminstructures" element={<RequireAuth><AdminStructures /></RequireAuth>} />
+
+                <Route path="/admindemarches" element={<RequireAuth><AdminDemarches /></RequireAuth>} />
+
+                <Route path="/admindemarcheedit" element={<RequireAuth><AdminDemarcheEdit /></RequireAuth>} />
 
                 <Route path="/aidedetail" element={<AideDetail />} />
                 <Route path="/aide/:slug" element={<AideDetail />} />
@@ -314,6 +339,13 @@ function PagesContent() {
                 <Route path="/dossier-subventions" element={<SubventionDossier />} />
 
                 <Route path="/structuredetail" element={<StructureDetail />} />
+
+                {/* Legacy Redirects */}
+                <Route path="/AideDetail" element={<Navigate to="/aidedetail" replace />} />
+                <Route path="/StructureDetail" element={<Navigate to="/structuredetail" replace />} />
+                <Route path="/DemarcheDetail" element={<Navigate to="/demarchedetail" replace />} />
+                <Route path="/Annuaire" element={<Navigate to="/annuaire" replace />} />
+                <Route path="/Aides" element={<Navigate to="/aides" replace />} />
 
                 <Route path="*" element={<Navigate to="/home" replace />} />
 

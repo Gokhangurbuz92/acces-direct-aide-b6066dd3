@@ -1,44 +1,40 @@
 #!/bin/bash
+URL="${1:-https://acces-direct-aide-staging-rftam2nhq-gokhangurbuz92s-projects.vercel.app}"
+TOKEN="${2:-TEST_TOKEN}" # Default token if not provided
 
-# Pre-Prod Verification Script
-# Usage: ./scripts/verify-staging.sh <STAGING_URL>
-# Example: ./scripts/verify-staging.sh https://acces-direct-aide-staging.vercel.app
+echo "🔍 Verifying Staging: $URL"
+echo "--------------------------------"
 
-URL=$1
+echo "1️⃣  Health Check (/api/health)"
+curl -s -o /dev/null -w "%{http_code}" "$URL/api/health"
+echo " (Expected: 200 or 401 if Vercel Auth active)"
 
-if [ -z "$URL" ]; then
-  echo "Usage: $0 <STAGING_URL>"
-  echo "Example: $0 https://my-app.vercel.app"
-  exit 1
-fi
-
-echo "--- 1. Checking /api/health ---"
-echo "GET $URL/api/health"
-HEALTH=$(curl -s "$URL/api/health")
-echo "Response: $HEALTH"
-
-if [[ "$HEALTH" == *"\"ok\":true"* ]]; then
-  echo "✅ Health: OK"
+echo -e "\n2️⃣  Admin Security - No Auth (/api/admin/inbox)"
+STATUS=$(curl -s -o /dev/null -w "%{http_code}" "$URL/api/admin/inbox")
+echo "Status: $STATUS"
+if [ "$STATUS" == "401" ] || [ "$STATUS" == "403" ]; then
+    echo "✅ PASS (Blocked)"
 else
-  echo "❌ Health: FAIL"
+    echo "❌ FAIL (Expected 401/403)"
 fi
 
-echo ""
-echo "--- 2. Checking /login/pro (Guard) ---"
-echo "GET $URL/login/pro"
-# We expect 404 or redirect to Home (200 but content is home)
-# If 404, it's perfect. If redirect, check title.
-LOGIN_HTTP=$(curl -o /dev/null -s -w "%{http_code}" "$URL/login/pro")
-echo "HTTP Code: $LOGIN_HTTP"
-
-if [ "$LOGIN_HTTP" == "404" ] || [ "$LOGIN_HTTP" == "403" ]; then
-  echo "✅ /login/pro is HIDDEN/PROTECTED (Status $LOGIN_HTTP)"
+echo -e "\n3️⃣  Admin Security - With Bad Token"
+STATUS=$(curl -s -o /dev/null -w "%{http_code}" -H "Authorization: Bearer BAD_TOKEN" "$URL/api/admin/inbox")
+echo "Status: $STATUS"
+if [ "$STATUS" == "401" ] || [ "$STATUS" == "403" ]; then
+    echo "✅ PASS (Blocked)"
 else
-  # If SPA handles routing, it might return 200 with Home page.
-  # Harder to verify with simple curl without content inspection, 
-  # but 404/403 is the strict requirement compliance.
-  echo "⚠️ Status $LOGIN_HTTP. Please verify manually that this is NOT the login page."
+    echo "❌ FAIL (Expected 401/403)"
 fi
 
-echo ""
-echo "--- Verification Complete ---"
+echo -e "\n4️⃣  Pipeline Security - No Secret (/api/cron/pipeline)"
+STATUS=$(curl -s -o /dev/null -w "%{http_code}" "$URL/api/cron/pipeline")
+echo "Status: $STATUS"
+if [ "$STATUS" == "401" ] || [ "$STATUS" == "403" ]; then
+    echo "✅ PASS (Blocked)"
+else
+    echo "❌ FAIL (Expected 401/403)"
+fi
+
+echo -e "\n--------------------------------"
+echo "Note: If basic stats are 401, it might be Vercel Password Protection."

@@ -1,15 +1,15 @@
 import { PrismaClient } from '@prisma/client';
 import crypto from 'crypto';
-import fetch from 'node-fetch';
+// Native fetch used
 import { geocodeAddress } from '../../_utils/geocoder.js';
 
 const prisma = new PrismaClient();
 
 const DATASETS = [
     {
-        id: 'strasbourg-solidarite',
-        name: "Lieux de solidarité (Strasbourg)",
-        url: "https://data.strasbourg.eu/api/records/1.0/search/?dataset=lieux_solidarite&rows=100",
+        id: 'mediation_numerique_lieux',
+        name: "Médiation numérique – lieux (Strasbourg)",
+        url: "https://opendata.strasbourg.eu/api/explore/v2.1/catalog/datasets/mediation_numerique_lieux/records?limit=100",
         trust_level: "OFFICIAL"
     }
 ];
@@ -58,15 +58,18 @@ export default async function handler(req, res) {
             }
 
             const data = await response.json();
-            const records = data.records || [];
+            const items = data.results || data.records || [];
 
-            for (const record of records) {
+            for (const item of items) {
                 try {
-                    const f = record.fields;
-                    const nom = f.name || f.nom || f.raison_sociale || "Inconnu";
-                    const fullAdresse = [f.adresse_num, f.adresse_lib, f.adresse_cplt].filter(Boolean).join(' ');
+                    const f = item.fields || item;
+                    const nom = f.nom || f.name || f.raison_sociale || f.structure_nom_usage || "Inconnu";
+
+                    let fullAdresse = [f.adresse_num, f.adresse_lib, f.adresse_cplt].filter(Boolean).join(' ');
+                    if (!fullAdresse && f.adresse) fullAdresse = f.adresse;
+
                     const ville = f.commune || f.ville || "Strasbourg";
-                    const cp = f.code_postal || f.cp || "";
+                    const cp = (f.code_postal || f.cp || "").toString();
 
                     // Dedupe Logic: Hash of Name + Address
                     const rawContent = `${nom}${fullAdresse}${ville}`.toLowerCase();

@@ -54,8 +54,10 @@ export default async function handler(req, res) {
             handlerModule = await import('./_handlers/upload.js');
         } else if (path === 'download') {
             handlerModule = await import('./_handlers/download.js');
-        } else if (path === 'health') {
+        } else if (path === 'health' || path === 'healthz') {
             handlerModule = await import('./_handlers/health.js');
+        } else if (path === 'taxonomy') {
+            handlerModule = await import('./_handlers/taxonomy.js');
         } else if (path === 'robots.txt' || path === 'robots') {
             handlerModule = await import('./_handlers/robots.js');
         } else if (path === 'sitemap.xml' || path === 'sitemap') {

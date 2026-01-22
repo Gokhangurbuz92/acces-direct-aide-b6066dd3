@@ -1,4 +1,4 @@
-import fetch from 'node-fetch';
+// Native fetch used
 
 /**
  * Geocode an address string using the official French "API Adresse" (BAN).

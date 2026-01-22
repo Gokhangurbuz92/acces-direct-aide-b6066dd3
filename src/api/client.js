@@ -60,6 +60,16 @@ var createEntityClient = function (endpoint) {
 };
 
 export const apiClient = {
+    taxonomy: {
+        get: function () {
+            return apiRequest('/api/taxonomy');
+        }
+    },
+    health: {
+        check: function () {
+            return apiRequest('/api/healthz');
+        }
+    },
     auth: {
         login: async function (email, password) {
             var data = await apiRequest('/api/auth/login', {

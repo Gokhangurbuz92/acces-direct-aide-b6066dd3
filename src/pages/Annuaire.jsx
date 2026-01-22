@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { client } from '@/api/client';
 import { useQuery } from '@tanstack/react-query';
 import SEO from '@/components/SEO';
@@ -12,8 +13,9 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import StructureCard from '@/components/cards/StructureCard';
-import { Search, MapPin, Filter, Loader2 } from 'lucide-react';
+import { Search, MapPin, Filter as FilterIcon, Loader2, X } from 'lucide-react';
 import EmptyState from '@/components/ui/EmptyState';
+import { Badge } from '@/components/ui/badge';
 
 const TYPE_STRUCTURES = {
   association: 'Association',
@@ -32,188 +34,121 @@ const DEPARTEMENTS = {
 };
 
 export default function Annuaire() {
-  const urlParams = new URLSearchParams(window.location.search);
-  const [searchQuery, setSearchQuery] = useState(urlParams.get('q') || '');
-  const [filters, setFilters] = useState({
-    departement: urlParams.get('departement') || '',
-    type: urlParams.get('type') || '',
-    ville: urlParams.get('ville') || ''
+  const [searchParams, setSearchParams] = useSearchParams();
+
+  const q = searchParams.get('q') || '';
+  const type = searchParams.get('type') || '';
+  const city = searchParams.get('city') || '';
+  const page = searchParams.get('page') || '1';
+
+  const { data, isLoading } = useQuery({
+    queryKey: ['structures', { q, type, city, page }],
+    queryFn: () => client.entities.Structure.filter({
+      q,
+      type,
+      city,
+      page,
+      pageSize: 12
+    }),
   });
 
-  const { data: structures = [], isLoading } = useQuery({
-    queryKey: ['structures'],
-    queryFn: async () => {
-      const allStructures = await client.entities.Structure.list('nom');
-      // Filtrer uniquement les structures actives (exclut draft, a_verifier, inactif)
-      return allStructures.filter(s => s.statut === 'actif');
-    },
-  });
+  const structures = data?.items || [];
+  const pagination = data?.pagination || {};
 
-  const filteredStructures = structures.filter(structure => {
-    // Recherche texte
-    if (searchQuery) {
-      const query = searchQuery.toLowerCase();
-      const matchesNom = structure.nom?.toLowerCase().includes(query);
-      const matchesVille = structure.ville?.toLowerCase().includes(query);
-      const matchesServices = structure.services?.some(s => s.toLowerCase().includes(query));
-      if (!matchesNom && !matchesVille && !matchesServices) return false;
+  const handleParamChange = (key, value) => {
+    const newParams = new URLSearchParams(searchParams);
+    if (value) {
+      newParams.set(key, value);
+    } else {
+      newParams.delete(key);
     }
-
-    // Département
-    if (filters.departement && structure.departement !== filters.departement) return false;
-
-    // Type
-    if (filters.type && structure.type_structure !== filters.type) return false;
-
-    // Ville
-    if (filters.ville && !structure.ville?.toLowerCase().includes(filters.ville.toLowerCase())) return false;
-
-    return true;
-  });
-
-  // Grouper par ville si pas de recherche
-  const groupedByVille = filteredStructures.reduce((acc, structure) => {
-    const ville = structure.ville || 'Autre';
-    if (!acc[ville]) acc[ville] = [];
-    acc[ville].push(structure);
-    return acc;
-  }, {});
+    newParams.set('page', '1');
+    setSearchParams(newParams);
+  };
 
   const clearFilters = () => {
-    setSearchQuery('');
-    setFilters({ departement: '', type: '', ville: '' });
+    setSearchParams({});
   };
 
   return (
     <div className="min-h-screen bg-slate-50">
-      <SEO
-        title="Annuaire des structures"
-        description="Trouvez des associations et services publics près de chez vous."
-        path="/annuaire"
-      />
-      {/* En-tête */}
+      <SEO title="Annuaire des structures" description="Trouvez des associations et services publics." path="/annuaire" />
+
       <div className="bg-white border-b border-slate-200 py-8">
         <div className="max-w-6xl mx-auto px-4 sm:px-6">
-          <h1 className="text-3xl font-bold text-slate-900 mb-2">
-            Annuaire des structures
-          </h1>
-          <p className="text-slate-600 mb-6">
-            Trouvez les associations, services publics et lieux d'accueil près de chez vous
-          </p>
+          <h1 className="text-3xl font-bold text-slate-900 mb-2">Annuaire des structures</h1>
+          <p className="text-slate-600 mb-8 font-medium">Trouvez les associations et services publics près de chez vous</p>
 
-          {/* Recherche et filtres */}
-          <div className="space-y-4">
-            <div className="flex flex-col sm:flex-row gap-4">
-              <div className="relative flex-1">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-slate-400" />
-                <Input
-                  type="text"
-                  placeholder="Rechercher par nom, ville ou service..."
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  className="pl-10 h-12"
-                />
-              </div>
-              <Button className="h-12 px-8" onClick={() => { }}>
-                <Search className="h-5 w-5 sm:mr-2" />
-                <span className="hidden sm:inline">Rechercher</span>
-              </Button>
-            </div>
-
-            <div className="flex flex-wrap gap-3">
-              <Select
-                value={filters.departement}
-                onValueChange={(value) => setFilters(prev => ({ ...prev, departement: value }))}
-              >
-                <SelectTrigger className="w-auto min-w-[160px] bg-white">
-                  <MapPin className="h-4 w-4 mr-2 text-slate-400" />
-                  <SelectValue placeholder="Département" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value={null}>Tous</SelectItem>
-                  {Object.entries(DEPARTEMENTS).map(([key, label]) => (
-                    <SelectItem key={key} value={key}>{label}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-
-              <Select
-                value={filters.type}
-                onValueChange={(value) => setFilters(prev => ({ ...prev, type: value }))}
-              >
-                <SelectTrigger className="w-auto min-w-[180px] bg-white">
-                  <Filter className="h-4 w-4 mr-2 text-slate-400" />
-                  <SelectValue placeholder="Type de structure" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value={null}>Tous les types</SelectItem>
-                  {Object.entries(TYPE_STRUCTURES).map(([key, label]) => (
-                    <SelectItem key={key} value={key}>{label}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+            <div className="md:col-span-2 relative">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-slate-400" />
               <Input
-                type="text"
-                placeholder="Ville..."
-                value={filters.ville}
-                onChange={(e) => setFilters(prev => ({ ...prev, ville: e.target.value }))}
-                className="w-auto min-w-[150px] bg-white"
+                placeholder="Rechercher par nom ou service..."
+                defaultValue={q}
+                onBlur={(e) => handleParamChange('q', e.target.value)}
+                className="pl-10 h-11"
               />
-
-              {(searchQuery || filters.departement || filters.type || filters.ville) && (
-                <Button variant="ghost" onClick={clearFilters}>
-                  Effacer les filtres
-                </Button>
-              )}
             </div>
+
+            <Select value={type} onValueChange={(v) => handleParamChange('type', v)}>
+              <SelectTrigger className="h-11 bg-white">
+                <FilterIcon className="h-4 w-4 mr-2 text-slate-400" />
+                <SelectValue placeholder="Type de structure" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="_all">Tous les types</SelectItem>
+                {Object.entries(TYPE_STRUCTURES).map(([val, label]) => (
+                  <SelectItem key={val} value={val}>{label}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+
+            <Input
+              placeholder="Ville..."
+              defaultValue={city}
+              onBlur={(e) => handleParamChange('city', e.target.value)}
+              className="h-11 bg-white"
+            />
           </div>
+
+          {(q || type || city) && (
+            <div className="flex flex-wrap gap-2 mt-4">
+              {q && <Badge variant="secondary">Cherche : {q} <X className="h-3 w-3 ml-2 cursor-pointer" onClick={() => handleParamChange('q', '')} /></Badge>}
+              {type && <Badge variant="secondary">Type : {TYPE_STRUCTURES[type] || type} <X className="h-3 w-3 ml-2 cursor-pointer" onClick={() => handleParamChange('type', '')} /></Badge>}
+              {city && <Badge variant="secondary">Ville : {city} <X className="h-3 w-3 ml-2 cursor-pointer" onClick={() => handleParamChange('city', '')} /></Badge>}
+              <Button variant="ghost" size="sm" onClick={clearFilters} className="text-blue-600">Réinitialiser</Button>
+            </div>
+          )}
         </div>
       </div>
 
-      {/* Contenu */}
       <div className="max-w-6xl mx-auto px-4 sm:px-6 py-8">
         {isLoading ? (
-          <div className="flex items-center justify-center py-12">
-            <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
+          <div className="flex flex-col items-center justify-center py-20">
+            <Loader2 className="h-10 w-10 animate-spin text-blue-600 mb-4" />
+            <p className="text-slate-500">Chargement de l'annuaire...</p>
           </div>
-        ) : filteredStructures.length > 0 ? (
+        ) : structures.length > 0 ? (
           <>
-            <p className="text-slate-600 mb-6">
-              {filteredStructures.length} structure{filteredStructures.length > 1 ? 's' : ''} trouvée{filteredStructures.length > 1 ? 's' : ''}
-            </p>
+            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {structures.map((s) => (
+                <StructureCard key={s.id} structure={s} />
+              ))}
+            </div>
 
-            {Object.keys(groupedByVille).length > 3 ? (
-              // Affichage en grille si beaucoup de structures
-              <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {filteredStructures.map((structure) => (
-                  <StructureCard key={structure.id} structure={structure} />
-                ))}
-              </div>
-            ) : (
-              // Affichage groupé par ville
-              <div className="space-y-10">
-                {Object.entries(groupedByVille).sort().map(([ville, structures]) => (
-                  <section key={ville}>
-                    <h2 className="text-xl font-bold text-slate-900 mb-4 flex items-center gap-2">
-                      <MapPin className="h-5 w-5 text-blue-600" />
-                      {ville}
-                    </h2>
-                    <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-                      {structures.map((structure) => (
-                        <StructureCard key={structure.id} structure={structure} />
-                      ))}
-                    </div>
-                  </section>
-                ))}
+            {pagination.totalPages > 1 && (
+              <div className="flex justify-center mt-12 gap-2">
+                <Button variant="outline" disabled={pagination.page <= 1} onClick={() => handleParamChange('page', pagination.page - 1)}> Précédent </Button>
+                <span className="flex items-center px-4 text-sm font-medium"> Page {pagination.page} / {pagination.totalPages} </span>
+                <Button variant="outline" disabled={pagination.page >= pagination.totalPages} onClick={() => handleParamChange('page', pagination.page + 1)}> Suivant </Button>
               </div>
             )}
           </>
         ) : (
           <EmptyState
             title="Aucune structure trouvée"
-            message="Il n'y a pas de structure correspondant à vos critères dans cette zone."
-            actionLabel="Réinitialiser les filtres"
+            message="Nous n'avons trouvé aucune structure correspondant à vos critères."
+            actionLabel="Voir toutes les structures"
             onAction={clearFilters}
             type="search"
           />

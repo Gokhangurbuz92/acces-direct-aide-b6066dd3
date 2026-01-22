@@ -1,4 +1,5 @@
 import { PrismaClient } from '@prisma/client';
+import { verifyAdmin } from '../../_utils/auth.js';
 
 const prisma = new PrismaClient();
 
@@ -7,12 +8,10 @@ export default async function handler(req, res) {
         return res.status(405).json({ error: 'Method Not Allowed' });
     }
 
-    // TODO: Add Authorization Guard here (Session/Token check)
-    // For now, we rely on the implementation plan's guidance:
-    // "Protection: Wrapper AdminGuard" but at API level we need verifying access.
-    // Assuming simple token header or we will implement AdminGuard in frontend.
-    // For safety, let's look for a basic SECRET or assume Vercel protection if configured.
-    // Adding placeholder for auth logic.
+    // Security P0 Fix
+    if (!verifyAdmin(req)) {
+        return res.status(401).json({ error: 'Unauthorized: Admin Token Required' });
+    }
 
     const { page = 1, status = 'brouillon', limit = 20 } = req.query;
     const skip = (page - 1) * limit;

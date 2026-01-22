@@ -11,6 +11,7 @@ import {
   MapPin,
   Newspaper,
   Info,
+  Calendar,
   ChevronDown
 } from 'lucide-react';
 import { Button } from "@/components/ui/button";
@@ -37,6 +38,9 @@ const NAV_ITEMS = [
   { label: 'Démarches', page: 'Demarches', icon: FileText },
   { label: 'Annuaire', page: 'Annuaire', icon: MapPin },
   { label: 'Actualités', page: 'Actualites', icon: Newspaper },
+  { label: 'Rendez-vous', page: 'AdminAppointments', icon: Calendar, adminOnly: true },
+  { label: 'Structures', page: 'AdminStructures', icon: MapPin, adminOnly: true },
+  { label: 'Démarches', page: 'AdminDemarches', icon: FileText, adminOnly: true },
   { label: 'Admin', page: 'AdminSync', icon: Info, adminOnly: true },
 ];
 

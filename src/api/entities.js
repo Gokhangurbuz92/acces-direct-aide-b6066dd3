@@ -11,6 +11,8 @@ export const Actualite = publicClient.entities.Actualite;
 
 export const Contact = publicClient.entities.Contact;
 
+export const AppointmentRequest = publicClient.entities.AppointmentRequest;
+
 export const Source = adminClient.entities.Source; // Admin only
 
 export const UpdateLog = adminClient.entities.UpdateLog; // Admin only

@@ -267,9 +267,9 @@ export default function DemarcheDetail() {
                     </a>
                   </Button>
                 )}
-                <Button variant="outline" className="w-full">
+                <Button variant="outline" className="w-full" onClick={() => window.print()}>
                   <Download className="mr-2 h-4 w-4" />
-                  Télécharger le guide PDF
+                  Imprimer la fiche / PDF
                 </Button>
                 <Link to={createPageUrl('Contact') + `?page=${encodeURIComponent(window.location.href)}&sujet=signalement_erreur`}>
                   <Button variant="ghost" className="w-full text-slate-600">

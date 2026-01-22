@@ -55,3 +55,22 @@ Un pipeline unifié déclenche maintenant :
 - **Generate Data** : `npx tsx scripts/generate-aids-json.ts`
 - **Seed Data** : `npx tsx scripts/seed-aids.ts`
 - **Health Check** : `curl /api/healthz`
+
+## 6. Maintenance & Routine Updates
+
+Pour garantir que le site reste "non-vide" et à jour :
+
+### Mise à jour automatique (Pipeline)
+Déclenchez le pipeline complet via une requête sécurisée :
+- **Endpoint** : `/api/cron/pipeline?secret=VOTRE_SECRET`
+- **Fréquence recommandée** : Une fois par jour (Vercel Cron).
+- **Actions** : Ingestion structures, Ingestion Aides, Enrichissement FALC des news.
+
+### Mise à jour manuelle (Data Fixes)
+Si vous constatez des données manquantes ou erronées :
+1. Modifiez les scripts dans `scripts/seed-*.ts`.
+2. Exécutez : `npx tsx scripts/seed-aids.ts` (ou demarches).
+3. Les scripts utilisent `upsert` et sont donc sans risque pour les doublons.
+
+### Audit de Qualité
+Exécutez `npx tsx scripts/audit-data.ts` pour vérifier les doublons de slugs ou de titres.

@@ -1010,20 +1010,47 @@ const aides = [
 ];
 
 async function main() {
-    console.log('Seeding ' + aides.length + ' aides...');
+    console.log('🌱 Seeding ' + aides.length + ' aides...');
+
+    let created = 0;
+    let updated = 0;
+
     for (const aideData of aides) {
-        await prisma.aide.upsert({
-            where: { slug: aideData.slug },
-            update: aideData,
-            create: aideData,
+        // Remove fields that don't exist in Prisma schema
+        const { sources, ...cleanData } = aideData;
+
+        // Ensure published_at is set for published aides
+        if (cleanData.statut === 'publie' && !cleanData.published_at) {
+            cleanData.published_at = new Date();
+        }
+
+        const existing = await prisma.aide.findUnique({
+            where: { slug: cleanData.slug }
         });
+
+        await prisma.aide.upsert({
+            where: { slug: cleanData.slug },
+            update: cleanData,
+            create: cleanData,
+        });
+
+        if (existing) {
+            updated++;
+        } else {
+            created++;
+        }
     }
-    console.log('Seeding aides complete.');
+
+    console.log(`✅ Seeding aides complete: ${created} created, ${updated} updated`);
+
+    // Count published aides
+    const publishedCount = await prisma.aide.count({ where: { statut: 'publie' } });
+    console.log(`📊 Published aides: ${publishedCount}`);
 }
 
 main()
     .catch((e) => {
-        console.error(e);
+        console.error('❌ Error:', e);
         process.exit(1);
     })
     .finally(async () => {

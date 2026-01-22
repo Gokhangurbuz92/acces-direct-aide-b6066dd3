@@ -73,9 +73,23 @@ export default function Aides() {
     return 'Catalogue des aides';
   };
 
+  const getDescription = () => {
+    if (category && taxonomy) {
+      const cat = taxonomy.categories.find(c => c.slug === category);
+      if (cat) return `Découvrez toutes les aides sociales et dispositifs pour la catégorie ${cat.label}.`;
+    }
+    if (situation && taxonomy) {
+      const sit = taxonomy.situations.find(s => s.slug === situation);
+      if (sit) return `Toutes les aides disponibles si vous êtes dans la situation : ${sit.label}.`;
+    }
+    return 'Parcourez le catalogue complet des aides sociales et dispositifs d\'accompagnement disponibles.';
+  };
+
+  const currentPath = category ? `/categories/${category}` : (situation ? `/situations/${situation}` : '/aides');
+
   return (
     <div className="min-h-screen bg-slate-50">
-      <SEO title={getTitle()} description="Parcourez les aides et dispositifs disponibles." path="/aides" />
+      <SEO title={getTitle()} description={getDescription()} path={currentPath} />
 
       {/* Search Header */}
       <div className="bg-white border-b border-slate-200 py-6 sticky top-0 z-10 shadow-sm">

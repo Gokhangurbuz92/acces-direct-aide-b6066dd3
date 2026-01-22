@@ -65,12 +65,38 @@ export default function Demarches() {
     setSearchParams({});
   };
 
+  const getTitle = () => {
+    if (category && taxonomy) {
+      const cat = taxonomy.categories.find(c => c.slug === category);
+      if (cat) return `Démarches - ${cat.label}`;
+    }
+    if (situation && taxonomy) {
+      const sit = taxonomy.situations.find(s => s.slug === situation);
+      if (sit) return `Démarches pour : ${sit.label}`;
+    }
+    return 'Démarches administratives';
+  };
+
+  const getDescription = () => {
+    if (category && taxonomy) {
+      const cat = taxonomy.categories.find(c => c.slug === category);
+      if (cat) return `Toutes les démarches administratives et guides pas à pas pour la catégorie ${cat.label}.`;
+    }
+    if (situation && taxonomy) {
+      const sit = taxonomy.situations.find(s => s.slug === situation);
+      if (sit) return `Guides et démarches pour votre situation : ${sit.label}.`;
+    }
+    return 'Besoin d\'aide pour vos démarches ? Retrouvez nos guides pas à pas pour la CAF, le RSA, vos papiers d\'identité et plus encore.';
+  };
+
+  const currentPath = category ? `/demarches?category=${category}` : (situation ? `/demarches?situation=${situation}` : '/demarches');
+
   return (
     <div className="min-h-screen bg-slate-50">
       <SEO
-        title={category ? `Démarches - ${category}` : 'Démarches administratives'}
-        description="Guides pas à pas pour vos démarches."
-        path="/demarches"
+        title={getTitle()}
+        description={getDescription()}
+        path={currentPath}
       />
 
       {/* Header */}

@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+  <!-- Static Pages -->
+  <url><loc>https://acces-direct-aide.vercel.app/</loc><priority>1.0</priority></url>
+  <url><loc>https://acces-direct-aide.vercel.app/aides</loc><priority>0.9</priority></url>
+  <url><loc>https://acces-direct-aide.vercel.app/demarches</loc><priority>0.9</priority></url>
+  <url><loc>https://acces-direct-aide.vercel.app/annuaire</loc><priority>0.9</priority></url>
+  <url><loc>https://acces-direct-aide.vercel.app/bonnes-pratiques</loc><priority>0.8</priority></url>
+  <url><loc>https://acces-direct-aide.vercel.app/outils</loc><priority>0.8</priority></url>
+  <url><loc>https://acces-direct-aide.vercel.app/actualites</loc><priority>0.7</priority></url>
+  
+  <!-- Trust/Institutional Pages -->
+  <url><loc>https://acces-direct-aide.vercel.app/impact</loc><priority>0.8</priority></url>
+  <url><loc>https://acces-direct-aide.vercel.app/notre-mission</loc><priority>0.8</priority></url>
+  <url><loc>https://acces-direct-aide.vercel.app/notre-methode</loc><priority>0.7</priority></url>
+  <url><loc>https://acces-direct-aide.vercel.app/sources</loc><priority>0.7</priority></url>
+  <url><loc>https://acces-direct-aide.vercel.app/securite-et-rgpd</loc><priority>0.7</priority></url>
+  <url><loc>https://acces-direct-aide.vercel.app/accessibilite</loc><priority>0.7</priority></url>
+  <url><loc>https://acces-direct-aide.vercel.app/partenaires</loc><priority>0.8</priority></url>
+  <url><loc>https://acces-direct-aide.vercel.app/proposer-une-structure</loc><priority>0.6</priority></url>
+  
+  <!-- Legal -->
+  <url><loc>https://acces-direct-aide.vercel.app/apropos</loc><priority>0.5</priority></url>
+  <url><loc>https://acces-direct-aide.vercel.app/contact</loc><priority>0.6</priority></url>
+  <url><loc>https://acces-direct-aide.vercel.app/mentionslegales</loc><priority>0.3</priority></url>
+  <url><loc>https://acces-direct-aide.vercel.app/confidentialite</loc><priority>0.3</priority></url>
+  <url><loc>https://acces-direct-aide.vercel.app/cookies</loc><priority>0.3</priority></url>
+  
+  <!-- 
+  Dynamic pages (aides/:slug, structures/:slug, guides/:slug, tools/:slug) 
+  should ideally be generated at build time or via a dynamic sitemap API.
+  For MVP, we list static routes. A future enhancement would be /api/sitemap 
+  that queries the DB for all published slugs.
+  -->
+</urlset>

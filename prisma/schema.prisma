@@ -54,6 +54,10 @@ model Aide {
   
   providerName          String?
   providerType          String? // CAF, Ville, etc.
+
+  @@index([statut, published_at])
+  @@index([categoryId, statut])
+  @@index([statut])
 }
 
 model AidCategory {
@@ -141,6 +145,9 @@ model Structure {
   @@index([source_id])
   @@index([raw_data_hash])
   @@index([siret])
+  @@index([statut, ville])
+  @@index([departement])
+  @@index([type_structure])
 }
 
 model Demarche {
@@ -172,6 +179,10 @@ model Demarche {
   published_at          DateTime?
   summary_falc          String?  @db.Text
   mots_cles             String[]
+
+  @@index([statut, published_at])
+  @@index([categoryId, statut])
+  @@index([statut])
 }
 
 model Actualite {

@@ -11,16 +11,12 @@ export default async function handler(req, res) {
         return res.status(405).json({ error: 'Method not allowed' });
     }
 
-    // Determine BASE_URL dynamically
-    const protocol = req.headers['x-forwarded-proto'] || 'https';
-    const host = req.headers.host;
-    const BASE_URL = host ? `${protocol}://${host}` : (process.env.PUBLIC_BASE_URL || 'https://www.accesdirectaide.fr');
-
     try {
-        const BASE_URL = getCanonicalBaseUrl(req);
         const indexable = isIndexable(req);
+        const BASE_URL = getCanonicalBaseUrl(req);
 
         // Fetch published content
+
         const [aides, demarches, structures, guides, tools, actualites] = await Promise.all([
             prisma.aide.findMany({ where: { statut: 'publie' }, select: { slug: true, updatedAt: true } }),
             prisma.demarche.findMany({ where: { statut: 'publie' }, select: { slug: true, updatedAt: true } }),

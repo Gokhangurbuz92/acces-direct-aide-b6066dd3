@@ -1,7 +1,7 @@
 
 import { fetch } from 'undici';
 
-const BASE_URL = process.env.BASE_URL || 'http://localhost:3000';
+const BASE_URL = process.env.VERIFY_BASE_URL || "http://localhost:5173";
 
 async function verifySitemap() {
     console.log(`Checking Sitemap on ${BASE_URL}...`);

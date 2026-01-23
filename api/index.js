@@ -17,6 +17,9 @@ export default async function handler(req, res) {
 
     console.log(`Router: Normalized Path: "${path}"`);
 
+    // Add Release Header
+    res.setHeader('x-release-sha', process.env.VERCEL_GIT_COMMIT_SHA || 'dev');
+
     if (url.searchParams.get("debug") === "1") {
         return res.status(200).json({ pathname: url.pathname, path });
     }
@@ -64,6 +67,8 @@ export default async function handler(req, res) {
             handlerModule = await import('./_handlers/robots.js');
         } else if (path === 'sitemap.xml' || path === 'sitemap') {
             handlerModule = await import('./_handlers/sitemap.js');
+        } else if (path === 'version') {
+            handlerModule = await import('./_handlers/version.js');
         } else if (path === 'login-pro-guard') {
             handlerModule = await import('./_handlers/login-pro-guard.js');
 

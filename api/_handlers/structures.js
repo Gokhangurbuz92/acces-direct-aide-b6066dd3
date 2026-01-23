@@ -1,10 +1,12 @@
 import { PrismaClient, Prisma } from '@prisma/client';
+import { checkRateLimit, getClientIp } from '../_utils/rateLimit.js';
 
 const prisma = new PrismaClient();
 
 export default async function handler(req, res) {
     const { id, slug, q, city, zip, type, page = 1, pageSize = 20 } = req.query;
-    const PAGE_SIZE = parseInt(pageSize);
+    const PAGE_SIZE = Math.min(parseInt(pageSize) || 20, 100);
+
     const OFFSET = (parseInt(page) - 1) * PAGE_SIZE;
 
     try {
@@ -16,21 +18,25 @@ export default async function handler(req, res) {
         if (id || slug) {
             const structure = await prisma.structure.findFirst({
                 where: id ? { id: String(id) } : { slug: String(slug) },
-                // Include proServices if enabled (following logic seen in other handlers or StructureDetail usage)
                 include: { proServices: true }
             });
 
-            // Note: StructureDetail logic check logic showed checking for existence.
-            // We enforce 'actif' status for public access unless authenticated (not handled here yet, simplistic approach)
-            // But existing list enforces 'actif'. Let's enforce it here too for consistency.
             if (!structure || structure.statut !== 'actif') {
                 return res.status(404).json({ error: "Structure non trouvée" });
             }
             return res.status(200).json(structure);
         }
 
+        // 2. Rate Limit (for searches/list)
+        const ip = getClientIp(req);
+        const rateLimit = await checkRateLimit('SEARCH_STRUCTURES', ip);
+        if (!rateLimit.allowed) {
+            return res.status(429).json(rateLimit.error);
+        }
+
         // Base filter for non-search queries or counting
         const where = { statut: 'actif' };
+
         if (city) where.ville = { contains: city, mode: 'insensitive' };
         if (zip) where.code_postal = zip;
         if (type && type !== '_all') where.type_structure = type;

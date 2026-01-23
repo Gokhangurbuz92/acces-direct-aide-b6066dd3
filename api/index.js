@@ -19,6 +19,11 @@ export default async function handler(req, res) {
         return res.status(200).json({ pathname: urlObj.pathname, path });
     }
 
+    // Dynamic import mapping
+    // This allows us to route requests to the correct file in _handlers
+    // without defining each one manually
+
+
     try {
         let handlerPath = null;
 

@@ -22,11 +22,6 @@
             "permanent": true
         },
         {
-            "source": "/aides/:path*",
-            "destination": "/aides",
-            "permanent": true
-        },
-        {
             "source": "/guide/:slug",
             "destination": "/demarches",
             "permanent": true

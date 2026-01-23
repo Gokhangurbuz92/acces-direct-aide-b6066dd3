@@ -134,3 +134,6 @@ export function extractKeyPoints(text) {
     const points = relevant.length >= 3 ? relevant.slice(0, 5) : sentences.slice(0, 3);
     return points.map(p => simplifyText(p.trim()).substring(0, 150));
 }
+
+// Alias for compatibility
+export const summarizeToFalc = summarizeFALC;

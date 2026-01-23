@@ -80,6 +80,7 @@ import AdminRuns from "./admin/Runs";
 // Lot 4: Pro Module Imports
 import ProLayout from "./pro/ProLayout";
 import ProLogin from "./pro/Login";
+import ProRegister from "./pro/Register";
 import ProDashboard from "./pro/Dashboard";
 import ProServices from "./pro/Services";
 import ProTeam from "./pro/Team";
@@ -227,6 +228,7 @@ function PagesContent() {
                 <Route path="/pro" element={<ProLayout />}>
                     <Route index element={<Navigate to="dashboard" replace />} />
                     <Route path="login" element={<ProLogin />} />
+                    <Route path="register" element={<ProRegister />} />
                     <Route path="dashboard" element={<ProDashboard />} />
                     <Route path="services" element={<ProServices />} />
                     <Route path="team" element={<ProTeam />} />

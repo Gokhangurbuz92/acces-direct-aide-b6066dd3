@@ -1,6 +1,6 @@
 import { PrismaClient } from '@prisma/client';
 import { checkRateLimit } from '../_utils/rateLimit.js';
-import { hash } from '../lib/crypto.js';
+import { hash } from '../../lib/crypto.js';
 
 const prisma = new PrismaClient();
 

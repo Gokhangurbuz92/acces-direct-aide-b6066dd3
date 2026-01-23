@@ -1,7 +1,7 @@
 
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { Helmet } from 'react-helmet-async';
+import SEO from '@/components/SEO';
 
 export default function Tools() {
     const [tools, setTools] = useState([]);
@@ -54,10 +54,11 @@ export default function Tools() {
 
     return (
         <div className="container mx-auto px-4 py-8">
-            <Helmet>
-                <title>Boîte à Outils - Accès Direct Aide</title>
-                <meta name="description" content="Outils pratiques pour l'accompagnement." />
-            </Helmet>
+            <SEO
+                title="Boîte à Outils"
+                description="Outils pratiques pour l'accompagnement."
+                path="/outils"
+            />
 
             <h1 className="text-3xl font-bold mb-8 text-purple-900">Boîte à Outils</h1>
 

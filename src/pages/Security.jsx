@@ -1,14 +1,15 @@
 
-import { Helmet } from 'react-helmet-async';
+import SEO from '@/components/SEO';
 import { Lock, Trash2, EyeOff } from 'lucide-react';
 
 export default function Security() {
     return (
         <div className="container mx-auto px-4 py-8 max-w-4xl">
-            <Helmet>
-                <title>Sécurité et Données Personnelles (RGPD) - Accès Direct Aide</title>
-                <meta name="description" content="Comment nous protégeons vos données. Stockage minimal et chiffré." />
-            </Helmet>
+            <SEO
+                title="Sécurité et Données Personnelles (RGPD)"
+                description="Comment nous protégeons vos données. Stockage minimal et chiffré."
+                path="/securite-et-rgpd"
+            />
 
             <h1 className="text-3xl font-bold mb-6 text-blue-900">Sécurité et Vie Privée</h1>
 

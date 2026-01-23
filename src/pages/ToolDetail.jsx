@@ -1,7 +1,7 @@
 
 import { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { Helmet } from 'react-helmet-async';
+import SEO from '@/components/SEO';
 import { Download, ExternalLink } from 'lucide-react';
 
 export default function ToolDetail() {
@@ -22,9 +22,11 @@ export default function ToolDetail() {
 
     return (
         <div className="max-w-4xl mx-auto px-4 py-8">
-            <Helmet>
-                <title>{tool.titre} - Outil</title>
-            </Helmet>
+            <SEO
+                title={`${tool.titre} - Outil`}
+                description={tool.resume_falc || "Détail de l'outil"}
+                path={`/outils/${slug}`}
+            />
 
             <Link to="/outils" className="text-purple-600 hover:underline mb-6 block">
                 &larr; Retour à la boite à outils

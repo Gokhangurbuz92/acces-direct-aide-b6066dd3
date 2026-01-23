@@ -11,17 +11,6 @@
     ],
     "redirects": [
         {
-            "source": "/:path*",
-            "has": [
-                {
-                    "type": "host",
-                    "value": "accesdirectaide.fr"
-                }
-            ],
-            "destination": "https://www.accesdirectaide.fr/:path*",
-            "permanent": true
-        },
-        {
             "source": "/guide/:slug",
             "destination": "/demarches",
             "permanent": true
@@ -30,19 +19,19 @@
     "rewrites": [
         {
             "source": "/sitemap.xml",
-            "destination": "/api/sitemap"
+            "destination": "/api"
         },
         {
             "source": "/robots.txt",
-            "destination": "/api/robots"
+            "destination": "/api"
         },
         {
             "source": "/login/pro",
-            "destination": "/api/login-pro-guard"
+            "destination": "/api"
         },
         {
             "source": "/__dev/:path*",
-            "destination": "/api/blocked"
+            "destination": "/api"
         },
         {
             "source": "/api/(.*)",

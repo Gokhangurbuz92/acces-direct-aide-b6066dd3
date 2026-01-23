@@ -3,13 +3,30 @@ import { PrismaClient, Prisma } from '@prisma/client';
 const prisma = new PrismaClient();
 
 export default async function handler(req, res) {
-    const { q, city, zip, type, page = 1, pageSize = 20 } = req.query;
+    const { id, slug, q, city, zip, type, page = 1, pageSize = 20 } = req.query;
     const PAGE_SIZE = parseInt(pageSize);
     const OFFSET = (parseInt(page) - 1) * PAGE_SIZE;
 
     try {
         if (req.method !== 'GET') {
             return res.status(405).json({ error: 'Method not allowed' });
+        }
+
+        // 1. Single Item (ID or Slug)
+        if (id || slug) {
+            const structure = await prisma.structure.findFirst({
+                where: id ? { id: String(id) } : { slug: String(slug) },
+                // Include proServices if enabled (following logic seen in other handlers or StructureDetail usage)
+                include: { proServices: true }
+            });
+
+            // Note: StructureDetail logic check logic showed checking for existence.
+            // We enforce 'actif' status for public access unless authenticated (not handled here yet, simplistic approach)
+            // But existing list enforces 'actif'. Let's enforce it here too for consistency.
+            if (!structure || structure.statut !== 'actif') {
+                return res.status(404).json({ error: "Structure non trouvée" });
+            }
+            return res.status(200).json(structure);
         }
 
         // Base filter for non-search queries or counting

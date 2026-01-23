@@ -6,6 +6,7 @@ import { routes } from './api/routes.js';
 
 dotenv.config({ override: true });
 
+
 const PORT = 3000;
 
 const server = http.createServer(async (req, res) => {
@@ -80,13 +81,13 @@ const server = http.createServer(async (req, res) => {
 
         // Also check for dev-specific routes
         if (!handlerPath && path.startsWith('__dev/')) {
-             if (process.env.NODE_ENV !== 'production') {
-                 // Map to api/_handlers/__dev/...
-                 // Need to check specific files or just one?
-                 if (path === '__dev/create-test-appointment') {
-                     handlerPath = './_handlers/__dev/create-test-appointment.js';
-                 }
-             }
+            if (process.env.NODE_ENV !== 'production') {
+                // Map to api/_handlers/__dev/...
+                // Need to check specific files or just one?
+                if (path === '__dev/create-test-appointment') {
+                    handlerPath = './_handlers/__dev/create-test-appointment.js';
+                }
+            }
         }
 
         if (handlerPath) {
@@ -107,16 +108,17 @@ const server = http.createServer(async (req, res) => {
             } catch (err) {
                 console.error(`[DevServer] Failed to load handler for ${path}: ${err.message}`);
                 if (err.code === 'ERR_MODULE_NOT_FOUND') {
-                     res.status(501).json({ error: 'Handler not implemented or missing dependencies', details: err.message });
+                    res.status(501).json({ error: 'Handler not implemented or missing dependencies', details: err.message });
                 } else {
-                     res.status(500).json({ error: 'Internal Handler Error', details: err.message });
+                    res.status(500).json({ error: 'Internal Handler Error', details: err.message });
                 }
             }
+
         } else {
             // [MVP] SPA Fallback for Dev Server Tests - DEV ONLY
             // If it's not an API route AND we are NOT in production, return 200 OK placeholder.
-             const isProduction = process.env.NODE_ENV === 'production';
-             if (!parsedUrl.pathname.startsWith('/api') && parsedUrl.pathname !== '/robots.txt' && parsedUrl.pathname !== '/sitemap.xml' && !isProduction) {
+            const isProduction = process.env.NODE_ENV === 'production';
+            if (!parsedUrl.pathname.startsWith('/api') && parsedUrl.pathname !== '/robots.txt' && parsedUrl.pathname !== '/sitemap.xml' && !isProduction) {
                 res.writeHead(200, { 'Content-Type': 'text/html' });
                 res.end('<html><body>SPA Placeholder (DEV ONLY)</body></html>');
             } else {

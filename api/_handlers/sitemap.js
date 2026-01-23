@@ -78,7 +78,7 @@ ${urls.join('\n')}
 </urlset>`;
 
         res.setHeader('Content-Type', 'application/xml');
-        res.setHeader('Cache-Control', 'public, s-maxage=3600, stale-while-revalidate=600');
+        res.setHeader('Cache-Control', 'no-store'); // TEMPORARY: Force regeneration to verify fix
         res.writeHead(200);
         res.end(xml);
 

@@ -41,7 +41,8 @@ async function verifySitemap() {
             }
         }
 
-        const forbiddenPatterns = ['/admin', '/pro', '/__dev', '/api'];
+        const forbiddenPatterns = ['/admin', '/pro/', '/__dev', '/api'];
+
         for (const pattern of forbiddenPatterns) {
             if (xml.includes(pattern)) {
                 console.error(`❌ Sitemap contains forbidden pattern: ${pattern}`);

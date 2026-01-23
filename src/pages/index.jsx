@@ -293,6 +293,7 @@ function PagesContent() {
                 <Route path="/admindemarcheedit" element={<RequireAuth><AdminDemarcheEdit /></RequireAuth>} />
 
                 <Route path="/aidedetail" element={<AideDetail />} />
+                <Route path="/aide/view" element={<AideDetail />} />
                 <Route path="/aide/:slug" element={<AideDetail />} />
 
                 <Route path="/aides" element={<Aides />} />
@@ -300,6 +301,8 @@ function PagesContent() {
                 <Route path="/situations/:slug" element={<Aides />} />
 
                 <Route path="/annuaire" element={<Annuaire />} />
+                <Route path="/structures/view" element={<StructureDetail />} />
+                <Route path="/structures/:slug" element={<StructureDetail />} />
 
                 <Route path="/confidentialite" element={<Confidentialite />} />
 
@@ -307,6 +310,7 @@ function PagesContent() {
 
                 <Route path="/cookies" element={<Cookies />} />
 
+                <Route path="/demarches/view" element={<DemarcheDetail />} />
                 <Route path="/demarches/:slug" element={<DemarcheDetail />} />
 
                 {/* Conditional Route: Only available if explicitly enabled */}
@@ -345,7 +349,7 @@ function PagesContent() {
                 <Route path="/proposer-une-structure" element={<SuggestStructure />} />
                 <Route path="/dossier-subventions" element={<SubventionDossier />} />
 
-                <Route path="/structures/:slug" element={<StructureDetail />} />
+                <Route path="/actualites/view" element={<ActualiteDetail />} />
 
                 {/* Legacy Redirects */}
                 <Route path="/AideDetail" element={<Navigate to="/aidedetail" replace />} />
@@ -355,6 +359,7 @@ function PagesContent() {
                 <Route path="/demarchedetail" element={<Navigate to="/demarches" replace />} />
                 <Route path="/Annuaire" element={<Navigate to="/annuaire" replace />} />
                 <Route path="/Aides" element={<Navigate to="/aides" replace />} />
+
 
                 <Route path="*" element={<Navigate to="/home" replace />} />
 

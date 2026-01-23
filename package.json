@@ -9,6 +9,7 @@
     "db:deploy": "prisma migrate deploy",
     "postinstall": "prisma generate",
     "lint": "eslint .",
+    "verify": "node scripts/verify-lot9a-routes.js && node scripts/verify-rdv.js && node scripts/verify-actualites.js && node scripts/verify-sitemap.js && node scripts/verify-robots.js",
     "preview": "vite preview"
   },
   "dependencies": {

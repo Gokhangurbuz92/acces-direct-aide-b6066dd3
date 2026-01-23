@@ -1,10 +1,11 @@
 import { PrismaClient } from '@prisma/client';
+import crypto from 'crypto';
 
 const prisma = new PrismaClient();
 const BASE_URL = process.env.PUBLIC_BASE_URL || 'https://www.accesdirectaide.fr';
 
 export default async function handler(req, res) {
-    if (req.method !== 'GET') {
+    if (req.method !== 'GET' && req.method !== 'HEAD') {
         return res.status(405).json({ error: 'Method not allowed' });
     }
 
@@ -77,8 +78,22 @@ export default async function handler(req, res) {
 ${urls.join('\n')}
 </urlset>`;
 
+        // Calculate ETag
+        const etag = 'W/"' + crypto.createHash('md5').update(xml).digest('hex') + '"';
+
         res.setHeader('Content-Type', 'application/xml');
-        res.setHeader('Cache-Control', 'no-store'); // TEMPORARY: Force regeneration to verify fix
+        res.setHeader('Cache-Control', 'public, s-maxage=300, stale-while-revalidate=3600');
+        res.setHeader('ETag', etag);
+        if (process.env.VERCEL_GIT_COMMIT_SHA) {
+            res.setHeader('X-Release-Commit', process.env.VERCEL_GIT_COMMIT_SHA);
+        }
+
+        if (req.headers['if-none-match'] === etag) {
+            res.writeHead(304);
+            res.end();
+            return;
+        }
+
         res.writeHead(200);
         res.end(xml);
 

@@ -87,25 +87,33 @@ ${urls.join('\n')}
         // Calculate ETag
         const etag = 'W/"' + crypto.createHash('md5').update(xml).digest('hex') + '"';
 
-        res.setHeader('Content-Type', 'application/xml');
-        if (!indexable) {
-            res.setHeader('X-Robots-Tag', 'noindex, nofollow');
-        }
-
-        res.setHeader('Cache-Control', 'public, s-maxage=3600, stale-while-revalidate=600');
-        res.setHeader('ETag', etag);
-
         if (req.headers['if-none-match'] === etag) {
+
             res.writeHead(304);
             res.end();
             return;
         }
 
-        res.writeHead(200);
+        res.writeHeader(200, {
+            'Content-Type': 'application/xml; charset=utf-8',
+            'Cache-Control': 'public, s-maxage=3600, stale-while-revalidate=600',
+            'X-Robots-Tag': indexable ? 'all' : 'noindex, nofollow',
+            'ETag': etag
+        });
         res.end(xml);
 
     } catch (e) {
-        console.error('Sitemap error:', e);
-        res.status(500).json({ error: 'Failed to generate sitemap' });
+        console.error('CRITICAL SITEMAP ERROR:', e);
+        // Fallback XML to prevent 500
+        const fallbackXml = `<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+  <url><loc>https://www.accesdirectaide.fr/</loc><priority>1.0</priority></url>
+</urlset>`;
+
+        res.writeHeader(200, {
+            'Content-Type': 'application/xml; charset=utf-8'
+        });
+        res.end(fallbackXml);
     }
 }
+

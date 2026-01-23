@@ -101,7 +101,7 @@ export default function AideDetail() {
       <SEO
         title={aide.titre}
         description={aide.summary_falc || aide.cest_quoi?.substring(0, 150)}
-        url={`https://accesdirectaide.fr/aide/${aide.slug}`}
+        url={`https://www.accesdirectaide.fr/aide/${aide.slug}`}
       />
       {/* Fil d'Ariane */}
       <div className="bg-white border-b border-slate-200">

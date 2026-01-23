@@ -1,6 +1,6 @@
 
 import { useState } from 'react';
-import { Helmet } from 'react-helmet-async';
+import SEO from '@/components/SEO';
 import { Send, CheckCircle, AlertCircle } from 'lucide-react';
 
 export default function SuggestStructure() {
@@ -55,10 +55,11 @@ export default function SuggestStructure() {
 
     return (
         <div className="container mx-auto px-4 py-8 max-w-2xl">
-            <Helmet>
-                <title>Proposer une Structure - Accès Direct Aide</title>
-                <meta name="description" content="Formulaire pour référencer une structure d'aide." />
-            </Helmet>
+            <SEO
+                title="Proposer une Structure"
+                description="Formulaire pour référencer une structure d'aide."
+                path="/proposer-une-structure"
+            />
 
             <h1 className="text-3xl font-bold mb-6 text-blue-900">Proposer une Structure</h1>
 

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Helmet } from 'react-helmet-async';
+import SEO from '@/components/SEO';
 
 export default function Dispositifs() {
     const [dispositifs, setDispositifs] = useState([]);
@@ -35,10 +35,11 @@ export default function Dispositifs() {
 
     return (
         <div className="container mx-auto px-4 py-8">
-            <Helmet>
-                <title>Dispositifs territoriaux | AccesDirectAide</title>
-                <meta name="description" content="Découvrez les dispositifs locaux et territoriaux pour vous aider." />
-            </Helmet>
+            <SEO
+                title="Dispositifs territoriaux"
+                description="Découvrez les dispositifs locaux et territoriaux pour vous aider."
+                path="/dispositifs"
+            />
 
             <h1 className="text-3xl font-bold mb-6 text-slate-800">Dispositifs Territoriaux</h1>
 

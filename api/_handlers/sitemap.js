@@ -1,10 +1,12 @@
 import { PrismaClient } from '@prisma/client';
 import { getCanonicalBaseUrl, isIndexable } from '../_utils/seo.js';
+import crypto from 'crypto';
+
 
 const prisma = new PrismaClient();
 
 export default async function handler(req, res) {
-    if (req.method !== 'GET') {
+    if (req.method !== 'GET' && req.method !== 'HEAD') {
         return res.status(405).json({ error: 'Method not allowed' });
     }
 
@@ -80,13 +82,23 @@ export default async function handler(req, res) {
 ${urls.join('\n')}
 </urlset>`;
 
-        res.setHeader('Content-Type', 'application/xml');
+        // Calculate ETag
+        const etag = 'W/"' + crypto.createHash('md5').update(xml).digest('hex') + '"';
 
+        res.setHeader('Content-Type', 'application/xml');
         if (!indexable) {
             res.setHeader('X-Robots-Tag', 'noindex, nofollow');
         }
 
         res.setHeader('Cache-Control', 'public, s-maxage=3600, stale-while-revalidate=600');
+        res.setHeader('ETag', etag);
+
+        if (req.headers['if-none-match'] === etag) {
+            res.writeHead(304);
+            res.end();
+            return;
+        }
+
         res.writeHead(200);
         res.end(xml);
 

@@ -1,7 +1,7 @@
 import { PrismaClient } from '@prisma/client';
+import { getCanonicalBaseUrl, isIndexable } from '../_utils/seo.js';
 
 const prisma = new PrismaClient();
-const BASE_URL = process.env.PUBLIC_BASE_URL || 'https://www.accesdirectaide.fr';
 
 export default async function handler(req, res) {
     if (req.method !== 'GET') {
@@ -9,6 +9,9 @@ export default async function handler(req, res) {
     }
 
     try {
+        const BASE_URL = getCanonicalBaseUrl(req);
+        const indexable = isIndexable(req);
+
         // Fetch published content
         const [aides, demarches, structures, guides, tools, actualites] = await Promise.all([
             prisma.aide.findMany({ where: { statut: 'publie' }, select: { slug: true, updatedAt: true } }),
@@ -78,7 +81,12 @@ ${urls.join('\n')}
 </urlset>`;
 
         res.setHeader('Content-Type', 'application/xml');
-        res.setHeader('Cache-Control', 'no-store'); // TEMPORARY: Force regeneration to verify fix
+
+        if (!indexable) {
+            res.setHeader('X-Robots-Tag', 'noindex, nofollow');
+        }
+
+        res.setHeader('Cache-Control', 'public, s-maxage=3600, stale-while-revalidate=600');
         res.writeHead(200);
         res.end(xml);
 

@@ -1,6 +1,6 @@
 
 export default async function handler(req, res) {
-    const baseUrl = 'https://accesdirectaide.fr';
+    const baseUrl = 'https://www.accesdirectaide.fr';
     const txt = `User-agent: *
 Disallow: /admin
 Disallow: /pro

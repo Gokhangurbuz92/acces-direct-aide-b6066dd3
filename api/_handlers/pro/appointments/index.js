@@ -23,7 +23,14 @@ export default async function handler(req, res) {
     const { structureId, role, userId } = decoded;
 
     // Filters
-    const { start_date, end_date, search_hash, id } = req.query;
+    const { start_date, end_date, search_hash, id, limit, page } = req.query;
+
+    // Pagination
+    const rawLimit = limit && !isNaN(Number(limit)) ? Number(limit) : 100;
+    const take = Math.min(Math.max(1, rawLimit), 100);
+    const rawPage = page && !isNaN(Number(page)) ? Number(page) : 1;
+    const pageNum = Math.max(1, rawPage);
+    const skip = (pageNum - 1) * take;
 
     try {
         const where = {
@@ -76,6 +83,8 @@ export default async function handler(req, res) {
 
         const appointments = await prisma.appointment.findMany({
             where,
+            take,
+            skip,
             include: {
                 beneficiary: true,
                 service: true,

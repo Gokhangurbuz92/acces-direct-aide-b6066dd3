@@ -12,6 +12,16 @@ export default defineConfig({
         target: 'http://localhost:3000',
         changeOrigin: true,
         secure: false,
+      },
+      '/sitemap.xml': {
+        target: 'http://localhost:3000/api/sitemap',
+        changeOrigin: true,
+        rewrite: (path) => path.replace(/^\/sitemap\.xml/, ''),
+      },
+      '/robots.txt': {
+        target: 'http://localhost:3000/api/robots',
+        changeOrigin: true,
+        rewrite: (path) => path.replace(/^\/robots\.txt/, ''),
       }
     }
   },

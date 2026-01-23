@@ -7,30 +7,31 @@ import dotenv from 'dotenv';
 dotenv.config({ override: true });
 
 // Handlers
-import publicMsgHandler from './api/public/messages.js';
-import proMsgHandler from './api/pro/messages.js';
-import uploadHandler, { config as uploadConfig } from './api/upload.js';
-import downloadHandler from './api/download.js';
-import purgeHandler from './api/cron/purge.js';
+import publicMsgHandler from './api/_handlers/public/messages.js';
+import proMsgHandler from './api/_handlers/pro/messages.js';
+import uploadHandler, { config as uploadConfig } from './api/_handlers/upload.js';
+import downloadHandler from './api/_handlers/download.js';
+import purgeHandler from './api/_handlers/cron/purge.js';
 
-import proLoginHandler from './api/pro/auth/login.js';
-import proAppointmentsHandler from './api/pro/appointments/index.js';
+import proLoginHandler from './api/_handlers/pro/auth/login.js';
+import proAppointmentsHandler from './api/_handlers/pro/appointments/index.js';
+// __dev is at root of api
 import devSetupHandler from './api/__dev/create-test-appointment.js';
 
-import guidesHandler from './api/guides.js';
-import toolsHandler from './api/tools.js';
+import guidesHandler from './api/_handlers/guides.js';
+import toolsHandler from './api/_handlers/tools.js';
 
-import suggestStructureHandler from './api/public/suggest-structure.js';
-import statsHandler from './api/public/stats.js';
-import adminPartnershipsHandler from './api/admin/partnerships.js';
-import sitemapHandler from './api/sitemap.js';
-import robotsHandler from './api/robots.js';
+import suggestStructureHandler from './api/_handlers/public/suggest-structure.js';
+import statsHandler from './api/_handlers/public/stats.js';
+import adminPartnershipsHandler from './api/_handlers/admin/partnerships.js'; // Assuming in _handlers/admin
+import sitemapHandler from './api/_handlers/sitemap.js';
+import robotsHandler from './api/_handlers/robots.js';
 
 // Core content APIs
-import aidesHandler from './api/aides.js';
-import structuresHandler from './api/structures.js';
-import demarchesHandler from './api/demarches.js';
-import actualitesHandler from './api/actualites.js';
+import aidesHandler from './api/_handlers/aides.js';
+import structuresHandler from './api/_handlers/structures.js';
+import demarchesHandler from './api/_handlers/demarches.js';
+import actualitesHandler from './api/_handlers/actualites.js';
 
 const PORT = 3000;
 
@@ -113,6 +114,8 @@ const server = http.createServer(async (req, res) => {
             await guidesHandler(req, res);
         } else if (parsedUrl.pathname === '/api/tools' || parsedUrl.pathname.startsWith('/api/tools')) {
             await toolsHandler(req, res);
+        } else if (parsedUrl.pathname.startsWith('/api/aides')) {
+            await aidesHandler(req, res);
         } else if (parsedUrl.pathname === '/api/public/suggest-structure') {
             await suggestStructureHandler(req, res);
         } else if (parsedUrl.pathname === '/api/public/stats') {
@@ -123,8 +126,6 @@ const server = http.createServer(async (req, res) => {
             await sitemapHandler(req, res);
         } else if (parsedUrl.pathname === '/robots.txt' || parsedUrl.pathname.endsWith('/api/robots')) {
             await robotsHandler(req, res);
-        } else if (parsedUrl.pathname.startsWith('/api/aides')) {
-            await aidesHandler(req, res);
         } else if (parsedUrl.pathname === '/api/structures' || parsedUrl.pathname.startsWith('/api/structures/')) {
             await structuresHandler(req, res);
         } else if (parsedUrl.pathname === '/api/demarches' || parsedUrl.pathname.startsWith('/api/demarches/')) {

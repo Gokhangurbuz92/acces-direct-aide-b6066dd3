@@ -17,3 +17,10 @@ export const verifyAdmin = (req) => {
 
     return token === process.env.ADMIN_TOKEN;
 };
+
+export const getAuthenticatedUser = async (req) => {
+    if (verifyAdmin(req)) {
+        return { role: 'admin' };
+    }
+    return null;
+};

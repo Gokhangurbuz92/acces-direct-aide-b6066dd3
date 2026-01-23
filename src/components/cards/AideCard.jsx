@@ -107,7 +107,7 @@ export default function AideCard({ aide, compact = false }) {
 
           {/* Lien */}
           <Link 
-            to={createPageUrl('AideDetail') + `?id=${aide.id}`}
+            to={aide.slug ? `/aide/${aide.slug}` : `/aide/view?id=${aide.id}`}
             className="inline-flex items-center gap-2 text-blue-600 hover:text-blue-800 font-medium text-sm mt-2 group/link"
           >
             Voir cette aide

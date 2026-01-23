@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { createPageUrl } from '@/utils';
+import { createPageUrl, toSlug } from '@/utils';
 import { 
   MapPin, 
   Phone, 
@@ -127,7 +127,7 @@ export default function StructureCard({ structure, compact = false }) {
               </Button>
             )}
             <Link 
-              to={createPageUrl('StructureDetail') + `?id=${structure.id}`}
+              to={structure.slug ? `/structures/${structure.slug}` : `/structures/view?id=${structure.id}`}
               className="inline-flex items-center gap-1 text-blue-600 hover:text-blue-800 font-medium text-sm group/link"
             >
               Plus d'infos

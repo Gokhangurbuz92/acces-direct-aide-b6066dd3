@@ -1,3 +1,4 @@
+/* global process */
 import { PrismaClient } from '@prisma/client';
 import Parser from 'rss-parser';
 import crypto from 'crypto';
@@ -13,8 +14,8 @@ function slugify(text) {
         .toLowerCase()
         .trim()
         .replace(/\s+/g, '-')
-        .replace(/[^\w\-]+/g, '')
-        .replace(/\-\-+/g, '-')
+        .replace(/[^\w-]+/g, '')
+        .replace(/--+/g, '-')
         .replace(/^-+/, '')
         .replace(/-+$/, '');
 }
@@ -49,14 +50,27 @@ export async function GET(request) {
         errors: []
     };
 
-    try {
+    // Helper: Retry wrapper
+    async function retry(fn, retries = 3, delay = 1000) {
+        for (let i = 0; i < retries; i++) {
+            try {
+                return await fn();
+            } catch (err) {
+                if (i === retries - 1) throw err;
+                await new Promise(res => setTimeout(res, delay * Math.pow(2, i)));
+            }
+        }
+    }
+
+    // Wrap entire execution in a timeout (50s safe limit for Vercel 60s max)
+    const timeoutPromise = new Promise((_, reject) =>
+        setTimeout(() => reject(new Error('Pipeline Timeout')), 50000)
+    );
+
+    const pipelineLogic = async () => {
         // ==========================================
         // STEP 0: CORE INGESTION (Structures & Aids)
         // ==========================================
-        // These can run in parallel or sequence. 
-        // We call the handlers internally or via local fetch if needed.
-        // For simplicity in a serverless environment, we'll trigger them sequentially.
-
         // Structures
         try {
             const structuresHandler = await import('./ingest-structures.js');
@@ -74,64 +88,56 @@ export async function GET(request) {
         } catch (e) { console.error("Pipeline: Ingest Aids failed", e); }
 
         // ==========================================
-        // STEP 1: RSS INGESTION (Current logic)
+        // STEP 1: RSS INGESTION
         // ==========================================
         const sources = await prisma.rssSource.findMany({ where: { enabled: true } });
 
         for (const source of sources) {
             try {
-                // Basic allowlist check (simplified vs existing ingest-rss.js)
-                // console.log(`Pipeline: Fetching ${source.name}`);
-                const feed = await parser.parseURL(source.feed_url);
+                const feed = await retry(() => parser.parseURL(source.feed_url));
 
                 for (const item of feed.items) {
-                    // Strict Dedupe Hash: URL + Title
                     const rawContent = `${item.title}${item.link}`;
                     const hash = crypto.createHash('md5').update(rawContent).digest('hex');
+                    const isOfficial = source.trust_level === 'OFFICIAL';
 
-                    // Check existence by hash
-                    const existingHash = await prisma.actualite.findUnique({
-                        where: { raw_data_hash: hash }
-                    });
+                    // Using upsert to handle concurrency and idempotency
+                    // Note: We catch potential conflicts on canonical_url if it differs from hash
+                    try {
+                        const upsertData = {
+                            titre: item.title || "Sans titre",
+                            slug: slugify(item.title || "info") + '-' + hash.substring(0, 6),
+                            contenu: item.content || item.contentSnippet || "",
+                            canonical_url: item.link,
+                            guid: item.guid || item.link,
+                            source_id: source.id,
+                            source_name: source.name,
+                            source_url: source.feed_url,
+                            dedupe_hash: hash,
+                            ingest_batch: runId,
+                            statut: "brouillon",
+                            falc_status: "pending",
+                            quality_score: isOfficial ? 60 : 40,
+                            auto_publish: isOfficial,
+                            date_publication: item.isoDate ? new Date(item.isoDate) : new Date(),
+                            fetched_at: new Date()
+                        };
 
-                    // Check existence by canonical_url (to avoid unique constraint errors)
-                    const existingUrl = item.link ? await prisma.actualite.findUnique({
-                        where: { canonical_url: item.link }
-                    }) : null;
-
-                    if (!existingHash && !existingUrl) {
-                        // Fallback check on old dedupe_hash to avoid migrating duplicates
-                        const oldHash = crypto.createHash('md5').update(`${item.title}${item.link}`).digest('hex');
-                        const oldExisting = await prisma.actualite.findFirst({ where: { dedupe_hash: oldHash } });
-                        if (oldExisting) continue;
-
-                        const isOfficial = source.trust_level === 'OFFICIAL';
-
-                        await prisma.actualite.create({
-                            data: {
-                                titre: item.title || "Sans titre",
-                                slug: slugify(item.title || "info") + '-' + hash.substring(0, 6),
-                                contenu: item.content || item.contentSnippet || "",
-                                canonical_url: item.link,
-                                guid: item.guid || item.link,
-                                source_id: source.id,
-                                source_name: source.name,
-                                source_url: source.feed_url,
-                                raw_data_hash: hash,
-                                dedupe_hash: hash, // Keeping legacy compatible
-                                ingest_batch: runId,
-
-                                // Tri-Valve States
-                                statut: "brouillon",
-                                falc_status: "pending",
-                                quality_score: isOfficial ? 60 : 40, // Base score, +20 if valid FALC
-                                auto_publish: isOfficial, // Only official sources auto-publish by default
-
-                                date_publication: item.isoDate ? new Date(item.isoDate) : new Date(),
-                                fetched_at: new Date()
-                            }
+                        const result = await prisma.actualite.upsert({
+                            where: { raw_data_hash: hash },
+                            update: {},
+                            create: { ...upsertData, raw_data_hash: hash }
                         });
-                        stats.ingested++;
+
+                        // We count it if it was created recently (approx check)
+                        if (Math.abs(result.fetched_at - upsertData.fetched_at) < 2000) {
+                            stats.ingested++;
+                        }
+                    } catch (e) {
+                         if (!e.message.includes('Unique constraint')) {
+                             throw e;
+                         }
+                         // Ignore duplicate canonical_url
                     }
                 }
             } catch (err) {
@@ -143,7 +149,6 @@ export async function GET(request) {
         // ==========================================
         // STEP 2: ENRICHMENT (FALC & Tags)
         // ==========================================
-        // Process a batch of pending items (max 5)
         const itemsToEnrich = await prisma.actualite.findMany({
             where: { falc_status: 'pending' },
             take: 5,
@@ -160,8 +165,7 @@ export async function GET(request) {
                         summary_falc: falcResult.summary,
                         key_points_falc: falcResult.key_points,
                         falc_status: 'generated',
-                        quality_score: { increment: 20 } // Bonus for successful enrichment
-                        // Could add tags here later
+                        quality_score: { increment: 20 }
                     }
                 });
                 stats.enriched++;
@@ -175,15 +179,15 @@ export async function GET(request) {
         }
 
         // ==========================================
-        // STEP 3: PUBLICATION (The Gatekeeper)
+        // STEP 3: PUBLICATION
         // ==========================================
-        const threshold = 75; // Min score to auto-publish
+        const threshold = 75;
         const toPublish = await prisma.actualite.findMany({
             where: {
                 statut: 'brouillon',
                 auto_publish: true,
                 quality_score: { gte: threshold },
-                falc_status: { in: ['generated'] } // Must be simplified
+                falc_status: { in: ['generated'] }
             }
         });
 
@@ -191,7 +195,7 @@ export async function GET(request) {
             await prisma.actualite.update({
                 where: { id: item.id },
                 data: {
-                    statut: 'actif', // or 'publie' depending on frontend enum? Schema says 'default("brouillon")' string.
+                    statut: 'actif',
                     published_at: new Date()
                 }
             });
@@ -204,13 +208,27 @@ export async function GET(request) {
                 source_name: 'CRON_PIPELINE',
                 status: stats.errors.length > 0 ? 'PARTIAL' : 'SUCCESS',
                 items_new: stats.ingested,
-                items_total: stats.ingested + stats.enriched + stats.published, // Rough metric
+                items_total: stats.ingested + stats.enriched + stats.published,
                 logs: stats.errors.length ? JSON.stringify(stats.errors) : null
             }
         });
+    };
 
+    try {
+        await Promise.race([pipelineLogic(), timeoutPromise]);
     } catch (globalErr) {
         console.error("Pipeline Global Error:", globalErr);
+        // Try to log the failure to DB if possible
+        try {
+             await prisma.importLog.create({
+                data: {
+                    source_name: 'CRON_PIPELINE',
+                    status: 'ERROR',
+                    logs: JSON.stringify(globalErr.message)
+                }
+            });
+        } catch (e) { /* ignore */ } // eslint-disable-line no-unused-vars
+
         return new Response(JSON.stringify({ error: globalErr.message }), { status: 500 });
     }
 

@@ -5,6 +5,7 @@ import APropos from "./APropos";
 import Accessibilite from "./Accessibilite";
 
 import Actualites from "./Actualites";
+import ActualiteDetail from "./ActualiteDetail";
 
 import AdminAideEdit from "./AdminAideEdit";
 
@@ -109,6 +110,7 @@ const PAGES = {
     Accessibilite: Accessibilite,
 
     Actualites: Actualites,
+    ActualiteDetail: ActualiteDetail,
 
     AdminAideEdit: AdminAideEdit,
 
@@ -250,6 +252,7 @@ function PagesContent() {
                 <Route path="/accessibilite" element={<Accessibilite />} />
 
                 <Route path="/actualites" element={<Actualites />} />
+                <Route path="/actualites/:slug" element={<ActualiteDetail />} />
 
                 <Route path="/admin/login" element={<AdminLogin />} />
                 <Route path="/admin/inbox" element={<AdminRoute><AdminInbox /></AdminRoute>} />
@@ -302,7 +305,7 @@ function PagesContent() {
 
                 <Route path="/cookies" element={<Cookies />} />
 
-                <Route path="/demarchedetail" element={<DemarcheDetail />} />
+                <Route path="/demarches/:slug" element={<DemarcheDetail />} />
 
                 {/* Conditional Route: Only available if explicitly enabled */}
                 {import.meta.env.VITE_DEV_LOGIN_ENABLED === 'true' && (
@@ -340,12 +343,14 @@ function PagesContent() {
                 <Route path="/proposer-une-structure" element={<SuggestStructure />} />
                 <Route path="/dossier-subventions" element={<SubventionDossier />} />
 
-                <Route path="/structuredetail" element={<StructureDetail />} />
+                <Route path="/structures/:slug" element={<StructureDetail />} />
 
                 {/* Legacy Redirects */}
                 <Route path="/AideDetail" element={<Navigate to="/aidedetail" replace />} />
-                <Route path="/StructureDetail" element={<Navigate to="/structuredetail" replace />} />
-                <Route path="/DemarcheDetail" element={<Navigate to="/demarchedetail" replace />} />
+                <Route path="/StructureDetail" element={<Navigate to="/annuaire" replace />} />
+                <Route path="/structuredetail" element={<Navigate to="/annuaire" replace />} />
+                <Route path="/DemarcheDetail" element={<Navigate to="/demarches" replace />} />
+                <Route path="/demarchedetail" element={<Navigate to="/demarches" replace />} />
                 <Route path="/Annuaire" element={<Navigate to="/annuaire" replace />} />
                 <Route path="/Aides" element={<Navigate to="/aides" replace />} />
 

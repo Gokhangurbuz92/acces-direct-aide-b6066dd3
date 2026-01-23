@@ -45,11 +45,7 @@ export default function AideDetail() {
 
   const { data: aide, isLoading, error } = useQuery({
     queryKey: ['aide', slug || aideId],
-    queryFn: async () => {
-      const filter = slug ? { slug } : { id: aideId };
-      const res = await client.entities.Aide.filter(filter);
-      return res[0];
-    },
+    queryFn: () => client.entities.Aide.filter(slug ? { slug } : { id: aideId }),
     enabled: !!slug || !!aideId
   });
 

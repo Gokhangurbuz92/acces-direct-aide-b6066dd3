@@ -35,7 +35,7 @@ async function verifySitemap() {
         ];
 
         for (const path of requiredPaths) {
-            if (!xml.includes(`<loc>https://accesdirectaide.fr${path}</loc>`) && !xml.includes(`<loc>${BASE_URL}${path}</loc>`)) {
+            if (!xml.includes(`<loc>https://www.accesdirectaide.fr${path}</loc>`) && !xml.includes(`<loc>${BASE_URL}${path}</loc>`)) {
                 console.error(`❌ Sitemap missing required path: ${path}`);
                 process.exit(1);
             }

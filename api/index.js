@@ -1,10 +1,17 @@
 
 import url from 'url';
+import Sentry from './_utils/sentry.js';
 
 // Helper to sanitize path
 const sanitizePath = (path) => path.replace(/^\/api\//, '').split('?')[0];
 
 export default async function handler(req, res) {
+    // Add Global Headers
+    const release = process.env.VERCEL_GIT_COMMIT_SHA || process.env.VITE_GIT_COMMIT_SHA || "dev";
+    const env = process.env.VERCEL_ENV || process.env.VITE_ENV || "development";
+    res.setHeader('x-release-sha', release);
+    res.setHeader('x-deploy-env', env);
+
     const url = new URL(req.url, `https://${req.headers.host}`);
     let path = url.pathname || "";
 
@@ -64,6 +71,8 @@ export default async function handler(req, res) {
             handlerModule = await import('./_handlers/robots.js');
         } else if (path === 'sitemap.xml' || path === 'sitemap') {
             handlerModule = await import('./_handlers/sitemap.js');
+        } else if (path === 'version') {
+            handlerModule = await import('./_handlers/version.js');
         } else if (path === 'login-pro-guard') {
             handlerModule = await import('./_handlers/login-pro-guard.js');
 
@@ -125,6 +134,8 @@ export default async function handler(req, res) {
 
     } catch (error) {
         console.error('Router Error:', error);
+        Sentry.captureException(error);
+        await Sentry.flush(2000);
         return res.status(500).json({ error: 'Internal Server Error', details: error.message });
     }
 }

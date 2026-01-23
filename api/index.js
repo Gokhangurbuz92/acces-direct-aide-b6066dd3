@@ -17,10 +17,6 @@ export default async function handler(req, res) {
 
     console.log(`Router: Normalized Path: "${path}"`);
 
-    if (url.searchParams.get("debug") === "1") {
-        return res.status(200).json({ pathname: url.pathname, path });
-    }
-
     // Dynamic import mapping
     // This allows us to route requests to the correct file in _handlers
     // without defining each one manually

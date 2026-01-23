@@ -1,15 +1,23 @@
 import { PrismaClient, Prisma } from '@prisma/client';
+import { checkRateLimit, getClientIp } from '../_utils/rateLimit.js';
 
 const prisma = new PrismaClient();
 
 export default async function handler(req, res) {
     const { q, city, zip, type, page = 1, pageSize = 20 } = req.query;
-    const PAGE_SIZE = parseInt(pageSize);
+    const PAGE_SIZE = Math.min(parseInt(pageSize) || 20, 100);
     const OFFSET = (parseInt(page) - 1) * PAGE_SIZE;
 
     try {
         if (req.method !== 'GET') {
             return res.status(405).json({ error: 'Method not allowed' });
+        }
+
+        // Rate Limit
+        const ip = getClientIp(req);
+        const rateLimit = await checkRateLimit('SEARCH_STRUCTURES', ip);
+        if (!rateLimit.allowed) {
+            return res.status(429).json(rateLimit.error);
         }
 
         // Base filter for non-search queries or counting

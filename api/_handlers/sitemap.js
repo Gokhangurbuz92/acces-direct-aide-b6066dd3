@@ -1,7 +1,7 @@
 import { PrismaClient } from '@prisma/client';
 
 const prisma = new PrismaClient();
-const BASE_URL = 'https://accesdirectaide.fr';
+const BASE_URL = process.env.PUBLIC_BASE_URL || 'https://www.accesdirectaide.fr';
 
 export default async function handler(req, res) {
     if (req.method !== 'GET') {

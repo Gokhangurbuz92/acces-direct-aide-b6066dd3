@@ -78,13 +78,23 @@ else
     ((FAILED++))
 fi
 
+# Test 6: Sitemap contains no vercel.app URLs
+echo "Test 6: Sitemap canonical URLs (no vercel.app)..."
+if curl -sS "$BASE_URL/sitemap.xml" 2>&1 | grep -qE "vercel\.app|acces-direct-aide-staging"; then
+    echo "❌ Sitemap contains vercel.app/staging URLs"
+    ((FAILED++))
+else
+    echo "✅ Sitemap: All URLs use canonical domain"
+    ((PASSED++))
+fi
+
 # Summary
 echo ""
 echo "==========================================="
 echo "📊 Results: $PASSED passed, $FAILED failed"
 
 if [ $FAILED -eq 0 ]; then
-    echo "🎉 All health checks passed!"
+    echo "🎉 All 6 health checks passed!"
     exit 0
 else
     echo "⚠️  Some health checks failed"

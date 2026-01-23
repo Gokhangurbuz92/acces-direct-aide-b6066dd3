@@ -1,3 +1,4 @@
+/* eslint-disable no-undef */
 import { PrismaClient } from '@prisma/client';
 import { getCanonicalBaseUrl, isIndexable } from '../_utils/seo.js';
 import crypto from 'crypto';
@@ -9,6 +10,11 @@ export default async function handler(req, res) {
     if (req.method !== 'GET' && req.method !== 'HEAD') {
         return res.status(405).json({ error: 'Method not allowed' });
     }
+
+    // Determine BASE_URL dynamically
+    const protocol = req.headers['x-forwarded-proto'] || 'https';
+    const host = req.headers.host;
+    const BASE_URL = host ? `${protocol}://${host}` : (process.env.PUBLIC_BASE_URL || 'https://www.accesdirectaide.fr');
 
     try {
         const BASE_URL = getCanonicalBaseUrl(req);

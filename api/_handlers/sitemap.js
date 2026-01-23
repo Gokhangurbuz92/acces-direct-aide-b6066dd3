@@ -1,12 +1,17 @@
+/* eslint-disable no-undef */
 import { PrismaClient } from '@prisma/client';
 
 const prisma = new PrismaClient();
-const BASE_URL = process.env.PUBLIC_BASE_URL || 'https://www.accesdirectaide.fr';
 
 export default async function handler(req, res) {
     if (req.method !== 'GET') {
         return res.status(405).json({ error: 'Method not allowed' });
     }
+
+    // Determine BASE_URL dynamically
+    const protocol = req.headers['x-forwarded-proto'] || 'https';
+    const host = req.headers.host;
+    const BASE_URL = host ? `${protocol}://${host}` : (process.env.PUBLIC_BASE_URL || 'https://www.accesdirectaide.fr');
 
     try {
         // Fetch published content

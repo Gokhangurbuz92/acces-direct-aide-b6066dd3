@@ -64,8 +64,11 @@ export default async function handler(req, res) {
             handlerModule = await import('./_handlers/robots.js');
         } else if (path === 'sitemap.xml' || path === 'sitemap') {
             handlerModule = await import('./_handlers/sitemap.js');
-        } else if (path === 'login-pro-guard') {
+        } else if (path === 'login-pro-guard' || path === 'login/pro') {
             handlerModule = await import('./_handlers/login-pro-guard.js');
+
+        } else if (path.startsWith('__dev')) {
+            handlerModule = await import('./_handlers/blocked.js');
 
             // Public Handlers
         } else if (path === 'public/messages') {

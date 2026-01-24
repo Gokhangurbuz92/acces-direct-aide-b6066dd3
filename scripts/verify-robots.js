@@ -13,21 +13,31 @@ async function verifyRobots() {
         }
 
         const text = await res.text();
-        const expectedLines = [
-            'User-agent: *',
-            'Disallow: /admin',
-            'Disallow: /pro',
-            'Disallow: /__dev',
-            'Disallow: /api/admin',
-            'Sitemap:'
-        ];
 
-        for (const line of expectedLines) {
-            if (!text.includes(line)) {
-                console.error(`❌ robots.txt missing expected content: ${line}`);
+        if (text.includes('Disallow: /') && !text.includes('Disallow: /admin')) {
+            console.log('ℹ️ robots.txt is in restricted mode (Non-Prod)');
+            if (!text.includes('User-agent: *') || !text.includes('Sitemap:')) {
+                console.error(`❌ robots.txt structure invalid in restricted mode`);
                 process.exit(1);
             }
+        } else {
+            const expectedLines = [
+                'User-agent: *',
+                'Disallow: /admin',
+                'Disallow: /pro',
+                'Disallow: /__dev',
+                'Disallow: /api/admin',
+                'Sitemap:'
+            ];
+
+            for (const line of expectedLines) {
+                if (!text.includes(line)) {
+                    console.error(`❌ robots.txt missing expected content: ${line}`);
+                    process.exit(1);
+                }
+            }
         }
+
 
         console.log('✅ ROBOTS.TXT CHECK PASSED');
     } catch (e) {

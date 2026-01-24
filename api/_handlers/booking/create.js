@@ -1,5 +1,5 @@
 import { PrismaClient } from '@prisma/client';
-import { checkRateLimit } from '../_utils/rateLimit.js';
+import { checkRateLimit } from '../../_utils/rateLimit.js';
 import { encrypt, hash } from '../../lib/crypto.js';
 import crypto from 'crypto';
 
@@ -38,10 +38,26 @@ export default async function handler(req, res) {
             });
         }
 
-        // 2. Create Appointment
+        // 2. Check Availability (Prevent Double Booking)
         const start = new Date(startAt);
         const end = new Date(start.getTime() + 30 * 60000); // 30 mins default
 
+        const existing = await prisma.appointment.findFirst({
+            where: {
+                proId: proId,
+                status: { notIn: ['cancelled', 'rejected'] }, // Active appointments only
+                OR: [
+                    { start_at: { lte: start }, end_at: { gt: start } }, // Starts during existing
+                    { start_at: { lt: end }, end_at: { gte: end } }      // Ends during existing
+                ]
+            }
+        });
+
+        if (existing) {
+            return res.status(409).json({ error: "Ce créneau n'est plus disponible." });
+        }
+
+        // 3. Create Appointment
         const cancelToken = crypto.randomBytes(32).toString('hex');
         const accessToken = crypto.randomBytes(32).toString('hex');
 

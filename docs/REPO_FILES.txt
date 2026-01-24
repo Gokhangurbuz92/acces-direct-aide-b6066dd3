@@ -141,6 +141,8 @@
 ./docs/RELEASE_PROCESS.md
 ./docs/REPO_FILES.txt
 ./docs/REPO_MAP.md
+./docs/ROUTES_API.md
+./docs/ROUTES_FRONT.md
 ./docs/VERCEL_MIGRATION_GUIDE.md
 ./docs/VERIFICATION_PROD.md
 ./docs/WALKTHROUGH_AIDES.md
@@ -160,6 +162,7 @@
 ./e2e
 ./e2e/a11y.spec.js
 ./e2e/booking.spec.js
+./e2e/public-core.spec.js
 ./e2e/search.spec.js
 ./e2e/smoke-public.spec.js
 ./eslint.config.js
@@ -264,6 +267,7 @@
 ./scripts/verify-base44.js
 ./scripts/verify-content-population.js
 ./scripts/verify-dns.sh
+./scripts/verify-double-booking.js
 ./scripts/verify-imports.js
 ./scripts/verify-lot2.js
 ./scripts/verify-lot3.js
@@ -372,7 +376,6 @@
 ./src/pages
 ./src/pages/APropos.jsx
 ./src/pages/Accessibilite.jsx
-./src/pages/Accessibility.jsx
 ./src/pages/ActualiteDetail.jsx
 ./src/pages/Actualites.jsx
 ./src/pages/AdminAideEdit.jsx
@@ -443,6 +446,8 @@
 ./tests
 ./tests/integration
 ./tests/integration/api.test.js
+./tests/unit
+./tests/unit/booking-conflict.test.js
 ./vercel.json
 ./verify_seo.py
 ./vite.config.js

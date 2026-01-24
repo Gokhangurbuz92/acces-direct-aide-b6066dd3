@@ -1,4 +1,4 @@
-/* eslint-disable no-undef */
+/* eslint-env node */
 import { PrismaClient } from '@prisma/client';
 import bcrypt from 'bcryptjs';
 import { signProToken, checkRateLimit, logProAudit } from '../../../lib/pro-auth.js';
@@ -8,8 +8,8 @@ const prisma = new PrismaClient();
 function slugify(text) {
   return text.toString().toLowerCase()
     .replace(/\s+/g, '-')           // Replace spaces with -
-    .replace(/[^\w\-]+/g, '')       // Remove all non-word chars
-    .replace(/\-\-+/g, '-')         // Replace multiple - with single -
+    .replace(/[^\w-]+/g, '')       // Remove all non-word chars
+    .replace(/--+/g, '-')         // Replace multiple - with single -
     .replace(/^-+/, '')             // Trim - from start
     .replace(/-+$/, '');            // Trim - from end
 }

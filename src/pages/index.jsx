@@ -82,6 +82,8 @@ import AdminRuns from "./admin/Runs";
 import ProLayout from "./pro/ProLayout";
 import ProLogin from "./pro/Login";
 import ProRegister from "./pro/Register";
+import ProForgotPassword from "./pro/ForgotPassword";
+import ProResetPassword from "./pro/ResetPassword";
 import ProDashboard from "./pro/Dashboard";
 import ProServices from "./pro/Services";
 import ProTeam from "./pro/Team";
@@ -231,6 +233,8 @@ function PagesContent() {
                     <Route index element={<Navigate to="dashboard" replace />} />
                     <Route path="login" element={<ProLogin />} />
                     <Route path="register" element={<ProRegister />} />
+                    <Route path="forgot-password" element={<ProForgotPassword />} />
+                    <Route path="reset-password" element={<ProResetPassword />} />
                     <Route path="dashboard" element={<ProDashboard />} />
                     <Route path="services" element={<ProServices />} />
                     <Route path="team" element={<ProTeam />} />

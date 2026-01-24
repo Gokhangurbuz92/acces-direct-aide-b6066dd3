@@ -1,37 +1,11 @@
 
 import http from 'http';
 import url from 'url';
-import { promises as fs } from 'fs';
-import path from 'path';
 import dotenv from 'dotenv';
+import { routes } from './api/routes.js';
+
 dotenv.config({ override: true });
 
-// Handlers
-import publicMsgHandler from './api/_handlers/public/messages.js';
-import proMsgHandler from './api/_handlers/pro/messages.js';
-import uploadHandler, { config as uploadConfig } from './api/_handlers/upload.js';
-import downloadHandler from './api/_handlers/download.js';
-import purgeHandler from './api/_handlers/cron/purge.js';
-
-import proLoginHandler from './api/_handlers/pro/auth/login.js';
-import proAppointmentsHandler from './api/_handlers/pro/appointments/index.js';
-// __dev is at root of api
-import devSetupHandler from './api/__dev/create-test-appointment.js';
-
-import guidesHandler from './api/_handlers/guides.js';
-import toolsHandler from './api/_handlers/tools.js';
-
-import suggestStructureHandler from './api/_handlers/public/suggest-structure.js';
-import statsHandler from './api/_handlers/public/stats.js';
-import adminPartnershipsHandler from './api/_handlers/admin/partnerships.js'; // Assuming in _handlers/admin
-import sitemapHandler from './api/_handlers/sitemap.js';
-import robotsHandler from './api/_handlers/robots.js';
-
-// Core content APIs
-import aidesHandler from './api/_handlers/aides.js';
-import structuresHandler from './api/_handlers/structures.js';
-import demarchesHandler from './api/_handlers/demarches.js';
-import actualitesHandler from './api/_handlers/actualites.js';
 
 const PORT = 3000;
 
@@ -67,12 +41,8 @@ const server = http.createServer(async (req, res) => {
         return res;
     };
 
-    // Body Parsing (Simple, except for upload which handles its own)
-    // uploadHandler uses busboy, so we pipe raw req.
-    // others need json body.
-
+    // Body Parsing
     const isUpload = parsedUrl.pathname === '/api/upload';
-
     if (!isUpload && ['POST', 'PUT', 'PATCH'].includes(req.method)) {
         const chunks = [];
         for await (const chunk of req) chunks.push(chunk);
@@ -84,60 +54,70 @@ const server = http.createServer(async (req, res) => {
         }
     }
 
+    // Routing Logic
+    // Normalise path similarly to api/index.js
+    let path = parsedUrl.pathname || "";
+    path = path.replace(/^\/api(\/|$)/, "/");
+    path = path.replace(/^\/+/, "");
+    path = path.replace(/\/+$/, "");
+
     try {
-        if (parsedUrl.pathname === '/api/public/messages') {
-            await publicMsgHandler(req, res);
-        } else if (parsedUrl.pathname === '/api/pro/messages') {
-            await proMsgHandler(req, res);
-        } else if (parsedUrl.pathname === '/api/upload') {
-            await uploadHandler(req, res);
-        } else if (parsedUrl.pathname === '/api/download') {
-            await downloadHandler(req, res);
-        } else if (parsedUrl.pathname === '/api/cron/purge') {
-            await purgeHandler(req, res);
-        } else if (parsedUrl.pathname === '/api/pro/auth/login' || parsedUrl.pathname === '/api/pro/login') { // Frontend uses /api/pro/login usually? Recheck ProLayout but I think I used /api/pro/me and login page uses /api/pro/login.
-            // Wait, ProLogin page uses what? I didn't see ProLogin file.
-            // ProLayout.jsx checks /api/pro/me.
-            // I need /api/pro/me too!
-            // ProLogin.jsx (new file I need to check path) likely uses /api/pro/auth/login.
-            // I'll map both for safety.
-            await proLoginHandler(req, res);
-        } else if (parsedUrl.pathname === '/api/pro/appointments') {
-            await proAppointmentsHandler(req, res);
-        } else if (parsedUrl.pathname.startsWith('/api/__dev')) {
-            // Block dev routes in production
-            if (process.env.NODE_ENV === 'production') {
-                return res.status(404).json({ error: "Not Found" });
+        let handlerPath = null;
+
+        // Find matching route
+        for (const route of routes) {
+            if (route.match === 'exact') {
+                if (path === route.path) {
+                    handlerPath = route.handler;
+                    break;
+                }
+            } else if (route.match === 'prefix') {
+                if (path === route.path || path.startsWith(route.path + '/')) {
+                    handlerPath = route.handler;
+                    break;
+                }
             }
-            await devSetupHandler(req, res);
-        } else if (parsedUrl.pathname === '/api/guides' || parsedUrl.pathname.startsWith('/api/guides')) {
-            await guidesHandler(req, res);
-        } else if (parsedUrl.pathname === '/api/tools' || parsedUrl.pathname.startsWith('/api/tools')) {
-            await toolsHandler(req, res);
-        } else if (parsedUrl.pathname.startsWith('/api/aides')) {
-            await aidesHandler(req, res);
-        } else if (parsedUrl.pathname === '/api/public/suggest-structure') {
-            await suggestStructureHandler(req, res);
-        } else if (parsedUrl.pathname === '/api/public/stats') {
-            await statsHandler(req, res);
-        } else if (parsedUrl.pathname === '/api/admin/partnerships') {
-            await adminPartnershipsHandler(req, res);
-        } else if (parsedUrl.pathname === '/sitemap.xml' || parsedUrl.pathname.endsWith('/api/sitemap')) {
-            await sitemapHandler(req, res);
-        } else if (parsedUrl.pathname === '/robots.txt' || parsedUrl.pathname.endsWith('/api/robots')) {
-            await robotsHandler(req, res);
-        } else if (parsedUrl.pathname === '/api/structures' || parsedUrl.pathname.startsWith('/api/structures/')) {
-            await structuresHandler(req, res);
-        } else if (parsedUrl.pathname === '/api/demarches' || parsedUrl.pathname.startsWith('/api/demarches/')) {
-            await demarchesHandler(req, res);
-        } else if (parsedUrl.pathname === '/api/actualites' || parsedUrl.pathname.startsWith('/api/actualites/')) {
-            await actualitesHandler(req, res);
+        }
+
+        // Also check for dev-specific routes
+        if (!handlerPath && path.startsWith('__dev/')) {
+            if (process.env.NODE_ENV !== 'production') {
+                // Map to api/_handlers/__dev/...
+                // Need to check specific files or just one?
+                if (path === '__dev/create-test-appointment') {
+                    handlerPath = './_handlers/__dev/create-test-appointment.js';
+                }
+            }
+        }
+
+        if (handlerPath) {
+            // Lazy load the handler
+            // Note: handlerPath is relative to api/index.js (./_handlers/...)
+            // But we are in root. So we need to adjust path.
+            // routes.js has './_handlers/...'
+            // We need './api/_handlers/...'
+            const importPath = './api/' + handlerPath.replace(/^\.\//, '');
+
+            try {
+                const handlerModule = await import(importPath);
+                if (handlerModule && handlerModule.default) {
+                    await handlerModule.default(req, res);
+                } else {
+                    res.status(500).json({ error: 'Handler module missing default export' });
+                }
+            } catch (err) {
+                console.error(`[DevServer] Failed to load handler for ${path}: ${err.message}`);
+                if (err.code === 'ERR_MODULE_NOT_FOUND') {
+                    res.status(501).json({ error: 'Handler not implemented or missing dependencies', details: err.message });
+                } else {
+                    res.status(500).json({ error: 'Internal Handler Error', details: err.message });
+                }
+            }
+
         } else {
             // [MVP] SPA Fallback for Dev Server Tests - DEV ONLY
             // If it's not an API route AND we are NOT in production, return 200 OK placeholder.
-            // In production, always return 404 for unknown routes.
             const isProduction = process.env.NODE_ENV === 'production';
-
             if (!parsedUrl.pathname.startsWith('/api') && parsedUrl.pathname !== '/robots.txt' && parsedUrl.pathname !== '/sitemap.xml' && !isProduction) {
                 res.writeHead(200, { 'Content-Type': 'text/html' });
                 res.end('<html><body>SPA Placeholder (DEV ONLY)</body></html>');
@@ -145,8 +125,9 @@ const server = http.createServer(async (req, res) => {
                 res.status(404).json({ error: "Not Found" });
             }
         }
+
     } catch (e) {
-        console.error("Handler Error:", e);
+        console.error("Server Error:", e);
         if (!res.headersSent) res.status(500).json({ error: e.message });
     }
 });

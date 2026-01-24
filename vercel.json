@@ -1,4 +1,9 @@
 {
+    "functions": {
+        "api/**/*.js": {
+            "includeFiles": "api/_handlers/**"
+        }
+    },
     "crons": [
         {
             "path": "/api/cron/pipeline",
@@ -23,10 +28,6 @@
         },
         {
             "source": "/robots.txt",
-            "destination": "/api"
-        },
-        {
-            "source": "/login/pro",
             "destination": "/api"
         },
         {

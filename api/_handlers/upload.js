@@ -1,7 +1,7 @@
 
 import busboy from 'busboy';
-import { encryptBuffer, encrypt } from './lib/crypto.js';
-import { storage } from './lib/storage.js';
+import { encryptBuffer, encrypt } from '../lib/crypto.js';
+import { storage } from '../lib/storage.js';
 import { PrismaClient } from '@prisma/client';
 
 const prisma = new PrismaClient();

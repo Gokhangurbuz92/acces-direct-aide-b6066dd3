@@ -20,7 +20,7 @@ export const verifyAdmin = (req) => {
 
 export const getAuthenticatedUser = async (req) => {
     if (verifyAdmin(req)) {
-        return { role: 'admin' };
+        return { email: 'admin@system', role: 'admin' };
     }
     return null;
 };

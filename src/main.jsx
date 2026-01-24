@@ -7,6 +7,7 @@ import * as Sentry from "@sentry/react";
 if (import.meta.env.VITE_SENTRY_DSN) {
     Sentry.init({
         dsn: import.meta.env.VITE_SENTRY_DSN,
+        release: import.meta.env.VITE_SENTRY_RELEASE,
         integrations: [
             Sentry.browserTracingIntegration(),
             Sentry.replayIntegration(),

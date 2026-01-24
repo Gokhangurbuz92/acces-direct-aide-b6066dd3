@@ -1,10 +1,10 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { createPageUrl } from '@/utils';
-import { 
-  MapPin, 
-  Phone, 
-  Globe, 
+import { createPageUrl, toSlug } from '@/utils';
+import {
+  MapPin,
+  Phone,
+  Globe,
   Clock,
   Accessibility,
   ArrowRight
@@ -96,8 +96,8 @@ export default function StructureCard({ structure, compact = false }) {
             {structure.telephone && (
               <div className="flex items-center gap-2">
                 <Phone className="h-4 w-4 text-slate-400" />
-                <a 
-                  href={`tel:${structure.telephone}`} 
+                <a
+                  href={`tel:${structure.telephone}`}
                   className="text-blue-600 hover:underline"
                 >
                   {structure.telephone}
@@ -126,8 +126,8 @@ export default function StructureCard({ structure, compact = false }) {
                 </a>
               </Button>
             )}
-            <Link 
-              to={createPageUrl('StructureDetail') + `?id=${structure.id}`}
+            <Link
+              to={structure.slug ? `/structures/${structure.slug}` : `/structures/view?id=${structure.id}`}
               className="inline-flex items-center gap-1 text-blue-600 hover:text-blue-800 font-medium text-sm group/link"
             >
               Plus d'infos

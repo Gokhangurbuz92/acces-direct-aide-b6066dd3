@@ -1,0 +1,43 @@
+name: CI - Release Gate
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  release-gate:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install Dependencies
+        run: npm ci
+
+      - name: Install Playwright Browsers
+        run: npx playwright install --with-deps chromium
+
+      - name: Verify Handler Imports (Static Check)
+        env:
+          # Dummy values strictly for build/import verification, NOT for runtime
+          ENCRYPTION_KEY: "0000000000000000000000000000000000000000000000000000000000000000"
+          JWT_SECRET: "ci-dummy-secret"
+          CRON_SECRET: "ci-dummy-cron"
+          DATABASE_URL: "postgresql://dummy:dummy@localhost:5432/dummy"
+        run: node scripts/verify-handler-imports.js
+
+      - name: Build Project
+        run: npm run build
+
+      - name: Run E2E Tests (Public Core)
+        run: npx playwright test e2e/public-core.spec.js
+        env:
+          CI: true

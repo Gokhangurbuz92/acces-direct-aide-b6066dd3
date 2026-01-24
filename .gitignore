@@ -46,3 +46,4 @@ test-img*.jpg
 
 # Local Storage (Mock)
 uploads_mock/
+api/_utils/build-info.js

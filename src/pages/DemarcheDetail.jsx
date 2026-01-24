@@ -43,11 +43,12 @@ export default function DemarcheDetail() {
   const id = searchParams.get('id');
   const identifier = slug || id;
 
-  const { data: demarche, isLoading } = useQuery({
+  const { data: response, isLoading } = useQuery({
     queryKey: ['demarche', identifier],
     queryFn: () => client.entities.Demarche.filter(slug ? { slug } : { id }),
     enabled: !!identifier
   });
+  const demarche = response?.items?.[0] || null;
 
   if (isLoading) {
     return (

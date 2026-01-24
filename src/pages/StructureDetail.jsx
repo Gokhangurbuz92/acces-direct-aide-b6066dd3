@@ -39,12 +39,12 @@ export default function StructureDetail() {
   const id = searchParams.get('id');
   const identifier = slug || id;
 
-  const { data: structure, isLoading } = useQuery({
+  const { data: response, isLoading } = useQuery({
     queryKey: ['structure', identifier],
     queryFn: () => client.entities.Structure.filter(slug ? { slug } : { id }),
-    // API now returns single object for id/slug queries
     enabled: !!identifier
   });
+  const structure = response?.items?.[0] || null;
 
   if (isLoading) {
     return (

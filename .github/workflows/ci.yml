@@ -1,0 +1,41 @@
+name: CI & Release Gate
+
+on:
+  pull_request:
+    branches: [main, master, staging]
+  push:
+    branches: [main, master, staging]
+
+jobs:
+  release-gate:
+    name: Release Gate (Lint, Build, Smoke)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+
+      - name: Install Dependencies
+        run: npm ci
+
+      - name: Install Playwright Browsers
+        run: npx playwright install --with-deps chromium
+
+      - name: Run Release Gate
+        run: npm run release:gate
+        env:
+            CI: true
+
+      - name: Upload Playwright Report
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report
+          path: playwright-report/
+          retention-days: 7

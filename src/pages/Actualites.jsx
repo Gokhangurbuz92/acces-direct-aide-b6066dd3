@@ -50,10 +50,12 @@ const TYPE_COLORS = {
 export default function Actualites() {
   const [selectedCategory, setSelectedCategory] = useState('');
 
-  const { data: actualites = [], isLoading } = useQuery({
+  const { data: response, isLoading } = useQuery({
     queryKey: ['actualites'],
     queryFn: () => client.entities.Actualite.filter({ statut: 'publie' }, '-date_publication'),
   });
+
+  const actualites = response?.items || [];
 
   const filteredActualites = selectedCategory
     ? actualites.filter(a => a.categorie === selectedCategory)

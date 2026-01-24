@@ -43,11 +43,12 @@ export default function AideDetail() {
   const urlParams = new URLSearchParams(window.location.search);
   const aideId = urlParams.get('id');
 
-  const { data: aide, isLoading, error } = useQuery({
+  const { data: response, isLoading, error } = useQuery({
     queryKey: ['aide', slug || aideId],
     queryFn: () => client.entities.Aide.filter(slug ? { slug } : { id: aideId }),
     enabled: !!slug || !!aideId
   });
+  const aide = response?.items?.[0] || null;
 
   const { data: structures = [] } = useQuery({
     queryKey: ['structures-aide', aide?.categorie],

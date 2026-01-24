@@ -1,0 +1,27 @@
+name: Production Healthcheck
+
+on:
+  workflow_dispatch:
+    inputs:
+      url:
+        description: 'Base URL to test'
+        required: true
+        default: 'https://www.accesdirectaide.fr'
+
+jobs:
+  healthcheck:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run Healthcheck
+        run: node scripts/ci-healthcheck.js ${{ inputs.url }}

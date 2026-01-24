@@ -20,7 +20,7 @@ const CATEGORY_MAP = {
 async function getCategoryId(categorie) {
     if (!categorie) return null;
 
-    const slug = CATEGORY_MAP[categorie] || categorie.toLowerCase().replace(/[\/\s]+/g, '-');
+    const slug = CATEGORY_MAP[categorie] || categorie.toLowerCase().replace(/[/\s]+/g, '-');
     const category = await prisma.aidCategory.findUnique({ where: { slug } });
     return category?.id || null;
 }

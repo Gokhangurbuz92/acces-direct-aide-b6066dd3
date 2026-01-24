@@ -1,5 +1,5 @@
 
-/* eslint-env node */
+
 import crypto from 'crypto';
 
 // Encryption Algorithm

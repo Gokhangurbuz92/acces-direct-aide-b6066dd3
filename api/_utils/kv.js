@@ -1,7 +1,7 @@
 
 import { createClient } from '@vercel/kv';
 
-/* eslint-env node */
+
 
 const memoryStore = new Map();
 

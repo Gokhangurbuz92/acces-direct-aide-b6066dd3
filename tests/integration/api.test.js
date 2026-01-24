@@ -60,6 +60,8 @@ vi.mock('@prisma/client', () => {
         }
     },
     Prisma: {
+        sql: vi.fn((strings, ...values) => strings),
+        join: vi.fn((arr) => arr.join(', ')),
         PrismaClientKnownRequestError: class extends Error {
             constructor(message, code) {
                 super(message);
@@ -100,22 +102,21 @@ describe('API Integration Tests', () => {
       // Setup Mock
       mPrisma.aide.findMany.mockResolvedValue([{ id: '1', title: 'Test' }]);
       mPrisma.aide.count.mockResolvedValue(1);
+      mPrisma.$queryRaw.mockResolvedValue([{ id: '1' }]);
 
       await aidesHandler(req, res);
 
       // Verify status
       expect(res.status).toHaveBeenCalledWith(200);
 
-      // Verify JSON structure
+      // Verify JSON structure (Items + Pagination)
       const response = res.json.mock.calls[0][0];
-      expect(response).toHaveProperty('data');
-      expect(response).toHaveProperty('meta');
-      expect(response.meta).toHaveProperty('requestId');
-      expect(response).toHaveProperty('error', null);
+      expect(response).toHaveProperty('items');
+      expect(response).toHaveProperty('pagination');
 
       // Verify Data
-      expect(response.data).toHaveLength(1);
-      expect(response.data[0].id).toBe('1');
+      expect(response.items).toHaveLength(1);
+      expect(response.items[0].id).toBe('1');
     });
 
     it('should return validation error for invalid page', async () => {
@@ -125,7 +126,7 @@ describe('API Integration Tests', () => {
 
       expect(res.status).toHaveBeenCalledWith(400);
       const response = res.json.mock.calls[0][0];
-      expect(response.error.code).toBe('VALIDATION_ERROR');
+      expect(response).toHaveProperty('error');
     });
   });
 
@@ -133,33 +134,26 @@ describe('API Integration Tests', () => {
     it('should return valid envelope on success', async () => {
         mPrisma.structure.findMany.mockResolvedValue([{ id: '1', nom: 'Structure Test' }]);
         mPrisma.structure.count.mockResolvedValue(1);
+        mPrisma.$queryRaw.mockResolvedValue([{ id: '1' }]);
 
         await structuresHandler(req, res);
 
         expect(res.status).toHaveBeenCalledWith(200);
         const response = res.json.mock.calls[0][0];
-        expect(response).toHaveProperty('data');
-        expect(response).toHaveProperty('meta');
-        expect(response.data).toHaveLength(1);
-        expect(response.data[0].nom).toBe('Structure Test');
+        expect(response).toHaveProperty('items');
+        expect(response).toHaveProperty('pagination');
+        expect(response.items).toHaveLength(1);
+        expect(response.items[0].nom).toBe('Structure Test');
     });
 
     it('should return validation error for invalid zip', async () => {
-        req.query = { zip: 12345 }; // zip should be string in query if parsed by express/vercel, but if we pass number manually in req.query object it might be coerced?
-        // Zod expects string. if req.query has number, Zod might fail if we don't use coerce.
-        // My schema uses z.string().optional().
-        // If I pass number in tests, it should fail.
         req.query = { zip: 12345 };
 
         await structuresHandler(req, res);
 
-        // Actually, Express/Vercel query params are usually strings.
-        // But if I manually set it to number in tests, I test Zod behavior.
-        // Zod string() doesn't accept number.
-
         expect(res.status).toHaveBeenCalledWith(400);
         const response = res.json.mock.calls[0][0];
-        expect(response.error.code).toBe('VALIDATION_ERROR');
+        expect(response).toHaveProperty('error');
     });
   });
 

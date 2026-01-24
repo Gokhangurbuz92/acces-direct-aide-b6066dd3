@@ -5,7 +5,7 @@ import { storage } from '../../lib/storage.js';
 
 const prisma = new PrismaClient();
 
-export default async function handler(req, res) {
+async function handler(req, res) {
     // Auth Check
     const auth = await verifyProToken(req);
     if (!auth) return res.status(401).json({ error: "Unauthorized" });

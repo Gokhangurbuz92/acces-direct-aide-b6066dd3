@@ -1,4 +1,4 @@
-/* eslint-env node */
+
 import { PrismaClient } from '@prisma/client';
 import bcrypt from 'bcryptjs';
 import { signProToken, checkRateLimit, logProAudit } from '../../../lib/pro-auth.js';

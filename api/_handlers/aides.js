@@ -6,11 +6,11 @@ import { searchAides } from '../lib/search-query.js';
 const prisma = new PrismaClient();
 
 export default async function handler(req, res) {
-    try {
-        if (req.method !== 'GET') {
-            return res.status(405).json({ error: 'Method not allowed' });
-        }
+    if (req.method !== 'GET') {
+        return res.status(405).json({ error: 'Method not allowed' });
+    }
 
+    try {
         const ip = getClientIp(req);
         const rateLimit = await checkRateLimit('SEARCH_AIDES', ip);
         if (!rateLimit.allowed) {
@@ -36,8 +36,6 @@ export default async function handler(req, res) {
             }
             return res.status(200).json(aide);
         }
-        return aide;
-    }
 
         // 2. Search / List (Unified)
         const { items, total } = await searchAides(prisma, params);
@@ -51,18 +49,9 @@ export default async function handler(req, res) {
                 totalPages: Math.ceil(total / params.pageSize)
             }
         });
-        total = await prisma.aide.count({ where });
+
+    } catch (error) {
+        console.error(error);
+        return res.status(500).json({ error: 'Internal Server Error' });
     }
-
-    return {
-        items,
-        pagination: {
-            total,
-            page,
-            pageSize: PAGE_SIZE,
-            totalPages: Math.ceil(total / PAGE_SIZE)
-        }
-    };
-};
-
-export default createHandler(handler, { query: querySchema });
+}

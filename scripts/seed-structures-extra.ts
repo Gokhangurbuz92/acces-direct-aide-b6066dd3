@@ -1,4 +1,5 @@
 import { PrismaClient } from '@prisma/client';
+import slugify from '@sindresorhus/slugify';
 
 const prisma = new PrismaClient();
 
@@ -73,8 +74,9 @@ async function main() {
     console.log('Seeding extra structures...');
 
     for (const s of extraStructures) {
+        const slug = slugify(`${s.nom} ${s.ville}`);
         await prisma.structure.upsert({
-            where: { nom: s.nom }, // Using name for simple upsert here
+            where: { slug },
             update: {
                 ...s,
                 statut: "actif",
@@ -82,6 +84,7 @@ async function main() {
             },
             create: {
                 ...s,
+                slug,
                 statut: "actif",
                 published_at: new Date()
             },

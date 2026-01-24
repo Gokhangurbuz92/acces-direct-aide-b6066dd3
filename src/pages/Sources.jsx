@@ -1,5 +1,5 @@
 
-import { Helmet } from 'react-helmet-async';
+import SEO from '@/components/SEO';
 import { ShieldCheck, ExternalLink } from 'lucide-react';
 
 export default function Sources() {
@@ -13,10 +13,11 @@ export default function Sources() {
 
     return (
         <div className="container mx-auto px-4 py-8 max-w-4xl">
-            <Helmet>
-                <title>Nos Sources - Accès Direct Aide</title>
-                <meta name="description" content="Liste des sources officielles que nous utilisons." />
-            </Helmet>
+            <SEO
+                title="Nos Sources"
+                description="Liste des sources officielles que nous utilisons."
+                path="/sources"
+            />
 
             <h1 className="text-3xl font-bold mb-6 text-blue-900">Nos Sources</h1>
 

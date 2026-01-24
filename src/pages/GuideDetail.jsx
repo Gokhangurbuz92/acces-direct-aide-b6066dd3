@@ -1,7 +1,7 @@
 
 import { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { Helmet } from 'react-helmet-async';
+import SEO from '@/components/SEO';
 import { Printer } from 'lucide-react';
 
 export default function GuideDetail() {
@@ -27,9 +27,11 @@ export default function GuideDetail() {
 
     return (
         <div className="max-w-4xl mx-auto px-4 py-8 print:p-0 print:max-w-none">
-            <Helmet>
-                <title>{guide.titre} - Bonnes Pratiques</title>
-            </Helmet>
+            <SEO
+                title={`${guide.titre} - Bonnes Pratiques`}
+                description={guide.resume_falc || "Guide de bonnes pratiques"}
+                path={`/bonnes-pratiques/${slug}`}
+            />
 
             <div className="flex justify-between items-start mb-6 print:hidden">
                 <Link to="/bonnes-pratiques" className="text-blue-600 hover:underline">

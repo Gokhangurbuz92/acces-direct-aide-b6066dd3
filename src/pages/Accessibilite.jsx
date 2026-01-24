@@ -1,10 +1,16 @@
 import React from 'react';
+import SEO from '@/components/SEO';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { CheckCircle2, Eye, Keyboard, Type } from 'lucide-react';
 
 export default function Accessibilite() {
   return (
     <div className="min-h-screen bg-slate-50 py-12">
+      <SEO
+        title="Accessibilité"
+        description="Un site conçu pour être accessible à tous"
+        path="/accessibilite"
+      />
       <div className="max-w-4xl mx-auto px-4 sm:px-6">
         <h1 className="text-3xl font-bold text-slate-900 mb-4">
           Accessibilité

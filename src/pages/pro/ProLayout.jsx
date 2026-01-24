@@ -3,7 +3,7 @@ import React, { useEffect, useState } from 'react';
 import { useNavigate, useLocation, Link, Outlet } from 'react-router-dom';
 import { Loader2, LayoutDashboard, Building2, Users, FileText, LogOut } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Helmet } from 'react-helmet-async';
+import SEO from '@/components/SEO';
 
 export default function ProLayout() {
     const navigate = useNavigate();
@@ -64,9 +64,11 @@ export default function ProLayout() {
 
     return (
         <div className="min-h-screen bg-slate-100 flex">
-            <Helmet>
-                <meta name="robots" content="noindex, nofollow" />
-            </Helmet>
+            <SEO
+                title="AccesDirect Pro"
+                description="Espace professionnel."
+                noindex={true}
+            />
             {/* Sidebar */}
             <aside className="w-64 bg-white border-r border-slate-200 hidden md:flex flex-col">
                 <div className="p-6 border-b border-slate-200">

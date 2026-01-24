@@ -1,13 +1,14 @@
 
-import { Helmet } from 'react-helmet-async';
+import SEO from '@/components/SEO';
 
 export default function Mission() {
     return (
         <div className="container mx-auto px-4 py-8 max-w-4xl">
-            <Helmet>
-                <title>Notre Mission - Accès Direct Aide</title>
-                <meta name="description" content="Pourquoi ce site existe : simplifier l'accès aux droits pour tous." />
-            </Helmet>
+            <SEO
+                title="Notre Mission"
+                description="Pourquoi ce site existe : simplifier l'accès aux droits pour tous."
+                path="/notre-mission"
+            />
 
             <h1 className="text-3xl font-bold mb-6 text-blue-900">Notre Mission</h1>
 

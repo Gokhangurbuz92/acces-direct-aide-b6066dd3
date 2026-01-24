@@ -18,8 +18,19 @@ export default function SEO({
     noindex = false
 }) {
     const fullTitle = title ? `${title} - ${SITE_NAME}` : SITE_NAME;
-    const canonicalUrl = `${BASE_URL}${path}`;
-    const imageUrl = image.startsWith('http') ? image : `${BASE_URL}${image}`;
+
+    // Canonical URL logic
+    // 1. Remove query params if any
+    const cleanPath = path.split('?')[0];
+    // 2. Ensure leading slash if path is provided and doesn't have it
+    const normalizedPath = cleanPath && !cleanPath.startsWith('/') ? `/${cleanPath}` : cleanPath;
+    // 3. Construct URL
+    const canonicalUrl = `${BASE_URL}${normalizedPath}`;
+
+    // Image URL logic
+    const imageUrl = image.startsWith('http')
+        ? image
+        : `${BASE_URL}${image.startsWith('/') ? image : '/' + image}`;
 
     return (
         <Helmet>

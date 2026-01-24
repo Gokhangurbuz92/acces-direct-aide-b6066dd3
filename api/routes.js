@@ -47,7 +47,6 @@ export const routes = [
     { path: 'dispositifs', match: 'prefix', handler: './_handlers/dispositifs/index.js' },
 
     // --- Cron ---
-    { path: 'cron/ingest-rss', match: 'exact', handler: './_handlers/cron/ingest-rss.js' },
     { path: 'cron/pipeline', match: 'exact', handler: './_handlers/cron/pipeline.js' },
     { path: 'cron/ingest-structures', match: 'exact', handler: './_handlers/cron/ingest-structures.js' },
     { path: 'cron/purge', match: 'exact', handler: './_handlers/cron/purge.js' },

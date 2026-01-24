@@ -27,3 +27,5 @@ dist-ssr
 .vercel
 .env*.local
 dist/sitemap.xml
+playwright-report/
+test-results/

@@ -4,6 +4,7 @@ import { createPageUrl } from '@/utils';
 import { client } from '@/api/client';
 import { useQuery } from '@tanstack/react-query';
 import SEO from '@/components/SEO';
+import { generateActualiteSchema, generateBreadcrumbSchema } from '@/utils/schema';
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
@@ -82,12 +83,24 @@ export default function ActualiteDetail() {
 
   const TypeIcon = TYPE_ICONS[actu.type_actu] || Info;
 
+  const breadcrumbs = [
+    { name: 'Accueil', url: '/' },
+    { name: 'Actualités', url: '/actualites' },
+    { name: actu.titre, url: `/actualites/${actu.slug}` }
+  ];
+
+  const schema = [
+    generateBreadcrumbSchema(breadcrumbs),
+    generateActualiteSchema(actu)
+  ].filter(Boolean);
+
   return (
     <div className="min-h-screen bg-slate-50">
       <SEO
         title={actu.titre}
         description={actu.summary_falc || actu.contenu?.substring(0, 150)}
-        url={window.location.href}
+        path={`/actualites/${actu.slug}`}
+        schema={schema}
       />
 
       {/* Fil d'Ariane */}

@@ -1,6 +1,7 @@
 import React from 'react';
 import { Link, useParams, useSearchParams } from 'react-router-dom';
 import SEO from '@/components/SEO';
+import { generateStructureSchema, generateBreadcrumbSchema } from '@/utils/schema';
 import { createPageUrl } from '@/utils';
 import { client } from '@/api/client';
 import { useQuery } from '@tanstack/react-query';
@@ -67,12 +68,24 @@ export default function StructureDetail() {
     );
   }
 
+  const breadcrumbs = [
+    { name: 'Accueil', url: '/' },
+    { name: 'Annuaire', url: '/annuaire' },
+    { name: structure.nom, url: `/structures/${structure.slug}` }
+  ];
+
+  const schema = [
+    generateBreadcrumbSchema(breadcrumbs),
+    generateStructureSchema(structure)
+  ].filter(Boolean);
+
   return (
     <div className="min-h-screen bg-slate-50">
       <SEO
         title={structure.nom}
         description={structure.description_courte || `Détails de ${structure.nom}`}
-        url={window.location.href}
+        path={`/structures/${structure.slug}`}
+        schema={schema}
       />
       {/* Fil d'Ariane */}
       <div className="bg-white border-b border-slate-200">

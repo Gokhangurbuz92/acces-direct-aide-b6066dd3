@@ -65,11 +65,11 @@ export default async function handler(req, res) {
         });
 
         demarches.filter(d => d.slug).forEach(d => {
-            urls.push(`  <url><loc>${BASE_URL}/demarche/${d.slug}</loc><lastmod>${d.updatedAt.toISOString().split('T')[0]}</lastmod><priority>0.7</priority></url>`);
+            urls.push(`  <url><loc>${BASE_URL}/demarches/${d.slug}</loc><lastmod>${d.updatedAt.toISOString().split('T')[0]}</lastmod><priority>0.7</priority></url>`);
         });
 
         structures.filter(s => s.slug).forEach(s => {
-            urls.push(`  <url><loc>${BASE_URL}/structure/${s.slug}</loc><lastmod>${s.updatedAt.toISOString().split('T')[0]}</lastmod><priority>0.6</priority></url>`);
+            urls.push(`  <url><loc>${BASE_URL}/structures/${s.slug}</loc><lastmod>${s.updatedAt.toISOString().split('T')[0]}</lastmod><priority>0.6</priority></url>`);
         });
 
         guides.filter(g => g.slug).forEach(g => {
@@ -126,4 +126,3 @@ ${urls.join('\n')}
         res.end(fallbackXml);
     }
 }
-

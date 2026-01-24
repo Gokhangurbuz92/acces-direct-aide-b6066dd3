@@ -1,6 +1,7 @@
 import React from 'react';
 import { Link, useParams, useSearchParams } from 'react-router-dom';
 import SEO from '@/components/SEO';
+import { generateDemarcheSchema, generateBreadcrumbSchema } from '@/utils/schema';
 import { createPageUrl } from '@/utils';
 import { client } from '@/api/client';
 import { useQuery } from '@tanstack/react-query';
@@ -70,12 +71,24 @@ export default function DemarcheDetail() {
     );
   }
 
+  const breadcrumbs = [
+    { name: 'Accueil', url: '/' },
+    { name: 'Démarches', url: '/demarches' },
+    { name: demarche.titre, url: `/demarches/${demarche.slug}` }
+  ];
+
+  const schema = [
+    generateBreadcrumbSchema(breadcrumbs),
+    generateDemarcheSchema(demarche)
+  ].filter(Boolean);
+
   return (
     <div className="min-h-screen bg-slate-50">
       <SEO
         title={demarche.titre}
         description={demarche.description_courte}
-        url={window.location.href}
+        path={`/demarches/${demarche.slug}`}
+        schema={schema}
       />
       {/* Fil d'Ariane */}
       <div className="bg-white border-b border-slate-200">

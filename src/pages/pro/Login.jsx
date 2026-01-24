@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import SEO from '@/components/SEO';
 import { Button } from '@/components/ui/button';
@@ -75,7 +75,10 @@ export default function ProLogin() {
                             />
                         </div>
                         <div className="space-y-2">
-                            <Label htmlFor="password">Mot de passe</Label>
+                            <div className="flex justify-between items-center">
+                                <Label htmlFor="password">Mot de passe</Label>
+                                <Link to="/pro/forgot-password" className="text-xs text-blue-600 hover:underline">Oublié ?</Link>
+                            </div>
                             <Input
                                 id="password"
                                 type="password"

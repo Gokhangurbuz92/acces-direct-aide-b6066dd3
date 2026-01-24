@@ -31,40 +31,6 @@ export default async function handler(req, res) {
     }
 
     try {
-        const user = await prisma.proUser.findFirst({
-            where: { email }, // Email is unique per structure, but wait...
-            // Schema has @@unique([structureId, email]).
-            // So email is NOT unique globally in ProUser table?
-            // "Ensure uniqueness: (structure_id, pro_email) unique." - User said this.
-            // But if I login with just email, how do I know which structure?
-            // Usually email is unique globally for a user system.
-            // If email is unique ONLY per structure, then login requires Structure ID (slug) context?
-            // OR checks if email exists in multiple structures.
-            // User requirement: "ProUser (id, structure_id, email, ...)"
-            // "Ensure uniqueness: (structure_id, pro_email) unique."
-            // This implies a user might belong to multiple structures with same email?
-            // If so, login is ambiguous.
-            // BUT usually SaaS expects unique email platform-wide OR login page is structure-specific (/pro/[structure]/login).
-            // User requested: `/pro/login` (generic).
-            // So implies Email should be unique globally OR user selects structure.
-            // I will assume Email should be unique globally for simplicity in Lot 4, OR I handle multiple users.
-            // The prompt says: "Ensure uniqueness: (structure_id, pro_email) unique."
-            // It strictly says structure_id + email.
-            // This suggests multi-tenant where email can be reused.
-            // I will find ALL users with this email.
-        });
-
-        // Wait, `findFirst`? If multiple exist, I pick first?
-        // If I have same email in Structure A and B.
-        // I should probably ask user or return list?
-        // For Lot 4, I'll assume email is unique globally for now to simplify, OR findUnique on just email if I made it unique?
-        // Schema: `@@unique([structureId, email])`.
-        // So Prisma won't enforce global uniqueness.
-        // I will change logic: `findMany({ where: { email } })`.
-        // If > 1, throw error "Multi-structure support not implemented" or login to the first one?
-        // User didn't specify multi-tenancy for same user.
-        // I'll stick to `findFirst` for now, assuming 1 user 1 structure usually.
-
         const users = await prisma.proUser.findMany({ where: { email } });
         const targetUser = users[0]; // Pick first for now.
 

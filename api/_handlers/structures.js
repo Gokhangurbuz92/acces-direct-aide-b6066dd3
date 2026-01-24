@@ -24,11 +24,12 @@ export default async function handler(req, res) {
                 include: { proServices: true }
             });
 
-            if (!structure || structure.statut !== 'actif') {
-                return res.status(404).json({ error: "Structure non trouvée" });
-            }
-            return res.status(200).json(structure);
-        }
+    // 3. Single Item
+    if (id || slug) {
+        const structure = await prisma.structure.findFirst({
+            where: id ? { id: String(id) } : { slug: String(slug) },
+            include: { proServices: true }
+        });
 
         // Rate Limit for search
         const ip = getClientIp(req);
@@ -36,6 +37,8 @@ export default async function handler(req, res) {
         if (!rateLimit.allowed) {
             return res.status(429).json(rateLimit.error);
         }
+        return structure;
+    }
 
         // 2. Search / List
         const { items, total } = await searchStructures(prisma, params);
@@ -50,8 +53,4 @@ export default async function handler(req, res) {
             }
         });
 
-    } catch (error) {
-        console.error('Structures API Error:', error);
-        return res.status(500).json({ error: 'Server Error', details: error.message });
-    }
-}
+export default createHandler(handler, { query: querySchema });

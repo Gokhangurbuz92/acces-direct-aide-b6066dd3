@@ -1,69 +1,69 @@
-
 import { PrismaClient } from '@prisma/client';
-import { checkRateLimit } from '../../../lib/pro-auth.js';
+import { z } from 'zod';
+import { createHandler } from '../../../_utils/wrapper.js';
 import { encrypt, hash } from '../../../lib/crypto.js';
 import crypto from 'crypto';
+import { createError, errorCodes } from '../../../_utils/errors.js';
 
 const prisma = new PrismaClient();
 
-export default async function handler(req, res) {
-    if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
+const bodySchema = z.object({
+    structureId: z.string().min(1),
+    startAt: z.string().datetime(),
+    email: z.string().email(),
+    name: z.string().optional()
+});
 
-    // Rate Limit (Basic)
-    const identifier = req.headers['x-forwarded-for'] || '127.0.0.1';
-    // const limit = await checkRateLimit(`BOOK:${identifier}`); // Uncomment when Redis/KV is ready
-
-    const { structureId, startAt, email, name } = req.body;
-
-    if (!structureId || !startAt || !email) {
-        return res.status(400).json({ error: "Missing required fields" });
+const handler = async (req, res) => {
+    if (req.method !== 'POST') {
+         throw createError(405, errorCodes.BAD_REQUEST, 'Method not allowed');
     }
 
+    const { structureId, startAt, email, name } = req.validated.body;
+
+    // 1. Handle Beneficiary
+    const contactHash = hash(email);
+    let beneficiary = await prisma.beneficiary.findFirst({
+        where: { contact_hash: contactHash }
+    });
+
+    if (!beneficiary) {
+        beneficiary = await prisma.beneficiary.create({
+            data: {
+                contact_encrypted: encrypt(email),
+                contact_hash: contactHash,
+                first_name_encrypted: name ? encrypt(name) : null
+            }
+        });
+    }
+
+    // 2. Find Service
+    let service = await prisma.service.findFirst({
+        where: { structureId }
+    });
+
+    let serviceId;
+    if (!service) {
+         // Create default service if missing
+         service = await prisma.service.create({
+             data: {
+                 structureId,
+                 slug: 'rdv-generique',
+                 name: 'Rendez-vous',
+                 duration_minutes: 60
+             }
+         });
+    }
+    serviceId = service.id;
+
+    // 3. Create Appointment with Double-Booking Check
+    const start = new Date(startAt);
+    const duration = service.duration_minutes || 60;
+    const end = new Date(start.getTime() + duration * 60000);
+
     try {
-        // 1. Handle Beneficiary (Dedupe by hash)
-        // Done outside transaction for simplicity (less locking), assumes eventual consistency is fine for users
-        const contactHash = hash(email);
-        let beneficiary = await prisma.beneficiary.findFirst({
-            where: { contact_hash: contactHash }
-        });
-
-        if (!beneficiary) {
-            beneficiary = await prisma.beneficiary.create({
-                data: {
-                    contact_encrypted: encrypt(email),
-                    contact_hash: contactHash,
-                    first_name_encrypted: name ? encrypt(name) : null
-                }
-            });
-        }
-
-        // 2. Find Service (Use first one for MVP)
-        let service = await prisma.service.findFirst({
-            where: { structureId }
-        });
-
-        let serviceId;
-        if (!service) {
-             // Create default service if missing
-             service = await prisma.service.create({
-                 data: {
-                     structureId,
-                     slug: 'rdv-generique',
-                     name: 'Rendez-vous',
-                     duration_minutes: 60
-                 }
-             });
-        }
-        serviceId = service.id;
-
-        // 3. Create Appointment with Double-Booking Check (Interactive Transaction)
-        const start = new Date(startAt);
-        const duration = service.duration_minutes || 60;
-        const end = new Date(start.getTime() + duration * 60000);
-
         const result = await prisma.$transaction(async (tx) => {
             // Check for overlaps
-            // Overlap condition: (StartA < EndB) and (EndA > StartB)
             const conflict = await tx.appointment.findFirst({
                 where: {
                     structureId,
@@ -89,8 +89,8 @@ export default async function handler(req, res) {
                     beneficiaryId: beneficiary.id,
                     start_at: start,
                     end_at: end,
-                    mode: 'presentiel', // Default
-                    status: 'confirmed', // Auto-confirm for MVP
+                    mode: 'presentiel',
+                    status: 'confirmed',
                     cancel_token_hash: hash(cancelToken),
                     access_token_hash: hash(accessToken)
                 }
@@ -102,19 +102,20 @@ export default async function handler(req, res) {
             };
         });
 
-        return res.status(200).json({
+        return {
             success: true,
             id: result.appointment.id,
             tokens: {
                 cancel: result.cancelToken
             }
-        });
+        };
 
     } catch (e) {
         if (e.message === 'SLOT_TAKEN') {
-            return res.status(409).json({ error: 'Ce créneau n\'est plus disponible.' });
+            throw createError(409, errorCodes.CONFLICT, 'Ce créneau n\'est plus disponible.');
         }
-        console.error('Booking creation error:', e);
-        return res.status(500).json({ error: e.message });
+        throw e;
     }
-}
+};
+
+export default createHandler(handler, { body: bodySchema });

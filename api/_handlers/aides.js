@@ -36,6 +36,8 @@ export default async function handler(req, res) {
             }
             return res.status(200).json(aide);
         }
+        return aide;
+    }
 
         // 2. Search / List (Unified)
         const { items, total } = await searchAides(prisma, params);
@@ -49,9 +51,18 @@ export default async function handler(req, res) {
                 totalPages: Math.ceil(total / params.pageSize)
             }
         });
-
-    } catch (error) {
-        console.error('Aides API Error:', error);
-        return res.status(500).json({ error: 'Server Error', details: error.message });
+        total = await prisma.aide.count({ where });
     }
-}
+
+    return {
+        items,
+        pagination: {
+            total,
+            page,
+            pageSize: PAGE_SIZE,
+            totalPages: Math.ceil(total / PAGE_SIZE)
+        }
+    };
+};
+
+export default createHandler(handler, { query: querySchema });

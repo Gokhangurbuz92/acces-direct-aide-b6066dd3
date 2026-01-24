@@ -1,5 +1,5 @@
 import React from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useParams, useSearchParams } from 'react-router-dom';
 import SEO from '@/components/SEO';
 import { createPageUrl } from '@/utils';
 import { client } from '@/api/client';
@@ -38,14 +38,15 @@ const CATEGORIE_LABELS = {
 };
 
 export default function DemarcheDetail() {
-  const urlParams = new URLSearchParams(window.location.search);
-  const demarcheId = urlParams.get('id');
+  const { slug } = useParams();
+  const [searchParams] = useSearchParams();
+  const id = searchParams.get('id');
+  const identifier = slug || id;
 
   const { data: demarche, isLoading } = useQuery({
-    queryKey: ['demarche', demarcheId],
-    queryFn: () => client.entities.Demarche.filter({ id: demarcheId }),
-    select: (data) => data[0],
-    enabled: !!demarcheId
+    queryKey: ['demarche', identifier],
+    queryFn: () => client.entities.Demarche.filter(slug ? { slug } : { id }),
+    enabled: !!identifier
   });
 
   if (isLoading) {

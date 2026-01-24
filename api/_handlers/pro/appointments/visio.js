@@ -1,5 +1,5 @@
 import { PrismaClient } from '@prisma/client';
-import { verifyProToken, logProAudit } from '../../lib/pro-auth.js';
+import { verifyProToken, logProAudit } from '../../../lib/pro-auth.js';
 
 const prisma = new PrismaClient();
 

@@ -1,6 +1,6 @@
 
 import { PrismaClient } from '@prisma/client';
-import { hash, encrypt, decrypt } from '../lib/crypto.js';
+import { hash, encrypt, decrypt } from '../../lib/crypto.js';
 
 const prisma = new PrismaClient();
 

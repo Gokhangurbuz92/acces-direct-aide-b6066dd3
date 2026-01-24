@@ -12,11 +12,15 @@ export default function ProLayout() {
     const [user, setUser] = useState(null);
 
     useEffect(() => {
+        console.log(`[ProLayout] Path: ${location.pathname}`);
         const token = localStorage.getItem('pro_token');
         if (!token) {
-            if (location.pathname !== '/pro/login') {
+            console.log("[ProLayout] No token found");
+            if (location.pathname !== '/pro/login' && location.pathname !== '/pro/register') {
+                console.log("[ProLayout] Redirecting to login");
                 navigate('/pro/login');
             } else {
+                console.log("[ProLayout] Allowed public pro route");
                 setLoading(false);
             }
             return;
@@ -32,7 +36,7 @@ export default function ProLayout() {
             })
             .then(data => {
                 setUser(data.user);
-                if (location.pathname === '/pro/login') {
+                if (location.pathname === '/pro/login' || location.pathname === '/pro/register') {
                     navigate('/pro/dashboard');
                 }
             })
@@ -41,7 +45,7 @@ export default function ProLayout() {
                 navigate('/pro/login');
             })
             .finally(() => setLoading(false));
-    }, [navigate]);
+    }, [navigate, location.pathname]); // Added location.pathname dependency
 
     const handleLogout = () => {
         localStorage.removeItem('pro_token');
@@ -52,8 +56,9 @@ export default function ProLayout() {
         return <div className="h-screen flex items-center justify-center"><Loader2 className="animate-spin" /></div>;
     }
 
-    // If on login page, just render Outlet (Login component)
-    if (location.pathname === '/pro/login') {
+    // If on login/register page, just render Outlet
+    if (location.pathname === '/pro/login' || location.pathname === '/pro/register') {
+        console.log(`[ProLayout] Rendering Outlet for ${location.pathname}`);
         return <Outlet />;
     }
 

@@ -1,7 +1,7 @@
 
 import { PrismaClient } from '@prisma/client';
 import { subMinutes, subDays } from 'date-fns';
-import { storage } from '../lib/storage.js';
+import { storage } from '../../lib/storage.js';
 
 const prisma = new PrismaClient();
 

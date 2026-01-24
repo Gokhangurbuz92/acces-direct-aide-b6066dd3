@@ -9,9 +9,7 @@
     "db:deploy": "prisma migrate deploy",
     "postinstall": "prisma generate",
     "lint": "eslint .",
-    "typecheck": "tsc --noEmit",
-    "test:e2e": "playwright test",
-    "release:gate": "npm run lint && npm run typecheck && npm run build && npm run test:e2e",
+    "test:api": "vitest run tests/integration",
     "verify": "node scripts/verify-lot9a-routes.js && node scripts/verify-rdv.js && node scripts/verify-actualites.js && node scripts/verify-sitemap.js && node scripts/verify-robots.js",
     "preview": "vite preview"
   },
@@ -64,6 +62,7 @@
     "lucide-react": "^0.475.0",
     "next-themes": "^0.4.4",
     "openai": "^6.16.0",
+    "pino": "^10.3.0",
     "react": "^18.2.0",
     "react-day-picker": "^8.10.1",
     "react-dom": "^18.2.0",

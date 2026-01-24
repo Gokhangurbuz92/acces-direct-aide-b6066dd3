@@ -1,4 +1,5 @@
 
+/* eslint-env node */
 import crypto from 'crypto';
 
 // Encryption Algorithm
@@ -127,6 +128,56 @@ export function decryptBuffer(encryptedBuffer) {
         return Buffer.concat([decipher.update(text), decipher.final()]);
     } catch (e) {
         console.error("Buffer Decryption failed", e.message);
+        return null;
+    }
+}
+
+/**
+ * Generates a signed token for attachment access.
+ * Payload: { attachmentId, exp }
+ * Token: base64(json(payload)).base64(hmac)
+ */
+export function generateAttachmentToken(attachmentId, expiresInSeconds = 3600) {
+    if (!ENCRYPTION_KEY) throw new Error("Missing ENCRYPTION_KEY");
+
+    const payload = {
+        id: attachmentId,
+        exp: Math.floor(Date.now() / 1000) + expiresInSeconds
+    };
+
+    const payloadStr = Buffer.from(JSON.stringify(payload)).toString('base64url');
+    const signature = crypto
+        .createHmac('sha256', ENCRYPTION_KEY)
+        .update(payloadStr)
+        .digest('base64url');
+
+    return `${payloadStr}.${signature}`;
+}
+
+/**
+ * Verifies a signed attachment token.
+ * Returns attachmentId if valid, null otherwise.
+ */
+export function verifyAttachmentToken(token) {
+    if (!token) return null;
+    if (!ENCRYPTION_KEY) throw new Error("Missing ENCRYPTION_KEY");
+
+    const [payloadStr, signature] = token.split('.');
+    if (!payloadStr || !signature) return null;
+
+    const expectedSignature = crypto
+        .createHmac('sha256', ENCRYPTION_KEY)
+        .update(payloadStr)
+        .digest('base64url');
+
+    if (expectedSignature !== signature) return null; // Invalid signature
+
+    try {
+        const payload = JSON.parse(Buffer.from(payloadStr, 'base64url').toString());
+        if (payload.exp < Math.floor(Date.now() / 1000)) return null; // Expired
+
+        return payload.id;
+    } catch (e) {
         return null;
     }
 }

@@ -1,53 +1,70 @@
-import { fetch } from 'undici';
+import { getCanonicalBaseUrl, isIndexable, PRODUCTION_DOMAIN } from '../api/_utils/seo.js';
 
-const BASE_URL = process.argv[2] || process.env.VITE_SITE_URL || 'http://localhost:5173';
+console.log('Running SEO Logic Verification...');
 
-async function checkUrl(path, expectedStatus = 200) {
-    try {
-        const res = await fetch(`${BASE_URL}${path}`);
-        if (res.status !== expectedStatus) {
-            console.error(`[FAIL] ${path} returned ${res.status}, expected ${expectedStatus}`);
-            return false;
-        }
-        console.log(`[PASS] ${path} returned ${res.status}`);
-        return true;
-    } catch (err) {
-        console.error(`[FAIL] Could not fetch ${path}: ${err.message}`);
-        return false;
+const tests = [
+    {
+        name: 'Production Domain',
+        headers: { host: PRODUCTION_DOMAIN },
+        expectedUrl: `https://${PRODUCTION_DOMAIN}`,
+        expectedIndexable: true
+    },
+    {
+        name: 'Vercel Preview',
+        headers: { host: 'my-app-git-branch.vercel.app' },
+        expectedUrl: `https://${PRODUCTION_DOMAIN}`,
+        expectedIndexable: false
+    },
+    {
+        name: 'Staging Domain (Custom)',
+        headers: { host: 'staging.accesdirectaide.fr' },
+        expectedUrl: `https://${PRODUCTION_DOMAIN}`,
+        expectedIndexable: false
+    },
+    {
+        name: 'Localhost',
+        headers: { host: 'localhost:3000' },
+        expectedUrl: `https://${PRODUCTION_DOMAIN}`,
+        expectedIndexable: false
+    },
+    {
+        name: 'Naked Domain (accesdirectaide.fr)',
+        headers: { host: 'accesdirectaide.fr' },
+        expectedUrl: `https://${PRODUCTION_DOMAIN}`,
+        expectedIndexable: false // Strict check expects www, which is correct as we want to canonize to www and not index the naked domain separately (it should redirect)
+    },
+    {
+        name: 'X-Forwarded-Host Priority',
+        headers: { 'x-forwarded-host': PRODUCTION_DOMAIN, host: 'vercel-internal.com' },
+        expectedUrl: `https://${PRODUCTION_DOMAIN}`,
+        expectedIndexable: true
     }
-}
+];
 
-async function verifySeo() {
-    console.log(`Target: ${BASE_URL}`);
+let failed = false;
 
-    let passed = true;
-    const paths = [
-        '/',
-        '/aides',
-        '/demarches',
-        '/annuaire',
-        '/bonnes-pratiques',
-        '/outils',
-        '/contact',
-        '/mentionslegales'
-    ];
+tests.forEach(test => {
+    const req = { headers: test.headers };
+    const url = getCanonicalBaseUrl(req);
+    const indexable = isIndexable(req);
 
-    for (const p of paths) {
-        if (!await checkUrl(p)) passed = false;
-    }
+    const urlMatch = url === test.expectedUrl;
+    const indexMatch = indexable === test.expectedIndexable;
 
-    // Check Sitemap/Robots if API is running (might fail in pure static dev without backend)
-    // assuming dev server proxies /api
-    if (!await checkUrl('/api/sitemap', 200)) console.warn('[WARN] Sitemap check failed (might require backend running)');
-    if (!await checkUrl('/api/robots', 200)) console.warn('[WARN] Robots.txt check failed');
-
-    if (passed) {
-        console.log('SEO Verification PASSED (Basic reachability)');
-        // In a real script we would parse HTML for meta tags
+    if (urlMatch && indexMatch) {
+        console.log(`[PASS] ${test.name}`);
     } else {
-        console.log('SEO Verification FAILED');
-        process.exit(1);
+        console.error(`[FAIL] ${test.name}`);
+        if (!urlMatch) console.error(`  URL: Expected ${test.expectedUrl}, got ${url}`);
+        if (!indexMatch) console.error(`  Indexable: Expected ${test.expectedIndexable}, got ${indexable}`);
+        failed = true;
     }
-}
+});
 
-verifySeo();
+if (failed) {
+    console.error('\nVerification FAILED');
+    process.exit(1);
+} else {
+    console.log('\nVerification PASSED');
+    process.exit(0);
+}

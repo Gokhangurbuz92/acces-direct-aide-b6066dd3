@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { Link } from 'react-router-dom';
 import { client } from '@/api/client';
 import { useQuery } from '@tanstack/react-query';
 import { Button } from "@/components/ui/button";
@@ -13,7 +14,8 @@ import {
   RefreshCw,
   Star,
   Loader2,
-  Newspaper
+  Newspaper,
+  ArrowRight
 } from 'lucide-react';
 import EmptyState from '@/components/ui/EmptyState';
 
@@ -107,6 +109,10 @@ export default function Actualites() {
           <div className="space-y-6">
             {filteredActualites.map((actu) => {
               const TypeIcon = TYPE_ICONS[actu.type_actu] || Info;
+              const linkUrl = actu.slug
+                ? `/actualites/${actu.slug}`
+                : `/actualites/view?id=${actu.id}`;
+
               return (
                 <Card key={actu.id} className={`hover:shadow-lg transition-shadow ${actu.est_important ? 'border-l-4 border-l-blue-500' : ''}`}>
                   <CardContent className="p-6">
@@ -129,12 +135,14 @@ export default function Actualites() {
                       )}
                     </div>
 
-                    <h2 className="text-xl font-bold text-slate-900 mb-3">
-                      {actu.titre}
-                    </h2>
+                    <Link to={linkUrl} className="hover:underline block mb-3">
+                      <h2 className="text-xl font-bold text-slate-900">
+                        {actu.titre}
+                      </h2>
+                    </Link>
 
-                    <p className="text-slate-600 mb-4 leading-relaxed">
-                      {actu.contenu}
+                    <p className="text-slate-600 mb-4 leading-relaxed line-clamp-3">
+                      {actu.summary_falc || actu.contenu}
                     </p>
 
                     <div className="flex flex-wrap items-center justify-between gap-4 pt-4 border-t border-slate-100">
@@ -152,17 +160,23 @@ export default function Actualites() {
                         )}
                       </div>
 
-                      {actu.source_url && (
-                        <a
-                          href={actu.source_url}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="text-blue-600 hover:text-blue-800 text-sm font-medium flex items-center gap-1"
-                        >
-                          Voir la source
-                          <ExternalLink className="h-3 w-3" />
-                        </a>
-                      )}
+                      <div className="flex items-center gap-4">
+                        {actu.source_url && (
+                            <a
+                            href={actu.source_url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-slate-500 hover:text-blue-600 text-sm font-medium flex items-center gap-1"
+                            >
+                            Source
+                            <ExternalLink className="h-3 w-3" />
+                            </a>
+                        )}
+                        <Link to={linkUrl} className="text-blue-600 hover:text-blue-800 text-sm font-bold flex items-center gap-1">
+                            Lire la suite
+                            <ArrowRight className="h-4 w-4" />
+                        </Link>
+                      </div>
                     </div>
                   </CardContent>
                 </Card>

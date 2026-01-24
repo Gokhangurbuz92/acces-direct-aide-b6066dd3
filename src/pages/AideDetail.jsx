@@ -4,6 +4,7 @@ import { createPageUrl } from '@/utils';
 import { client } from '@/api/client';
 import { useQuery } from '@tanstack/react-query';
 import SEO from '@/components/SEO';
+import NotFound from "./NotFound";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
@@ -70,16 +71,7 @@ export default function AideDetail() {
   }
 
   if (!aide) {
-    return (
-      <div className="min-h-screen bg-slate-50 flex items-center justify-center">
-        <div className="text-center">
-          <p className="text-slate-600 mb-4">Cette aide n'existe pas ou a été supprimée.</p>
-          <Link to={createPageUrl('Aides')}>
-            <Button>Retour aux aides</Button>
-          </Link>
-        </div>
-      </div>
-    );
+    return <NotFound />;
   }
 
   const getTerritoireLabel = () => {
@@ -324,7 +316,7 @@ export default function AideDetail() {
                     {filteredStructures.map((struct) => (
                       <Link
                         key={struct.id}
-                        to={createPageUrl('StructureDetail') + `?id=${struct.id}`}
+                        to={struct.slug ? `/structures/${struct.slug}` : `/structures/view?id=${struct.id}`}
                         className="block p-3 rounded-lg bg-slate-50 hover:bg-slate-100 transition-colors"
                       >
                         <p className="font-medium text-slate-900">{struct.nom}</p>
@@ -332,7 +324,7 @@ export default function AideDetail() {
                       </Link>
                     ))}
                   </div>
-                  <Link to={createPageUrl('Annuaire')}>
+                  <Link to="/structures">
                     <Button variant="link" className="mt-4 p-0">
                       Voir toutes les structures
                       <ChevronRight className="ml-1 h-4 w-4" />

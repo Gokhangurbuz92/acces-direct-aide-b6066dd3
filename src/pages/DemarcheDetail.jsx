@@ -1,6 +1,7 @@
 import React from 'react';
 import { Link, useParams, useSearchParams } from 'react-router-dom';
 import SEO from '@/components/SEO';
+import NotFound from "./NotFound";
 import { createPageUrl } from '@/utils';
 import { client } from '@/api/client';
 import { useQuery } from '@tanstack/react-query';
@@ -58,16 +59,7 @@ export default function DemarcheDetail() {
   }
 
   if (!demarche) {
-    return (
-      <div className="min-h-screen bg-slate-50 flex items-center justify-center">
-        <div className="text-center">
-          <p className="text-slate-600 mb-4">Cette démarche n'existe pas ou a été supprimée.</p>
-          <Link to={createPageUrl('Demarches')}>
-            <Button>Retour aux démarches</Button>
-          </Link>
-        </div>
-      </div>
-    );
+    return <NotFound />;
   }
 
   return (

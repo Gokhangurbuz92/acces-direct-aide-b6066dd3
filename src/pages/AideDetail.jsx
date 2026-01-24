@@ -4,6 +4,7 @@ import { createPageUrl } from '@/utils';
 import { client } from '@/api/client';
 import { useQuery } from '@tanstack/react-query';
 import SEO from '@/components/SEO';
+import { generateAideSchema, generateBreadcrumbSchema } from '@/utils/schema';
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
@@ -92,12 +93,24 @@ export default function AideDetail() {
     }).join(', ');
   };
 
+  const breadcrumbs = [
+    { name: 'Accueil', url: '/' },
+    { name: 'Aides', url: '/aides' },
+    { name: aide.titre, url: `/aide/${aide.slug}` }
+  ];
+
+  const schema = [
+    generateBreadcrumbSchema(breadcrumbs),
+    generateAideSchema(aide)
+  ].filter(Boolean);
+
   return (
     <div className="min-h-screen bg-slate-50">
       <SEO
         title={aide.titre}
         description={aide.summary_falc || aide.cest_quoi?.substring(0, 150)}
-        url={`https://www.accesdirectaide.fr/aide/${aide.slug}`}
+        path={`/aide/${aide.slug}`}
+        schema={schema}
       />
       {/* Fil d'Ariane */}
       <div className="bg-white border-b border-slate-200">

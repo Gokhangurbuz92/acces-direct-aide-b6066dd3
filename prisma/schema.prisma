@@ -25,6 +25,8 @@ model Aide {
   lien_demande          String?
   updatedAt             DateTime        @updatedAt
   statut                String          @default("brouillon")
+  updatedBy             String?
+  quality_score         Int             @default(0)
   commentaire_statut    String?
   published_at          DateTime?
   mots_cles             String[]
@@ -101,6 +103,7 @@ model Structure {
   commentaire_statut String?
   published_at       DateTime?
   statut             String         @default("brouillon")
+  updatedBy             String?
   mots_cles          String[]
   slug               String?        @unique
   summary_falc       String?
@@ -148,6 +151,8 @@ model Demarche {
   sources               Json?
   updatedAt             DateTime        @updatedAt
   statut                String          @default("brouillon")
+  updatedBy             String?
+  quality_score         Int             @default(0)
   commentaire_statut    String?
   published_at          DateTime?
   mots_cles             String[]
@@ -174,6 +179,7 @@ model Actualite {
   source             String?
   updatedAt          DateTime  @updatedAt
   statut             String    @default("brouillon")
+  updatedBy          String?
   commentaire_statut String?
   published_at       DateTime?
   canonical_url      String?   @unique

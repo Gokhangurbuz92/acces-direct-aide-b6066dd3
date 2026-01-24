@@ -25,8 +25,8 @@ export default function AdminAideEdit() {
   const queryClient = useQueryClient();
 
   const [formData, setFormData] = useState({
-    title: '',
-    category: '',
+    titre: '',
+    categorie: '',
     departments: ['67', '68'],
     summary_falc: '',
     content_falc: {
@@ -40,18 +40,27 @@ export default function AdminAideEdit() {
     delai_indicatif: '',
     source_urls: [],
     verified_at: new Date().toISOString().split('T')[0],
-    status: 'NeedsReview'
+    statut: 'brouillon',
+    updatedBy: '',
+    quality_score: 0
   });
 
   const { data: aide, isLoading } = useQuery({
     queryKey: ['aide', aideId],
-    queryFn: () => client.entities.Aide.filter({ id: aideId }),
+    queryFn: async () => {
+        const res = await client.entities.Aide.get(aideId);
+        return res; // get() returns the object directly now (or 404)
+    },
     enabled: !!aideId,
   });
 
   useEffect(() => {
-    if (aide && aide.length > 0) {
-      setFormData(aide[0]);
+    if (aide) {
+      // Map potential legacy fields if necessary, or just use aide directly
+      setFormData({
+         ...formData, // defaults
+         ...aide // overrides
+      });
     }
   }, [aide]);
 
@@ -100,18 +109,18 @@ export default function AdminAideEdit() {
         <Card>
           <CardContent className="p-6 space-y-4">
             <div>
-              <Label htmlFor="title">Titre *</Label>
+              <Label htmlFor="titre">Titre *</Label>
               <Input
-                id="title"
-                value={formData.title}
-                onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+                id="titre"
+                value={formData.titre}
+                onChange={(e) => setFormData({ ...formData, titre: e.target.value })}
               />
             </div>
             <div>
               <Label htmlFor="category">Catégorie *</Label>
               <Select
-                value={formData.category}
-                onValueChange={(value) => setFormData({ ...formData, category: value })}
+                value={formData.categorie}
+                onValueChange={(value) => setFormData({ ...formData, categorie: value })}
               >
                 <SelectTrigger>
                   <SelectValue placeholder="Choisir une catégorie" />
@@ -209,25 +218,34 @@ export default function AdminAideEdit() {
               <Label>Date de vérification</Label>
               <Input
                 type="date"
-                value={formData.verified_at || ''}
+                value={formData.verified_at ? formData.verified_at.split('T')[0] : ''}
                 onChange={(e) => setFormData({ ...formData, verified_at: e.target.value })}
               />
             </div>
             <div>
               <Label>Statut</Label>
               <Select
-                value={formData.status}
-                onValueChange={(value) => setFormData({ ...formData, status: value })}
+                value={formData.statut}
+                onValueChange={(value) => setFormData({ ...formData, statut: value })}
               >
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="draft">Brouillon</SelectItem>
-                  <SelectItem value="NeedsReview">À vérifier</SelectItem>
-                  <SelectItem value="published">Publié</SelectItem>
+                  <SelectItem value="brouillon">Brouillon</SelectItem>
+                  <SelectItem value="publie">Publié</SelectItem>
                 </SelectContent>
               </Select>
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+                <div>
+                    <Label>Dernière modification</Label>
+                    <Input disabled value={formData.updatedBy || '-'} />
+                </div>
+                <div>
+                    <Label>Score de Qualité</Label>
+                    <Input disabled value={formData.quality_score || 0} />
+                </div>
             </div>
           </CardContent>
         </Card>

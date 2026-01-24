@@ -13,20 +13,27 @@ import {
     TableHeader,
     TableRow,
 } from "@/components/ui/table";
-import { Search, Loader2, Edit, Plus, Trash2, FileText, Eye } from 'lucide-react';
+import { Search, Loader2, Edit, Plus, Trash2, FileText, Eye, Upload, Download } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { createPageUrl } from '@/utils';
 import { useToast } from "@/components/ui/use-toast";
+
+const STATUS_LABELS = {
+  brouillon: { label: 'Brouillon', color: 'bg-gray-100 text-gray-800' },
+  publie: { label: 'Publié', color: 'bg-green-100 text-green-800' }
+};
 
 export default function AdminDemarches() {
     const [searchQuery, setSearchQuery] = useState('');
     const queryClient = useQueryClient();
     const { toast } = useToast();
 
-    const { data: demarches = [], isLoading } = useQuery({
+    const { data: response, isLoading } = useQuery({
         queryKey: ['admin-demarches'],
-        queryFn: () => client.entities.Demarche.list('-updated_date'),
+        queryFn: () => client.entities.Demarche.list('-updatedAt'),
     });
+
+    const demarches = response?.items || [];
 
     const deleteMutation = useMutation({
         mutationFn: (id) => client.entities.Demarche.delete(id),
@@ -36,6 +43,51 @@ export default function AdminDemarches() {
         },
         onError: () => toast({ variant: "destructive", title: "Erreur lors de la suppression" })
     });
+
+    const handleImport = async (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+
+        const formData = new FormData();
+        formData.append('file', file);
+        formData.append('entity', 'demarche');
+
+        try {
+            const token = sessionStorage.getItem('access_token');
+            const res = await fetch('/api/admin/import', {
+                method: 'POST',
+                headers: { 'Authorization': 'Bearer ' + token },
+                body: formData
+            });
+            const report = await res.json();
+            toast({
+                title: "Import terminé",
+                description: `Créés: ${report.created}, Mis à jour: ${report.updated}, Erreurs: ${report.errors.length}`
+            });
+            queryClient.invalidateQueries({ queryKey: ['admin-demarches'] });
+        } catch (err) {
+            toast({ variant: "destructive", title: "Erreur import", description: err.message });
+        }
+    };
+
+    const handleExport = async () => {
+         try {
+            const token = sessionStorage.getItem('access_token');
+            const res = await fetch('/api/admin/export?entity=demarche', {
+                headers: { 'Authorization': 'Bearer ' + token }
+            });
+            const blob = await res.blob();
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `demarches-export-${new Date().toISOString()}.csv`;
+            document.body.appendChild(a);
+            a.click();
+            a.remove();
+         } catch (err) {
+            toast({ variant: "destructive", title: "Erreur export", description: err.message });
+         }
+    };
 
     const filteredDemarches = demarches.filter(d =>
         !searchQuery || d.titre?.toLowerCase().includes(searchQuery.toLowerCase())
@@ -51,11 +103,27 @@ export default function AdminDemarches() {
                         <h1 className="text-2xl font-bold text-slate-900">Gestion des Démarches</h1>
                         <p className="text-slate-600">Gérez les fiches démarches et checklists.</p>
                     </div>
-                    <Link to={createPageUrl('AdminDemarcheEdit')}>
-                        <Button>
-                            <Plus className="mr-2 h-4 w-4" /> Créer une démarche
+                    <div className="flex gap-2">
+                        <div className="relative">
+                            <input
+                                type="file"
+                                onChange={handleImport}
+                                className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                                accept=".csv"
+                            />
+                            <Button variant="outline">
+                                <Upload className="mr-2 h-4 w-4" /> Import
+                            </Button>
+                        </div>
+                        <Button variant="outline" onClick={handleExport}>
+                            <Download className="mr-2 h-4 w-4" /> Export
                         </Button>
-                    </Link>
+                        <Link to={createPageUrl('AdminDemarcheEdit')}>
+                            <Button>
+                                <Plus className="mr-2 h-4 w-4" /> Créer
+                            </Button>
+                        </Link>
+                    </div>
                 </div>
 
                 <Card>

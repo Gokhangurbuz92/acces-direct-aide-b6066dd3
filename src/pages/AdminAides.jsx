@@ -19,46 +19,97 @@ import {
   CheckCircle,
   AlertCircle,
   Loader2,
-  FileText
+  FileText,
+  Upload,
+  Download
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { createPageUrl } from '@/utils';
+import { useToast } from "@/components/ui/use-toast";
 
 const STATUS_LABELS = {
-  draft: { label: 'Brouillon', color: 'bg-gray-100 text-gray-800' },
-  NeedsReview: { label: 'À vérifier', color: 'bg-orange-100 text-orange-800' },
-  published: { label: 'Publié', color: 'bg-green-100 text-green-800' }
+  brouillon: { label: 'Brouillon', color: 'bg-gray-100 text-gray-800' },
+  publie: { label: 'Publié', color: 'bg-green-100 text-green-800' },
+  archive: { label: 'Archivé', color: 'bg-red-100 text-red-800' }
 };
 
 export default function AdminAides() {
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
   const queryClient = useQueryClient();
+  const { toast } = useToast();
 
-  const { data: aides = [], isLoading } = useQuery({
+  const { data: response, isLoading } = useQuery({
     queryKey: ['admin-aides'],
-    queryFn: () => client.entities.Aide.list('-updated_date'),
+    queryFn: () => client.entities.Aide.list('-updatedAt'),
   });
 
+  const aides = response?.items || [];
+
   const updateStatusMutation = useMutation({
-    mutationFn: ({ id, status }) => client.entities.Aide.update(id, { status }),
+    mutationFn: ({ id, statut }) => client.entities.Aide.update(id, { statut }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['admin-aides'] });
+      toast({ title: "Statut mis à jour" });
     },
   });
 
+  const handleImport = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    const formData = new FormData();
+    formData.append('file', file);
+    formData.append('entity', 'aide');
+
+    try {
+        const token = sessionStorage.getItem('access_token');
+        const res = await fetch('/api/admin/import', {
+            method: 'POST',
+            headers: { 'Authorization': 'Bearer ' + token },
+            body: formData
+        });
+        const report = await res.json();
+        toast({
+            title: "Import terminé",
+            description: `Créés: ${report.created}, Mis à jour: ${report.updated}, Erreurs: ${report.errors.length}`
+        });
+        queryClient.invalidateQueries({ queryKey: ['admin-aides'] });
+    } catch (err) {
+        toast({ variant: "destructive", title: "Erreur import", description: err.message });
+    }
+  };
+
+  const handleExport = async () => {
+     try {
+        const token = sessionStorage.getItem('access_token');
+        const res = await fetch('/api/admin/export?entity=aide', {
+            headers: { 'Authorization': 'Bearer ' + token }
+        });
+        const blob = await res.blob();
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `aides-export-${new Date().toISOString()}.csv`;
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+     } catch (err) {
+        toast({ variant: "destructive", title: "Erreur export", description: err.message });
+     }
+  };
+
   const filteredAides = aides.filter(aide => {
     const matchesSearch = !searchQuery ||
-      aide.title?.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesStatus = statusFilter === 'all' || aide.status === statusFilter;
+      aide.titre?.toLowerCase().includes(searchQuery.toLowerCase());
+    const matchesStatus = statusFilter === 'all' || aide.statut === statusFilter;
     return matchesSearch && matchesStatus;
   });
 
   const countByStatus = {
     all: aides.length,
-    draft: aides.filter(a => a.status === 'draft').length,
-    NeedsReview: aides.filter(a => a.status === 'NeedsReview').length,
-    published: aides.filter(a => a.status === 'published').length,
+    brouillon: aides.filter(a => a.statut === 'brouillon').length,
+    publie: aides.filter(a => a.statut === 'publie').length,
   };
 
   return (
@@ -105,6 +156,29 @@ export default function AdminAides() {
           </Card>
         </div>
 
+        {/* Actions Bar */}
+        <div className="flex justify-end gap-2 mb-4">
+            <div className="relative">
+                <input
+                    type="file"
+                    onChange={handleImport}
+                    className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                    accept=".csv"
+                />
+                <Button variant="outline" size="sm">
+                    <Upload className="mr-2 h-4 w-4" /> Import CSV
+                </Button>
+            </div>
+            <Button variant="outline" size="sm" onClick={handleExport}>
+                <Download className="mr-2 h-4 w-4" /> Export CSV
+            </Button>
+            <Link to={createPageUrl('AdminAideEdit')}>
+                <Button size="sm">
+                    <Plus className="mr-2 h-4 w-4" /> Créer
+                </Button>
+            </Link>
+        </div>
+
         {/* Filters */}
         <Card className="mb-6">
           <CardContent className="p-4">
@@ -125,9 +199,8 @@ export default function AdminAides() {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">Tous les statuts</SelectItem>
-                  <SelectItem value="draft">Brouillons</SelectItem>
-                  <SelectItem value="NeedsReview">À vérifier</SelectItem>
-                  <SelectItem value="published">Publiés</SelectItem>
+                  <SelectItem value="brouillon">Brouillons</SelectItem>
+                  <SelectItem value="publie">Publiés</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -142,7 +215,7 @@ export default function AdminAides() {
         ) : filteredAides.length > 0 ? (
           <div className="space-y-3">
             {filteredAides.map((aide) => {
-              const statusInfo = STATUS_LABELS[aide.status] || STATUS_LABELS.draft;
+              const statusInfo = STATUS_LABELS[aide.statut] || STATUS_LABELS.brouillon;
               return (
                 <Card key={aide.id} className="hover:shadow-md transition-shadow">
                   <CardContent className="p-4">
@@ -150,22 +223,22 @@ export default function AdminAides() {
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2 mb-2">
                           <h3 className="font-semibold text-slate-900 truncate">
-                            {aide.title}
+                            {aide.titre}
                           </h3>
                           <Badge className={statusInfo.color}>
                             {statusInfo.label}
                           </Badge>
                         </div>
                         <p className="text-sm text-slate-600 line-clamp-2 mb-2">
-                          {aide.summary_falc || aide.content_falc?.cest_quoi}
+                          {aide.summary_falc || aide.cest_quoi || aide.ce_que_ca_aide}
                         </p>
                         <div className="flex flex-wrap gap-2 text-xs text-slate-500">
-                          <span>Catégorie: {aide.category}</span>
-                          {aide.verified_at && (
-                            <span>• Vérifié: {new Date(aide.verified_at).toLocaleDateString('fr-FR')}</span>
+                          <span>Catégorie: {aide.categorie}</span>
+                          {aide.date_verification && (
+                            <span>• Vérifié: {new Date(aide.date_verification).toLocaleDateString('fr-FR')}</span>
                           )}
-                          {aide.departments?.length > 0 && (
-                            <span>• {aide.departments.join(', ')}</span>
+                          {aide.departements?.length > 0 && (
+                            <span>• {aide.departements.join(', ')}</span>
                           )}
                         </div>
                       </div>
@@ -180,26 +253,26 @@ export default function AdminAides() {
                             <Edit className="h-4 w-4" />
                           </Button>
                         </Link>
-                        {aide.status === 'NeedsReview' && (
+                        {aide.statut === 'brouillon' && (
                           <Button
                             size="sm"
                             variant="default"
-                            onClick={() => updateStatusMutation.mutate({ id: aide.id, status: 'published' })}
+                            onClick={() => updateStatusMutation.mutate({ id: aide.id, statut: 'publie' })}
                             disabled={updateStatusMutation.isPending}
                           >
                             <CheckCircle className="h-4 w-4 mr-1" />
                             Publier
                           </Button>
                         )}
-                        {aide.status === 'published' && (
+                        {aide.statut === 'publie' && (
                           <Button
                             size="sm"
                             variant="outline"
-                            onClick={() => updateStatusMutation.mutate({ id: aide.id, status: 'NeedsReview' })}
+                            onClick={() => updateStatusMutation.mutate({ id: aide.id, statut: 'brouillon' })}
                             disabled={updateStatusMutation.isPending}
                           >
                             <AlertCircle className="h-4 w-4 mr-1" />
-                            Revoir
+                            Dépublier
                           </Button>
                         )}
                       </div>

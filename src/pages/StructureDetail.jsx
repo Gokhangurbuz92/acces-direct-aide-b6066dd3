@@ -1,5 +1,5 @@
 import React from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useParams, useSearchParams } from 'react-router-dom';
 import SEO from '@/components/SEO';
 import { createPageUrl } from '@/utils';
 import { client } from '@/api/client';
@@ -34,14 +34,16 @@ const TYPE_LABELS = {
 };
 
 export default function StructureDetail() {
-  const urlParams = new URLSearchParams(window.location.search);
-  const structureId = urlParams.get('id');
+  const { slug } = useParams();
+  const [searchParams] = useSearchParams();
+  const id = searchParams.get('id');
+  const identifier = slug || id;
 
   const { data: structure, isLoading } = useQuery({
-    queryKey: ['structure', structureId],
-    queryFn: () => client.entities.Structure.filter({ id: structureId }),
-    select: (data) => data[0],
-    enabled: !!structureId
+    queryKey: ['structure', identifier],
+    queryFn: () => client.entities.Structure.filter(slug ? { slug } : { id }),
+    // API now returns single object for id/slug queries
+    enabled: !!identifier
   });
 
   if (isLoading) {

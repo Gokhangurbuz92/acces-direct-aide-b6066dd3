@@ -5,6 +5,7 @@ import APropos from "./APropos";
 import Accessibilite from "./Accessibilite";
 
 import Actualites from "./Actualites";
+import ActualiteDetail from "./ActualiteDetail";
 
 import AdminAideEdit from "./AdminAideEdit";
 
@@ -80,6 +81,7 @@ import AdminRuns from "./admin/Runs";
 // Lot 4: Pro Module Imports
 import ProLayout from "./pro/ProLayout";
 import ProLogin from "./pro/Login";
+import ProRegister from "./pro/Register";
 import ProDashboard from "./pro/Dashboard";
 import ProServices from "./pro/Services";
 import ProTeam from "./pro/Team";
@@ -109,6 +111,7 @@ const PAGES = {
     Accessibilite: Accessibilite,
 
     Actualites: Actualites,
+    ActualiteDetail: ActualiteDetail,
 
     AdminAideEdit: AdminAideEdit,
 
@@ -227,6 +230,7 @@ function PagesContent() {
                 <Route path="/pro" element={<ProLayout />}>
                     <Route index element={<Navigate to="dashboard" replace />} />
                     <Route path="login" element={<ProLogin />} />
+                    <Route path="register" element={<ProRegister />} />
                     <Route path="dashboard" element={<ProDashboard />} />
                     <Route path="services" element={<ProServices />} />
                     <Route path="team" element={<ProTeam />} />
@@ -250,6 +254,7 @@ function PagesContent() {
                 <Route path="/accessibilite" element={<Accessibilite />} />
 
                 <Route path="/actualites" element={<Actualites />} />
+                <Route path="/actualites/:slug" element={<ActualiteDetail />} />
 
                 <Route path="/admin/login" element={<AdminLogin />} />
                 <Route path="/admin/inbox" element={<AdminRoute><AdminInbox /></AdminRoute>} />
@@ -288,6 +293,7 @@ function PagesContent() {
                 <Route path="/admindemarcheedit" element={<RequireAuth><AdminDemarcheEdit /></RequireAuth>} />
 
                 <Route path="/aidedetail" element={<AideDetail />} />
+                <Route path="/aide/view" element={<AideDetail />} />
                 <Route path="/aide/:slug" element={<AideDetail />} />
 
                 <Route path="/aides" element={<Aides />} />
@@ -295,6 +301,8 @@ function PagesContent() {
                 <Route path="/situations/:slug" element={<Aides />} />
 
                 <Route path="/annuaire" element={<Annuaire />} />
+                <Route path="/structures/view" element={<StructureDetail />} />
+                <Route path="/structures/:slug" element={<StructureDetail />} />
 
                 <Route path="/confidentialite" element={<Confidentialite />} />
 
@@ -302,7 +310,8 @@ function PagesContent() {
 
                 <Route path="/cookies" element={<Cookies />} />
 
-                <Route path="/demarchedetail" element={<DemarcheDetail />} />
+                <Route path="/demarches/view" element={<DemarcheDetail />} />
+                <Route path="/demarches/:slug" element={<DemarcheDetail />} />
 
                 {/* Conditional Route: Only available if explicitly enabled */}
                 {import.meta.env.VITE_DEV_LOGIN_ENABLED === 'true' && (
@@ -340,14 +349,17 @@ function PagesContent() {
                 <Route path="/proposer-une-structure" element={<SuggestStructure />} />
                 <Route path="/dossier-subventions" element={<SubventionDossier />} />
 
-                <Route path="/structuredetail" element={<StructureDetail />} />
+                <Route path="/actualites/view" element={<ActualiteDetail />} />
 
                 {/* Legacy Redirects */}
                 <Route path="/AideDetail" element={<Navigate to="/aidedetail" replace />} />
-                <Route path="/StructureDetail" element={<Navigate to="/structuredetail" replace />} />
-                <Route path="/DemarcheDetail" element={<Navigate to="/demarchedetail" replace />} />
+                <Route path="/StructureDetail" element={<Navigate to="/annuaire" replace />} />
+                <Route path="/structuredetail" element={<Navigate to="/annuaire" replace />} />
+                <Route path="/DemarcheDetail" element={<Navigate to="/demarches" replace />} />
+                <Route path="/demarchedetail" element={<Navigate to="/demarches" replace />} />
                 <Route path="/Annuaire" element={<Navigate to="/annuaire" replace />} />
                 <Route path="/Aides" element={<Navigate to="/aides" replace />} />
+
 
                 <Route path="*" element={<Navigate to="/home" replace />} />
 

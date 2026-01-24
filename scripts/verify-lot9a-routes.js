@@ -43,15 +43,28 @@ async function verifyRoutes() {
         }
     }
 
-    // 2. Check /login/pro Guard
-    console.log('\n--- 2. Checking /login/pro Guard ---');
+    // 2. Check /login/pro Redirect
+    console.log('\n--- 2. Checking /login/pro Redirect ---');
     try {
         const res = await fetch(`${SITE_URL}/login/pro`, { redirect: 'manual' });
-        // It's a rewrite to /api/login-pro-guard which should 404/403 if VITE_DEV_LOGIN_ENABLED != true
-        // Or if it's SPA, it might 200 but redirected to /home by React Router if not enabled
-        console.log(`ℹ️ /login/pro status: ${res.status}`);
+
+        if (res.status === 308 || res.status === 301) {
+             const loc = res.headers.get('location');
+             if (loc && (loc === '/pro/login' || loc.endsWith('/pro/login'))) {
+                 console.log(`✅ /login/pro: Redirects to ${loc} (${res.status})`);
+             } else {
+                 console.log(`❌ /login/pro: Redirects to WRONG location ${loc} (${res.status})`);
+                 failures++; // Only fail if it redirects to wrong place
+             }
+        } else if (res.status === 200) {
+             console.log(`ℹ️ /login/pro: 200 OK (Likely SPA/Local Dev - Verify Vercel config for Prod)`);
+        } else {
+             console.log(`❌ /login/pro: Unexpected status ${res.status}`);
+             failures++;
+        }
     } catch (e) {
         console.log(`❌ /login/pro: Error ${e.message}`);
+        failures++;
     }
 
     // 3. Check /api/__dev/ Guards
@@ -60,7 +73,8 @@ async function verifyRoutes() {
     for (const route of devRoutes) {
         try {
             const res = await fetch(`${SITE_URL}${route}`);
-            // vercel.json rewrites /api/__dev/* to /api/blocked
+            // vercel.json rewrites /api/__dev/* to /api/blocked (implied, or just 404/403)
+            // But api/index.js explicitly checks for __dev and returns 403 if production/preview
             if (res.status === 404 || res.status === 403 || res.status === 401) {
                 console.log(`✅ ${route}: Protected (${res.status})`);
             } else {

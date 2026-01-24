@@ -77,6 +77,7 @@ import AdminReview from "./AdminReview";
 import AdminLogin from "./AdminLogin";
 import AdminInbox from "./admin/Inbox";
 import AdminRuns from "./admin/Runs";
+import NotFound from "./NotFound";
 
 // Lot 4: Pro Module Imports
 import ProLayout from "./pro/ProLayout";
@@ -294,13 +295,14 @@ function PagesContent() {
 
                 <Route path="/aidedetail" element={<AideDetail />} />
                 <Route path="/aide/view" element={<AideDetail />} />
-                <Route path="/aide/:slug" element={<AideDetail />} />
+                <Route path="/aides/:slug" element={<AideDetail />} />
 
                 <Route path="/aides" element={<Aides />} />
                 <Route path="/categories/:slug" element={<Aides />} />
                 <Route path="/situations/:slug" element={<Aides />} />
 
-                <Route path="/annuaire" element={<Annuaire />} />
+                <Route path="/annuaire" element={<Navigate to="/structures" replace />} />
+                <Route path="/structures" element={<Annuaire />} />
                 <Route path="/structures/view" element={<StructureDetail />} />
                 <Route path="/structures/:slug" element={<StructureDetail />} />
 
@@ -361,7 +363,7 @@ function PagesContent() {
                 <Route path="/Aides" element={<Navigate to="/aides" replace />} />
 
 
-                <Route path="*" element={<Navigate to="/home" replace />} />
+                <Route path="*" element={<NotFound />} />
 
 
             </Routes>

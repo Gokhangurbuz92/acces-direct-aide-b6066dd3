@@ -1,4 +1,3 @@
-/* global process */
 import { PrismaClient } from '@prisma/client';
 import Parser from 'rss-parser';
 import crypto from 'crypto';

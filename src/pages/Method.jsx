@@ -1,14 +1,15 @@
 
-import { Helmet } from 'react-helmet-async';
+import SEO from '@/components/SEO';
 import { ClipboardCheck, Edit, Eye, Check } from 'lucide-react';
 
 export default function Method() {
     return (
         <div className="container mx-auto px-4 py-8 max-w-4xl">
-            <Helmet>
-                <title>Notre Méthode - Accès Direct Aide</title>
-                <meta name="description" content="Comment nous créons et vérifions l'information." />
-            </Helmet>
+            <SEO
+                title="Notre Méthode"
+                description="Comment nous créons et vérifions l'information."
+                path="/notre-methode"
+            />
 
             <h1 className="text-3xl font-bold mb-6 text-blue-900">Notre Méthode</h1>
 

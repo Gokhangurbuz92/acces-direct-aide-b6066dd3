@@ -1,5 +1,5 @@
 
-import { Helmet } from 'react-helmet-async';
+import SEO from '@/components/SEO';
 import { Download, Printer } from 'lucide-react';
 
 export default function SubventionDossier() {
@@ -9,10 +9,11 @@ export default function SubventionDossier() {
 
     return (
         <div className="container mx-auto px-4 py-8">
-            <Helmet>
-                <title>Dossier Innovation Sociale - Accès Direct Aide</title>
-                <meta name="robots" content="noindex" />
-            </Helmet>
+            <SEO
+                title="Dossier Innovation Sociale"
+                description="Dossier de présentation pour demandes de subventions."
+                noindex={true}
+            />
 
             <div className="flex justify-between items-center mb-8 print:hidden">
                 <h1 className="text-2xl font-bold text-gray-400">Dossier de Présentation (Subventions)</h1>

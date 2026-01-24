@@ -1,7 +1,7 @@
 
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { Helmet } from 'react-helmet-async';
+import SEO from '@/components/SEO';
 
 export default function Guides() {
     const [guides, setGuides] = useState([]);
@@ -48,10 +48,11 @@ export default function Guides() {
 
     return (
         <div className="container mx-auto px-4 py-8">
-            <Helmet>
-                <title>Bonnes Pratiques - Accès Direct Aide</title>
-                <meta name="description" content="Guides et bonnes pratiques FALC pour l'accessibilité." />
-            </Helmet>
+            <SEO
+                title="Bonnes Pratiques"
+                description="Guides et bonnes pratiques FALC pour l'accessibilité."
+                path="/bonnes-pratiques"
+            />
 
             <h1 className="text-3xl font-bold mb-8 text-blue-900">Bonnes Pratiques</h1>
 

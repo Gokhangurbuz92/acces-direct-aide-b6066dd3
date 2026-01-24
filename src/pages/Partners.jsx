@@ -1,15 +1,16 @@
 
-import { Helmet } from 'react-helmet-async';
+import SEO from '@/components/SEO';
 import { Link } from 'react-router-dom';
 import { Handshake, MapPin, Users } from 'lucide-react';
 
 export default function Partners() {
     return (
         <div className="container mx-auto px-4 py-8 max-w-4xl">
-            <Helmet>
-                <title>Devenir Partenaire - Accès Direct Aide</title>
-                <meta name="description" content="Rejoignez le réseau des structures d'aide." />
-            </Helmet>
+            <SEO
+                title="Devenir Partenaire"
+                description="Rejoignez le réseau des structures d'aide."
+                path="/partenaires"
+            />
 
             <h1 className="text-3xl font-bold mb-6 text-blue-900">Espace Partenaires</h1>
 

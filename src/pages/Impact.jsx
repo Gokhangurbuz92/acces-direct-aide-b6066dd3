@@ -1,6 +1,6 @@
 
 import { useState, useEffect } from 'react';
-import { Helmet } from 'react-helmet-async';
+import SEO from '@/components/SEO';
 import { BarChart, Users, FileText, CheckCircle } from 'lucide-react';
 
 export default function Impact() {
@@ -24,10 +24,11 @@ export default function Impact() {
 
     return (
         <div className="container mx-auto px-4 py-8">
-            <Helmet>
-                <title>Impact & Transparence - Accès Direct Aide</title>
-                <meta name="description" content="Chiffres clés et impact d'Accès Direct Aide sur l'accès aux droits." />
-            </Helmet>
+            <SEO
+                title="Impact & Transparence"
+                description="Chiffres clés et impact d'Accès Direct Aide sur l'accès aux droits."
+                path="/impact"
+            />
 
             <header className="mb-12 text-center">
                 <h1 className="text-3xl font-bold text-gray-900 mb-4">Notre Impact</h1>

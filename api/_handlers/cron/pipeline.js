@@ -2,6 +2,8 @@
 import { PrismaClient } from '@prisma/client';
 import Parser from 'rss-parser';
 import crypto from 'crypto';
+import fs from 'fs';
+import path from 'path';
 import { summarizeToFalc } from '../../lib/falc-summarizer.js';
 
 const prisma = new PrismaClient();
@@ -69,7 +71,37 @@ export async function GET(request) {
 
     const pipelineLogic = async () => {
         // ==========================================
-        // STEP 0: CORE INGESTION (Structures & Aids)
+        // STEP 0: SEED CONFIG (Ensure Sources Exist)
+        // ==========================================
+        try {
+            const configPath = path.join(process.cwd(), 'config', 'rss-sources.json');
+            if (fs.existsSync(configPath)) {
+                 const configSources = JSON.parse(fs.readFileSync(configPath, 'utf8'));
+                 for (const src of configSources) {
+                     await prisma.rssSource.upsert({
+                         where: { feed_url: src.url },
+                         update: {
+                             name: src.name,
+                             domain: src.domain,
+                             trust_level: src.trust_level,
+                             enabled: true // Re-enable if in config
+                         },
+                         create: {
+                             name: src.name,
+                             feed_url: src.url,
+                             domain: src.domain,
+                             trust_level: src.trust_level,
+                             enabled: true
+                         }
+                     });
+                 }
+            }
+        } catch (e) {
+            console.error("Pipeline: Seed Config failed", e);
+        }
+
+        // ==========================================
+        // STEP 0.5: CORE INGESTION (Structures & Aids)
         // ==========================================
         // Structures
         try {
@@ -108,6 +140,7 @@ export async function GET(request) {
                             titre: item.title || "Sans titre",
                             slug: slugify(item.title || "info") + '-' + hash.substring(0, 6),
                             contenu: item.content || item.contentSnippet || "",
+                            resume: item.contentSnippet || item.content || "", // Raw summary
                             canonical_url: item.link,
                             guid: item.guid || item.link,
                             source_id: source.id,
@@ -115,12 +148,13 @@ export async function GET(request) {
                             source_url: source.feed_url,
                             dedupe_hash: hash,
                             ingest_batch: runId,
-                            statut: "brouillon",
+                            statut: "brouillon", // Default to draft, auto-publish step will handle it
                             falc_status: "pending",
                             quality_score: isOfficial ? 60 : 40,
                             auto_publish: isOfficial,
                             date_publication: item.isoDate ? new Date(item.isoDate) : new Date(),
-                            fetched_at: new Date()
+                            fetched_at: new Date(),
+                            tags: [] // Can map from source if available
                         };
 
                         const result = await prisma.actualite.upsert({
@@ -195,7 +229,7 @@ export async function GET(request) {
             await prisma.actualite.update({
                 where: { id: item.id },
                 data: {
-                    statut: 'actif',
+                    statut: 'publie', // FIXED: actif -> publie
                     published_at: new Date()
                 }
             });

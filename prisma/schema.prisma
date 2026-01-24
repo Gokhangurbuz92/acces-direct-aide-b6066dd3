@@ -197,6 +197,7 @@ model Actualite {
   quality_score      Int       @default(0)
   raw_data_hash      String?   @unique
   raw_payload_json   Json?
+  resume             String?
   score_fiabilite    Int       @default(0)
   source_nom         String?
   source_url         String?

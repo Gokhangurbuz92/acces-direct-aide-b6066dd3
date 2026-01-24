@@ -1,4 +1,5 @@
 import { verifyAdmin } from './auth.js';
+import { createSnapshot } from './snapshot.js';
 
 export async function createEntity(req, res, modelDelegate) {
     if (!verifyAdmin(req)) return res.status(401).json({ error: 'Unauthorized' });
@@ -17,13 +18,19 @@ export async function createEntity(req, res, modelDelegate) {
     }
 }
 
-export async function updateEntity(req, res, modelDelegate) {
+export async function updateEntity(req, res, modelDelegate, entityType = null) {
     if (!verifyAdmin(req)) return res.status(401).json({ error: 'Unauthorized' });
 
     const { id } = req.query;
     if (!id) return res.status(400).json({ error: 'ID required' });
 
     try {
+        if (entityType) {
+            // Restore snapshot functionality
+            // We assume admin is 'admin@accesdirectaide.fr' for now as per auth.js
+            await createSnapshot(entityType, id, 'admin@accesdirectaide.fr');
+        }
+
         const data = req.body;
         delete data.id; // Protect ID
         data.updatedBy = 'admin';

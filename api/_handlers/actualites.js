@@ -10,7 +10,7 @@ export default async function handler(req, res) {
 
     // CRUD
     if (req.method === 'POST') return createEntity(req, res, prisma.actualite);
-    if (req.method === 'PUT') return updateEntity(req, res, prisma.actualite);
+    if (req.method === 'PUT') return updateEntity(req, res, prisma.actualite, 'Actualite');
     if (req.method === 'DELETE') return deleteEntity(req, res, prisma.actualite);
 
     // GET

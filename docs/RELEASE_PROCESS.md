@@ -58,3 +58,8 @@ npx sentry-cli releases set-commits $SENTRY_RELEASE --auto
 # Finaliser la release
 npx sentry-cli releases finalize $SENTRY_RELEASE
 ```
+
+## 2026-01-25 - Build Info Modification
+- **Change**: `api/_utils/build-info.js` is now untracked and in `.gitignore`.
+- **Reason**: To prevent dirty working tree after every build (timestamp update).
+- **Mechanism**: The file is generated automatically via `scripts/inject-headers.js` during `postinstall` (for Vercel/CI) and `npm run build`.

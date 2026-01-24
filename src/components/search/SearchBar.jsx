@@ -78,14 +78,15 @@ export default function SearchBar({ onSearch, showFilters = true, compact = fals
         {/* Barre de recherche principale */}
         <div className="flex gap-2">
           <div className="relative flex-1">
+            <label htmlFor="search-input" className="sr-only">Rechercher une aide</label>
             <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-slate-400" />
             <Input
+              id="search-input"
               type="text"
               placeholder="Rechercher une aide, une démarche, une structure..."
               value={query}
               onChange={(e) => setQuery(e.target.value)}
               className={`pl-12 ${compact ? 'h-11' : 'h-14 text-lg'} bg-white border-slate-200 focus:border-blue-500 focus:ring-blue-500`}
-              aria-label="Rechercher"
             />
           </div>
           <Button 

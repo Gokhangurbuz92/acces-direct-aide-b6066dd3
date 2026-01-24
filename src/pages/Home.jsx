@@ -9,6 +9,7 @@ import QuickAccessCards from '@/components/home/QuickAccessCards';
 import CategoryGrid from '@/components/home/CategoryGrid';
 import AideCard from '@/components/cards/AideCard';
 import { Button } from "@/components/ui/button";
+import { Skeleton } from "@/components/ui/skeleton";
 import {
   ArrowRight,
   Shield,
@@ -19,17 +20,17 @@ import {
 } from 'lucide-react';
 
 export default function Home() {
-  const { data: aidesUrgentes = [] } = useQuery({
+  const { data: aidesUrgentes = [], isLoading: loadingUrgentes } = useQuery({
     queryKey: ['aides-urgentes'],
     queryFn: () => client.entities.Aide.filter({ est_urgent: true, statut: 'publie' }, '-created_date', 3),
   });
 
-  const { data: dernieresAides = [] } = useQuery({
+  const { data: dernieresAides = [], isLoading: loadingDernieres } = useQuery({
     queryKey: ['dernieres-aides'],
     queryFn: () => client.entities.Aide.filter({ statut: 'publie' }, '-created_date', 6),
   });
 
-  const { data: actualites = [] } = useQuery({
+  const { data: actualites = [], isLoading: loadingActualites } = useQuery({
     queryKey: ['actualites-home'],
     queryFn: () => client.entities.Actualite.filter({ statut: 'publie' }, '-date_publication', 3),
   });
@@ -56,11 +57,10 @@ export default function Home() {
           <h1 className="text-3xl md:text-5xl font-bold mb-6 leading-tight">
             Trouvez les aides et les services
             <br className="hidden md:block" />
-            <span className="text-blue-200">près de chez vous</span>
+            <span className="text-blue-50">près de chez vous</span>
           </h1>
-          <p className="text-lg md:text-xl text-blue-100 mb-8 max-w-2xl mx-auto">
-            Un site simple et gratuit pour trouver des aides,
-            des démarches expliquées pas à pas, et des structures d'accompagnement.
+          <p className="text-lg md:text-xl text-blue-50 mb-8 max-w-2xl mx-auto">
+            Un site gratuit pour trouver vos aides et vos démarches simplement.
           </p>
 
           {/* Barre de recherche */}
@@ -74,14 +74,14 @@ export default function Home() {
       <section className="py-12 md:py-16 bg-slate-50">
         <div className="max-w-6xl mx-auto px-4 sm:px-6">
           <h2 className="text-2xl md:text-3xl font-bold text-slate-900 text-center mb-8">
-            Comment pouvons-nous vous aider ?
+            Que cherchez-vous ?
           </h2>
           <QuickAccessCards />
         </div>
       </section>
 
       {/* Aides urgentes */}
-      {aidesUrgentes.length > 0 && (
+      {(loadingUrgentes || aidesUrgentes.length > 0) && (
         <section className="py-12 bg-red-50 border-y border-red-100">
           <div className="max-w-6xl mx-auto px-4 sm:px-6">
             <div className="flex items-center gap-3 mb-6">
@@ -93,9 +93,15 @@ export default function Home() {
               </h2>
             </div>
             <div className="grid md:grid-cols-3 gap-6">
-              {aidesUrgentes.map((aide) => (
-                <AideCard key={aide.id} aide={aide} />
-              ))}
+              {loadingUrgentes ? (
+                Array(3).fill(0).map((_, i) => (
+                  <Skeleton key={i} className="h-48 w-full rounded-xl" />
+                ))
+              ) : (
+                aidesUrgentes.map((aide) => (
+                  <AideCard key={aide.id} aide={aide} />
+                ))
+              )}
             </div>
           </div>
         </section>
@@ -112,7 +118,7 @@ export default function Home() {
       </section>
 
       {/* Dernières aides */}
-      {dernieresAides.length > 0 && (
+      {(loadingDernieres || dernieresAides.length > 0) && (
         <section className="py-12 md:py-16 bg-slate-50">
           <div className="max-w-6xl mx-auto px-4 sm:px-6">
             <div className="flex items-center justify-between mb-8">
@@ -127,9 +133,15 @@ export default function Home() {
               </Link>
             </div>
             <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {dernieresAides.map((aide) => (
-                <AideCard key={aide.id} aide={aide} compact />
-              ))}
+              {loadingDernieres ? (
+                Array(6).fill(0).map((_, i) => (
+                  <Skeleton key={i} className="h-48 w-full rounded-xl" />
+                ))
+              ) : (
+                dernieresAides.map((aide) => (
+                  <AideCard key={aide.id} aide={aide} compact />
+                ))
+              )}
             </div>
             <div className="mt-8 text-center md:hidden">
               <Link to={createPageUrl('Aides')}>
@@ -155,10 +167,10 @@ export default function Home() {
                 <CheckCircle2 className="h-8 w-8 text-green-600" />
               </div>
               <h3 className="text-lg font-bold text-slate-900 mb-2">
-                Informations vérifiées
+                Informations sûres
               </h3>
               <p className="text-slate-600">
-                Toutes nos informations viennent de sources officielles et sont vérifiées régulièrement.
+                Nos informations viennent de l'État.
               </p>
             </div>
             <div className="text-center">
@@ -166,10 +178,10 @@ export default function Home() {
                 <Shield className="h-8 w-8 text-blue-600" />
               </div>
               <h3 className="text-lg font-bold text-slate-900 mb-2">
-                Site gratuit et sans pub
+                Site gratuit
               </h3>
               <p className="text-slate-600">
-                AccesDirectAide est un site non lucratif. Pas de publicité, pas de revente de données.
+                C'est gratuit. Il n'y a pas de publicité.
               </p>
             </div>
             <div className="text-center">
@@ -177,10 +189,10 @@ export default function Home() {
                 <Heart className="h-8 w-8 text-purple-600" />
               </div>
               <h3 className="text-lg font-bold text-slate-900 mb-2">
-                Accessible à tous
+                Pour tout le monde
               </h3>
               <p className="text-slate-600">
-                Le site est conçu pour être lisible par tous, avec un langage simple et clair.
+                Le site est facile à lire.
               </p>
             </div>
           </div>
@@ -188,7 +200,7 @@ export default function Home() {
       </section>
 
       {/* Actualités */}
-      {actualites.length > 0 && (
+      {(loadingActualites || actualites.length > 0) && (
         <section className="py-12 md:py-16 bg-slate-50">
           <div className="max-w-6xl mx-auto px-4 sm:px-6">
             <div className="flex items-center justify-between mb-8">
@@ -203,24 +215,29 @@ export default function Home() {
               </Link>
             </div>
             <div className="grid md:grid-cols-3 gap-6">
-              {actualites.map((actu) => (
-                <Link
-                  key={actu.id}
-                  to={actu.slug ? `/actualites/${actu.slug}` : `/actualites/view?id=${actu.id}`}
-                  className="bg-white rounded-xl p-6 border border-slate-200 hover:shadow-lg transition-shadow block"
-                >
-                  <div className="text-sm text-slate-500 mb-2">
-                    {new Date(actu.date_publication).toLocaleDateString('fr-FR', {
-                      day: 'numeric',
-                      month: 'long',
-                      year: 'numeric'
-                    })}
-                  </div>
-                  <h3 className="font-semibold text-slate-900 mb-2">{actu.titre}</h3>
-                  <p className="text-slate-600 text-sm line-clamp-3">{actu.summary_falc || actu.contenu}</p>
-                </Link>
-              ))}
-
+              {loadingActualites ? (
+                 Array(3).fill(0).map((_, i) => (
+                  <Skeleton key={i} className="h-48 w-full rounded-xl" />
+                ))
+              ) : (
+                actualites.map((actu) => (
+                  <Link
+                    key={actu.id}
+                    to={actu.slug ? `/actualites/${actu.slug}` : `/actualites/view?id=${actu.id}`}
+                    className="bg-white rounded-xl p-6 border border-slate-200 hover:shadow-lg transition-shadow block"
+                  >
+                    <div className="text-sm text-slate-500 mb-2">
+                      {new Date(actu.date_publication).toLocaleDateString('fr-FR', {
+                        day: 'numeric',
+                        month: 'long',
+                        year: 'numeric'
+                      })}
+                    </div>
+                    <h3 className="font-semibold text-slate-900 mb-2">{actu.titre}</h3>
+                    <p className="text-slate-600 text-sm line-clamp-3">{actu.summary_falc || actu.contenu}</p>
+                  </Link>
+                ))
+              )}
             </div>
           </div>
         </section>
@@ -232,7 +249,7 @@ export default function Home() {
           <h2 className="text-2xl md:text-3xl font-bold mb-4">
             Vous ne trouvez pas ce que vous cherchez ?
           </h2>
-          <p className="text-lg text-blue-100 mb-8">
+          <p className="text-lg text-blue-50 mb-8">
             Notre assistant peut vous aider à trouver la bonne aide ou la bonne structure.
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">

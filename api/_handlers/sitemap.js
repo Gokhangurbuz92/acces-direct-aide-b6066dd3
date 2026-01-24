@@ -100,7 +100,12 @@ ${urls.join('\n')}
             'X-Robots-Tag': indexable ? 'all' : 'noindex, nofollow',
             'ETag': etag
         });
-        res.end(xml);
+
+        if (req.method === 'HEAD') {
+            res.end();
+        } else {
+            res.end(xml);
+        }
 
     } catch (e) {
         console.error('CRITICAL SITEMAP ERROR:', e);

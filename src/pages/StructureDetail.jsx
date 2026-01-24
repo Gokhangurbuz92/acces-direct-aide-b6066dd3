@@ -1,5 +1,5 @@
 import React from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useParams, useSearchParams } from 'react-router-dom';
 import SEO from '@/components/SEO';
 import { createPageUrl } from '@/utils';
 import { client } from '@/api/client';
@@ -34,14 +34,16 @@ const TYPE_LABELS = {
 };
 
 export default function StructureDetail() {
-  const urlParams = new URLSearchParams(window.location.search);
-  const structureId = urlParams.get('id');
+  const { slug } = useParams();
+  const [searchParams] = useSearchParams();
+  const id = searchParams.get('id');
+  const identifier = slug || id;
 
   const { data: structure, isLoading } = useQuery({
-    queryKey: ['structure', structureId],
-    queryFn: () => client.entities.Structure.filter({ id: structureId }),
-    select: (data) => data[0],
-    enabled: !!structureId
+    queryKey: ['structure', identifier],
+    queryFn: () => client.entities.Structure.filter(slug ? { slug } : { id }),
+    // API now returns single object for id/slug queries
+    enabled: !!identifier
   });
 
   if (isLoading) {
@@ -223,34 +225,21 @@ export default function StructureDetail() {
             )}
 
             {/* Pro Services (Lot 4) */}
-            {structure.is_pro_enabled && structure.proServices?.length > 0 && (
+            {structure.is_pro_enabled && (
               <Card className="border-indigo-100 bg-indigo-50/30">
                 <CardContent className="p-6">
                   <h2 className="text-lg font-bold text-indigo-900 mb-4 flex items-center gap-2">
                     <Calendar className="h-5 w-5" />
-                    Services & Prise de RDV
+                    Prendre rendez-vous
                   </h2>
-                  <div className="grid gap-4">
-                    {structure.proServices.map((service, idx) => (
-                      <div key={idx} className="bg-white p-4 rounded-lg border border-indigo-100 shadow-sm">
-                        <div className="flex justify-between items-start">
-                          <div>
-                            <h3 className="font-semibold text-slate-900">{service.name}</h3>
-                            {service.description_falc && <p className="text-sm text-slate-600 mt-1">{service.description_falc}</p>}
-                            <div className="flex gap-3 mt-2 text-xs text-slate-500">
-                              {service.duration_minutes && <span>⏱ {service.duration_minutes} min</span>}
-                              {service.modes && <span>📍 {Array.isArray(service.modes) ? service.modes.join(', ') : service.modes}</span>}
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                  <div className="mt-4 text-center">
-                    <Button variant="outline" className="text-indigo-600 border-indigo-200" disabled>
-                      Prise de rendez-vous bientôt disponible
-                    </Button>
-                  </div>
+                  <p className="text-slate-700 mb-4">
+                      Cette structure propose la prise de rendez-vous en ligne.
+                  </p>
+                  <Button className="w-full bg-indigo-600 hover:bg-indigo-700" asChild>
+                    <Link to={createPageUrl('AppointmentRequest') + `?structure_id=${structure.id}`}>
+                        Voir les créneaux disponibles
+                    </Link>
+                  </Button>
                 </CardContent>
               </Card>
             )}
@@ -277,18 +266,22 @@ export default function StructureDetail() {
             {/* Actions rapides */}
             <Card>
               <CardContent className="p-6 space-y-3">
-                <Button className="w-full bg-blue-600 hover:bg-blue-700" asChild>
-                  <Link to={createPageUrl('AppointmentRequest') + `?structure_id=${structure.id}`}>
-                    <Calendar className="mr-2 h-4 w-4" />
-                    Prendre rendez-vous
-                  </Link>
-                </Button>
-                {structure.is_pro_enabled && (
-                  <Button className="w-full bg-indigo-600 hover:bg-indigo-700 mb-2" disabled>
-                    <Calendar className="mr-2 h-4 w-4" />
-                    Prendre RDV
+                {structure.is_pro_enabled ? (
+                  <Button className="w-full bg-indigo-600 hover:bg-indigo-700" asChild>
+                    <Link to={createPageUrl('AppointmentRequest') + `?structure_id=${structure.id}`}>
+                      <Calendar className="mr-2 h-4 w-4" />
+                      Prendre rendez-vous
+                    </Link>
                   </Button>
+                ) : (
+                    <Button className="w-full bg-blue-600 hover:bg-blue-700" asChild>
+                        <Link to={createPageUrl('AppointmentRequest') + `?structure_id=${structure.id}`}>
+                            <Calendar className="mr-2 h-4 w-4" />
+                            Demander un RDV
+                        </Link>
+                    </Button>
                 )}
+
                 {structure.telephone && (
                   <Button className="w-full" asChild>
                     <a href={`tel:${structure.telephone}`}>

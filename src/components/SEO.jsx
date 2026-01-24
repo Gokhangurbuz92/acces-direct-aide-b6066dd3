@@ -4,7 +4,7 @@ import PropTypes from 'prop-types';
 const DEFAULT_IMAGE = '/og-image.png';
 const SITE_NAME = 'Accès Direct Aide';
 // Use SITE_URL from env, fallback to production domain
-const BASE_URL = 'https://accesdirectaide.fr';
+const BASE_URL = 'https://www.accesdirectaide.fr';
 
 /**
  * SEO Component with OpenGraph and Twitter Card support.

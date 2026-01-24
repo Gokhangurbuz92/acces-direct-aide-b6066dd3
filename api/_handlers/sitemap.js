@@ -1,16 +1,27 @@
+/* eslint-disable no-undef */
 import { PrismaClient } from '@prisma/client';
+import { getCanonicalBaseUrl, isIndexable } from '../_utils/seo.js';
 import crypto from 'crypto';
 
+
 const prisma = new PrismaClient();
-const BASE_URL = process.env.PUBLIC_BASE_URL || 'https://www.accesdirectaide.fr';
 
 export default async function handler(req, res) {
     if (req.method !== 'GET' && req.method !== 'HEAD') {
         return res.status(405).json({ error: 'Method not allowed' });
     }
 
+    // Determine BASE_URL dynamically
+    const protocol = req.headers['x-forwarded-proto'] || 'https';
+    const host = req.headers.host;
+    const BASE_URL = host ? `${protocol}://${host}` : (process.env.PUBLIC_BASE_URL || 'https://www.accesdirectaide.fr');
+
     try {
+        const indexable = isIndexable(req);
+        const BASE_URL = getCanonicalBaseUrl(req);
+
         // Fetch published content
+
         const [aides, demarches, structures, guides, tools, actualites] = await Promise.all([
             prisma.aide.findMany({ where: { statut: 'publie' }, select: { slug: true, updatedAt: true } }),
             prisma.demarche.findMany({ where: { statut: 'publie' }, select: { slug: true, updatedAt: true } }),
@@ -81,24 +92,38 @@ ${urls.join('\n')}
         // Calculate ETag
         const etag = 'W/"' + crypto.createHash('md5').update(xml).digest('hex') + '"';
 
-        res.setHeader('Content-Type', 'application/xml');
-        res.setHeader('Cache-Control', 'public, s-maxage=300, stale-while-revalidate=3600');
-        res.setHeader('ETag', etag);
-        if (process.env.VERCEL_GIT_COMMIT_SHA) {
-            res.setHeader('X-Release-Commit', process.env.VERCEL_GIT_COMMIT_SHA);
-        }
-
         if (req.headers['if-none-match'] === etag) {
+
             res.writeHead(304);
             res.end();
             return;
         }
 
-        res.writeHead(200);
-        res.end(xml);
+        res.writeHeader(200, {
+            'Content-Type': 'application/xml; charset=utf-8',
+            'Cache-Control': 'public, s-maxage=3600, stale-while-revalidate=600',
+            'X-Robots-Tag': indexable ? 'all' : 'noindex, nofollow',
+            'ETag': etag
+        });
+
+        if (req.method === 'HEAD') {
+            res.end();
+        } else {
+            res.end(xml);
+        }
 
     } catch (e) {
-        console.error('Sitemap error:', e);
-        res.status(500).json({ error: 'Failed to generate sitemap' });
+        console.error('CRITICAL SITEMAP ERROR:', e);
+        // Fallback XML to prevent 500
+        const fallbackXml = `<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+  <url><loc>https://www.accesdirectaide.fr/</loc><priority>1.0</priority></url>
+</urlset>`;
+
+        res.writeHeader(200, {
+            'Content-Type': 'application/xml; charset=utf-8'
+        });
+        res.end(fallbackXml);
     }
 }
+

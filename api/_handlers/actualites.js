@@ -1,11 +1,11 @@
 import { PrismaClient } from '@prisma/client';
-import { getAuthenticatedUser } from '../_utils/auth';
-import { createSnapshot } from '../_utils/snapshot';
+import { getAuthenticatedUser } from '../_utils/auth.js';
+import { createSnapshot } from '../_utils/snapshot.js';
 
 const prisma = new PrismaClient();
 
 export default async function handler(req, res) {
-    const { id, limit, sort, statut } = req.query;
+    const { id, slug, limit, sort, statut } = req.query;
 
     try {
         // --- READ (GET) ---
@@ -13,14 +13,23 @@ export default async function handler(req, res) {
             const user = await getAuthenticatedUser(req);
             const isAuth = !!user;
 
-            if (id) {
-                const item = await prisma.actualite.findUnique({
-                    where: { id: String(id) }
+            if (id || slug) {
+                const item = await prisma.actualite.findFirst({
+                    where: id ? { id: String(id) } : { slug: String(slug) }
                 });
                 if (!isAuth && item && item.statut !== 'publie') {
                     return res.status(404).json({ error: "Not found" });
                 }
-                return res.status(200).json(item ? [item] : []);
+                // Return single object if found, consistent with other detail endpoints
+                // BUT: existing code returned [item]. StructureDetail expects single object.
+                // Actualites.jsx (list) expects array.
+                // If this is details, we should probably return single object.
+                // However, the previous code `return res.status(200).json(item ? [item] : []);` suggests the frontend might expect an array for detail too?
+                // Let's check Actualites.jsx. It doesn't fetch details.
+                // I will create ActualiteDetail.jsx which will likely expect an object.
+                // So I will return the object directly.
+                if (!item) return res.status(404).json({ error: "Not found" });
+                return res.status(200).json(item);
             }
 
             const where = {};

@@ -7,53 +7,43 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-
 model Aide {
-  id                    String   @id @default(uuid())
-  slug                  String?  @unique
+  id                    String          @id @default(uuid())
+  slug                  String?         @unique
   titre                 String
-  est_urgent            Boolean  @default(false)
-  
-  // Relations taxonomy
-  category              AidCategory? @relation(fields: [categoryId], references: [id])
-  categoryId            String?
-  situations            LifeSituation[]
-  
-  // Legacy fields (kept for compatibility or simpler filtering)
   categorie             String?
-  situations_vie        String[]
-  
+  est_urgent            Boolean         @default(false)
   territoires           String[]
-  departements          String[]
-  audiences             String[]
-  
   date_verification     DateTime?
   delai_indicatif       String?
-  cest_quoi             String?  @db.Text
-  pour_qui              String?  @db.Text
-  ce_que_ca_aide        String?  @db.Text
-  conditions_falc       String?  @db.Text
-  montant_falc          String?  @db.Text
+  cest_quoi             String?
+  pour_qui              String?
+  ce_que_ca_aide        String?
   documents_necessaires String[]
-  etapes                Json?    // [{numero, titre, description}]
-  ou_demander           String?  @db.Text
+  etapes                Json?
+  ou_demander           String?
   lien_demande          String?
-  updatedAt             DateTime @updatedAt
-  statut                String   @default("brouillon")
-  commentaire_statut    String?  @db.Text
+  updatedAt             DateTime        @updatedAt
+  statut                String          @default("brouillon")
+  commentaire_statut    String?
   published_at          DateTime?
-  summary_falc          String?  @db.Text
   mots_cles             String[]
-  structures_links      String[] // Names of human-readable structures
-  
-  // Source info
-  source                AidSource? @relation(fields: [sourceId], references: [id])
+  summary_falc          String?
+  audiences             String[]
+  conditions_falc       String?
+  departements          String[]
+  montant_falc          String?
+  situations_vie        String[]
+  structures_links      String[]
+  categoryId            String?
+  providerName          String?
+  providerType          String?
   sourceId              String?
   source_name           String?
   source_url            String?
-  
-  providerName          String?
-  providerType          String? // CAF, Ville, etc.
+  category              AidCategory?    @relation(fields: [categoryId], references: [id])
+  source                AidSource?      @relation(fields: [sourceId], references: [id])
+  situations            LifeSituation[] @relation("AideToLifeSituation")
 
   @@index([statut, published_at])
   @@index([categoryId, statut])
@@ -61,25 +51,25 @@ model Aide {
 }
 
 model AidCategory {
-  id    String @id @default(uuid())
-  slug  String @unique
-  label String
-  aides Aide[]
+  id        String     @id @default(uuid())
+  slug      String     @unique
+  label     String
+  aides     Aide[]
   demarches Demarche[] @relation("DemarcheToCategory")
 }
 
 model LifeSituation {
-  id    String @id @default(uuid())
-  slug  String @unique
-  label String
-  aides Aide[]
+  id        String     @id @default(uuid())
+  slug      String     @unique
+  label     String
+  aides     Aide[]     @relation("AideToLifeSituation")
   demarches Demarche[] @relation("DemarcheToSituation")
 }
 
 model AidSource {
   id            String    @id @default(uuid())
   name          String
-  kind          String?   // json, csv, api, rss
+  kind          String?
   baseUrl       String?
   license       String?
   refreshPolicy String?
@@ -89,12 +79,11 @@ model AidSource {
 }
 
 model Structure {
-  id                 String   @id @default(uuid())
-  slug               String?  @unique
+  id                 String         @id @default(uuid())
   nom                String
   type_structure     String?
-  accessibilite_pmr  Boolean  @default(false)
-  description_courte String?  @db.Text
+  accessibilite_pmr  Boolean        @default(false)
+  description_courte String?
   adresse            String?
   code_postal        String?
   ville              String?
@@ -102,45 +91,38 @@ model Structure {
   telephone          String?
   email              String?
   site_web           String?
-  horaires           String?  @db.Text
+  horaires           String?
   services           String[]
   publics_accueillis String[]
   date_verification  DateTime?
-  categories_aidees  String[] // To link with Aides
-  updatedAt          DateTime @updatedAt
-  status             String   @default("actif")
-  statut             String   @default("brouillon")
-  commentaire_statut String?  @db.Text
+  categories_aidees  String[]
+  updatedAt          DateTime       @updatedAt
+  status             String         @default("actif")
+  commentaire_statut String?
   published_at       DateTime?
-  summary_falc          String?  @db.Text
-  mots_cles             String[]
-
-  // --- Automation Fields (Phase 3) ---
-  siret           String?   @unique
-  source_id       String?
-  source_url      String?
-  raw_data_hash   String?   @unique
-  
-  import_status   String    @default("pending") // pending, active, failed
-  import_batch    String?
-  last_sync       DateTime  @default(now())
-  
-  quality_score   Int       @default(50)
-  auto_publish    Boolean   @default(false)
-  
-  geoloc_status   String?   // pending, success, failed
-  latitude        Float?
-  longitude       Float?
-
-  // Relations
-  // Lot 4: Pro Module
-  is_pro_enabled     Boolean   @default(false)
-  settings_json      Json?     @default("{}")
+  statut             String         @default("brouillon")
+  mots_cles          String[]
+  slug               String?        @unique
+  summary_falc       String?
+  is_pro_enabled     Boolean        @default(false)
+  settings_json      Json?          @default("{}")
+  auto_publish       Boolean        @default(false)
+  geoloc_status      String?
+  import_batch       String?
+  import_status      String         @default("pending")
+  last_sync          DateTime       @default(now())
+  latitude           Float?
+  longitude          Float?
+  quality_score      Int            @default(50)
+  raw_data_hash      String?        @unique
+  siret              String?        @unique
+  source_id          String?
+  source_url         String?
+  appointments       Appointment[]
+  availabilities     Availability[]
+  invitations        Invitation[]
   proUsers           ProUser[]
   proServices        Service[]
-  invitations        Invitation[]
-  availabilities     Availability[]
-  appointments       Appointment[]
 
   @@index([source_id])
   @@index([raw_data_hash])
@@ -151,34 +133,31 @@ model Structure {
 }
 
 model Demarche {
-  id                    String   @id @default(uuid())
-  slug                  String?  @unique
+  id                    String          @id @default(uuid())
   titre                 String
-  
-  // Relations taxonomy
-  category              AidCategory? @relation("DemarcheToCategory", fields: [categoryId], references: [id])
-  categoryId            String?
-  situations            LifeSituation[] @relation("DemarcheToSituation")
-  
   categorie             String?
-  description_courte    String?  @db.Text
-  departements          String[]
-  audiences             String[]
+  description_courte    String?
   delai                 String?
   cout                  String?
   date_verification     DateTime?
-  pour_qui              String?  @db.Text
+  pour_qui              String?
   documents_necessaires String[]
-  etapes                Json?    // [{numero, titre, description, conseils}]
-  ou_faire              String?  @db.Text
+  etapes                Json?
+  ou_faire              String?
   lien_officiel         String?
   sources               Json?
-  updatedAt             DateTime @updatedAt
-  statut                String   @default("brouillon")
-  commentaire_statut    String?  @db.Text
+  updatedAt             DateTime        @updatedAt
+  statut                String          @default("brouillon")
+  commentaire_statut    String?
   published_at          DateTime?
-  summary_falc          String?  @db.Text
   mots_cles             String[]
+  slug                  String?         @unique
+  summary_falc          String?
+  audiences             String[]
+  departements          String[]
+  categoryId            String?
+  category              AidCategory?    @relation("DemarcheToCategory", fields: [categoryId], references: [id])
+  situations            LifeSituation[] @relation("DemarcheToSituation")
 
   @@index([statut, published_at])
   @@index([categoryId, statut])
@@ -186,47 +165,43 @@ model Demarche {
 }
 
 model Actualite {
-  id               String   @id @default(uuid())
-  titre            String
-  slug             String?  @unique
-  contenu          String?  @db.Text
-  summary_falc     String?  @db.Text
-  key_points_falc  String[] // 3-5 bullets FALC
-  canonical_url    String?  @unique
-  guid             String?
-  source_id        String?
-  source_name      String?
-  source_nom       String?  // For frontend compatibility
-  source_url       String?  // For frontend compatibility
-  type_actu        String?  @default("info") // nouveaute, modification, alerte, info
-  est_important    Boolean  @default(false)
-  categorie        String?  @default("general") // logement, sante, etc.
-  category         String?  @default("actualite")
-  territoire       String?  @default("FRANCE")
-  dedupe_hash      String?
-  date_publication DateTime @default(now())
-  fetched_at       DateTime?
-  image_url        String?
-  lien_url         String?
-  source           String?
-  updatedAt        DateTime @updatedAt
-  statut           String   @default("brouillon")
-  commentaire_statut String?  @db.Text
-  published_at     DateTime?
-  
-  // Phase B enhancements
-  score_fiabilite  Int      @default(0)
-  raw_payload_json Json?
-  tags             String[]
-  departements     String[]
-  url              String?  // Canonical source URL
-
-
-  quality_score    Int      @default(0)
-  falc_status      String   @default("pending")
-  auto_publish     Boolean  @default(false)
-  raw_data_hash    String?  @unique
-  ingest_batch     String?
+  id                 String    @id @default(uuid())
+  titre              String
+  contenu            String?
+  date_publication   DateTime  @default(now())
+  image_url          String?
+  lien_url           String?
+  source             String?
+  updatedAt          DateTime  @updatedAt
+  statut             String    @default("brouillon")
+  commentaire_statut String?
+  published_at       DateTime?
+  canonical_url      String?   @unique
+  category           String?   @default("actualite")
+  dedupe_hash        String?
+  fetched_at         DateTime?
+  guid               String?
+  key_points_falc    String[]
+  slug               String?   @unique
+  source_id          String?
+  source_name        String?
+  summary_falc       String?
+  territoire         String?   @default("FRANCE")
+  auto_publish       Boolean   @default(false)
+  categorie          String?   @default("general")
+  departements       String[]
+  est_important      Boolean   @default(false)
+  falc_status        String    @default("pending")
+  ingest_batch       String?
+  quality_score      Int       @default(0)
+  raw_data_hash      String?   @unique
+  raw_payload_json   Json?
+  score_fiabilite    Int       @default(0)
+  source_nom         String?
+  source_url         String?
+  tags               String[]
+  type_actu          String?   @default("info")
+  url                String?
 
   @@index([dedupe_hash])
   @@index([source_id])
@@ -236,7 +211,7 @@ model Actualite {
 model ImportLog {
   id          String   @id @default(uuid())
   source_name String
-  status      String   // SUCCESS, PARTIAL, ERROR
+  status      String
   items_total Int      @default(0)
   items_new   Int      @default(0)
   duration_ms Int?
@@ -245,25 +220,25 @@ model ImportLog {
 }
 
 model RssSource {
-  id              String    @id @default(uuid())
-  name            String
-  feed_url        String    @unique
-  domain          String    // For allowlist validation
-  trust_level     String    @default("OFFICIAL") // OFFICIAL, RELIABLE_MEDIA
-  enabled         Boolean   @default(true)
-  last_run_at     DateTime?
-  etag            String?
-  last_modified   String?
-  error_count     Int       @default(0)
-  last_error      String?
-  createdAt       DateTime  @default(now())
-  updatedAt       DateTime  @updatedAt
+  id            String    @id @default(uuid())
+  name          String
+  feed_url      String    @unique
+  domain        String
+  trust_level   String    @default("OFFICIAL")
+  enabled       Boolean   @default(true)
+  last_run_at   DateTime?
+  etag          String?
+  last_modified String?
+  error_count   Int       @default(0)
+  last_error    String?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
 }
 
 model UpdateLog {
   id                  Int      @id @default(autoincrement())
   ran_at              DateTime @default(now())
-  status              String   // success, partial, failed
+  status              String
   duration_ms         Int?
   items_fetched_count Int      @default(0)
   items_created_count Int      @default(0)
@@ -275,37 +250,35 @@ model UpdateLog {
 }
 
 model Source {
-  id          String   @id @default(uuid())
+  id          String    @id @default(uuid())
   name        String
-  type        String   // officielle, association, etc
+  type        String
   url         String?
-  status      String   @default("actif")
+  status      String    @default("actif")
   trust_level String?
   last_sync   DateTime?
 }
 
 model AdminUser {
-  id                  String   @id @default(uuid())
-  email               String   @unique
-  password            String   // hashed
-  role                String   @default("admin")
-  failedLoginAttempts Int      @default(0)
-  lockoutUntil        DateTime?
+  id                  String    @id @default(uuid())
+  email               String    @unique
+  password            String
+  role                String    @default("admin")
+  createdAt           DateTime  @default(now())
+  updatedAt           DateTime  @updatedAt
+  failedLoginAttempts Int       @default(0)
   lastLogin           DateTime?
-  createdAt           DateTime @default(now())
-  updatedAt           DateTime @updatedAt
+  lockoutUntil        DateTime?
 }
 
 model AuditLog {
   id        String   @id @default(uuid())
   action    String
-  actor     String? // email or system
+  actor     String?
   target    String?
   details   Json?
   timestamp DateTime @default(now())
   ip        String?
-  
-  // Lot 4 additions
   actor_id  String?
   entity    String?
   entity_id String?
@@ -313,38 +286,36 @@ model AuditLog {
 }
 
 model ProUser {
-  id            String    @id @default(uuid())
+  id            String         @id @default(uuid())
   email         String
   password_hash String
-  role          String    // SUPERADMIN, STRUCTURE_ADMIN, PRO
-  status        String    @default("pending") // pending, active, disabled
+  role          String
+  status        String         @default("pending")
   structureId   String
-  structure     Structure @relation(fields: [structureId], references: [id])
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
-  
-  availability  Availability[]
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
   appointments  Appointment[]
+  availability  Availability[]
+  structure     Structure      @relation(fields: [structureId], references: [id])
 
   @@unique([structureId, email])
 }
 
 model Service {
-  id                String    @id @default(uuid())
-  structureId       String
-  structure         Structure @relation(fields: [structureId], references: [id])
-  slug              String
-  name              String
-  description_falc  String?   @db.Text
-  duration_minutes  Int?
-  modes             Json?     // [presentiel, visio, tel]
-  required_docs     String[]
-  audiences         String[]
-  is_active         Boolean   @default(true)
-  createdAt         DateTime  @default(now())
-  updatedAt         DateTime  @updatedAt
-  
-  appointments      Appointment[]
+  id               String        @id @default(uuid())
+  structureId      String
+  slug             String
+  name             String
+  description_falc String?
+  duration_minutes Int?
+  modes            Json?
+  required_docs    String[]
+  audiences        String[]
+  is_active        Boolean       @default(true)
+  createdAt        DateTime      @default(now())
+  updatedAt        DateTime      @updatedAt
+  appointments     Appointment[]
+  structure        Structure     @relation(fields: [structureId], references: [id])
 
   @@unique([structureId, slug])
 }
@@ -352,81 +323,71 @@ model Service {
 model Invitation {
   id          String    @id @default(uuid())
   structureId String
-  structure   Structure @relation(fields: [structureId], references: [id])
   email       String
   role        String
   token       String    @unique
   expires_at  DateTime
   used_at     DateTime?
   createdAt   DateTime  @default(now())
+  structure   Structure @relation(fields: [structureId], references: [id])
 }
 
 model ConsentLog {
   id             String   @id @default(uuid())
   policy_version String
   policy_hash    String
-  subject_type   String   // pro_user, beneficiary
+  subject_type   String
   subject_id     String
   created_at     DateTime @default(now())
 }
 
-
 model Availability {
   id              String    @id @default(uuid())
   structureId     String
-  structure       Structure @relation(fields: [structureId], references: [id])
   proId           String?
-  pro             ProUser?  @relation(fields: [proId], references: [id])
-  slots_json      Json      @default("{}") // { "mon": ["09:00-12:00"], ... }
-  exceptions_json Json      @default("[]") // [{ date: "2024-01-01", slots: [] }]
+  slots_json      Json      @default("{}")
+  exceptions_json Json      @default("[]")
   createdAt       DateTime  @default(now())
   updatedAt       DateTime  @updatedAt
+  pro             ProUser?  @relation(fields: [proId], references: [id])
+  structure       Structure @relation(fields: [structureId], references: [id])
 
   @@unique([structureId, proId])
 }
 
 model Beneficiary {
   id                   String        @id @default(uuid())
-  contact_encrypted    String        @db.Text
-  contact_hash         String        // SHA-256 for lookups/rate-limiting
+  contact_encrypted    String
+  contact_hash         String
   first_name_encrypted String?
-  appointments         Appointment[]
   createdAt            DateTime      @default(now())
-  
-  // Note: We might want unique(contact_hash) if we want to reuse beneficiary records, 
-  // but for strict isolation we might create new ones or just link? 
-  // Privacy-wise, reusing IDs allows correlation. 
-  // However, rate-limiting needs to know "this person". 
-  // Let's index contact_hash.
+  appointments         Appointment[]
+
   @@index([contact_hash])
 }
 
 model Appointment {
-  id                String       @id @default(uuid())
+  id                String      @id @default(uuid())
   structureId       String
-  structure         Structure    @relation(fields: [structureId], references: [id])
   serviceId         String
-  service           Service      @relation(fields: [serviceId], references: [id])
   proId             String?
-  pro               ProUser?     @relation(fields: [proId], references: [id])
   beneficiaryId     String
-  beneficiary       Beneficiary  @relation(fields: [beneficiaryId], references: [id])
-  
-  status            String       @default("requested") // requested, locked, confirmed, cancelled, expired, no_show
+  status            String      @default("requested")
   start_at          DateTime
   end_at            DateTime
-  timezone          String       @default("Europe/Paris")
-  mode              String       // presentiel, visio, tel
-  
+  timezone          String      @default("Europe/Paris")
+  mode              String
   lock_expires_at   DateTime?
   cancel_token_hash String?
-  access_token_hash String? // For beneficiary messaging access without full re-confirm
-  
+  createdAt         DateTime    @default(now())
+  updatedAt         DateTime    @updatedAt
+  access_token_hash String?
+  metadata          Json?       @default("{}")
+  beneficiary       Beneficiary @relation(fields: [beneficiaryId], references: [id])
+  pro               ProUser?    @relation(fields: [proId], references: [id])
+  service           Service     @relation(fields: [serviceId], references: [id])
+  structure         Structure   @relation(fields: [structureId], references: [id])
   messages          Message[]
-  metadata          Json?        @default("{}") // Visio URLs, etc.
-
-  createdAt         DateTime     @default(now())
-  updatedAt         DateTime     @updatedAt
 
   @@index([structureId, start_at])
   @@index([proId, start_at])
@@ -437,92 +398,79 @@ model Appointment {
 model Message {
   id                String       @id @default(uuid())
   appointmentId     String
-  appointment       Appointment  @relation(fields: [appointmentId], references: [id], onDelete: Cascade)
-  
-  sender            String       // 'PRO' or 'BENEFICIARY'
-  content_encrypted String       // AES-256-GCM
-  
-  attachments       Attachment[]
-
+  sender            String
+  content_encrypted String
   createdAt         DateTime     @default(now())
+  attachments       Attachment[]
+  appointment       Appointment  @relation(fields: [appointmentId], references: [id], onDelete: Cascade)
 
   @@index([appointmentId])
 }
 
 model Attachment {
-  id                String       @id @default(uuid())
-  messageId         String
-  message           Message      @relation(fields: [messageId], references: [id], onDelete: Cascade)
-  
+  id                 String   @id @default(uuid())
+  messageId          String
   filename_encrypted String
-  mime_type         String
-  size_bytes        Int
-  storage_key       String
-  
-  createdAt         DateTime     @default(now())
+  mime_type          String
+  size_bytes         Int
+  storage_key        String
+  createdAt          DateTime @default(now())
+  message            Message  @relation(fields: [messageId], references: [id], onDelete: Cascade)
 
   @@index([messageId])
 }
 
 model Guide {
-  id                String   @id @default(uuid())
-  slug              String   @unique
-  titre             String
-  resume_falc       String?  @db.Text
-  contenu_json      Json?    // [{titre, texte, image?}]
-  categorie         String?
-  publics           String[]
-  contexte          String[]
-  mots_cles         String[]
-  sources_urls      String[]
-  
-  statut            String   @default("brouillon") // brouillon, en_revue, publie, refuse
-  published_at      DateTime?
-  
-  createdAt         DateTime @default(now())
-  updatedAt         DateTime @updatedAt
+  id           String    @id @default(uuid())
+  slug         String    @unique
+  titre        String
+  resume_falc  String?
+  contenu_json Json?
+  categorie    String?
+  publics      String[]
+  contexte     String[]
+  mots_cles    String[]
+  sources_urls String[]
+  statut       String    @default("brouillon")
+  published_at DateTime?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
 }
 
 model ToolboxItem {
-  id                String   @id @default(uuid())
-  slug              String   @unique
-  titre             String
-  resume_falc       String?  @db.Text
-  type              String   // methode, numerique, modele, ressource
-  categorie         String?
-  publics           String[]
-  
-  // Link or Content
-  url_download      String?
-  contenu_html      String? @db.Text
-  
-  statut            String   @default("brouillon")
-  published_at      DateTime?
-  
-  createdAt         DateTime @default(now())
-  updatedAt         DateTime @updatedAt
+  id           String    @id @default(uuid())
+  slug         String    @unique
+  titre        String
+  resume_falc  String?
+  type         String
+  categorie    String?
+  publics      String[]
+  url_download String?
+  contenu_html String?
+  statut       String    @default("brouillon")
+  published_at DateTime?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
 }
 
 model PartnershipRequest {
-  id              String   @id @default(uuid())
-  structureName   String
-  city            String?
-  type            String?
-  website         String
-  email           String
-  message         String?  @db.Text
-  status          String   @default("pending") // pending, processed, archived
-  
-  consent         Boolean  @default(false)
-  ip_hash         String?
-  
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
+  id            String   @id @default(uuid())
+  structureName String
+  city          String?
+  type          String?
+  website       String
+  email         String
+  message       String?
+  status        String   @default("pending")
+  consent       Boolean  @default(false)
+  ip_hash       String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
 }
 
 model EntityVersion {
   id            String   @id @default(uuid())
-  entity_type   String   // Aide, Demarche, Structure, Actualite
+  entity_type   String
   entity_id     String
   snapshot_json Json
   reason        String?
@@ -533,20 +481,18 @@ model EntityVersion {
 }
 
 model Dispositif {
-  id               String   @id @default(uuid())
-  slug             String?  @unique
+  id               String    @id @default(uuid())
+  slug             String?   @unique
   titre            String
-  description_falc String?  @db.Text
+  description_falc String?
   public           String[]
   departement      String?
   montant          String?
-  liens            Json?    // [{nom, url}]
-  
-  status           String   @default("actif")
-  statut           String   @default("brouillon")
+  liens            Json?
+  status           String    @default("actif")
+  statut           String    @default("brouillon")
   published_at     DateTime?
-  summary_falc     String?  @db.Text
-  
-  createdAt        DateTime @default(now())
-  updatedAt        DateTime @updatedAt
+  summary_falc     String?
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
 }

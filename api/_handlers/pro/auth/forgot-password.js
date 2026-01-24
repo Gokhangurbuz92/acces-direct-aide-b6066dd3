@@ -1,4 +1,4 @@
-/* eslint-env node */
+
 import { PrismaClient } from '@prisma/client';
 import { kv } from '../../../_utils/kv.js';
 import crypto from 'crypto';

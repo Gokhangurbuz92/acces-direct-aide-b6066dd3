@@ -1,5 +1,5 @@
 
-/* eslint-env node */
+
 import jwt from 'jsonwebtoken';
 import { PrismaClient } from '@prisma/client';
 import crypto from 'crypto';

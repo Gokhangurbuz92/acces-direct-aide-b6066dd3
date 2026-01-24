@@ -5,9 +5,11 @@ import reactHooks from 'eslint-plugin-react-hooks'
 import reactRefresh from 'eslint-plugin-react-refresh'
 
 export default [
-  { ignores: ['dist'] },
+  { ignores: ['dist', 'node_modules', 'public', '**/*.ts'] },
+
+  // 1. Browser/React Code (src)
   {
-    files: ['**/*.{js,jsx}'],
+    files: ['src/**/*.{js,jsx}'],
     languageOptions: {
       ecmaVersion: 2020,
       globals: globals.browser,
@@ -33,6 +35,30 @@ export default [
         'warn',
         { allowConstantExport: true },
       ],
+      'react/no-unescaped-entities': 'warn',
+      'no-unused-vars': 'warn',
+      'react/prop-types': 'off',
+      'react/no-unknown-property': ['error', { ignore: ['cmdk-input-wrapper', 'toast-close'] }],
+    },
+  },
+
+  // 2. Node Code (api, scripts, configs, e2e)
+  {
+    files: ['api/**/*.{js,jsx}', 'scripts/**/*.{js,jsx}', 'e2e/**/*.{js,jsx}', 'vite.config.js', 'tailwind.config.js', 'playwright.config.js', 'eslint.config.js'],
+    languageOptions: {
+      ecmaVersion: 2020,
+      globals: {
+        ...globals.node,
+      },
+      parserOptions: {
+        ecmaVersion: 'latest',
+        sourceType: 'module',
+      },
+    },
+    rules: {
+      ...js.configs.recommended.rules,
+      'no-unused-vars': 'warn',
+      'no-undef': 'warn',
     },
   },
 ]

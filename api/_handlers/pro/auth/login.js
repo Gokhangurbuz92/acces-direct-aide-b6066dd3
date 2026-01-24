@@ -1,7 +1,7 @@
 
 import { PrismaClient } from '@prisma/client';
 import bcrypt from 'bcryptjs';
-import { signProToken, checkRateLimit, logProAudit } from '../../lib/pro-auth.js';
+import { signProToken, checkRateLimit, logProAudit } from '../../../lib/pro-auth.js';
 
 const prisma = new PrismaClient();
 

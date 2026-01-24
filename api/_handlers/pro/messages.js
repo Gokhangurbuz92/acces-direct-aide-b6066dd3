@@ -1,7 +1,7 @@
 
 import { PrismaClient } from '@prisma/client';
-import { verifyProToken, checkRateLimit } from '../lib/pro-auth.js';
-import { encrypt, decrypt } from '../lib/crypto.js';
+import { verifyProToken, checkRateLimit } from '../../lib/pro-auth.js';
+import { encrypt, decrypt } from '../../lib/crypto.js';
 
 const prisma = new PrismaClient();
 

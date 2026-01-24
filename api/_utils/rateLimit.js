@@ -38,7 +38,11 @@ const CONFIG = {
     OTP_GEN: { limit: 3, window: 60 * 1000 },    // 3 per min
     OTP_VERIFY: { limit: 5, window: 60 * 1000 }, // 5 per min
     BOOK: { limit: 10, window: 60 * 60 * 1000 }, // 10 per hour
-    CONFIRM: { limit: 10, window: 60 * 60 * 1000 } // 10 per hour
+    CONFIRM: { limit: 10, window: 60 * 60 * 1000 }, // 10 per hour
+    // Search & Taxonomy
+    SEARCH_AIDES: { limit: 30, window: 60 * 1000 },      // 30 per min
+    SEARCH_STRUCTURES: { limit: 30, window: 60 * 1000 }, // 30 per min
+    TAXONOMY: { limit: 60, window: 60 * 1000 }           // 60 per min
 };
 
 function hashKey(key) {
@@ -103,6 +107,15 @@ async function checkRateLimitKV(action, identifier) {
         console.error(`[RateLimit] KV/Redis Error (Switching to Memory):`, e);
         return checkRateLimitInMemory(action, identifier);
     }
+}
+
+export function getClientIp(req) {
+    const xForwardedFor = req.headers['x-forwarded-for'];
+    if (xForwardedFor) {
+        // x-forwarded-for: client, proxy1, proxy2
+        return xForwardedFor.split(',')[0].trim();
+    }
+    return req.socket?.remoteAddress || '127.0.0.1';
 }
 
 function getErrorObject() {

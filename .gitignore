@@ -23,7 +23,25 @@ dist-ssr
 *.sln
 *.sw?
 
+# Environment
 .env
+.env.local
+.env.*
+!.env.example
+
+# Next.js / Vercel
 .vercel
-.env*.local
 dist/sitemap.xml
+
+# Python / Virtualenv
+venv/
+__pycache__/
+
+# Testing & Artifacts
+test-results/
+coverage/
+cookies*.txt
+test-img*.jpg
+
+# Local Storage (Mock)
+uploads_mock/

@@ -121,10 +121,6 @@
 ./components.json
 ./config
 ./config/rss-sources.json
-./cookies.txt
-./cookies_deploy.txt
-./cookies_final.txt
-./cookies_stg.txt
 ./data
 ./data/aides-alsace.csv
 ./data/demarches-alsace.csv
@@ -144,6 +140,7 @@
 ./docs/RELEASE_GATE.md
 ./docs/RELEASE_PROCESS.md
 ./docs/REPO_FILES.txt
+./docs/REPO_MAP.md
 ./docs/VERCEL_MIGRATION_GUIDE.md
 ./docs/VERIFICATION_PROD.md
 ./docs/WALKTHROUGH_AIDES.md
@@ -443,12 +440,9 @@
 ./src/utils
 ./src/utils/index.ts
 ./tailwind.config.js
-./test-img-1768712348916.jpg
 ./tests
 ./tests/integration
 ./tests/integration/api.test.js
-./uploads_mock
-./uploads_mock/1768712350287-285d118e60bcf747
 ./vercel.json
 ./verify_seo.py
 ./vite.config.js

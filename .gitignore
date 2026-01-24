@@ -39,6 +39,7 @@ __pycache__/
 
 # Testing & Artifacts
 test-results/
+playwright-report/
 coverage/
 cookies*.txt
 test-img*.jpg

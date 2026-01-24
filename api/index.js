@@ -1,110 +1,69 @@
-import { routes } from './routes.js';
+import url from 'url';
 import Sentry from './_utils/sentry.js';
-import logger from './_utils/logger.js';
-import { randomUUID } from 'crypto';
+import { routes } from './routes.js';
 
 export default async function handler(req, res) {
-    const requestId = randomUUID();
-    const startTime = Date.now();
+    // Add Global Headers
+    const release = process.env.VERCEL_GIT_COMMIT_SHA || process.env.VITE_GIT_COMMIT_SHA || "dev";
+    const env = process.env.VERCEL_ENV || process.env.VITE_ENV || "development";
+    res.setHeader('x-release-sha', release);
+    res.setHeader('x-deploy-env', env);
 
-    // 1. Initialize Logger
-    const log = logger.child({ requestId });
-
-    // 2. CORS Headers
-    res.setHeader('Access-Control-Allow-Origin', '*');
-    res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
-    res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
-    res.setHeader('x-request-id', requestId);
-
-    if (process.env.VERCEL_GIT_COMMIT_SHA) {
-        res.setHeader('x-release-sha', process.env.VERCEL_GIT_COMMIT_SHA);
-    }
-
-    if (req.method === 'OPTIONS') {
-        return res.status(200).end();
-    }
-
-    // 3. Request Logging
     const urlObj = new URL(req.url, `https://${req.headers.host}`);
     let path = urlObj.pathname || "";
 
-    // Normalize path
-    path = path.replace(/^\/api(\/|$)/, "/");
-    path = path.replace(/^\/+/, "");
-    path = path.replace(/\/+$/, "");
 
-    log.info({
-        msg: "Incoming Request",
-        method: req.method,
-        path: path,
-        query: Object.fromEntries(urlObj.searchParams),
-        userAgent: req.headers['user-agent']
-    });
+    console.log(`Router: Requesting ${req.url} -> Pathname: ${path}`);
+
+    // Normalise:
+    path = path.replace(/^\/api(\/|$)/, "/"); // Remove /api prefix
+    path = path.replace(/^\/+/, ""); // Remove leading slashes
+    path = path.replace(/\/+$/, ""); // Remove trailing slashes
+
+    console.log(`Router: Normalized Path: "${path}"`);
+
+    if (urlObj.searchParams.get("debug") === "1") {
+        return res.status(200).json({ pathname: urlObj.pathname, path });
+    }
+
+    // Dynamic import mapping
+    // This allows us to route requests to the correct file in _handlers
+    // without defining each one manually
+
 
     try {
-        // 4. Route Matching
-        // Security check for __dev
-        if ((path.startsWith('__dev') || req.url.includes('/__dev/')) &&
-            (process.env.VERCEL_ENV === 'production' || process.env.VERCEL_ENV === 'preview')) {
-            log.warn({ msg: "Blocked access to __dev", path });
-            return res.status(403).json({ error: "Forbidden" });
-        }
-
         let handlerPath = null;
-        const route = routes.find(r => {
-            if (r.match === 'exact') return r.path === path;
-            if (r.match === 'prefix') return path.startsWith(r.path) || path.startsWith(r.path + '/');
-            return false;
-        });
 
-        if (route) {
-            handlerPath = route.handler;
+        // Find matching route
+        for (const route of routes) {
+            if (route.match === 'exact') {
+                if (path === route.path) {
+                    handlerPath = route.handler;
+                    break;
+                }
+            } else if (route.match === 'prefix') {
+                if (path === route.path || path.startsWith(route.path + '/')) {
+                    handlerPath = route.handler;
+                    break;
+                }
+            }
         }
 
-        if (!handlerPath) {
-            log.warn({ msg: "Route Not Found", path });
-            return res.status(404).json({ error: "Not Found" });
+        if (handlerPath) {
+            const handlerModule = await import(handlerPath);
+            if (handlerModule && handlerModule.default) {
+                return await handlerModule.default(req, res);
+            } else {
+                return res.status(500).json({ error: 'Handler module missing default export' });
+            }
         }
 
-        // 5. Execute Handler
-        const handlerModule = await import(handlerPath);
-        if (!handlerModule || !handlerModule.default) {
-            throw new Error(`Handler module matching ${path} is missing default export`);
-        }
-
-        // Wrap response to log duration on finish
-        // Note: res.on('finish') is node-specific, Vercel supports it.
-        res.on('finish', () => {
-            const duration = Date.now() - startTime;
-            log.info({
-                msg: "Request Completed",
-                status: res.statusCode,
-                duration,
-            });
-        });
-
-        await handlerModule.default(req, res);
+        return res.status(404).json({ error: 'Route not found in Monolith Router' });
 
     } catch (error) {
-        const duration = Date.now() - startTime;
-        log.error({
-            msg: "Request Error",
-            error: error.message,
-            stack: error.stack,
-            duration
-        });
-
-        // Explicitly set tags to ensure context is captured even if scope is lost
-        Sentry.captureException(error, {
-            tags: {
-                requestId,
-                release: process.env.VERCEL_GIT_COMMIT_SHA || "dev"
-            }
-        });
+        console.error('Router Error:', error);
+        Sentry.captureException(error);
         await Sentry.flush(2000);
-
-        if (!res.headersSent) {
-            return res.status(500).json({ error: "Internal Server Error", requestId });
-        }
+        return res.status(500).json({ error: 'Internal Server Error', details: error.message });
     }
 }

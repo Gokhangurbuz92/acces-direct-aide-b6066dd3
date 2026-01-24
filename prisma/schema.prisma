@@ -401,7 +401,6 @@ model Message {
   sender            String
   content_encrypted String
   createdAt         DateTime     @default(now())
-  read_at           DateTime?
   attachments       Attachment[]
   appointment       Appointment  @relation(fields: [appointmentId], references: [id], onDelete: Cascade)
 

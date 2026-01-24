@@ -1,5 +1,5 @@
 import { PrismaClient } from '@prisma/client';
-import { requireAuth } from '../../../lib/pro-auth.js';
+import { requireAuth } from '../../lib/pro-auth.js';
 
 const prisma = new PrismaClient();
 

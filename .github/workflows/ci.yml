@@ -1,0 +1,49 @@
+name: CI
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  quality-gate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    env:
+      NODE_ENV: test
+
+      # Dummy envs (no secrets). The code should fallback to memory stores where applicable.
+      DATABASE_URL: postgresql://user:pass@localhost:5432/db?schema=public
+      VERCEL_KV_REST_API_URL: ""
+      VERCEL_KV_REST_API_TOKEN: ""
+      SENTRY_DSN: ""
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Verify handler imports (bundling safety)
+        run: node scripts/verify-handler-imports.js
+
+      - name: Build
+        run: npm run build
+
+      - name: Install Playwright browsers (chromium only)
+        run: npx playwright install --with-deps chromium
+
+      - name: E2E (public core, mocked)
+        run: npx playwright test e2e/public-core.spec.js --project=chromium --reporter=line

@@ -51,6 +51,8 @@ export const routes = [
     { path: 'cron/purge', match: 'exact', handler: './_handlers/cron/purge.js' },
 
     // --- Admin ---
+    { path: 'admin/privacy/export', match: 'exact', handler: './_handlers/admin/privacy/export.js' },
+    { path: 'admin/privacy/delete', match: 'exact', handler: './_handlers/admin/privacy/delete.js' },
     { path: 'admin/inbox', match: 'exact', handler: './_handlers/admin/inbox.js' },
     { path: 'admin/actions', match: 'exact', handler: './_handlers/admin/actions.js' },
     { path: 'admin/runs', match: 'exact', handler: './_handlers/admin/runs.js' },

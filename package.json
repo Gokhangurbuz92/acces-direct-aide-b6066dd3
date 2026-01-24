@@ -5,10 +5,11 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "vite build",
+    "build": "node scripts/inject-headers.js && vite build",
     "db:deploy": "prisma migrate deploy",
     "postinstall": "prisma generate",
     "lint": "eslint .",
+    "verify": "node scripts/verify-lot9a-routes.js && node scripts/verify-rdv.js && node scripts/verify-actualites.js && node scripts/verify-sitemap.js && node scripts/verify-robots.js",
     "preview": "vite preview"
   },
   "dependencies": {
@@ -83,6 +84,7 @@
     "@eslint/js": "^9.19.0",
     "@flydotio/dockerfile": "^0.7.8",
     "@prisma/client": "^5.22.0",
+    "@sentry/vite-plugin": "^4.7.0",
     "@types/node": "^22.13.5",
     "@types/react": "^18.2.66",
     "@types/react-dom": "^18.2.22",

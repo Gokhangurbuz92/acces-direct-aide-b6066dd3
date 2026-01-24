@@ -204,7 +204,11 @@ export default function Home() {
             </div>
             <div className="grid md:grid-cols-3 gap-6">
               {actualites.map((actu) => (
-                <div key={actu.id} className="bg-white rounded-xl p-6 border border-slate-200 hover:shadow-lg transition-shadow">
+                <Link
+                  key={actu.id}
+                  to={actu.slug ? `/actualites/${actu.slug}` : `/actualites/view?id=${actu.id}`}
+                  className="bg-white rounded-xl p-6 border border-slate-200 hover:shadow-lg transition-shadow block"
+                >
                   <div className="text-sm text-slate-500 mb-2">
                     {new Date(actu.date_publication).toLocaleDateString('fr-FR', {
                       day: 'numeric',
@@ -213,9 +217,10 @@ export default function Home() {
                     })}
                   </div>
                   <h3 className="font-semibold text-slate-900 mb-2">{actu.titre}</h3>
-                  <p className="text-slate-600 text-sm line-clamp-3">{actu.contenu}</p>
-                </div>
+                  <p className="text-slate-600 text-sm line-clamp-3">{actu.summary_falc || actu.contenu}</p>
+                </Link>
               ))}
+
             </div>
           </div>
         </section>

@@ -1,6 +1,6 @@
 
 import { PrismaClient } from '@prisma/client';
-import { verifyProToken, ROLE, logProAudit } from '../lib/pro-auth.js';
+import { verifyProToken, ROLE, logProAudit } from '../../lib/pro-auth.js';
 import crypto from 'crypto';
 
 const prisma = new PrismaClient();

@@ -50,7 +50,7 @@ export default async function handler(req, res) {
             return res.status(403).json({ error: "Forbidden" });
         }
 
-        let handlerPath = null;
+        let routeHandler = null;
         const route = routes.find(r => {
             if (r.match === 'exact') return r.path === path;
             if (r.match === 'prefix') return path.startsWith(r.path) || path.startsWith(r.path + '/');
@@ -58,20 +58,15 @@ export default async function handler(req, res) {
         });
 
         if (route) {
-            handlerPath = route.handler;
+            routeHandler = route.handler;
         }
 
-        if (!handlerPath) {
+        if (!routeHandler) {
             log.warn({ msg: "Route Not Found", path });
             return res.status(404).json({ error: "Not Found" });
         }
 
         // 5. Execute Handler
-        const handlerModule = await import(handlerPath);
-        if (!handlerModule || !handlerModule.default) {
-            throw new Error(`Handler module matching ${path} is missing default export`);
-        }
-
         // Wrap response to log duration on finish
         // Note: res.on('finish') is node-specific, Vercel supports it.
         res.on('finish', () => {
@@ -83,7 +78,7 @@ export default async function handler(req, res) {
             });
         });
 
-        await handlerModule.default(req, res);
+        await routeHandler(req, res);
 
     } catch (error) {
         const duration = Date.now() - startTime;

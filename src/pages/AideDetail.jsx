@@ -50,13 +50,15 @@ export default function AideDetail() {
     enabled: !!slug || !!aideId
   });
 
-  const { data: structures = [] } = useQuery({
+  const { data: structuresData } = useQuery({
     queryKey: ['structures-aide', aide?.categorie],
     queryFn: () => client.entities.Structure.filter({
       statut: 'actif'
     }, '-created_date', 5),
     enabled: !!aide?.categorie
   });
+
+  const structures = structuresData?.items || [];
 
   const filteredStructures = structures.filter(s =>
     s.categories_aidees?.includes(aide?.categorie)

@@ -45,32 +45,21 @@ export default async function handler(req, res) {
         let total;
 
         if (q) {
-            // Weighted FTS using Raw Query
+            // Weighted FTS using Optimized Column
             items = await prisma.$queryRaw`
         SELECT *, 
-          ts_rank_cd(
-            setweight(to_tsvector('french', unaccent(coalesce(nom,''))), 'A') ||
-            setweight(to_tsvector('french', unaccent(coalesce(description_courte,''))), 'C') ||
-            setweight(to_tsvector('french', unaccent(array_to_string(mots_cles, ' '))), 'B'),
-            plainto_tsquery('french', unaccent(${q}))
-          ) AS rank
+          ts_rank_cd("search_vector", plainto_tsquery('french', unaccent(${q}))) AS rank
         FROM "Structure"
         WHERE statut = 'actif'
-          AND (
-            to_tsvector('french', unaccent(coalesce(nom,'') || ' ' || coalesce(description_courte,'') || ' ' || coalesce(array_to_string(mots_cles, ' '))))
-            @@ plainto_tsquery('french', unaccent(${q}))
-          )
-        ORDER BY rank DESC
+          AND "search_vector" @@ plainto_tsquery('french', unaccent(${q}))
+        ORDER BY rank DESC, nom ASC
         LIMIT ${PAGE_SIZE} OFFSET ${OFFSET}
       `;
 
             const countRes = await prisma.$queryRaw`
         SELECT count(*) FROM "Structure"
         WHERE statut = 'actif'
-          AND (
-            to_tsvector('french', unaccent(coalesce(nom,'') || ' ' || coalesce(description_courte,'') || ' ' || coalesce(array_to_string(mots_cles, ' '))))
-            @@ plainto_tsquery('french', unaccent(${q}))
-          )
+          AND "search_vector" @@ plainto_tsquery('french', unaccent(${q}))
       `;
             total = Number(countRes[0].count);
         } else {
@@ -79,7 +68,10 @@ export default async function handler(req, res) {
                     where,
                     take: PAGE_SIZE,
                     skip: OFFSET,
-                    orderBy: { nom: 'asc' }
+                    orderBy: [
+                        { nom: 'asc' },
+                        { id: 'asc' }
+                    ]
                 }),
                 prisma.structure.count({ where })
             ]);

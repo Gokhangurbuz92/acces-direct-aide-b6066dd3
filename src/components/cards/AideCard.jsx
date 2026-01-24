@@ -109,6 +109,7 @@ export default function AideCard({ aide, compact = false }) {
           <Link
             to={aide.slug ? `/aide/${aide.slug}` : `/aide/view?id=${aide.id}`}
             className="inline-flex items-center gap-2 text-blue-600 hover:text-blue-800 font-medium text-sm mt-2 group/link"
+            aria-label={`Voir l'aide ${aide.titre}`}
           >
             Voir cette aide
             <ArrowRight className="h-4 w-4 transition-transform group-hover/link:translate-x-1" />

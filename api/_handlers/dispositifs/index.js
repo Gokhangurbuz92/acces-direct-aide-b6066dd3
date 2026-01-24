@@ -2,10 +2,15 @@ import { PrismaClient } from '@prisma/client';
 
 const prisma = new PrismaClient();
 
-export async function GET(request) {
-    const url = new URL(request.url);
-    const departement = url.searchParams.get('departement');
-    const publicCible = url.searchParams.get('public');
+export default async function handler(req, res) {
+    if (req.method !== 'GET') {
+         return res.status(405).json({ error: 'Method not allowed' });
+    }
+
+    // Support both Vercel req.query and fallback parsing
+    const query = req.query || Object.fromEntries(new URL(req.url, `http://${req.headers.host}`).searchParams);
+
+    const { departement, public: publicCible } = query;
 
     const where = {
         statut: 'publie'
@@ -27,14 +32,8 @@ export async function GET(request) {
             orderBy: { titre: 'asc' }
         });
 
-        return new Response(JSON.stringify(dispositifs), {
-            status: 200,
-            headers: { 'Content-Type': 'application/json' }
-        });
+        return res.status(200).json(dispositifs);
     } catch (error) {
-        return new Response(JSON.stringify({ error: 'Failed to fetch dispositifs' }), {
-            status: 500,
-            headers: { 'Content-Type': 'application/json' }
-        });
+        return res.status(500).json({ error: 'Failed to fetch dispositifs' });
     }
 }

@@ -7,6 +7,12 @@ import Accessibilite from "./Accessibilite";
 import Actualites from "./Actualites";
 import ActualiteDetail from "./ActualiteDetail";
 
+import AdminActualites from "./AdminActualites";
+import AdminActualiteEdit from "./AdminActualiteEdit";
+
+import AdminCategories from "./AdminCategories";
+import AdminCategoryEdit from "./AdminCategoryEdit";
+
 import AdminAideEdit from "./AdminAideEdit";
 
 import AdminAides from "./AdminAides";
@@ -14,6 +20,8 @@ import AdminAides from "./AdminAides";
 import AdminAppointments from "./AdminAppointments";
 
 import AdminStructures from "./AdminStructures";
+
+import AdminStructureEdit from "./AdminStructureEdit";
 
 import AdminDemarcheEdit from "./AdminDemarcheEdit";
 
@@ -112,6 +120,12 @@ const PAGES = {
 
     Actualites: Actualites,
     ActualiteDetail: ActualiteDetail,
+
+    AdminActualites: AdminActualites,
+    AdminActualiteEdit: AdminActualiteEdit,
+
+    AdminCategories: AdminCategories,
+    AdminCategoryEdit: AdminCategoryEdit,
 
     AdminAideEdit: AdminAideEdit,
 
@@ -256,6 +270,12 @@ function PagesContent() {
                 <Route path="/actualites" element={<Actualites />} />
                 <Route path="/actualites/:slug" element={<ActualiteDetail />} />
 
+                <Route path="/adminactualites" element={<RequireAuth><AdminActualites /></RequireAuth>} />
+                <Route path="/adminactualiteedit" element={<RequireAuth><AdminActualiteEdit /></RequireAuth>} />
+
+                <Route path="/admincategories" element={<RequireAuth><AdminCategories /></RequireAuth>} />
+                <Route path="/admincategoryedit" element={<RequireAuth><AdminCategoryEdit /></RequireAuth>} />
+
                 <Route path="/admin/login" element={<AdminLogin />} />
                 <Route path="/admin/inbox" element={<AdminRoute><AdminInbox /></AdminRoute>} />
                 <Route path="/admin/runs" element={<AdminRoute><AdminRuns /></AdminRoute>} />
@@ -287,6 +307,8 @@ function PagesContent() {
                 <Route path="/adminappointments" element={<RequireAuth><AdminAppointments /></RequireAuth>} />
 
                 <Route path="/adminstructures" element={<RequireAuth><AdminStructures /></RequireAuth>} />
+
+                <Route path="/adminstructureedit" element={<RequireAuth><AdminStructureEdit /></RequireAuth>} />
 
                 <Route path="/admindemarches" element={<RequireAuth><AdminDemarches /></RequireAuth>} />
 

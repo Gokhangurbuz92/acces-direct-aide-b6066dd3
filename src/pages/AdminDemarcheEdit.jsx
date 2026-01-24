@@ -33,17 +33,24 @@ export default function AdminDemarcheEdit() {
         ou_faire: '',
         lien_officiel: '',
         documents_necessaires: [''],
+        statut: 'brouillon',
+        updatedBy: '',
+        quality_score: 0
     });
 
     const { data: demarche, isLoading: isFetching } = useQuery({
         queryKey: ['demarche', id],
-        queryFn: () => client.entities.Demarche.filter({ id }).then(res => res[0]),
+        queryFn: async () => {
+             const res = await client.entities.Demarche.get(id);
+             return res;
+        },
         enabled: !!id
     });
 
     useEffect(() => {
         if (demarche) {
             setFormData({
+                ...formData,
                 ...demarche,
                 documents_necessaires: demarche.documents_necessaires?.length ? demarche.documents_necessaires : ['']
             });
@@ -186,6 +193,35 @@ export default function AdminDemarcheEdit() {
                                     onChange={e => setFormData({ ...formData, lien_officiel: e.target.value })}
                                     placeholder="https://..."
                                 />
+                            </div>
+                        </CardContent>
+                    </Card>
+
+                    <Card>
+                        <CardHeader>
+                            <CardTitle>Métadonnées</CardTitle>
+                        </CardHeader>
+                        <CardContent className="space-y-4">
+                            <div>
+                                <Label>Statut</Label>
+                                <select
+                                    className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                                    value={formData.statut}
+                                    onChange={e => setFormData({ ...formData, statut: e.target.value })}
+                                >
+                                    <option value="brouillon">Brouillon</option>
+                                    <option value="publie">Publié</option>
+                                </select>
+                            </div>
+                            <div className="grid grid-cols-2 gap-4">
+                                <div>
+                                    <Label>Modifié par</Label>
+                                    <Input disabled value={formData.updatedBy || '-'} />
+                                </div>
+                                <div>
+                                    <Label>Score Qualité</Label>
+                                    <Input disabled value={formData.quality_score || 0} />
+                                </div>
                             </div>
                         </CardContent>
                     </Card>

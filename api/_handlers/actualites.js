@@ -1,96 +1,50 @@
 import { PrismaClient } from '@prisma/client';
-import { getAuthenticatedUser } from '../_utils/auth.js';
-import { createSnapshot } from '../_utils/snapshot.js';
+import { verifyAdmin } from '../_utils/auth.js';
+import { createEntity, updateEntity, deleteEntity } from '../_utils/crud.js';
 
 const prisma = new PrismaClient();
 
 export default async function handler(req, res) {
     const { id, slug, limit, sort, statut } = req.query;
+    const isAdmin = verifyAdmin(req);
 
-    try {
-        // --- READ (GET) ---
-        if (req.method === 'GET') {
-            const user = await getAuthenticatedUser(req);
-            const isAuth = !!user;
+    // CRUD
+    if (req.method === 'POST') return createEntity(req, res, prisma.actualite);
+    if (req.method === 'PUT') return updateEntity(req, res, prisma.actualite);
+    if (req.method === 'DELETE') return deleteEntity(req, res, prisma.actualite);
 
-            if (id || slug) {
-                const item = await prisma.actualite.findFirst({
-                    where: id ? { id: String(id) } : { slug: String(slug) }
-                });
-                if (!isAuth && item && item.statut !== 'publie') {
-                    return res.status(404).json({ error: "Not found" });
-                }
-                // Return single object if found, consistent with other detail endpoints
-                // BUT: existing code returned [item]. StructureDetail expects single object.
-                // Actualites.jsx (list) expects array.
-                // If this is details, we should probably return single object.
-                // However, the previous code `return res.status(200).json(item ? [item] : []);` suggests the frontend might expect an array for detail too?
-                // Let's check Actualites.jsx. It doesn't fetch details.
-                // I will create ActualiteDetail.jsx which will likely expect an object.
-                // So I will return the object directly.
-                if (!item) return res.status(404).json({ error: "Not found" });
-                return res.status(200).json(item);
-            }
-
-            const where = {};
-            if (isAuth) {
-                if (statut) where.statut = statut;
-            } else {
-                where.statut = 'publie';
-            }
-
-            const queryOptions = {
-                where,
-                take: limit ? parseInt(limit) : undefined,
-            };
-
-            if (sort) {
-                const desc = sort.startsWith('-');
-                const field = desc ? sort.substring(1) : sort;
-                queryOptions.orderBy = {
-                    [field]: desc ? 'desc' : 'asc'
-                };
-            }
-
-            const items = await prisma.actualite.findMany(queryOptions);
-            return res.status(200).json(items);
-        }
-
-        // --- WRITE ---
-        const user = await getAuthenticatedUser(req);
-        if (!user) return res.status(401).json({ error: "Unauthorized" });
-
-        if (req.method === 'POST') {
-            const data = req.body;
-            delete data.id;
-            const newItem = await prisma.actualite.create({ data });
-            return res.status(201).json(newItem);
-        }
-
-        if (req.method === 'PUT') {
-            if (!id) return res.status(400).json({ error: "Missing ID" });
-
-            // Snapshot before update
-            await createSnapshot('Actualite', id, user.email);
-
-            const data = req.body;
-            const updated = await prisma.actualite.update({
-                where: { id: String(id) },
-                data
+    // GET
+    if (req.method === 'GET') {
+        if (id || slug) {
+            const item = await prisma.actualite.findFirst({
+                 where: id ? { id: String(id) } : { slug: String(slug) }
             });
-            return res.status(200).json(updated);
+
+            if (!item) return res.status(404).json({ error: "Not found" });
+            if (!isAdmin && item.statut !== 'publie') {
+                return res.status(404).json({ error: "Not found" });
+            }
+            return res.status(200).json(item);
         }
 
-        if (req.method === 'DELETE') {
-            if (!id) return res.status(400).json({ error: "Missing ID" });
-            await prisma.actualite.delete({ where: { id: String(id) } });
-            return res.status(200).json({ success: true });
+        const where = {};
+        if (!isAdmin) {
+             where.statut = 'publie';
+        } else {
+             if (statut) where.statut = statut;
         }
 
-        return res.status(405).json({ error: "Method not allowed" });
+        const queryOptions = {
+            where,
+            take: limit ? parseInt(limit) : undefined,
+            orderBy: sort ? {
+                [sort.replace('-', '')]: sort.startsWith('-') ? 'desc' : 'asc'
+            } : { date_publication: 'desc' }
+        };
 
-    } catch (error) {
-        console.error(error);
-        return res.status(500).json({ error: 'Server Error' });
+        const items = await prisma.actualite.findMany(queryOptions);
+        return res.status(200).json(items);
     }
+
+    return res.status(405).json({ error: "Method not allowed" });
 }

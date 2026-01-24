@@ -1,10 +1,12 @@
-import { PrismaClient } from '@prisma/client';
+import { PrismaClient, Prisma } from '@prisma/client';
+import { checkRateLimit, getClientIp } from '../_utils/rateLimit.js';
 
 const prisma = new PrismaClient();
 
 export default async function handler(req, res) {
-    const { q, city, zip, type, page = 1, pageSize = 20 } = req.query;
+    const { id, slug, q, city, zip, type, page = 1, pageSize = 20 } = req.query;
     const PAGE_SIZE = Math.min(parseInt(pageSize) || 20, 100);
+
     const OFFSET = (parseInt(page) - 1) * PAGE_SIZE;
 
     try {
@@ -12,8 +14,29 @@ export default async function handler(req, res) {
             return res.status(405).json({ error: 'Method not allowed' });
         }
 
+        // 1. Single Item (ID or Slug)
+        if (id || slug) {
+            const structure = await prisma.structure.findFirst({
+                where: id ? { id: String(id) } : { slug: String(slug) },
+                include: { proServices: true }
+            });
+
+            if (!structure || structure.statut !== 'actif') {
+                return res.status(404).json({ error: "Structure non trouvée" });
+            }
+            return res.status(200).json(structure);
+        }
+
+        // 2. Rate Limit (for searches/list)
+        const ip = getClientIp(req);
+        const rateLimit = await checkRateLimit('SEARCH_STRUCTURES', ip);
+        if (!rateLimit.allowed) {
+            return res.status(429).json(rateLimit.error);
+        }
+
         // Base filter for non-search queries or counting
         const where = { statut: 'actif' };
+
         if (city) where.ville = { contains: city, mode: 'insensitive' };
         if (zip) where.code_postal = zip;
         if (type && type !== '_all') where.type_structure = type;

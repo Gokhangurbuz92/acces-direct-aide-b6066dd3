@@ -1,5 +1,5 @@
 
-import { syncAllFeeds } from '../lib/rss-service.js';
+import { syncAllFeeds } from '../../lib/rss-service.js';
 
 export default async function handler(req, res) {
     // Simple auth check for Vercel Cron

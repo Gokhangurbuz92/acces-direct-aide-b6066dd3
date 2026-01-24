@@ -1,62 +1,73 @@
 
 import { PrismaClient } from '@prisma/client';
-import { verifyProToken, ROLE, logProAudit } from '../../lib/pro-auth.js';
+import { verifyProToken } from '../../../lib/pro-auth.js';
 
 const prisma = new PrismaClient();
 
 export default async function handler(req, res) {
-    const authHeader = req.headers.authorization;
-    if (!authHeader || !authHeader.startsWith('Bearer ')) {
-        return res.status(401).json({ error: "Missing token" });
+    let token = null;
+    if (req.headers && req.headers.authorization) {
+        token = req.headers.authorization.replace('Bearer ', '');
+    }
+    const user = verifyProToken(token);
+    if (!user) {
+        return res.status(401).json({ error: 'Unauthorized' });
     }
 
-    const decoded = verifyProToken(authHeader.split(' ')[1]);
-    if (!decoded) {
-        return res.status(401).json({ error: "Invalid token" });
-    }
-
-    const { structureId, role, userId } = decoded;
-
-    // Only allow editing own availability or admin editing others?
-    // Let's assume user edits their own for now.
-    // Query param ?pro_id to edit specific user (if admin)
-
-    // For MVP: Edit MY availability.
-    const targetProId = userId;
-
-    try {
-        if (req.method === 'GET') {
-            const avail = await prisma.availability.findUnique({
-                where: { structureId_proId: { structureId, proId: targetProId } }
+    // GET: Fetch availability
+    if (req.method === 'GET') {
+        try {
+            const availability = await prisma.availability.findUnique({
+                where: { structureId_proId: { structureId: user.structureId, proId: user.userId } }
             });
 
-            return res.status(200).json(avail || { slots_json: {}, exceptions_json: [] });
+            // If not found, return defaults
+            if (!availability) {
+                return res.status(200).json({
+                    slots_json: {
+                        mon: ["09:00-12:00", "14:00-17:00"],
+                        tue: ["09:00-12:00", "14:00-17:00"],
+                        wed: ["09:00-12:00", "14:00-17:00"],
+                        thu: ["09:00-12:00", "14:00-17:00"],
+                        fri: ["09:00-12:00", "14:00-16:00"]
+                    },
+                    exceptions_json: []
+                });
+            }
 
-        } else if (req.method === 'PUT') {
-            const { slots, exceptions } = req.body; // slots = { mon: [] }, exceptions = []
+            return res.status(200).json({
+                slots_json: availability.slots_json,
+                exceptions_json: availability.exceptions_json
+            });
+        } catch (e) {
+            console.error(e);
+            return res.status(500).json({ error: 'Internal Error' });
+        }
+    }
 
-            const avail = await prisma.availability.upsert({
-                where: { structureId_proId: { structureId, proId: targetProId } },
+    // POST: Update availability
+    if (req.method === 'POST') {
+        const { slots_json, exceptions_json } = req.body;
+        try {
+            const availability = await prisma.availability.upsert({
+                where: { structureId_proId: { structureId: user.structureId, proId: user.userId } },
                 update: {
-                    slots_json: slots || {},
-                    exceptions_json: exceptions || []
+                    slots_json: slots_json,
+                    exceptions_json: exceptions_json || []
                 },
                 create: {
-                    structureId,
-                    proId: targetProId,
-                    slots_json: slots || {},
-                    exceptions_json: exceptions || []
+                    structureId: user.structureId,
+                    proId: user.userId,
+                    slots_json: slots_json,
+                    exceptions_json: exceptions_json || []
                 }
             });
-
-            await logProAudit('AVAILABILITY_UPDATED', userId, structureId, {}, req.socket.remoteAddress);
-            return res.status(200).json(avail);
-        } else {
-            return res.status(405).json({ error: "Method not allowed" });
+            return res.status(200).json(availability);
+        } catch (e) {
+            console.error(e);
+            return res.status(500).json({ error: 'Internal Error' });
         }
-
-    } catch (e) {
-        console.error("Availability API Error", e);
-        return res.status(500).json({ error: "Internal Error" });
     }
+
+    return res.status(405).json({ error: 'Method not allowed' });
 }

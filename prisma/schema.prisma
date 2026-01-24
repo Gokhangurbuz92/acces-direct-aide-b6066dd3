@@ -130,6 +130,7 @@ model Structure {
   @@index([statut, ville])
   @@index([departement])
   @@index([type_structure])
+  @@index([statut, nom])
 }
 
 model Demarche {
@@ -206,6 +207,7 @@ model Actualite {
   @@index([dedupe_hash])
   @@index([source_id])
   @@index([raw_data_hash])
+  @@index([statut, date_publication])
 }
 
 model ImportLog {
@@ -393,6 +395,7 @@ model Appointment {
   @@index([proId, start_at])
   @@index([cancel_token_hash])
   @@index([access_token_hash])
+  @@index([structureId, status, start_at])
 }
 
 model Message {
@@ -435,6 +438,8 @@ model Guide {
   published_at DateTime?
   createdAt    DateTime  @default(now())
   updatedAt    DateTime  @updatedAt
+
+  @@index([statut, published_at])
 }
 
 model ToolboxItem {
@@ -451,6 +456,8 @@ model ToolboxItem {
   published_at DateTime?
   createdAt    DateTime  @default(now())
   updatedAt    DateTime  @updatedAt
+
+  @@index([statut, published_at])
 }
 
 model PartnershipRequest {
@@ -495,4 +502,6 @@ model Dispositif {
   summary_falc     String?
   createdAt        DateTime  @default(now())
   updatedAt        DateTime  @updatedAt
+
+  @@index([statut, published_at])
 }

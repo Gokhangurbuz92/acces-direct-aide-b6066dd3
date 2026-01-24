@@ -64,3 +64,10 @@ To quickly generate a test environment with a Pro account, Beneficiary, and acti
     - Connect repository to Vercel.
     - Set Environment Variables (see `.env.example`).
     - Deploy.
+
+## Deployment & Infrastructure
+
+For detailed information about our Production and Staging environments, DNS configuration, and Git workflow, please refer to:
+
+- [Infrastructure Source of Truth](docs/INFRASTRUCTURE.md)
+- [Vercel Migration Guide](docs/VERCEL_MIGRATION_GUIDE.md)

@@ -2,7 +2,7 @@
 import { PrismaClient } from '@prisma/client';
 import Parser from 'rss-parser';
 import crypto from 'crypto';
-import { summarizeToFalc } from '../../../lib/falc-summarizer.js';
+import { summarizeToFalc } from '../../lib/falc-summarizer.js';
 
 const prisma = new PrismaClient();
 const parser = new Parser();

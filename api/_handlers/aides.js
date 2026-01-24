@@ -1,4 +1,5 @@
-import { PrismaClient } from '@prisma/client';
+import { PrismaClient, Prisma } from '@prisma/client';
+import { checkRateLimit, getClientIp } from '../_utils/rateLimit.js';
 
 const prisma = new PrismaClient();
 
@@ -10,6 +11,13 @@ export default async function handler(req, res) {
     try {
         if (req.method !== 'GET') {
             return res.status(405).json({ error: 'Method not allowed' });
+        }
+
+        // Rate Limit
+        const ip = getClientIp(req);
+        const rateLimit = await checkRateLimit('SEARCH_AIDES', ip);
+        if (!rateLimit.allowed) {
+            return res.status(429).json(rateLimit.error);
         }
 
         // 1. Single Item

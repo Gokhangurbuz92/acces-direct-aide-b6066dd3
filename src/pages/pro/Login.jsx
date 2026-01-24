@@ -1,6 +1,6 @@
 
 import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import SEO from '@/components/SEO';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -87,6 +87,9 @@ export default function ProLogin() {
                         <Button type="submit" className="w-full" disabled={loading}>
                             {loading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : 'Se connecter'}
                         </Button>
+                        <div className="text-center text-sm text-slate-600 mt-4">
+                            Pas encore de compte ? <Link to="/pro/register" className="text-blue-600 hover:underline">Créer ma structure</Link>
+                        </div>
                     </form>
                 </CardContent>
             </Card>

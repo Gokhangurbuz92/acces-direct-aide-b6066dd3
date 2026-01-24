@@ -1,15 +1,10 @@
-
 import { PrismaClient } from '@prisma/client';
-import { verifyProToken, checkRateLimit } from '../../lib/pro-auth.js';
+import { requireAuth } from '../../lib/pro-auth.js';
 import { encrypt, decrypt } from '../../lib/crypto.js';
 
 const prisma = new PrismaClient();
 
-export default async function handler(req, res) {
-    // Auth Check
-    const auth = await verifyProToken(req);
-    if (!auth) return res.status(401).json({ error: "Unauthorized" });
-
+async function handler(req, res) {
     const { appointmentId } = req.query; // ?appointmentId=...
     if (!appointmentId) return res.status(400).json({ error: "Missing appointmentId" });
 
@@ -20,7 +15,7 @@ export default async function handler(req, res) {
     });
 
     if (!appointment) return res.status(404).json({ error: "Not found" });
-    if (appointment.structureId !== auth.structureId) {
+    if (appointment.structureId !== req.user.structureId) {
         return res.status(403).json({ error: "Forbidden: Different Structure" });
     }
 
@@ -58,3 +53,5 @@ export default async function handler(req, res) {
 
     return res.status(405).json({ error: "Method not allowed" });
 }
+
+export default requireAuth(handler);

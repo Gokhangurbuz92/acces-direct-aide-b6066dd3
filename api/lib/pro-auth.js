@@ -1,7 +1,9 @@
 
+/* eslint-env node */
 import jwt from 'jsonwebtoken';
-import { kv } from '@vercel/kv';
 import { PrismaClient } from '@prisma/client';
+import crypto from 'crypto';
+import { checkRateLimit as checkRateLimitUtil } from '../_utils/rateLimit.js';
 
 const prisma = new PrismaClient();
 const JWT_SECRET = process.env.JWT_SECRET;
@@ -38,37 +40,26 @@ export function signProToken(user) {
 export function verifyProToken(token) {
     try {
         return jwt.verify(token, JWT_SECRET);
-    } catch (e) {
+    } catch {
         return null;
     }
 }
 
 /**
- * Rate limit helper using Vercel KV
- * Limit: 5 attempts per 15 minutes per IP or Email
+ * Rate limit helper (Backwards Compatibility Wrapper)
+ * Uses the consolidated rate limiter in api/_utils/rateLimit.js
  */
 export async function checkRateLimit(identifier) {
-    if (!process.env.KV_REST_API_URL) {
-        console.warn("KV_REST_API_URL not set, skipping rate limit (Dev mode)");
-        return { allowed: true };
+    const result = await checkRateLimitUtil('LOGIN_PRO', identifier);
+    if (!result.allowed) {
+        return { allowed: false, remaining: 0 };
     }
+    return { allowed: true, remaining: 1 };
+}
 
-    const key = `ratelimit:login:${identifier}`;
-    try {
-        const attempts = await kv.incr(key);
-        if (attempts === 1) {
-            await kv.expire(key, 15 * 60); // 15 min window
-        }
-
-        if (attempts > 5) {
-            return { allowed: false, remaining: 0 };
-        }
-
-        return { allowed: true, remaining: 5 - attempts };
-    } catch (e) {
-        console.error("KV Error", e);
-        return { allowed: true }; // Fail open if KV is down
-    }
+function hashIp(ip) {
+    if (!ip) return 'unknown';
+    return crypto.createHash('sha256').update(ip).digest('hex').substring(0, 16);
 }
 
 /**
@@ -84,10 +75,37 @@ export async function logProAudit(action, actorId, structureId, details, ip) {
                 entity: 'ProUser', // or target entity
                 details: { ...details, structureId },
                 ip,
-                // ip_hash: hash(ip) // TODO: user requested hash
+                ip_hash: hashIp(ip)
             }
         });
     } catch (e) {
         console.error("Audit Log Error", e);
     }
+}
+
+/**
+ * HOF for RBAC
+ */
+export function requireAuth(handler, allowedRoles = []) {
+    return async (req, res) => {
+        let token = null;
+        if (req.headers && req.headers.authorization) {
+            token = req.headers.authorization.replace('Bearer ', '');
+        }
+
+        const user = verifyProToken(token);
+        if (!user) {
+            return res.status(401).json({ error: 'Unauthorized' });
+        }
+
+        if (allowedRoles.length > 0 && !allowedRoles.includes(user.role)) {
+             // SUPERADMIN override
+             if (user.role !== ROLE.SUPERADMIN) {
+                 return res.status(403).json({ error: 'Forbidden' });
+             }
+        }
+
+        req.user = user;
+        return handler(req, res);
+    };
 }

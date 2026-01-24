@@ -21,6 +21,8 @@ export const routes = [
     // --- Pro Module ---
     { path: 'pro/auth/login', match: 'exact', handler: './_handlers/pro/auth/login.js' },
     { path: 'pro/auth/register', match: 'exact', handler: './_handlers/pro/auth/register.js' },
+    { path: 'pro/auth/forgot-password', match: 'exact', handler: './_handlers/pro/auth/forgot-password.js' },
+    { path: 'pro/auth/reset-password', match: 'exact', handler: './_handlers/pro/auth/reset-password.js' },
     { path: 'pro/me', match: 'exact', handler: './_handlers/pro/me.js' },
     { path: 'pro/messages', match: 'exact', handler: './_handlers/pro/messages.js' },
     { path: 'pro/appointments', match: 'exact', handler: './_handlers/pro/appointments/list.js' },

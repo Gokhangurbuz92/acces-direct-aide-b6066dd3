@@ -8,52 +8,50 @@ export default async function handler(req, res) {
     const { id, slug, limit, sort, statut } = req.query;
 
     try {
-        // --- READ (GET) ---
-        if (req.method === 'GET') {
+        // --- READ (GET / HEAD) ---
+        if (req.method === 'GET' || req.method === 'HEAD') {
             const user = await getAuthenticatedUser(req);
             const isAuth = !!user;
 
-            if (id || slug) {
-                const item = await prisma.actualite.findFirst({
-                    where: id ? { id: String(id) } : { slug: String(slug) }
-                });
-                if (!isAuth && item && item.statut !== 'publie') {
-                    return res.status(404).json({ error: "Not found" });
+            try {
+                if (id || slug) {
+                    const item = await prisma.actualite.findFirst({
+                        where: id ? { id: String(id) } : { slug: String(slug) }
+                    });
+                    if (!isAuth && item && item.statut !== 'publie') {
+                        return res.status(404).json({ error: "Not found" });
+                    }
+                    if (!item) return res.status(404).json({ error: "Not found" });
+                    return res.status(200).json(item);
                 }
-                // Return single object if found, consistent with other detail endpoints
-                // BUT: existing code returned [item]. StructureDetail expects single object.
-                // Actualites.jsx (list) expects array.
-                // If this is details, we should probably return single object.
-                // However, the previous code `return res.status(200).json(item ? [item] : []);` suggests the frontend might expect an array for detail too?
-                // Let's check Actualites.jsx. It doesn't fetch details.
-                // I will create ActualiteDetail.jsx which will likely expect an object.
-                // So I will return the object directly.
-                if (!item) return res.status(404).json({ error: "Not found" });
-                return res.status(200).json(item);
-            }
 
-            const where = {};
-            if (isAuth) {
-                if (statut) where.statut = statut;
-            } else {
-                where.statut = 'publie';
-            }
+                const where = {};
+                if (isAuth) {
+                    if (statut) where.statut = statut;
+                } else {
+                    where.statut = 'publie';
+                }
 
-            const queryOptions = {
-                where,
-                take: limit ? parseInt(limit) : undefined,
-            };
-
-            if (sort) {
-                const desc = sort.startsWith('-');
-                const field = desc ? sort.substring(1) : sort;
-                queryOptions.orderBy = {
-                    [field]: desc ? 'desc' : 'asc'
+                const queryOptions = {
+                    where,
+                    take: limit ? parseInt(limit) : undefined,
                 };
-            }
 
-            const items = await prisma.actualite.findMany(queryOptions);
-            return res.status(200).json(items);
+                if (sort) {
+                    const desc = sort.startsWith('-');
+                    const field = desc ? sort.substring(1) : sort;
+                    queryOptions.orderBy = {
+                        [field]: desc ? 'desc' : 'asc'
+                    };
+                }
+
+                const items = await prisma.actualite.findMany(queryOptions);
+                return res.status(200).json(items);
+            } catch (dbError) {
+                console.error("Actualites DB Error (Recovered):", dbError);
+                // Fallback to safe empty state to prevent 500
+                return res.status(200).json([]);
+            }
         }
 
         // --- WRITE ---

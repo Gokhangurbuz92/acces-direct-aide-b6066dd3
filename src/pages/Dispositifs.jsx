@@ -9,30 +9,30 @@ export default function Dispositifs() {
     const [filterPublic, setFilterPublic] = useState('');
 
     useEffect(() => {
+        const fetchDispositifs = async () => {
+            setLoading(true);
+            try {
+                let url = '/api/dispositifs';
+                const params = new URLSearchParams();
+                if (filterDept) params.append('departement', filterDept);
+                if (filterPublic) params.append('public', filterPublic);
+
+                if (params.toString()) url += `?${params.toString()}`;
+
+                const res = await fetch(url);
+                if (res.ok) {
+                    const data = await res.json();
+                    setDispositifs(data);
+                }
+            } catch (err) {
+                console.error(err);
+            } finally {
+                setLoading(false);
+            }
+        };
+
         fetchDispositifs();
     }, [filterDept, filterPublic]);
-
-    const fetchDispositifs = async () => {
-        setLoading(true);
-        try {
-            let url = '/api/dispositifs';
-            const params = new URLSearchParams();
-            if (filterDept) params.append('departement', filterDept);
-            if (filterPublic) params.append('public', filterPublic);
-
-            if (params.toString()) url += `?${params.toString()}`;
-
-            const res = await fetch(url);
-            if (res.ok) {
-                const data = await res.json();
-                setDispositifs(data);
-            }
-        } catch (err) {
-            console.error(err);
-        } finally {
-            setLoading(false);
-        }
-    };
 
     return (
         <div className="container mx-auto px-4 py-8">

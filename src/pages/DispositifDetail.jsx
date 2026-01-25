@@ -1,4 +1,3 @@
-import React from 'react';
 import { Link, useParams, useSearchParams } from 'react-router-dom';
 import SEO from '@/components/SEO';
 import NotFound from "./NotFound";

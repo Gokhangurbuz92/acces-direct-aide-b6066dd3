@@ -3,7 +3,6 @@ import { Link, useParams, useSearchParams } from 'react-router-dom';
 import SEO from '@/components/SEO';
 import NotFound from "./NotFound";
 import { createPageUrl } from '@/utils';
-import { client } from '@/api/client'; // Assuming client can fetch this or use fetch
 import { useQuery } from '@tanstack/react-query';
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -14,7 +13,6 @@ import {
   Loader2,
   ExternalLink,
   MapPin,
-  Users,
   Banknote,
   Flag
 } from 'lucide-react';
@@ -24,11 +22,6 @@ export default function DispositifDetail() {
   const [searchParams] = useSearchParams();
   const id = searchParams.get('id');
   const identifier = slug || id;
-
-  // We need to fetch the dispositif.
-  // Since client.entities.Dispositif might not exist in the client generator if it wasn't there before,
-  // I will use a direct fetch or assume I need to add it to client.
-  // For now, I'll use direct fetch for Dispositif as it was done in Dispositifs.jsx, or better, use useQuery with fetch.
 
   const fetchDispositif = async () => {
      let url = `/api/dispositifs?`;
@@ -43,7 +36,7 @@ export default function DispositifDetail() {
      return res.json();
   };
 
-  const { data: dispositif, isLoading, error } = useQuery({
+  const { data: dispositif, isLoading } = useQuery({
     queryKey: ['dispositif', identifier],
     queryFn: fetchDispositif,
     enabled: !!identifier
@@ -60,11 +53,6 @@ export default function DispositifDetail() {
   if (!dispositif) {
     return <NotFound />;
   }
-
-  const getPublicLabel = (p) => {
-      // Map codes to labels if needed, or just display
-      return p;
-  };
 
   return (
     <div className="min-h-screen bg-slate-50">
@@ -108,7 +96,7 @@ export default function DispositifDetail() {
                  )}
                  {dispositif.public && dispositif.public.map((p, i) => (
                      <Badge key={i} className="bg-blue-100 text-blue-800">
-                         {getPublicLabel(p)}
+                         {p}
                      </Badge>
                  ))}
             </div>

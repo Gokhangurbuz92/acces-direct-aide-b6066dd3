@@ -21,7 +21,7 @@ Ce document décrit l'organisation du code source, les responsabilités de chaqu
 **Sous-dossiers:**
 - `pages/`: Composants de haut niveau correspondant aux routes.
 - `components/`: Composants réutilisables (UI, business).
-- `api/`: Clients API (Attention: doublon `client.js` / `client.jsx` à résoudre).
+- `api/`: Clients API (`client.js` unifié).
 - `lib/` & `utils/`: Utilitaires (formatage, etc.).
 - `hooks/`: Custom hooks React.
 
@@ -34,7 +34,7 @@ Ce document décrit l'organisation du code source, les responsabilités de chaqu
 - `routes.js`: Mapping centralisé URL -> Handler.
 - `_handlers/`: Logique métier par domaine (aides, users, booking, etc.).
 - `_utils/`: Fonctions transverses sécurisées (Auth, RateLimit, Crypto).
-- `lib/`: Bibliothèques internes (Search, Emails, etc.).
+- `lib/`: Bibliothèques internes (Search, Emails, FALC, etc.).
 **Points de vigilance:**
 - La sécurité (Auth, RBAC) est gérée dans `_utils/auth.js` et doit être appliquée dans chaque handler.
 - Les fichiers dans `_utils` et `lib` sont partagés entre les fonctions serverless.
@@ -64,6 +64,9 @@ Ce document décrit l'organisation du code source, les responsabilités de chaqu
 **Fichiers clés:**
 - `REPO_MAP.md`: Ce fichier.
 - `REPO_FILES.txt`: Arborescence générée automatiquement.
+- `ROUTES_FRONT.md`: Routes Frontend.
+- `ROUTES_API.md`: Routes API.
+- `API_CONTRACT.md`: Contrat d'interface.
 - `INFRASTRUCTURE.md`: Détails sur l'hébergement et les services externes.
 
 ## Data
@@ -79,6 +82,3 @@ Ce document décrit l'organisation du code source, les responsabilités de chaqu
 **Outils:**
 - `tests/`: Vitest (Backend/Unit).
 - `e2e/`: Playwright (Scénarios utilisateurs complets).
-
----
-*Généré le: $(date +%Y-%m-%d)*

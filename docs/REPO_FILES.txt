@@ -4,6 +4,7 @@
 ./.cursor/rules/snyk_rules.mdc
 ./.github
 ./.github/workflows
+./.github/workflows/ci.yml
 ./.github/workflows/healthcheck.yml
 ./.gitignore
 ./README.md
@@ -91,7 +92,6 @@
 ./api/_handlers/version.js
 ./api/_utils
 ./api/_utils/auth.js
-./api/_utils/build-info.js
 ./api/_utils/crypto.js
 ./api/_utils/errors.js
 ./api/_utils/geocoder.js
@@ -131,12 +131,15 @@
 ./data/structures-alsace.json
 ./dev-server.js
 ./docs
+./docs/ACTION_PLAN.md
 ./docs/GDPR_REGISTER.md
 ./docs/INFRASTRUCTURE.md
 ./docs/LIGHTHOUSE_REPORT.md
 ./docs/LOT_9_1_SIGNOFF.md
 ./docs/LOT_9_2_SIGNOFF.md
 ./docs/LOT_9_SIGNOFF.md
+./docs/NEEDS_FROM_OWNER.md
+./docs/PROD_HEALTH.md
 ./docs/RELEASE_GATE.md
 ./docs/RELEASE_PROCESS.md
 ./docs/REPO_FILES.txt
@@ -229,6 +232,7 @@
 ./scripts/dev-demo-setup.js
 ./scripts/enable-unaccent.js
 ./scripts/final_verify.sh
+./scripts/generate-build-info.js
 ./scripts/generate-repo-map.sh
 ./scripts/healthcheck_prod.sh
 ./scripts/import-csv.js
@@ -444,6 +448,7 @@
 ./tailwind.config.js
 ./tests
 ./tests/integration
+./tests/integration/actualites.test.js
 ./tests/integration/api.test.js
 ./vercel.json
 ./verify_seo.py

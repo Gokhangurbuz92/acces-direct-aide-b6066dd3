@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import SEO from '@/components/SEO';
+import DispositifCard from '@/components/cards/DispositifCard';
 
 export default function Dispositifs() {
     const [dispositifs, setDispositifs] = useState([]);
@@ -8,30 +9,30 @@ export default function Dispositifs() {
     const [filterPublic, setFilterPublic] = useState('');
 
     useEffect(() => {
+        const fetchDispositifs = async () => {
+            setLoading(true);
+            try {
+                let url = '/api/dispositifs';
+                const params = new URLSearchParams();
+                if (filterDept) params.append('departement', filterDept);
+                if (filterPublic) params.append('public', filterPublic);
+
+                if (params.toString()) url += `?${params.toString()}`;
+
+                const res = await fetch(url);
+                if (res.ok) {
+                    const data = await res.json();
+                    setDispositifs(data);
+                }
+            } catch (err) {
+                console.error(err);
+            } finally {
+                setLoading(false);
+            }
+        };
+
         fetchDispositifs();
     }, [filterDept, filterPublic]);
-
-    const fetchDispositifs = async () => {
-        setLoading(true);
-        try {
-            let url = '/api/dispositifs';
-            const params = new URLSearchParams();
-            if (filterDept) params.append('departement', filterDept);
-            if (filterPublic) params.append('public', filterPublic);
-
-            if (params.toString()) url += `?${params.toString()}`;
-
-            const res = await fetch(url);
-            if (res.ok) {
-                const data = await res.json();
-                setDispositifs(data);
-            }
-        } catch (err) {
-            console.error(err);
-        } finally {
-            setLoading(false);
-        }
-    };
 
     return (
         <div className="container mx-auto px-4 py-8">
@@ -72,30 +73,7 @@ export default function Dispositifs() {
             ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                     {dispositifs.map((d) => (
-                        <div key={d.id} className="bg-white border rounded-lg p-6 shadow-sm hover:shadow-md transition">
-                            <h2 className="text-xl font-semibold mb-2 text-indigo-700">{d.titre}</h2>
-                            <p className="text-gray-600 mb-4 line-clamp-3">{d.description_falc || "Pas de description disponible."}</p>
-
-                            {d.montant && (
-                                <div className="mb-4 text-sm font-medium text-green-700 bg-green-50 p-2 rounded inline-block">
-                                    💰 {d.montant}
-                                </div>
-                            )}
-
-                            <div className="flex flex-wrap gap-2 mt-auto">
-                                {d.liens && Array.isArray(d.liens) && d.liens.map((l, idx) => (
-                                    <a
-                                        key={idx}
-                                        href={l.url}
-                                        target="_blank"
-                                        rel="noopener noreferrer"
-                                        className="text-blue-600 underline text-sm"
-                                    >
-                                        {l.nom || "En savoir plus"}
-                                    </a>
-                                ))}
-                            </div>
-                        </div>
+                        <DispositifCard key={d.id} dispositif={d} />
                     ))}
                     {dispositifs.length === 0 && (
                         <p className="col-span-3 text-center text-gray-500">Aucun dispositif trouvé pour ces critères.</p>

@@ -27,7 +27,7 @@ export default function AppointmentRequest() {
     // 1. Fetch Structure
     const { data: structure, isLoading: loadingStructure } = useQuery({
         queryKey: ['structure', structureId],
-        queryFn: () => client.entities.Structure.filter({ id: structureId }).then(res => res[0]),
+        queryFn: () => client.entities.Structure.filter({ id: structureId }).then(res => res.items ? res.items[0] : res[0]),
         enabled: !!structureId
     });
 
@@ -164,30 +164,33 @@ export default function AppointmentRequest() {
 
                                     <div className="grid grid-cols-2 gap-4">
                                         <div className="space-y-2">
-                                            <Label>Prénom</Label>
+                                            <Label htmlFor="prenom">Prénom</Label>
                                             <Input
+                                                id="prenom"
                                                 required
                                                 value={formData.prenom}
-                                                onChange={e => setFormData({...formData, prenom: e.target.value})}
+                                                onChange={e => setFormData({ ...formData, prenom: e.target.value })}
                                             />
                                         </div>
                                         <div className="space-y-2">
-                                            <Label>Nom</Label>
+                                            <Label htmlFor="nom">Nom</Label>
                                             <Input
+                                                id="nom"
                                                 required
                                                 value={formData.nom}
-                                                onChange={e => setFormData({...formData, nom: e.target.value})}
+                                                onChange={e => setFormData({ ...formData, nom: e.target.value })}
                                             />
                                         </div>
                                     </div>
 
                                     <div className="space-y-2">
-                                        <Label>Email</Label>
+                                        <Label htmlFor="email">Email</Label>
                                         <Input
+                                            id="email"
                                             type="email"
                                             required
                                             value={formData.email}
-                                            onChange={e => setFormData({...formData, email: e.target.value})}
+                                            onChange={e => setFormData({ ...formData, email: e.target.value })}
                                         />
                                     </div>
 

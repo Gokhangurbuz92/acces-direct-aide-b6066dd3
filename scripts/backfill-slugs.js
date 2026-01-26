@@ -1,119 +1,220 @@
+#!/usr/bin/env node
+/**
+ * Backfill missing slugs for Aide, Demarche, Structure, Actualite
+ * 
+ * Usage:
+ *   node scripts/backfill-slugs.js --dry-run  (default, preview only)
+ *   node scripts/backfill-slugs.js --apply    (write to DB)
+ */
 
 import { PrismaClient } from '@prisma/client';
 import slugify from '@sindresorhus/slugify';
 
 const prisma = new PrismaClient();
 
-async function backfill() {
-    console.log("🚀 Starting Slug Backfill...");
+// Parse CLI args
+const args = process.argv.slice(2);
+const isDryRun = !args.includes('--apply');
 
-    // 1. Aides
-    const aides = await prisma.aide.findMany({ where: { slug: null } });
-    console.log(`Found ${aides.length} aides to update.`);
-    for (const item of aides) {
-        let slug = slugify(item.titre || "sans-titre");
-        if (!slug || slug.length < 2) slug = `aide-${item.id.slice(0, 8)}`; // Fallback if slugify fails
+console.log(`\n🔧 Slug Backfill Script`);
+console.log(`Mode: ${isDryRun ? '🔍 DRY-RUN (preview only)' : '✍️  APPLY (writing to DB)'}\n`);
 
-        // Check collision loop
-        let uniqueSlug = slug;
-        let counter = 0;
-        while (true) {
-            const exists = await prisma.aide.findFirst({
-                where: { slug: uniqueSlug }
-            });
-            // If exists is self, it's fine (though we are updating so slug is null before? No where slug: null)
-            // Wait, 'exists' finds ANY record with that slug.
-            // Since we are iterating, we haven't written it yet to THIS record (it has null).
-            // So if exists is found, it must be ANOTHER record.
-            if (!exists) break;
-
-            counter++;
-            uniqueSlug = `${slug}-${counter}`;
-            if (counter > 50) {
-                uniqueSlug = `${slug}-${item.id.slice(0, 8)}`; // Fallback to ID
-                // Logic to ensure this is unique too?
-                // Unlikely to catch 50 dupes of title + id collision.
-                break;
-            }
-        }
-
-        try {
-            await prisma.aide.update({
-                where: { id: item.id },
-                data: {
-                    slug: uniqueSlug,
-                    mots_cles: [], // Init empty array if null
-                    summary_falc: item.cest_quoi || "" // Migrate cest_quoi to summary as default
-                }
-            });
-        } catch (e) {
-            console.error(`Failed to update ${item.id} (${uniqueSlug}): ${e.message}`);
-        }
+/**
+ * Generate unique slug for a given text and model
+ */
+async function generateUniqueSlug(baseText, model, excludeId = null) {
+    if (!baseText) {
+        throw new Error('Cannot generate slug from empty text');
     }
 
-    // 2. Structures
-    const structures = await prisma.structure.findMany({ where: { slug: null } });
-    console.log(`Found ${structures.length} structures to update.`);
-    for (const item of structures) {
-        let slug = slugify(item.nom);
+    let slug = slugify(baseText, { locale: 'fr' });
+    let suffix = 0;
+    let isUnique = false;
 
-        let uniqueSlug = slug;
-        let counter = 0;
-        while (true) {
-            const exists = await prisma.structure.findFirst({ where: { slug: uniqueSlug } });
-            if (!exists) break;
-            counter++;
-            uniqueSlug = `${slug}-${counter}`;
-            if (counter > 10) {
-                uniqueSlug = `${slug}-${item.id.slice(0, 5)}`;
-                break;
-            }
-        }
+    while (!isUnique) {
+        const testSlug = suffix === 0 ? slug : `${slug}-${suffix}`;
 
-        await prisma.structure.update({
-            where: { id: item.id },
-            data: {
-                slug: uniqueSlug,
-                mots_cles: [],
-                summary_falc: item.description_courte || ""
+        // Check if slug exists (excluding current item if updating)
+        const existing = await prisma[model].findFirst({
+            where: {
+                slug: testSlug,
+                ...(excludeId ? { id: { not: excludeId } } : {})
             }
         });
-    }
 
-    // 3. Demarches
-    const demarches = await prisma.demarche.findMany({ where: { slug: null } });
-    console.log(`Found ${demarches.length} demarches to update.`);
-    for (const item of demarches) {
-        let slug = slugify(item.titre);
-
-        let uniqueSlug = slug;
-        let counter = 0;
-        while (true) {
-            const exists = await prisma.demarche.findFirst({ where: { slug: uniqueSlug } });
-            if (!exists) break;
-            counter++;
-            uniqueSlug = `${slug}-${counter}`;
-            if (counter > 10) {
-                uniqueSlug = `${slug}-${item.id.slice(0, 5)}`;
-                break;
-            }
+        if (!existing) {
+            isUnique = true;
+            slug = testSlug;
+        } else {
+            suffix++;
         }
-
-        await prisma.demarche.update({
-            where: { id: item.id },
-            data: {
-                slug: uniqueSlug,
-                mots_cles: [],
-                summary_falc: item.description_courte || ""
-            }
-        });
     }
 
-    console.log("✅ Backfill Complete.");
-    await prisma.$disconnect();
+    return slug;
 }
 
-backfill().catch(e => {
-    console.error(e);
-    process.exit(1);
-});
+/**
+ * Backfill slugs for a specific model
+ */
+async function backfillModel(modelName, titleField) {
+    console.log(`\n📦 Processing model: ${modelName}`);
+    console.log(`─────────────────────────────────────`);
+
+    // Find items without slug
+    const itemsWithoutSlug = await prisma[modelName.toLowerCase()].findMany({
+        where: {
+            slug: null,
+            [titleField]: { not: null }
+        },
+        select: {
+            id: true,
+            [titleField]: true
+        }
+    });
+
+    console.log(`Found ${itemsWithoutSlug.length} items without slug`);
+
+    if (itemsWithoutSlug.length === 0) {
+        console.log(`✅ All ${modelName} items already have slugs!`);
+        return { total: 0, updated: 0, collisions: 0 };
+    }
+
+    let updated = 0;
+    let collisions = 0;
+    const updates = [];
+
+    for (const item of itemsWithoutSlug) {
+        const titleValue = item[titleField];
+
+        try {
+            const newSlug = await generateUniqueSlug(titleValue, modelName.toLowerCase(), item.id);
+
+            // Detect collision (slug had to get a suffix)
+            const baseSlug = slugify(titleValue, { locale: 'fr' });
+            if (newSlug !== baseSlug) {
+                collisions++;
+            }
+
+            updates.push({
+                id: item.id,
+                title: titleValue.substring(0, 60) + (titleValue.length > 60 ? '...' : ''),
+                oldSlug: null,
+                newSlug
+            });
+
+            updated++;
+
+        } catch (error) {
+            console.error(`❌ Error generating slug for ${modelName} ${item.id}:`, error.message);
+        }
+    }
+
+    // Show preview
+    if (updates.length > 0) {
+        console.log(`\nPreview (first 5):`);
+        updates.slice(0, 5).forEach(u => {
+            console.log(`  • "${u.title}" → "${u.newSlug}"`);
+        });
+        if (updates.length > 5) {
+            console.log(`  ... and ${updates.length - 5} more`);
+        }
+    }
+
+    // Apply updates if not dry-run
+    if (!isDryRun && updates.length > 0) {
+        console.log(`\n✍️  Writing ${updates.length} slugs to database...`);
+
+        for (const update of updates) {
+            await prisma[modelName.toLowerCase()].update({
+                where: { id: update.id },
+                data: { slug: update.newSlug }
+            });
+        }
+
+        console.log(`✅ Updated ${updated} ${modelName} items`);
+    }
+
+    return {
+        total: itemsWithoutSlug.length,
+        updated,
+        collisions
+    };
+}
+
+/**
+ * Main execution
+ */
+async function main() {
+    const models = [
+        { name: 'Aide', titleField: 'titre' },
+        { name: 'Demarche', titleField: 'titre' },
+        { name: 'Structure', titleField: 'nom' },
+        { name: 'Actualite', titleField: 'titre' }
+    ];
+
+    const results = {};
+
+    for (const model of models) {
+        try {
+            results[model.name] = await backfillModel(model.name, model.titleField);
+        } catch (error) {
+            console.error(`\n❌ Fatal error processing ${model.name}:`, error);
+            results[model.name] = { total: 0, updated: 0, collisions: 0, error: error.message };
+        }
+    }
+
+    // Summary
+    console.log(`\n\n📊 SUMMARY`);
+    console.log(`═════════════════════════════════════`);
+
+    let grandTotal = 0;
+    let grandUpdated = 0;
+    let grandCollisions = 0;
+
+    for (const [modelName, stats] of Object.entries(results)) {
+        console.log(`\n${modelName}:`);
+        console.log(`  Items without slug: ${stats.total}`);
+        console.log(`  ${isDryRun ? 'Would update' : 'Updated'}: ${stats.updated}`);
+        console.log(`  Collisions handled: ${stats.collisions}`);
+        if (stats.error) {
+            console.log(`  ⚠️  Error: ${stats.error}`);
+        }
+
+        grandTotal += stats.total;
+        grandUpdated += stats.updated;
+        grandCollisions += stats.collisions;
+    }
+
+    console.log(`\n─────────────────────────────────────`);
+    console.log(`TOTALS:`);
+    console.log(`  Items without slug: ${grandTotal}`);
+    console.log(`  ${isDryRun ? 'Would update' : 'Updated'}: ${grandUpdated}`);
+    console.log(`  Collisions handled: ${grandCollisions}`);
+
+    if (isDryRun && grandTotal > 0) {
+        console.log(`\n💡 To apply these changes, run:`);
+        console.log(`   node scripts/backfill-slugs.js --apply\n`);
+    } else if (!isDryRun && grandUpdated > 0) {
+        console.log(`\n✅ Backfill complete!\n`);
+    } else if (grandTotal === 0) {
+        console.log(`\n✅ No backfill needed - all items have slugs!\n`);
+    }
+
+    // Verification queries
+    if (!isDryRun && grandUpdated > 0) {
+        console.log(`\n🔍 Verification queries (run in psql or DB tool):`);
+        console.log(`   SELECT COUNT(*) as missing_slugs FROM "Aide" WHERE slug IS NULL;`);
+        console.log(`   SELECT COUNT(*) as missing_slugs FROM "Demarche" WHERE slug IS NULL;`);
+        console.log(`   SELECT COUNT(*) as missing_slugs FROM "Structure" WHERE slug IS NULL;`);
+        console.log(`   SELECT COUNT(*) as missing_slugs FROM "Actualite" WHERE slug IS NULL;\n`);
+    }
+}
+
+main()
+    .catch(error => {
+        console.error('\n❌ Fatal error:', error);
+        process.exit(1);
+    })
+    .finally(async () => {
+        await prisma.$disconnect();
+    });

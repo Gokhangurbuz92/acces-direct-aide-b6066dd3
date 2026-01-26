@@ -5,12 +5,15 @@ import crypto from 'crypto';
 import fs from 'fs';
 import path from 'path';
 import { summarizeToFalc } from '../../lib/falc-summarizer.js';
+import ingestStructures from './ingest-structures.js';
+import ingestAids from './ingest-aids.js';
 
 const prisma = new PrismaClient();
 const parser = new Parser();
 
 // Helper: Slugify
 function slugify(text) {
+    if (!text) return '';
     return text
         .toString()
         .toLowerCase()
@@ -22,17 +25,17 @@ function slugify(text) {
         .replace(/-+$/, '');
 }
 
-export async function GET(request) {
+export default async function handler(req, res) {
     // 1. Authorization
     if (!process.env.CRON_SECRET) {
         console.error("CRITICAL: CRON_SECRET environment variable is not defined.");
-        return new Response('Server configuration error', { status: 500 });
+        return res.status(500).json({ error: 'Server configuration error' });
     }
 
-    const urlObj = new URL(request.url);
-    const secret = urlObj.searchParams.get('secret');
-    const vercelCronHeader = request.headers.get('x-vercel-cron');
-    const authHeader = request.headers.get('authorization');
+    // req.query is available in Vercel function, or parsed by dev-server
+    const secret = req.query?.secret || new URL(req.url, `http://${req.headers.host}`).searchParams.get('secret');
+    const vercelCronHeader = req.headers['x-vercel-cron'];
+    const authHeader = req.headers['authorization'];
 
     const isAuthorized =
         secret === process.env.CRON_SECRET ||
@@ -41,7 +44,7 @@ export async function GET(request) {
 
     if (!isAuthorized) {
         console.warn("Unauthorized Pipeline Attempt");
-        return new Response('Unauthorized', { status: 401 });
+        return res.status(401).json({ error: 'Unauthorized' });
     }
 
     const runId = crypto.randomUUID();
@@ -105,16 +108,14 @@ export async function GET(request) {
         // ==========================================
         // Structures
         try {
-            const structuresHandler = await import('./ingest-structures.js');
-            await structuresHandler.default({ query: { secret: process.env.CRON_SECRET } }, {
+            await ingestStructures({ query: { secret: process.env.CRON_SECRET } }, {
                 status: () => ({ json: (d) => { if (d && d.created) stats.ingested += d.created; } })
             });
         } catch (e) { console.error("Pipeline: Ingest Structures failed", e); }
 
         // Aids
         try {
-            const aidsHandler = await import('./ingest-aids.js');
-            await aidsHandler.default({ query: { secret: process.env.CRON_SECRET } }, {
+            await ingestAids({ query: { secret: process.env.CRON_SECRET } }, {
                 status: () => ({ json: (d) => { if (d && d.created) stats.ingested += d.created; } })
             });
         } catch (e) { console.error("Pipeline: Ingest Aids failed", e); }
@@ -261,13 +262,10 @@ export async function GET(request) {
                     logs: JSON.stringify(globalErr.message)
                 }
             });
-        } catch (e) { /* ignore */ } // eslint-disable-line no-unused-vars
+        } catch (e) { /* ignore */ }
 
-        return new Response(JSON.stringify({ error: globalErr.message }), { status: 500 });
+        return res.status(500).json({ error: globalErr.message });
     }
 
-    return new Response(JSON.stringify(stats), {
-        status: 200,
-        headers: { 'Content-Type': 'application/json' }
-    });
+    return res.status(200).json(stats);
 }

@@ -1,7 +1,7 @@
 import React from 'react';
 import { Link, useParams, useSearchParams } from 'react-router-dom';
 import SEO from '@/components/SEO';
-import { generateStructureSchema, generateBreadcrumbSchema } from '@/utils/schema';
+import NotFound from "./NotFound";
 import { createPageUrl } from '@/utils';
 import { client } from '@/api/client';
 import { useQuery } from '@tanstack/react-query';
@@ -56,16 +56,7 @@ export default function StructureDetail() {
   }
 
   if (!structure) {
-    return (
-      <div className="min-h-screen bg-slate-50 flex items-center justify-center">
-        <div className="text-center">
-          <p className="text-slate-600 mb-4">Cette structure n'existe pas ou a été supprimée.</p>
-          <Link to={createPageUrl('Annuaire')}>
-            <Button>Retour à l'annuaire</Button>
-          </Link>
-        </div>
-      </div>
-    );
+    return <NotFound />;
   }
 
   const breadcrumbs = [
@@ -93,7 +84,7 @@ export default function StructureDetail() {
           <nav className="flex items-center gap-2 text-sm text-slate-600">
             <Link to={createPageUrl('Home')} className="hover:text-blue-600">Accueil</Link>
             <ChevronRight className="h-4 w-4" />
-            <Link to={createPageUrl('Annuaire')} className="hover:text-blue-600">Annuaire</Link>
+            <Link to="/structures" className="hover:text-blue-600">Annuaire</Link>
             <ChevronRight className="h-4 w-4" />
             <span className="text-slate-900">{structure.nom}</span>
           </nav>
@@ -103,7 +94,7 @@ export default function StructureDetail() {
       <div className="max-w-4xl mx-auto px-4 sm:px-6 py-8">
         {/* Retour */}
         <Link
-          to={createPageUrl('Annuaire')}
+          to="/structures"
           className="inline-flex items-center gap-2 text-slate-600 hover:text-blue-600 mb-6"
         >
           <ArrowLeft className="h-4 w-4" />

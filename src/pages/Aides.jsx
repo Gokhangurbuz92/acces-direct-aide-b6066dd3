@@ -53,7 +53,9 @@ export default function Aides() {
     } else {
       newParams.delete(key);
     }
-    newParams.set('page', '1');
+    if (key !== 'page') {
+      newParams.set('page', '1');
+    }
     setSearchParams(newParams);
   };
 
@@ -99,6 +101,7 @@ export default function Aides() {
           </h1>
           <div className="flex-1">
             <SearchBar
+              key={query} // Force remount when query changes from URL
               onSearch={(p) => handleFilterChange('q', p.query)}
               initialValue={query}
               compact

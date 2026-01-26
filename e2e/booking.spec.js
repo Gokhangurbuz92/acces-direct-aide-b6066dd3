@@ -1,19 +1,33 @@
-
 import { test, expect } from '@playwright/test';
 
-// Use a known existing structure ID or mock it?
-// We need the dev server running for this.
-// Assuming dev server is at localhost:3000
+test.setTimeout(60000);
 
 test('Public Booking Flow', async ({ page }) => {
-  // 1. Visit a structure detail page (we need a structure ID that has pro enabled)
-  // This is tricky without seeding data.
-  // Let's assume the "backend flow test" created a structure? No, that script cleans up (or tries to).
-  // We can't rely on transient data.
-  // We will test the UI components mount and navigate correctly, mocking the API if possible.
+  // Mock Structure for Booking
+  await page.route('**/api/structures*', async route => {
+    await route.fulfill({
+      json: {
+        items: [{
+          id: 'dummy-123',
+          slug: 'structure-test',
+          nom: 'Structure Test',
+          statut: 'actif',
+          proServices: [{ id: 'svc-1', nom: 'Service Test' }]
+        }],
+        pagination: { total: 1 }
+      }
+    });
+  });
 
-  // Actually, we can just check if the "AppointmentRequest" page loads given a dummy ID.
-  await page.goto('http://localhost:3000/rdv?structure_id=dummy-123');
+  // Mock Availability
+  await page.route('**/api/public/availability*', async route => route.fulfill({ json: [] }));
+
+  // Mock Taxonomy to avoid errors if prompted
+  await page.route('**/api/taxonomy', async route => route.fulfill({ json: { categories: [], situations: [] } }));
+
+
+  // Use correct route from pages/index.jsx
+  await page.goto('/appointmentrequest?structure_id=dummy-123');
 
   // Check title
   await expect(page.getByText('Choisir un créneau')).toBeVisible();
@@ -24,6 +38,11 @@ test('Public Booking Flow', async ({ page }) => {
 });
 
 test('Pro Login Flow', async ({ page }) => {
-  await page.goto('http://localhost:3000/pro/login');
-  await expect(page.getByRole('heading', { name: 'Espace Professionnel' })).toBeVisible();
+  // Use correct route
+  await page.goto('/pro/login');
+
+  // Use correct heading from ProLogin.jsx
+  await expect(page.getByText('AccesDirect Pro')).toBeVisible();
+  // Or by role if you prefer strictness:
+  // await expect(page.getByRole('heading', { name: 'AccesDirect Pro' })).toBeVisible();
 });

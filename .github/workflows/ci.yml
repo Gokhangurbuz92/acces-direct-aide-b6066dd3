@@ -1,0 +1,67 @@
+name: CI
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+env:
+  DATABASE_URL: "postgresql://user:password@localhost:5432/mydb" # Dummy for build/schema validation
+  JWT_SECRET: "super-secret-jwt-key-for-ci-testing-only"
+  CRON_SECRET: "cron-secret-for-ci"
+  ENCRYPTION_KEY: "0000000000000000000000000000000000000000000000000000000000000000" # 32-byte hex (64 chars) or 32 chars? Memory said 32-byte hex. 64 hex chars.
+  # "The ENCRYPTION_KEY environment variable is mandatory and must be a 32-byte hex string"
+  # 32 bytes = 64 hex chars.
+  # Let's generate a valid one: 32 bytes * 2 = 64 chars.
+  # "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef"
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+      - run: npm ci
+      - run: npm run lint
+        continue-on-error: true # Warning only as per requirements ("baseline strategy")
+
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+      - run: npm ci
+      - run: npx prisma generate
+      - run: npm run build
+
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+      - run: npm ci
+      - run: npx prisma generate
+      - run: npm run test
+
+  e2e:
+    runs-on: ubuntu-latest
+    needs: [build] # Wait for build to ensure it works
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+      - run: npm ci
+      - run: npx playwright install --with-deps
+      - run: npx playwright test e2e/public-core.spec.js e2e/booking.spec.js

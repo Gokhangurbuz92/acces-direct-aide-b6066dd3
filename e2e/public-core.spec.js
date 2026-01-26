@@ -140,36 +140,36 @@ test.describe('Public Core Routes', () => {
 
     test('Aides list and detail navigation', async ({ page }) => {
         await page.goto('/aides');
-        await expect(page.getByRole('heading', { name: 'Aide Test' })).toBeVisible();
+        await expect(page.getByRole('heading', { name: 'Aide Test' }).first()).toBeVisible();
 
         await page.getByLabel('Voir l\'aide Aide Test').click();
-        await expect(page.getByRole('heading', { name: 'Aide Test Detail' })).toBeVisible();
+        await expect(page.getByRole('heading', { name: 'Aide Test Detail' }).first()).toBeVisible();
     });
 
     test('Demarches list and detail navigation', async ({ page }) => {
         await page.goto('/demarches');
-        await expect(page.getByRole('heading', { name: 'Démarche Test' })).toBeVisible();
+        await expect(page.getByRole('heading', { name: 'Démarche Test' }).first()).toBeVisible();
 
         await page.getByRole('link', { name: /Démarrer|Voir|Consulter/i }).first().click();
-        await expect(page.getByRole('heading', { name: 'Démarche Test Detail' })).toBeVisible();
+        await expect(page.getByRole('heading', { name: 'Démarche Test Detail' }).first()).toBeVisible();
     });
 
     test('Structures list and detail navigation', async ({ page }) => {
         await page.goto('/annuaire');
-        await expect(page.getByRole('heading', { name: 'Structure Test' })).toBeVisible();
+        await expect(page.getByRole('heading', { name: 'Structure Test' }).first()).toBeVisible();
 
         // Use "Plus d'infos" link as the card title is not clickable
         await page.getByRole('link', { name: "Plus d'infos" }).first().click();
-        await expect(page.getByRole('heading', { name: 'Structure Test Detail' })).toBeVisible();
+        await expect(page.getByRole('heading', { name: 'Structure Test Detail' }).first()).toBeVisible();
     });
 
     test('Actualites list and detail navigation', async ({ page }) => {
         await page.goto('/actualites');
-        await expect(page.getByRole('heading', { name: 'Actualité Test' })).toBeVisible();
+        await expect(page.getByRole('heading', { name: 'Actualité Test' }).first()).toBeVisible();
 
         // Actualites uses title as link in one place, or "Lire la suite"
-        await page.getByRole('heading', { name: 'Actualité Test' }).click();
-        await expect(page.getByRole('heading', { name: 'Actualité Test Detail' })).toBeVisible();
+        await page.getByRole('heading', { name: 'Actualité Test' }).first().click();
+        await expect(page.getByRole('heading', { name: 'Actualité Test Detail' }).first()).toBeVisible();
     });
 
 });

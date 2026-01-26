@@ -1,4 +1,4 @@
-/* global process */
+
 import { PrismaClient } from '@prisma/client';
 import Parser from 'rss-parser';
 import crypto from 'crypto';
@@ -79,25 +79,25 @@ export default async function handler(req, res) {
         try {
             const configPath = path.join(process.cwd(), 'config', 'rss-sources.json');
             if (fs.existsSync(configPath)) {
-                 const configSources = JSON.parse(fs.readFileSync(configPath, 'utf8'));
-                 for (const src of configSources) {
-                     await prisma.rssSource.upsert({
-                         where: { feed_url: src.url },
-                         update: {
-                             name: src.name,
-                             domain: src.domain,
-                             trust_level: src.trust_level,
-                             enabled: true // Re-enable if in config
-                         },
-                         create: {
-                             name: src.name,
-                             feed_url: src.url,
-                             domain: src.domain,
-                             trust_level: src.trust_level,
-                             enabled: true
-                         }
-                     });
-                 }
+                const configSources = JSON.parse(fs.readFileSync(configPath, 'utf8'));
+                for (const src of configSources) {
+                    await prisma.rssSource.upsert({
+                        where: { feed_url: src.url },
+                        update: {
+                            name: src.name,
+                            domain: src.domain,
+                            trust_level: src.trust_level,
+                            enabled: true // Re-enable if in config
+                        },
+                        create: {
+                            name: src.name,
+                            feed_url: src.url,
+                            domain: src.domain,
+                            trust_level: src.trust_level,
+                            enabled: true
+                        }
+                    });
+                }
             }
         } catch (e) {
             console.error("Pipeline: Seed Config failed", e);
@@ -169,10 +169,10 @@ export default async function handler(req, res) {
                             stats.ingested++;
                         }
                     } catch (e) {
-                         if (!e.message.includes('Unique constraint')) {
-                             throw e;
-                         }
-                         // Ignore duplicate canonical_url
+                        if (!e.message.includes('Unique constraint')) {
+                            throw e;
+                        }
+                        // Ignore duplicate canonical_url
                     }
                 }
             } catch (err) {
@@ -255,7 +255,7 @@ export default async function handler(req, res) {
         console.error("Pipeline Global Error:", globalErr);
         // Try to log the failure to DB if possible
         try {
-             await prisma.importLog.create({
+            await prisma.importLog.create({
                 data: {
                     source_name: 'CRON_PIPELINE',
                     status: 'ERROR',

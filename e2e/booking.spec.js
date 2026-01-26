@@ -2,8 +2,6 @@ import { test, expect } from '@playwright/test';
 
 test.setTimeout(60000);
 
-test.setTimeout(60000);
-
 // Use a known existing structure ID or mock it?
 // We need the dev server running for this.
 // Assuming dev server is at localhost:3000

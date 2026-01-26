@@ -1,6 +1,6 @@
 import { test, expect } from '@playwright/test';
 
-// Augmentation du timeout global pour ce fichier (60s) pour éviter les échecs CI
+// CI est plus lent que le local, on force 60s de timeout pour ce fichier critique
 test.setTimeout(60000);
 
 // Mock Data

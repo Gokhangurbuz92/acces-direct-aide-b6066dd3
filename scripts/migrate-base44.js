@@ -8,6 +8,7 @@ const BASE_URL = "https://base44.app/api";
 function sanitize(str) {
     if (typeof str !== 'string') return str;
     // Remove null bytes and other control chars that might upset Postgres
+    // eslint-disable-next-line no-control-regex
     return str.replace(/\u0000/g, '');
 }
 

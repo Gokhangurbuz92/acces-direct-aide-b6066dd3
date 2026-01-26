@@ -2,6 +2,8 @@ import { test, expect } from '@playwright/test';
 
 test.setTimeout(60000);
 
+test.setTimeout(60000);
+
 test.describe('Public Navigation Smoke Tests', () => {
 
   test.beforeEach(async ({ page }) => {

@@ -145,7 +145,7 @@ test.describe('Public Navigation Smoke Tests', () => {
       }
     });
 
-    await page.goto('http://localhost:3000/structures');
+    await page.goto('/structures');
     await expect(page.getByText('Structure Test')).toBeVisible();
 
     await page.getByRole('link', { name: 'Plus d\'infos' }).click();

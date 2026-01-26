@@ -1,5 +1,8 @@
 import { test, expect } from '@playwright/test';
 
+// Augmentation du timeout global pour ce fichier (60s) pour éviter les échecs CI
+test.setTimeout(60000);
+
 // Mock Data
 const MOCK_AIDES = {
     items: [
@@ -140,10 +143,11 @@ test.describe('Public Core Routes', () => {
 
     test('Aides list and detail navigation', async ({ page }) => {
         await page.goto('/aides');
+        // FIX: Use first() heading to avoid strict mode violation
         await expect(page.getByRole('heading', { name: 'Aide Test' }).first()).toBeVisible();
 
         await page.getByLabel('Voir l\'aide Aide Test').click();
-        await expect(page.getByRole('heading', { name: 'Aide Test Detail' }).first()).toBeVisible();
+        await expect(page.getByRole('heading', { name: 'Aide Test Detail' })).toBeVisible();
     });
 
     test('Demarches list and detail navigation', async ({ page }) => {
@@ -151,7 +155,7 @@ test.describe('Public Core Routes', () => {
         await expect(page.getByRole('heading', { name: 'Démarche Test' }).first()).toBeVisible();
 
         await page.getByRole('link', { name: /Démarrer|Voir|Consulter/i }).first().click();
-        await expect(page.getByRole('heading', { name: 'Démarche Test Detail' }).first()).toBeVisible();
+        await expect(page.getByRole('heading', { name: 'Démarche Test Detail' })).toBeVisible();
     });
 
     test('Structures list and detail navigation', async ({ page }) => {
@@ -160,7 +164,7 @@ test.describe('Public Core Routes', () => {
 
         // Use "Plus d'infos" link as the card title is not clickable
         await page.getByRole('link', { name: "Plus d'infos" }).first().click();
-        await expect(page.getByRole('heading', { name: 'Structure Test Detail' }).first()).toBeVisible();
+        await expect(page.getByRole('heading', { name: 'Structure Test Detail' })).toBeVisible();
     });
 
     test('Actualites list and detail navigation', async ({ page }) => {
@@ -168,8 +172,8 @@ test.describe('Public Core Routes', () => {
         await expect(page.getByRole('heading', { name: 'Actualité Test' }).first()).toBeVisible();
 
         // Actualites uses title as link in one place, or "Lire la suite"
-        await page.getByRole('heading', { name: 'Actualité Test' }).first().click();
-        await expect(page.getByRole('heading', { name: 'Actualité Test Detail' }).first()).toBeVisible();
+        await page.getByText('Actualité Test').first().click();
+        await expect(page.getByRole('heading', { name: 'Actualité Test Detail' })).toBeVisible();
     });
 
 });

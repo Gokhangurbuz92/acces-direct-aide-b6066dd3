@@ -2,7 +2,6 @@ import { test, expect } from '@playwright/test';
 
 test.setTimeout(60000);
 
-test.setTimeout(60000);
 
 test.describe('Public Navigation Smoke Tests', () => {
 
@@ -53,7 +52,7 @@ test.describe('Public Navigation Smoke Tests', () => {
     });
 
     await page.goto('/aides');
-    await expect(page.getByText('Aide Test')).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Aide Test' }).first()).toBeVisible();
 
     await page.getByRole('link', { name: 'Voir l\'aide Aide Test' }).click();
     await expect(page).toHaveURL(/\/aides\/aide-test/);
@@ -102,7 +101,7 @@ test.describe('Public Navigation Smoke Tests', () => {
     });
 
     await page.goto('/demarches');
-    await expect(page.getByText('Démarche Test')).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Démarche Test' }).first()).toBeVisible();
 
     await page.getByRole('link', { name: 'Démarrer la démarche' }).click();
     await expect(page).toHaveURL(/\/demarches\/demarche-test/);
@@ -150,7 +149,7 @@ test.describe('Public Navigation Smoke Tests', () => {
     });
 
     await page.goto('/structures');
-    await expect(page.getByText('Structure Test')).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Structure Test' }).first()).toBeVisible();
 
     await page.getByRole('link', { name: 'Plus d\'infos' }).click();
     await expect(page).toHaveURL(/\/structures\/structure-test/);

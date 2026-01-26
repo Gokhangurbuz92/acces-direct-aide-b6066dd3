@@ -40,14 +40,26 @@ const CATEGORIE_LABELS = {
 };
 
 export default function AideDetail() {
-  const { slug } = useParams();
+  const { slug } = useParams(); // Now 'slug' can be either slug or id
   const urlParams = new URLSearchParams(window.location.search);
-  const aideId = urlParams.get('id');
+  const legacyId = urlParams.get('id');
+
+  // Redirect legacy route /aide/view?id=X to /aides/:id
+  React.useEffect(() => {
+    if (legacyId && window.location.pathname === '/aide/view') {
+      window.location.replace(`/aides/${legacyId}`);
+    }
+  }, [legacyId]);
 
   const { data: aide, isLoading, error } = useQuery({
-    queryKey: ['aide', slug || aideId],
-    queryFn: () => client.entities.Aide.filter(slug ? { slug } : { id: aideId }),
-    enabled: !!slug || !!aideId
+    queryKey: ['aide', slug],
+    queryFn: async () => {
+      // API handler will accept slugOrId
+      const result = await client.entities.Aide.filter({ slug });
+      // Handle array response (list endpoint) vs object (detail endpoint)
+      return result?.items ? result.items[0] : result;
+    },
+    enabled: !!slug
   });
 
   const { data: structuresData } = useQuery({
@@ -318,7 +330,7 @@ export default function AideDetail() {
                     {filteredStructures.map((struct) => (
                       <Link
                         key={struct.id}
-                        to={struct.slug ? `/structures/${struct.slug}` : `/structures/view?id=${struct.id}`}
+                        to={`/structures/${struct.slug ?? struct.id}`}
                         className="block p-3 rounded-lg bg-slate-50 hover:bg-slate-100 transition-colors"
                       >
                         <p className="font-medium text-slate-900">{struct.nom}</p>

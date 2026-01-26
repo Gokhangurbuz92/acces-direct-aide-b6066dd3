@@ -127,7 +127,7 @@ export default function StructureCard({ structure, compact = false }) {
               </Button>
             )}
             <Link
-              to={structure.slug ? `/structures/${structure.slug}` : `/structures/view?id=${structure.id}`}
+              to={`/structures/${structure.slug ?? structure.id}`}
               className="inline-flex items-center gap-1 text-blue-600 hover:text-blue-800 font-medium text-sm group/link"
             >
               Plus d'infos

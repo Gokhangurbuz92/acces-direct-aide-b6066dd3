@@ -46,6 +46,7 @@ import Contact from "./Contact";
 import Cookies from "./Cookies";
 
 import DemarcheDetail from "./DemarcheDetail";
+import DispositifDetail from "./DispositifDetail";
 
 import LoginPro from "./LoginPro"; // [NEW]
 
@@ -145,6 +146,7 @@ const PAGES = {
     Cookies: Cookies,
 
     DemarcheDetail: DemarcheDetail,
+    DispositifDetail: DispositifDetail,
 
     LoginPro: LoginPro, // [NEW]
 
@@ -345,6 +347,8 @@ function PagesContent() {
                 <Route path="/outils/:slug" element={<ToolDetail />} />
 
                 <Route path="/dispositifs" element={<Dispositifs />} />
+                <Route path="/dispositifs/:slug" element={<DispositifDetail />} />
+                <Route path="/dispositifs/view" element={<DispositifDetail />} />
 
                 <Route path="/impact" element={<Impact />} />
                 <Route path="/notre-mission" element={<Mission />} />

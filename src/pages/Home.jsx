@@ -1,6 +1,7 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import SEO from '@/components/SEO';
+import Logo from '@/components/Brand/Logo';
 import { createPageUrl } from '@/utils';
 import { client } from '@/api/client';
 import { useQuery } from '@tanstack/react-query';
@@ -13,7 +14,6 @@ import { Skeleton } from "@/components/ui/skeleton";
 import {
   ArrowRight,
   Shield,
-  Clock,
   Heart,
   AlertTriangle,
   CheckCircle2
@@ -54,6 +54,9 @@ export default function Home() {
       {/* Hero Section */}
       <section className="bg-gradient-to-br from-blue-600 via-blue-700 to-indigo-800 text-white py-16 md:py-24">
         <div className="max-w-5xl mx-auto px-4 sm:px-6 text-center">
+          <div className="mb-8 flex justify-center">
+            <Logo variant="hero" />
+          </div>
           <h1 className="text-3xl md:text-5xl font-bold mb-6 leading-tight">
             Trouvez les aides et les services
             <br className="hidden md:block" />
@@ -170,7 +173,7 @@ export default function Home() {
                 Informations sûres
               </h3>
               <p className="text-slate-600">
-                Nos informations viennent de l'État.
+                Nos informations viennent de l&apos;État.
               </p>
             </div>
             <div className="text-center">
@@ -181,7 +184,7 @@ export default function Home() {
                 Site gratuit
               </h3>
               <p className="text-slate-600">
-                C'est gratuit. Il n'y a pas de publicité.
+                C&apos;est gratuit. Il n&apos;y a pas de publicité.
               </p>
             </div>
             <div className="text-center">
@@ -216,7 +219,7 @@ export default function Home() {
             </div>
             <div className="grid md:grid-cols-3 gap-6">
               {loadingActualites ? (
-                 Array(3).fill(0).map((_, i) => (
+                Array(3).fill(0).map((_, i) => (
                   <Skeleton key={i} className="h-48 w-full rounded-xl" />
                 ))
               ) : (
@@ -271,8 +274,8 @@ export default function Home() {
       <section className="py-8 bg-slate-100 border-t border-slate-200">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 text-center">
           <p className="text-sm text-slate-600">
-            ℹ️ Ce site informe et oriente. Il ne remplace pas l'administration ou un professionnel.
-            En cas de doute, contactez toujours l'organisme concerné.
+            ℹ️ Ce site informe et oriente. Il ne remplace pas l&apos;administration ou un professionnel.
+            En cas de doute, contactez toujours l&apos;organisme concerné.
           </p>
         </div>
       </section>

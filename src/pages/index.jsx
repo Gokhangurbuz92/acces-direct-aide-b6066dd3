@@ -77,7 +77,6 @@ import AdminReview from "./AdminReview";
 import AdminLogin from "./AdminLogin";
 import AdminInbox from "./admin/Inbox";
 import AdminRuns from "./admin/Runs";
-import AdminHealth from "./admin/Health";
 
 // Lot 4: Pro Module Imports
 import ProLayout from "./pro/ProLayout";
@@ -163,7 +162,6 @@ const PAGES = {
     StructureDetail: StructureDetail,
     AdminInbox: AdminInbox,
     AdminRuns: AdminRuns,
-    AdminHealth: AdminHealth,
 
 }
 
@@ -265,7 +263,6 @@ function PagesContent() {
                 <Route path="/admin/login" element={<AdminLogin />} />
                 <Route path="/admin/inbox" element={<AdminRoute><AdminInbox /></AdminRoute>} />
                 <Route path="/admin/runs" element={<AdminRoute><AdminRuns /></AdminRoute>} />
-                <Route path="/admin/health" element={<AdminRoute><AdminHealth /></AdminRoute>} />
 
                 <Route path="/adminaideedit" element={<AdminRoute><AdminAideEdit /></AdminRoute>} />
 

@@ -140,7 +140,7 @@ test.describe('Public Core Routes', () => {
 
     test('Aides list and detail navigation', async ({ page }) => {
         await page.goto('/aides');
-        await expect(page.getByText('Aide Test')).toBeVisible();
+        await expect(page.getByRole('heading', { name: 'Aide Test' })).toBeVisible();
 
         await page.getByLabel('Voir l\'aide Aide Test').click();
         await expect(page.getByRole('heading', { name: 'Aide Test Detail' })).toBeVisible();
@@ -148,7 +148,7 @@ test.describe('Public Core Routes', () => {
 
     test('Demarches list and detail navigation', async ({ page }) => {
         await page.goto('/demarches');
-        await expect(page.getByText('Démarche Test')).toBeVisible();
+        await expect(page.getByRole('heading', { name: 'Démarche Test' })).toBeVisible();
 
         await page.getByRole('link', { name: /Démarrer|Voir|Consulter/i }).first().click();
         await expect(page.getByRole('heading', { name: 'Démarche Test Detail' })).toBeVisible();
@@ -156,7 +156,7 @@ test.describe('Public Core Routes', () => {
 
     test('Structures list and detail navigation', async ({ page }) => {
         await page.goto('/annuaire');
-        await expect(page.getByText('Structure Test')).toBeVisible();
+        await expect(page.getByRole('heading', { name: 'Structure Test' })).toBeVisible();
 
         // Use "Plus d'infos" link as the card title is not clickable
         await page.getByRole('link', { name: "Plus d'infos" }).first().click();
@@ -165,10 +165,10 @@ test.describe('Public Core Routes', () => {
 
     test('Actualites list and detail navigation', async ({ page }) => {
         await page.goto('/actualites');
-        await expect(page.getByText('Actualité Test')).toBeVisible();
+        await expect(page.getByRole('heading', { name: 'Actualité Test' })).toBeVisible();
 
         // Actualites uses title as link in one place, or "Lire la suite"
-        await page.getByText('Actualité Test').click();
+        await page.getByRole('heading', { name: 'Actualité Test' }).click();
         await expect(page.getByRole('heading', { name: 'Actualité Test Detail' })).toBeVisible();
     });
 

@@ -2,8 +2,15 @@
 import { test, expect } from '@playwright/test';
 
 test.describe('Accessibility and Keyboard Navigation', () => {
+  test.beforeEach(async ({ page }) => {
+    // Mock critical API calls for Home Page
+    await page.route('**/api/taxonomy', async route => route.fulfill({ json: { categories: [], situations: [] } }));
+    await page.route('**/api/actualites*', async route => route.fulfill({ json: [] }));
+    await page.route('**/api/stats*', async route => route.fulfill({ json: { users: 100, structures: 50 } }));
+  });
+
   test('Home page has correct language and structure', async ({ page }) => {
-    await page.goto('http://localhost:5173/');
+    await page.goto('/');
 
     // Check html lang attribute
     const lang = await page.getAttribute('html', 'lang');
@@ -14,7 +21,7 @@ test.describe('Accessibility and Keyboard Navigation', () => {
   });
 
   test('Keyboard navigation works for vital path', async ({ page }) => {
-    await page.goto('http://localhost:5173/');
+    await page.goto('/');
     // Wait for hydration/rendering
     await page.waitForLoadState('networkidle');
 
@@ -33,8 +40,8 @@ test.describe('Accessibility and Keyboard Navigation', () => {
 
     // If skip link is not focused, maybe we need another tab (browser dependent)
     if (!await skipLink.evaluate(el => el === document.activeElement)) {
-        console.log('Skip link not focused, pressing Tab again...');
-        await page.keyboard.press('Tab');
+      console.log('Skip link not focused, pressing Tab again...');
+      await page.keyboard.press('Tab');
     }
 
     await expect(skipLink).toBeFocused();

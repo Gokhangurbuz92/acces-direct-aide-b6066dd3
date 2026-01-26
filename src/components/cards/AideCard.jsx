@@ -1,6 +1,5 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { createPageUrl } from '@/utils';
 import {
   ArrowRight,
   MapPin,
@@ -54,12 +53,23 @@ export default function AideCard({ aide, compact = false }) {
     }).join(', ');
   };
 
+  const targetUrl = aide.slug ? `/aides/${aide.slug}` : `/aide/view?id=${aide.id}`;
+
   return (
-    <Card className="group hover:shadow-lg transition-all duration-300 border-slate-200 hover:border-blue-300 bg-white">
+    <Card className="group hover:shadow-lg transition-all duration-300 border-slate-200 hover:border-blue-300 bg-white relative">
+      {/* Overlay Link for Clickable Card */}
+      <Link
+        to={targetUrl}
+        className="absolute inset-0 z-10 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 rounded-xl"
+        aria-label={`Voir l'aide ${aide.titre}`}
+      >
+        <span className="sr-only">Voir l'aide {aide.titre}</span>
+      </Link>
+
       <CardContent className={compact ? 'p-4' : 'p-6'}>
         <div className="flex flex-col gap-3">
           {/* En-tête avec badges */}
-          <div className="flex flex-wrap gap-2 items-start justify-between">
+          <div className="flex flex-wrap gap-2 items-start justify-between relative z-0">
             <div className="flex flex-wrap gap-2">
               <Badge className={`${CATEGORIE_COLORS[aide.categorie] || 'bg-slate-100 text-slate-800'}`}>
                 {CATEGORIE_LABELS[aide.categorie] || aide.categorie}
@@ -105,15 +115,11 @@ export default function AideCard({ aide, compact = false }) {
             )}
           </div>
 
-          {/* Lien */}
-          <Link
-            to={aide.slug ? `/aide/${aide.slug}` : `/aide/view?id=${aide.id}`}
-            className="inline-flex items-center gap-2 text-blue-600 hover:text-blue-800 font-medium text-sm mt-2 group/link"
-            aria-label={`Voir l'aide ${aide.titre}`}
-          >
+          {/* Visual Link (Not interactive, just decoration) */}
+          <div className="inline-flex items-center gap-2 text-blue-600 font-medium text-sm mt-2 group-hover:text-blue-800 transition-colors">
             Voir cette aide
-            <ArrowRight className="h-4 w-4 transition-transform group-hover/link:translate-x-1" />
-          </Link>
+            <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
+          </div>
         </div>
       </CardContent>
     </Card>

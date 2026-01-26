@@ -1,14 +1,13 @@
 import { PrismaClient } from '@prisma/client';
-import { verifyProToken, checkRateLimit } from '../../lib/pro-auth.js';
+import { verifyProToken, checkRateLimit, requireAuth } from '../../lib/pro-auth.js';
 import { encrypt, decrypt, generateAttachmentToken } from '../../lib/crypto.js';
 import { storage } from '../../lib/storage.js';
 
 const prisma = new PrismaClient();
 
-export default async function handler(req, res) {
-    // Auth Check
-    const auth = await verifyProToken(req);
-    if (!auth) return res.status(401).json({ error: "Unauthorized" });
+async function handler(req, res) {
+    // Auth handled by requireAuth wrapper
+    // req.user is populated
 
     const { appointmentId, page = 1, pageSize = 50 } = req.query;
     if (!appointmentId) return res.status(400).json({ error: "Missing appointmentId" });

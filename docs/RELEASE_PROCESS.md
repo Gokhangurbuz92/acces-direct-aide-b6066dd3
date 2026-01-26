@@ -1,60 +1,50 @@
-# Processus de Release
+# Release Procedure
 
-Ce document décrit la procédure pour effectuer une mise en production (Release).
-
-## 1. Pré-requis (Release Gate)
-
-Avant de commencer, valider la checklist : [RELEASE_GATE.md](./RELEASE_GATE.md).
-
-## 2. Validation Technique (Healthcheck)
-
-Lancer le job de healthcheck sur la production (ou staging) :
-
-- **Via GitHub Actions** : Aller dans l'onglet "Actions" > "Production Healthcheck" > "Run workflow".
-- **En local** :
-  ```bash
-  node scripts/ci-healthcheck.js https://www.accesdirectaide.fr
-  ```
-
-Si le healthcheck échoue, la release est **interdite**.
-
-## 3. Création du Tag (Git)
-
-Nous utilisons [SemVer](https://semver.org/) (vX.Y.Z).
-
+## 1. Merge Strategy
+The codebase is currently in a "Fix Branch" state (`fix/bundling-and-routes`).
+Recommended merge command (if using GitHub CLI):
 ```bash
-# Vérifier que vous êtes sur main et à jour
+gh pr merge fix/bundling-and-routes --squash --body "Fix Vercel bundling, standardize routing, and harden API handlers"
+```
+Or via standard git:
+```bash
 git checkout main
-git pull
-
-# Créer le tag
-git tag -a v1.0.0 -m "Release v1.0.0: Description courte"
-
-# Pousser le tag
-git push origin v1.0.0
+git merge --squash fix/bundling-and-routes
+git commit -m "Fix Vercel bundling, standardize routing, and harden API handlers"
+git push origin main
 ```
 
-## 4. Sentry Release
+## 2. CI/CD Verification
+This merge adds `.github/workflows/ci.yml`. GitHub Actions should automatically trigger:
+*   `Verify Handler Imports` (Checks for static import errors)
+*   `Build Project` (Ensures Vite/Rollup compilation works)
+*   `Run E2E Tests` (Playwright checks Home, Aides, Demarches without DB)
 
-Associer la release Sentry au commit pour le suivi des erreurs.
+**Success Criterion:** Green Checkmark on GitHub Actions.
 
-### Configuration Build
-Assurez-vous que la variable d'environnement `VITE_SENTRY_RELEASE` est définie lors du build de production (ex: dans Vercel).
-Recommandation : utiliser le hash du commit ou le tag.
+## 3. Rollback Procedure
+If Production (Vercel) fails (500 errors persist or new regression):
+1.  **Revert Commit:**
+    ```bash
+    git revert -m 1 HEAD
+    git push origin main
+    ```
+2.  **Redeploy Vercel:** Vercel automatically deploys the revert.
 
-### Commande CLI
-Utiliser `sentry-cli` pour déclarer la release :
+## 4. Post-Merge Verification (Production)
+Run these checks against `https://www.accesdirectaide.fr` (or your domain):
 
-```bash
-# Définir la version (ex: v1.0.0)
-export SENTRY_RELEASE=v1.0.0
+### A. Routing
+*   [ ] `curl -I https://www.accesdirectaide.fr/login/pro` -> **308 Permanent Redirect** to `/pro/login`
+*   [ ] `curl -I https://www.accesdirectaide.fr/sitemap.xml` -> **200 OK** (Content-Type: application/xml)
+*   [ ] `curl -I https://www.accesdirectaide.fr/robots.txt` -> **200 OK**
 
-# Créer la release
-npx sentry-cli releases new -p acces-direct-aide $SENTRY_RELEASE
+### B. Functional (Browser)
+*   [ ] Go to `/aides`. Click an aide. Page loads? (No "click dead")
+*   [ ] Go to `/demarches`. Click a démarche. Page loads?
+*   [ ] Go to `/structures`. Click a structure. Page loads?
+*   [ ] Go to `/actualites`. Are there items? Click one. Page loads?
 
-# Associer les commits (automatique si dans le repo git)
-npx sentry-cli releases set-commits $SENTRY_RELEASE --auto
-
-# Finaliser la release
-npx sentry-cli releases finalize $SENTRY_RELEASE
-```
+### C. Monitoring
+*   [ ] Check Vercel Logs: Filter for `ERROR` or `500`.
+*   [ ] Check Sentry: Alert for "Cannot find module"? (Should be gone).

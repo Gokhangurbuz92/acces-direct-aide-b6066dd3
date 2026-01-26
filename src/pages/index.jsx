@@ -46,6 +46,7 @@ import Contact from "./Contact";
 import Cookies from "./Cookies";
 
 import DemarcheDetail from "./DemarcheDetail";
+import DispositifDetail from "./DispositifDetail";
 
 import LoginPro from "./LoginPro"; // [NEW]
 
@@ -77,6 +78,7 @@ import AdminReview from "./AdminReview";
 import AdminLogin from "./AdminLogin";
 import AdminInbox from "./admin/Inbox";
 import AdminRuns from "./admin/Runs";
+import NotFound from "./NotFound";
 
 // Lot 4: Pro Module Imports
 import ProLayout from "./pro/ProLayout";
@@ -144,6 +146,7 @@ const PAGES = {
     Cookies: Cookies,
 
     DemarcheDetail: DemarcheDetail,
+    DispositifDetail: DispositifDetail,
 
     LoginPro: LoginPro, // [NEW]
 
@@ -253,7 +256,7 @@ function PagesContent() {
                 <Route path="/" element={<Home />} />
 
 
-                <Route path="/apropos" element={<APropos />} />
+                <Route path="/a-propos" element={<APropos />} />
 
                 <Route path="/accessibilite" element={<Accessibilite />} />
 
@@ -298,13 +301,14 @@ function PagesContent() {
 
                 <Route path="/aidedetail" element={<AideDetail />} />
                 <Route path="/aide/view" element={<AideDetail />} />
-                <Route path="/aide/:slug" element={<AideDetail />} />
+                <Route path="/aides/:slug" element={<AideDetail />} />
 
                 <Route path="/aides" element={<Aides />} />
                 <Route path="/categories/:slug" element={<Aides />} />
                 <Route path="/situations/:slug" element={<Aides />} />
 
-                <Route path="/annuaire" element={<Annuaire />} />
+                <Route path="/annuaire" element={<Navigate to="/structures" replace />} />
+                <Route path="/structures" element={<Annuaire />} />
                 <Route path="/structures/view" element={<StructureDetail />} />
                 <Route path="/structures/:slug" element={<StructureDetail />} />
 
@@ -326,7 +330,7 @@ function PagesContent() {
 
                 <Route path="/home" element={<Home />} />
 
-                <Route path="/mentionslegales" element={<MentionsLegales />} />
+                <Route path="/mentions-legales" element={<MentionsLegales />} />
 
                 <Route path="/sourcesmethode" element={<SourcesMethode />} />
 
@@ -343,6 +347,8 @@ function PagesContent() {
                 <Route path="/outils/:slug" element={<ToolDetail />} />
 
                 <Route path="/dispositifs" element={<Dispositifs />} />
+                <Route path="/dispositifs/:slug" element={<DispositifDetail />} />
+                <Route path="/dispositifs/view" element={<DispositifDetail />} />
 
                 <Route path="/impact" element={<Impact />} />
                 <Route path="/notre-mission" element={<Mission />} />
@@ -365,7 +371,7 @@ function PagesContent() {
                 <Route path="/Aides" element={<Navigate to="/aides" replace />} />
 
 
-                <Route path="*" element={<Navigate to="/home" replace />} />
+                <Route path="*" element={<NotFound />} />
 
 
             </Routes>

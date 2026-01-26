@@ -11,6 +11,12 @@ export default async function handler(req, res) {
             return res.status(405).json({ error: 'Method not allowed' });
         }
 
+        const ip = getClientIp(req);
+        const rateLimit = await checkRateLimit('SEARCH_STRUCTURES', ip);
+        if (!rateLimit.allowed) {
+            return res.status(429).json(rateLimit.error);
+        }
+
         const validation = searchStructuresSchema.safeParse(req.query);
         if (!validation.success) {
             return res.status(400).json({ error: 'Invalid parameters', details: validation.error.format() });
@@ -24,21 +30,11 @@ export default async function handler(req, res) {
                 include: { proServices: true }
             });
 
-    // 3. Single Item
-    if (id || slug) {
-        const structure = await prisma.structure.findFirst({
-            where: id ? { id: String(id) } : { slug: String(slug) },
-            include: { proServices: true }
-        });
-
-        // Rate Limit for search
-        const ip = getClientIp(req);
-        const rateLimit = await checkRateLimit('SEARCH_STRUCTURES', ip);
-        if (!rateLimit.allowed) {
-            return res.status(429).json(rateLimit.error);
+            if (!structure) {
+                return res.status(404).json({ error: "Structure non trouvée" });
+            }
+            return res.status(200).json(structure);
         }
-        return structure;
-    }
 
         // 2. Search / List
         const { items, total } = await searchStructures(prisma, params);
@@ -53,4 +49,8 @@ export default async function handler(req, res) {
             }
         });
 
-export default createHandler(handler, { query: querySchema });
+    } catch (error) {
+        console.error("Structures API Error", error);
+        return res.status(500).json({ error: "Internal Server Error" });
+    }
+}

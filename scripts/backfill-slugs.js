@@ -8,6 +8,7 @@
  */
 
 import { PrismaClient } from '@prisma/client';
+import { generateUniqueSlug } from '../api/lib/slug.js';
 import slugify from '@sindresorhus/slugify';
 
 const prisma = new PrismaClient();
@@ -20,51 +21,16 @@ console.log(`\n🔧 Slug Backfill Script`);
 console.log(`Mode: ${isDryRun ? '🔍 DRY-RUN (preview only)' : '✍️  APPLY (writing to DB)'}\n`);
 
 /**
- * Generate unique slug for a given text and model
- */
-async function generateUniqueSlug(baseText, model, excludeId = null) {
-    if (!baseText) {
-        throw new Error('Cannot generate slug from empty text');
-    }
-
-    let slug = slugify(baseText, { locale: 'fr' });
-    let suffix = 0;
-    let isUnique = false;
-
-    while (!isUnique) {
-        const testSlug = suffix === 0 ? slug : `${slug}-${suffix}`;
-
-        // Check if slug exists (excluding current item if updating)
-        const existing = await prisma[model].findFirst({
-            where: {
-                slug: testSlug,
-                ...(excludeId ? { id: { not: excludeId } } : {})
-            }
-        });
-
-        if (!existing) {
-            isUnique = true;
-            slug = testSlug;
-        } else {
-            suffix++;
-        }
-    }
-
-    return slug;
-}
-
-/**
  * Backfill slugs for a specific model
  */
 async function backfillModel(modelName, titleField) {
     console.log(`\n📦 Processing model: ${modelName}`);
     console.log(`─────────────────────────────────────`);
 
-    // Find items without slug
+    // Find items without slug (and ensure they have a title/nom)
     const itemsWithoutSlug = await prisma[modelName.toLowerCase()].findMany({
         where: {
-            slug: null,
-            [titleField]: { not: null }
+            slug: null
         },
         select: {
             id: true,
@@ -72,10 +38,16 @@ async function backfillModel(modelName, titleField) {
         }
     });
 
-    console.log(`Found ${itemsWithoutSlug.length} items without slug`);
+    // Filter out items without title/nom
+    const validItems = itemsWithoutSlug.filter(item => item[titleField] && item[titleField].trim() !== '');
 
-    if (itemsWithoutSlug.length === 0) {
-        console.log(`✅ All ${modelName} items already have slugs!`);
+    console.log(`Found ${itemsWithoutSlug.length} items without slug`);
+    if (validItems.length < itemsWithoutSlug.length) {
+        console.log(`⚠️  Skipping ${itemsWithoutSlug.length - validItems.length} items with missing or empty ${titleField}`);
+    }
+
+    if (validItems.length === 0) {
+        console.log(`✅ All ${modelName} items already have slugs or have no valid title!`);
         return { total: 0, updated: 0, collisions: 0 };
     }
 
@@ -83,11 +55,11 @@ async function backfillModel(modelName, titleField) {
     let collisions = 0;
     const updates = [];
 
-    for (const item of itemsWithoutSlug) {
+    for (const item of validItems) {
         const titleValue = item[titleField];
 
         try {
-            const newSlug = await generateUniqueSlug(titleValue, modelName.toLowerCase(), item.id);
+            const newSlug = await generateUniqueSlug(prisma, modelName.toLowerCase(), titleValue, item.id);
 
             // Detect collision (slug had to get a suffix)
             const baseSlug = slugify(titleValue, { locale: 'fr' });
@@ -135,7 +107,7 @@ async function backfillModel(modelName, titleField) {
     }
 
     return {
-        total: itemsWithoutSlug.length,
+        total: validItems.length,
         updated,
         collisions
     };

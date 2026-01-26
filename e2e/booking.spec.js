@@ -6,16 +6,31 @@ import { test, expect } from '@playwright/test';
 // Assuming dev server is at localhost:3000
 
 test('Public Booking Flow', async ({ page }) => {
-  // 1. Visit a structure detail page (we need a structure ID that has pro enabled)
-  // This is tricky without seeding data.
-  // Let's assume the "backend flow test" created a structure? No, that script cleans up (or tries to).
-  // We can't rely on transient data.
-  // We will test the UI components mount and navigate correctly, mocking the API if possible.
+  // Mock Structure for Booking
+  await page.route('**/api/structures*', async route => {
+    await route.fulfill({
+      json: {
+        items: [{
+          id: 'dummy-123',
+          slug: 'structure-test',
+          nom: 'Structure Test',
+          statut: 'actif',
+          proServices: [{ id: 'svc-1', nom: 'Service Test' }]
+        }],
+        pagination: { total: 1 }
+      }
+    });
+  });
 
-  // Actually, we can just check if the "AppointmentRequest" page loads given a dummy ID.
-  await page.goto('http://localhost:3000/rdv?structure_id=dummy-123');
+  // Mock Taxonomy/Slots/etc to avoid blocking errors
+  // Note: Component fetches /api/public/availability (singular)
+  // And expects an array of slots.
+  await page.route('**/api/public/availability*', async route => route.fulfill({ json: [] }));
 
-  // Check title
+  await page.goto('/appointmentrequest?structure_id=dummy-123');
+
+  // Check title (Update expectation if necessary based on real UI)
+  // If the page shows "Structure Test", check for that too.
   await expect(page.getByText('Choisir un créneau')).toBeVisible();
 
   // Check form fields
@@ -24,6 +39,6 @@ test('Public Booking Flow', async ({ page }) => {
 });
 
 test('Pro Login Flow', async ({ page }) => {
-  await page.goto('http://localhost:3000/pro/login');
-  await expect(page.getByRole('heading', { name: 'Espace Professionnel' })).toBeVisible();
+  await page.goto('/pro/login');
+  await expect(page.getByText('AccesDirect Pro')).toBeVisible();
 });

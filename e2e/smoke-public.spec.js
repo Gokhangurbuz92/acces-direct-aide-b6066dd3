@@ -6,10 +6,10 @@ test.describe('Public Navigation Smoke Tests', () => {
     // Mock Taxonomy (needed for filters)
     await page.route('**/api/taxonomy', async route => {
       await route.fulfill({
-          json: {
-              categories: [{ slug: 'logement', label: 'Logement', count: 1 }],
-              situations: []
-          }
+        json: {
+          categories: [{ slug: 'logement', label: 'Logement', count: 1 }],
+          situations: []
+        }
       });
     });
   });
@@ -48,10 +48,10 @@ test.describe('Public Navigation Smoke Tests', () => {
       }
     });
 
-    await page.goto('http://localhost:3000/aides');
+    await page.goto('/aides');
     await expect(page.getByText('Aide Test')).toBeVisible();
 
-    await page.getByRole('link', { name: 'Voir cette aide' }).click();
+    await page.getByRole('link', { name: 'Voir l\'aide Aide Test' }).click();
     await expect(page).toHaveURL(/\/aides\/aide-test/);
     await expect(page.getByRole('heading', { name: 'Aide Test' })).toBeVisible();
 
@@ -67,17 +67,17 @@ test.describe('Public Navigation Smoke Tests', () => {
       const url = new URL(route.request().url());
       if (url.searchParams.has('slug')) {
         await route.fulfill({
-            json: {
-              id: '456',
-              slug: 'demarche-test',
-              titre: 'Démarche Test',
-              categorie: 'logement',
-              description_courte: 'Description démarche',
-              statut: 'publie',
-              published_at: new Date().toISOString(),
-              etapes: [],
-              documents_necessaires: []
-            }
+          json: {
+            id: '456',
+            slug: 'demarche-test',
+            titre: 'Démarche Test',
+            categorie: 'logement',
+            description_courte: 'Description démarche',
+            statut: 'publie',
+            published_at: new Date().toISOString(),
+            etapes: [],
+            documents_necessaires: []
+          }
         });
       } else {
         await route.fulfill({
@@ -97,7 +97,7 @@ test.describe('Public Navigation Smoke Tests', () => {
       }
     });
 
-    await page.goto('http://localhost:3000/demarches');
+    await page.goto('/demarches');
     await expect(page.getByText('Démarche Test')).toBeVisible();
 
     await page.getByRole('link', { name: 'Démarrer la démarche' }).click();
@@ -113,39 +113,39 @@ test.describe('Public Navigation Smoke Tests', () => {
 
   test('Structures Flow: List -> Detail -> Refresh -> Back', async ({ page }) => {
     await page.route('**/api/structures*', async route => {
-        const url = new URL(route.request().url());
-        if (url.searchParams.has('slug')) {
-          await route.fulfill({
-              json: {
-                id: '789',
-                slug: 'structure-test',
-                nom: 'Structure Test',
-                type_structure: 'association',
-                statut: 'actif',
-                ville: 'Strasbourg',
-                code_postal: '67000'
-              }
-          });
-        } else {
-            // Note: StructureCard uses structure.slug logic
-            await route.fulfill({
-                json: {
-                  items: [{
-                    id: '789',
-                    slug: 'structure-test',
-                    nom: 'Structure Test',
-                    type_structure: 'association',
-                    statut: 'actif',
-                    ville: 'Strasbourg',
-                    code_postal: '67000'
-                  }],
-                  pagination: { total: 1, page: 1, pageSize: 12, totalPages: 1 }
-                }
-              });
-        }
+      const url = new URL(route.request().url());
+      if (url.searchParams.has('slug')) {
+        await route.fulfill({
+          json: {
+            id: '789',
+            slug: 'structure-test',
+            nom: 'Structure Test',
+            type_structure: 'association',
+            statut: 'actif',
+            ville: 'Strasbourg',
+            code_postal: '67000'
+          }
+        });
+      } else {
+        // Note: StructureCard uses structure.slug logic
+        await route.fulfill({
+          json: {
+            items: [{
+              id: '789',
+              slug: 'structure-test',
+              nom: 'Structure Test',
+              type_structure: 'association',
+              statut: 'actif',
+              ville: 'Strasbourg',
+              code_postal: '67000'
+            }],
+            pagination: { total: 1, page: 1, pageSize: 12, totalPages: 1 }
+          }
+        });
+      }
     });
 
-    await page.goto('http://localhost:3000/structures');
+    await page.goto('/structures');
     await expect(page.getByText('Structure Test')).toBeVisible();
 
     await page.getByRole('link', { name: 'Plus d\'infos' }).click();

@@ -256,7 +256,7 @@ function PagesContent() {
                 <Route path="/" element={<Home />} />
 
 
-                <Route path="/apropos" element={<APropos />} />
+                <Route path="/a-propos" element={<APropos />} />
 
                 <Route path="/accessibilite" element={<Accessibilite />} />
 
@@ -330,7 +330,7 @@ function PagesContent() {
 
                 <Route path="/home" element={<Home />} />
 
-                <Route path="/mentionslegales" element={<MentionsLegales />} />
+                <Route path="/mentions-legales" element={<MentionsLegales />} />
 
                 <Route path="/sourcesmethode" element={<SourcesMethode />} />
 

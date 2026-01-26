@@ -48,7 +48,7 @@ const mPrisma = vi.hoisted(() => ({
         findFirst: vi.fn(),
         create: vi.fn(),
     },
-    $queryRaw: vi.fn(),
+    $queryRaw: vi.fn().mockResolvedValue([{ id: '1' }]),
     $transaction: vi.fn((callback) => callback(mPrisma)),
 }));
 
@@ -65,7 +65,9 @@ vi.mock('@prisma/client', () => {
                 super(message);
                 this.code = code;
             }
-        }
+        },
+        sql: (strings, ...values) => strings, // Mock sql template tag
+        join: (arr) => arr // Mock join
     }
   };
 });

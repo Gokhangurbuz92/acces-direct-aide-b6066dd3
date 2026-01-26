@@ -2,7 +2,6 @@
 import { PrismaClient } from '@prisma/client';
 import { subMinutes, subDays } from 'date-fns';
 import { storage } from '../../lib/storage.js';
-import { logger } from '../../lib/logger.js';
 
 const prisma = new PrismaClient();
 
@@ -83,7 +82,7 @@ export default async function handler(req, res) {
                 await prisma.attachment.delete({ where: { id: att.id } });
                 purgedFiles++;
             } catch (e) {
-                logger.error(`Failed to delete attachment ${att.id}`, e);
+                console.error(`Failed to delete attachment ${att.id}`, e);
             }
         }
 
@@ -93,44 +92,21 @@ export default async function handler(req, res) {
             where: { createdAt: { lt: msgLimit } }
         });
 
-        // 4. Purge Logs
-        // AuditLog > 1 year (365 days)
-        const auditLimit = subDays(now, 365);
-        const expiredAudits = await prisma.auditLog.deleteMany({
-            where: { timestamp: { lt: auditLimit } }
-        });
-
-        // ImportLog & UpdateLog > 90 days
-        const expiredImports = await prisma.importLog.deleteMany({
-            where: { createdAt: { lt: retentionDate } } // retentionDate is 90 days
-        });
-        const expiredUpdates = await prisma.updateLog.deleteMany({
-            where: { ran_at: { lt: retentionDate } }
-        });
-
-
-        const stats = {
-            expiredLocks: expiredLocks.count,
-            purgedAppointments: purgedCount,
-            purgedFiles,
-            purgedMessages: expiredMessages.count,
-            anonymizedBeneficiaries: anonBenCount,
-            purgedAuditLogs: expiredAudits.count,
-            purgedImportLogs: expiredImports.count,
-            purgedUpdateLogs: expiredUpdates.count
-        };
-
-        if (Object.values(stats).some(v => v > 0)) {
-            logger.info('🧹 PURGE COMPLETE', stats);
+        if (purgedCount > 0 || expiredLocks.count > 0 || purgedFiles > 0) {
+            console.log(`🧹 PURGE: Locks=${expiredLocks.count}, Appts=${purgedCount}, Files=${purgedFiles}, Msgs=${expiredMessages.count}`);
         }
 
         return res.status(200).json({
             success: true,
-            ...stats
+            expiredLocks: expiredLocks.count,
+            purgedAppointments: purgedCount,
+            purgedFiles,
+            purgedMessages: expiredMessages.count,
+            anonymizedBeneficiaries: anonBenCount
         });
 
     } catch (e) {
-        logger.error("Cron Purge Error", e);
+        console.error("Cron Purge Error", e);
         return res.status(500).json({ error: "Purge failed" });
     }
 }

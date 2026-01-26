@@ -1,14 +1,24 @@
+
 import { PrismaClient } from '@prisma/client';
-import { requireAuth } from '../../lib/pro-auth.js';
+import { verifyProToken } from '../../../lib/pro-auth.js';
 
 const prisma = new PrismaClient();
 
-async function handler(req, res) {
+export default async function handler(req, res) {
+    let token = null;
+    if (req.headers && req.headers.authorization) {
+        token = req.headers.authorization.replace('Bearer ', '');
+    }
+    const user = verifyProToken(token);
+    if (!user) {
+        return res.status(401).json({ error: 'Unauthorized' });
+    }
+
     // GET: Fetch availability
     if (req.method === 'GET') {
         try {
             const availability = await prisma.availability.findUnique({
-                where: { structureId_proId: { structureId: req.user.structureId, proId: req.user.userId } }
+                where: { structureId_proId: { structureId: user.structureId, proId: user.userId } }
             });
 
             // If not found, return defaults
@@ -40,14 +50,14 @@ async function handler(req, res) {
         const { slots_json, exceptions_json } = req.body;
         try {
             const availability = await prisma.availability.upsert({
-                where: { structureId_proId: { structureId: req.user.structureId, proId: req.user.userId } },
+                where: { structureId_proId: { structureId: user.structureId, proId: user.userId } },
                 update: {
                     slots_json: slots_json,
                     exceptions_json: exceptions_json || []
                 },
                 create: {
-                    structureId: req.user.structureId,
-                    proId: req.user.userId,
+                    structureId: user.structureId,
+                    proId: user.userId,
                     slots_json: slots_json,
                     exceptions_json: exceptions_json || []
                 }
@@ -61,5 +71,3 @@ async function handler(req, res) {
 
     return res.status(405).json({ error: 'Method not allowed' });
 }
-
-export default requireAuth(handler);

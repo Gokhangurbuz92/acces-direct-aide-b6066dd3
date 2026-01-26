@@ -14,11 +14,6 @@
             "source": "/guide/:slug",
             "destination": "/demarches",
             "permanent": true
-        },
-        {
-            "source": "/login/pro",
-            "destination": "/pro/login",
-            "permanent": true
         }
     ],
     "rewrites": [
@@ -28,6 +23,10 @@
         },
         {
             "source": "/robots.txt",
+            "destination": "/api"
+        },
+        {
+            "source": "/login/pro",
             "destination": "/api"
         },
         {

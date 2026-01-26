@@ -4,7 +4,6 @@ import { createPageUrl } from '@/utils';
 import { client } from '@/api/client';
 import { useQuery } from '@tanstack/react-query';
 import SEO from '@/components/SEO';
-import NotFound from "./NotFound";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
@@ -50,15 +49,13 @@ export default function AideDetail() {
     enabled: !!slug || !!aideId
   });
 
-  const { data: structuresData } = useQuery({
+  const { data: structures = [] } = useQuery({
     queryKey: ['structures-aide', aide?.categorie],
     queryFn: () => client.entities.Structure.filter({
       statut: 'actif'
     }, '-created_date', 5),
     enabled: !!aide?.categorie
   });
-
-  const structures = structuresData?.items || [];
 
   const filteredStructures = structures.filter(s =>
     s.categories_aidees?.includes(aide?.categorie)
@@ -73,7 +70,16 @@ export default function AideDetail() {
   }
 
   if (!aide) {
-    return <NotFound />;
+    return (
+      <div className="min-h-screen bg-slate-50 flex items-center justify-center">
+        <div className="text-center">
+          <p className="text-slate-600 mb-4">Cette aide n'existe pas ou a été supprimée.</p>
+          <Link to={createPageUrl('Aides')}>
+            <Button>Retour aux aides</Button>
+          </Link>
+        </div>
+      </div>
+    );
   }
 
   const getTerritoireLabel = () => {
@@ -318,7 +324,7 @@ export default function AideDetail() {
                     {filteredStructures.map((struct) => (
                       <Link
                         key={struct.id}
-                        to={struct.slug ? `/structures/${struct.slug}` : `/structures/view?id=${struct.id}`}
+                        to={createPageUrl('StructureDetail') + `?id=${struct.id}`}
                         className="block p-3 rounded-lg bg-slate-50 hover:bg-slate-100 transition-colors"
                       >
                         <p className="font-medium text-slate-900">{struct.nom}</p>
@@ -326,7 +332,7 @@ export default function AideDetail() {
                       </Link>
                     ))}
                   </div>
-                  <Link to="/structures">
+                  <Link to={createPageUrl('Annuaire')}>
                     <Button variant="link" className="mt-4 p-0">
                       Voir toutes les structures
                       <ChevronRight className="ml-1 h-4 w-4" />

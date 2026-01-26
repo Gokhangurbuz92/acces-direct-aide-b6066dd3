@@ -62,52 +62,51 @@ const server = http.createServer(async (req, res) => {
     path = path.replace(/\/+$/, "");
 
     try {
-        let routeHandler = null;
+        let handlerPath = null;
 
         // Find matching route
         for (const route of routes) {
             if (route.match === 'exact') {
                 if (path === route.path) {
-                    routeHandler = route.handler;
+                    handlerPath = route.handler;
                     break;
                 }
             } else if (route.match === 'prefix') {
                 if (path === route.path || path.startsWith(route.path + '/')) {
-                    routeHandler = route.handler;
+                    handlerPath = route.handler;
                     break;
                 }
             }
         }
 
         // Also check for dev-specific routes
-        if (!routeHandler && path.startsWith('__dev/')) {
+        if (!handlerPath && path.startsWith('__dev/')) {
             if (process.env.NODE_ENV !== 'production') {
                 // Map to api/_handlers/__dev/...
+                // Need to check specific files or just one?
                 if (path === '__dev/create-test-appointment') {
-                    // We need to dynamically import this one as it's not in routes.js
-                    // We return the path string to indicate it needs importing
-                    routeHandler = './_handlers/__dev/create-test-appointment.js';
+                    handlerPath = './_handlers/__dev/create-test-appointment.js';
                 }
             }
         }
 
-        if (routeHandler) {
+        if (handlerPath) {
+            // Lazy load the handler
+            // Note: handlerPath is relative to api/index.js (./_handlers/...)
+            // But we are in root. So we need to adjust path.
+            // routes.js has './_handlers/...'
+            // We need './api/_handlers/...'
+            const importPath = './api/' + handlerPath.replace(/^\.\//, '');
+
             try {
-                if (typeof routeHandler === 'string') {
-                    // Dynamic import for dev tools
-                    const importPath = './api/' + routeHandler.replace(/^\.\//, '');
-                    const handlerModule = await import(importPath);
-                    if (handlerModule && handlerModule.default) {
-                        await handlerModule.default(req, res);
-                    } else {
-                        res.status(500).json({ error: 'Handler module missing default export' });
-                    }
+                const handlerModule = await import(importPath);
+                if (handlerModule && handlerModule.default) {
+                    await handlerModule.default(req, res);
                 } else {
-                    // Standard route (already imported function)
-                    await routeHandler(req, res);
+                    res.status(500).json({ error: 'Handler module missing default export' });
                 }
             } catch (err) {
-                console.error(`[DevServer] Failed to load/execute handler for ${path}: ${err.message}`);
+                console.error(`[DevServer] Failed to load handler for ${path}: ${err.message}`);
                 if (err.code === 'ERR_MODULE_NOT_FOUND') {
                     res.status(501).json({ error: 'Handler not implemented or missing dependencies', details: err.message });
                 } else {

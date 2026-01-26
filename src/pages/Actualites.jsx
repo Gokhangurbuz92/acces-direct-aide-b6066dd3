@@ -17,7 +17,7 @@ import {
   Newspaper,
   ArrowRight
 } from 'lucide-react';
-import NewsFallback from '@/components/news/NewsFallback';
+import EmptyState from '@/components/ui/EmptyState';
 
 const CATEGORIES = {
   logement: 'Logement',
@@ -184,7 +184,11 @@ export default function Actualites() {
             })}
           </div>
         ) : (
-          <NewsFallback />
+          <EmptyState
+            title="Aucune actualité"
+            message="Il n'y a pas d'actualité récente pour cette catégorie. Revenez bientôt !"
+            icon={Newspaper}
+          />
         )}
       </div>
     </div>

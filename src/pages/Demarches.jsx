@@ -19,7 +19,6 @@ import {
   Filter
 } from 'lucide-react';
 import EmptyState from '@/components/ui/EmptyState';
-import DemarcheCard from '@/components/cards/DemarcheCard';
 
 export default function Demarches() {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -209,7 +208,45 @@ export default function Demarches() {
               <>
                 <div className="grid md:grid-cols-2 gap-6">
                   {items.map((demarche) => (
-                    <DemarcheCard key={demarche.id} demarche={demarche} />
+                    <Card key={demarche.id} className="hover:shadow-md transition-all border-slate-200 overflow-hidden group">
+                      <CardContent className="p-0">
+                        <div className="p-6">
+                          <div className="flex justify-between items-start mb-4">
+                            <Badge variant="outline" className="bg-slate-50">
+                              {demarche.category?.label || demarche.categorie}
+                            </Badge>
+                            <div className="w-10 h-10 rounded-lg bg-blue-50 flex items-center justify-center">
+                              <FileText className="h-5 w-5 text-blue-600" />
+                            </div>
+                          </div>
+                          <h3 className="text-lg font-bold text-slate-900 group-hover:text-blue-700 transition-colors mb-2">
+                            {demarche.titre}
+                          </h3>
+                          <p className="text-slate-600 text-sm line-clamp-2 mb-6">
+                            {demarche.summary_falc || demarche.description_courte}
+                          </p>
+                          <div className="flex flex-wrap gap-4 text-xs text-slate-500">
+                            {demarche.delai && (
+                              <span className="flex items-center gap-1.5">
+                                <Clock className="h-3.5 w-3.5" /> {demarche.delai}
+                              </span>
+                            )}
+                            <span className="flex items-center gap-1.5">
+                              <CheckCircle2 className="h-3.5 w-3.5 text-green-500" /> Guide pas à pas
+                            </span>
+                          </div>
+                        </div>
+                        <div className="bg-slate-50 px-6 py-3 border-t border-slate-100">
+                          <Link
+                            to={demarche.slug ? `/demarches/${demarche.slug}` : `/demarches/view?id=${demarche.id}`}
+                            className="inline-flex items-center gap-2 text-blue-600 hover:text-blue-800 font-bold text-sm"
+                          >
+                            Démarrer la démarche
+                            <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
+                          </Link>
+                        </div>
+                      </CardContent>
+                    </Card>
                   ))}
                 </div>
 

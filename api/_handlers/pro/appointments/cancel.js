@@ -1,11 +1,22 @@
+
 import { PrismaClient } from '@prisma/client';
-import { requireAuth } from '../../../lib/pro-auth.js';
+import { verifyProToken } from '../../../lib/pro-auth.js';
 
 const prisma = new PrismaClient();
 
-async function handler(req, res) {
+export default async function handler(req, res) {
     if (req.method !== 'POST') {
         return res.status(405).json({ error: 'Method not allowed' });
+    }
+
+    // 1. Auth Check
+    let token = null;
+    if (req.headers && req.headers.authorization) {
+        token = req.headers.authorization.replace('Bearer ', '');
+    }
+    const user = verifyProToken(token);
+    if (!user) {
+        return res.status(401).json({ error: 'Unauthorized' });
     }
 
     const { id } = req.body;
@@ -21,7 +32,7 @@ async function handler(req, res) {
         if (!appointment) return res.status(404).json({ error: 'Appointment not found' });
 
         // Ensure the pro belongs to the structure of the appointment
-        if (appointment.structureId !== req.user.structureId) {
+        if (appointment.structureId !== user.structureId) {
             return res.status(403).json({ error: 'Forbidden' });
         }
 
@@ -38,5 +49,3 @@ async function handler(req, res) {
         return res.status(500).json({ error: 'Internal Server Error' });
     }
 }
-
-export default requireAuth(handler);

@@ -1,7 +1,6 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import SEO from '@/components/SEO';
-import Logo from '@/components/Brand/Logo';
 import { createPageUrl } from '@/utils';
 import { client } from '@/api/client';
 import { useQuery } from '@tanstack/react-query';
@@ -10,27 +9,27 @@ import QuickAccessCards from '@/components/home/QuickAccessCards';
 import CategoryGrid from '@/components/home/CategoryGrid';
 import AideCard from '@/components/cards/AideCard';
 import { Button } from "@/components/ui/button";
-import { Skeleton } from "@/components/ui/skeleton";
 import {
   ArrowRight,
   Shield,
+  Clock,
   Heart,
   AlertTriangle,
   CheckCircle2
 } from 'lucide-react';
 
 export default function Home() {
-  const { data: aidesUrgentes = [], isLoading: loadingUrgentes } = useQuery({
+  const { data: aidesUrgentes = [] } = useQuery({
     queryKey: ['aides-urgentes'],
     queryFn: () => client.entities.Aide.filter({ est_urgent: true, statut: 'publie' }, '-created_date', 3),
   });
 
-  const { data: dernieresAides = [], isLoading: loadingDernieres } = useQuery({
+  const { data: dernieresAides = [] } = useQuery({
     queryKey: ['dernieres-aides'],
     queryFn: () => client.entities.Aide.filter({ statut: 'publie' }, '-created_date', 6),
   });
 
-  const { data: actualites = [], isLoading: loadingActualites } = useQuery({
+  const { data: actualites = [] } = useQuery({
     queryKey: ['actualites-home'],
     queryFn: () => client.entities.Actualite.filter({ statut: 'publie' }, '-date_publication', 3),
   });
@@ -54,16 +53,14 @@ export default function Home() {
       {/* Hero Section */}
       <section className="bg-gradient-to-br from-blue-600 via-blue-700 to-indigo-800 text-white py-16 md:py-24">
         <div className="max-w-5xl mx-auto px-4 sm:px-6 text-center">
-          <div className="mb-8 flex justify-center">
-            <Logo variant="hero" />
-          </div>
           <h1 className="text-3xl md:text-5xl font-bold mb-6 leading-tight">
             Trouvez les aides et les services
             <br className="hidden md:block" />
-            <span className="text-blue-50">près de chez vous</span>
+            <span className="text-blue-200">près de chez vous</span>
           </h1>
-          <p className="text-lg md:text-xl text-blue-50 mb-8 max-w-2xl mx-auto">
-            Un site gratuit pour trouver vos aides et vos démarches simplement.
+          <p className="text-lg md:text-xl text-blue-100 mb-8 max-w-2xl mx-auto">
+            Un site simple et gratuit pour trouver des aides,
+            des démarches expliquées pas à pas, et des structures d'accompagnement.
           </p>
 
           {/* Barre de recherche */}
@@ -77,14 +74,14 @@ export default function Home() {
       <section className="py-12 md:py-16 bg-slate-50">
         <div className="max-w-6xl mx-auto px-4 sm:px-6">
           <h2 className="text-2xl md:text-3xl font-bold text-slate-900 text-center mb-8">
-            Que cherchez-vous ?
+            Comment pouvons-nous vous aider ?
           </h2>
           <QuickAccessCards />
         </div>
       </section>
 
       {/* Aides urgentes */}
-      {(loadingUrgentes || aidesUrgentes.length > 0) && (
+      {aidesUrgentes.length > 0 && (
         <section className="py-12 bg-red-50 border-y border-red-100">
           <div className="max-w-6xl mx-auto px-4 sm:px-6">
             <div className="flex items-center gap-3 mb-6">
@@ -96,15 +93,9 @@ export default function Home() {
               </h2>
             </div>
             <div className="grid md:grid-cols-3 gap-6">
-              {loadingUrgentes ? (
-                Array(3).fill(0).map((_, i) => (
-                  <Skeleton key={i} className="h-48 w-full rounded-xl" />
-                ))
-              ) : (
-                aidesUrgentes.map((aide) => (
-                  <AideCard key={aide.id} aide={aide} />
-                ))
-              )}
+              {aidesUrgentes.map((aide) => (
+                <AideCard key={aide.id} aide={aide} />
+              ))}
             </div>
           </div>
         </section>
@@ -121,7 +112,7 @@ export default function Home() {
       </section>
 
       {/* Dernières aides */}
-      {(loadingDernieres || dernieresAides.length > 0) && (
+      {dernieresAides.length > 0 && (
         <section className="py-12 md:py-16 bg-slate-50">
           <div className="max-w-6xl mx-auto px-4 sm:px-6">
             <div className="flex items-center justify-between mb-8">
@@ -136,15 +127,9 @@ export default function Home() {
               </Link>
             </div>
             <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {loadingDernieres ? (
-                Array(6).fill(0).map((_, i) => (
-                  <Skeleton key={i} className="h-48 w-full rounded-xl" />
-                ))
-              ) : (
-                dernieresAides.map((aide) => (
-                  <AideCard key={aide.id} aide={aide} compact />
-                ))
-              )}
+              {dernieresAides.map((aide) => (
+                <AideCard key={aide.id} aide={aide} compact />
+              ))}
             </div>
             <div className="mt-8 text-center md:hidden">
               <Link to={createPageUrl('Aides')}>
@@ -170,10 +155,10 @@ export default function Home() {
                 <CheckCircle2 className="h-8 w-8 text-green-600" />
               </div>
               <h3 className="text-lg font-bold text-slate-900 mb-2">
-                Informations sûres
+                Informations vérifiées
               </h3>
               <p className="text-slate-600">
-                Nos informations viennent de l&apos;État.
+                Toutes nos informations viennent de sources officielles et sont vérifiées régulièrement.
               </p>
             </div>
             <div className="text-center">
@@ -181,10 +166,10 @@ export default function Home() {
                 <Shield className="h-8 w-8 text-blue-600" />
               </div>
               <h3 className="text-lg font-bold text-slate-900 mb-2">
-                Site gratuit
+                Site gratuit et sans pub
               </h3>
               <p className="text-slate-600">
-                C&apos;est gratuit. Il n&apos;y a pas de publicité.
+                AccesDirectAide est un site non lucratif. Pas de publicité, pas de revente de données.
               </p>
             </div>
             <div className="text-center">
@@ -192,10 +177,10 @@ export default function Home() {
                 <Heart className="h-8 w-8 text-purple-600" />
               </div>
               <h3 className="text-lg font-bold text-slate-900 mb-2">
-                Pour tout le monde
+                Accessible à tous
               </h3>
               <p className="text-slate-600">
-                Le site est facile à lire.
+                Le site est conçu pour être lisible par tous, avec un langage simple et clair.
               </p>
             </div>
           </div>
@@ -203,7 +188,7 @@ export default function Home() {
       </section>
 
       {/* Actualités */}
-      {(loadingActualites || actualites.length > 0) && (
+      {actualites.length > 0 && (
         <section className="py-12 md:py-16 bg-slate-50">
           <div className="max-w-6xl mx-auto px-4 sm:px-6">
             <div className="flex items-center justify-between mb-8">
@@ -218,29 +203,24 @@ export default function Home() {
               </Link>
             </div>
             <div className="grid md:grid-cols-3 gap-6">
-              {loadingActualites ? (
-                Array(3).fill(0).map((_, i) => (
-                  <Skeleton key={i} className="h-48 w-full rounded-xl" />
-                ))
-              ) : (
-                actualites.map((actu) => (
-                  <Link
-                    key={actu.id}
-                    to={actu.slug ? `/actualites/${actu.slug}` : `/actualites/view?id=${actu.id}`}
-                    className="bg-white rounded-xl p-6 border border-slate-200 hover:shadow-lg transition-shadow block"
-                  >
-                    <div className="text-sm text-slate-500 mb-2">
-                      {new Date(actu.date_publication).toLocaleDateString('fr-FR', {
-                        day: 'numeric',
-                        month: 'long',
-                        year: 'numeric'
-                      })}
-                    </div>
-                    <h3 className="font-semibold text-slate-900 mb-2">{actu.titre}</h3>
-                    <p className="text-slate-600 text-sm line-clamp-3">{actu.summary_falc || actu.contenu}</p>
-                  </Link>
-                ))
-              )}
+              {actualites.map((actu) => (
+                <Link
+                  key={actu.id}
+                  to={actu.slug ? `/actualites/${actu.slug}` : `/actualites/view?id=${actu.id}`}
+                  className="bg-white rounded-xl p-6 border border-slate-200 hover:shadow-lg transition-shadow block"
+                >
+                  <div className="text-sm text-slate-500 mb-2">
+                    {new Date(actu.date_publication).toLocaleDateString('fr-FR', {
+                      day: 'numeric',
+                      month: 'long',
+                      year: 'numeric'
+                    })}
+                  </div>
+                  <h3 className="font-semibold text-slate-900 mb-2">{actu.titre}</h3>
+                  <p className="text-slate-600 text-sm line-clamp-3">{actu.summary_falc || actu.contenu}</p>
+                </Link>
+              ))}
+
             </div>
           </div>
         </section>
@@ -252,7 +232,7 @@ export default function Home() {
           <h2 className="text-2xl md:text-3xl font-bold mb-4">
             Vous ne trouvez pas ce que vous cherchez ?
           </h2>
-          <p className="text-lg text-blue-50 mb-8">
+          <p className="text-lg text-blue-100 mb-8">
             Notre assistant peut vous aider à trouver la bonne aide ou la bonne structure.
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
@@ -274,8 +254,8 @@ export default function Home() {
       <section className="py-8 bg-slate-100 border-t border-slate-200">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 text-center">
           <p className="text-sm text-slate-600">
-            ℹ️ Ce site informe et oriente. Il ne remplace pas l&apos;administration ou un professionnel.
-            En cas de doute, contactez toujours l&apos;organisme concerné.
+            ℹ️ Ce site informe et oriente. Il ne remplace pas l'administration ou un professionnel.
+            En cas de doute, contactez toujours l'organisme concerné.
           </p>
         </div>
       </section>

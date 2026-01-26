@@ -39,9 +39,6 @@ const CONFIG = {
     OTP_VERIFY: { limit: 5, window: 60 * 1000 }, // 5 per min
     BOOK: { limit: 10, window: 60 * 60 * 1000 }, // 10 per hour
     CONFIRM: { limit: 10, window: 60 * 60 * 1000 }, // 10 per hour
-    // Auth
-    LOGIN_PRO: { limit: 5, window: 15 * 60 * 1000 },     // 5 per 15 min
-    RESET_PASSWORD: { limit: 3, window: 60 * 60 * 1000 }, // 3 per hour
     // Search & Taxonomy
     SEARCH_AIDES: { limit: 30, window: 60 * 1000 },      // 30 per min
     SEARCH_STRUCTURES: { limit: 30, window: 60 * 1000 }, // 30 per min

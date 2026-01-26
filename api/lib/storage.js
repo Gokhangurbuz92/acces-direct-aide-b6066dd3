@@ -7,20 +7,10 @@ import crypto from 'crypto';
 // In PROD (if STORAGE_BUCKET is set), we would use @aws-sdk/client-s3 or Supabase Storage.
 // For MVP/Verification without cloud creds, we use strict local storage with encryption simulation.
 
-// On Vercel (or any read-only FS), only /tmp is writable.
-// Note: /tmp is ephemeral and tied to the execution context. Files will disappear.
-// For a persistent MVP on Vercel, you essentially can't use filesystem for persistence unless using /tmp for short-lived ops.
-// Since this is a "mock" storage, using /tmp is the only minimal fix that doesn't require S3 setup.
-const STORAGE_ROOT = path.join('/tmp', 'uploads_mock');
+const STORAGE_ROOT = path.join(process.cwd(), 'uploads_mock');
 
-try {
-    if (!fs.existsSync(STORAGE_ROOT)) {
-        fs.mkdirSync(STORAGE_ROOT, { recursive: true });
-    }
-} catch (e) {
-    console.error("Storage init failed (likely read-only FS even in /tmp?):", e);
-    // Fallback? or just let it crash later if used?
-    // We suppress crash on INIT, but upload() will fail if mkdir failed.
+if (!fs.existsSync(STORAGE_ROOT)) {
+    fs.mkdirSync(STORAGE_ROOT, { recursive: true });
 }
 
 export const storage = {

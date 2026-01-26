@@ -114,7 +114,6 @@ export const apiClient = {
         Structure: createEntityClient('structures'),
         Demarche: createEntityClient('demarches'),
         Actualite: createEntityClient('actualites'),
-        Guide: createEntityClient('guides'),
         UpdateLog: createEntityClient('update-logs'),
         Source: createEntityClient('sources')
     },

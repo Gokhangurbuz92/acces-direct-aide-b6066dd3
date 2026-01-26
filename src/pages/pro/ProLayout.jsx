@@ -1,5 +1,5 @@
 
-import { useEffect, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useNavigate, useLocation, Link, Outlet } from 'react-router-dom';
 import { Loader2, LayoutDashboard, Building2, Users, FileText, LogOut } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -16,7 +16,7 @@ export default function ProLayout() {
         const token = localStorage.getItem('pro_token');
         if (!token) {
             console.log("[ProLayout] No token found");
-            if (location.pathname !== '/pro/login' && location.pathname !== '/pro/register' && location.pathname !== '/pro/forgot-password' && location.pathname !== '/pro/reset-password') {
+            if (location.pathname !== '/pro/login' && location.pathname !== '/pro/register') {
                 console.log("[ProLayout] Redirecting to login");
                 navigate('/pro/login');
             } else {
@@ -36,7 +36,7 @@ export default function ProLayout() {
             })
             .then(data => {
                 setUser(data.user);
-                if (['/pro/login', '/pro/register', '/pro/forgot-password', '/pro/reset-password'].includes(location.pathname)) {
+                if (location.pathname === '/pro/login' || location.pathname === '/pro/register') {
                     navigate('/pro/dashboard');
                 }
             })
@@ -56,8 +56,8 @@ export default function ProLayout() {
         return <div className="h-screen flex items-center justify-center"><Loader2 className="animate-spin" /></div>;
     }
 
-    // If on public auth pages, just render Outlet
-    if (['/pro/login', '/pro/register', '/pro/forgot-password', '/pro/reset-password'].includes(location.pathname)) {
+    // If on login/register page, just render Outlet
+    if (location.pathname === '/pro/login' || location.pathname === '/pro/register') {
         console.log(`[ProLayout] Rendering Outlet for ${location.pathname}`);
         return <Outlet />;
     }

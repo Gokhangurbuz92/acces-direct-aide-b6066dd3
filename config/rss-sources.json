@@ -1,16 +1,30 @@
 [
     {
-        "name": "Service-Public - Particuliers",
-        "url": "https://www.service-public.gouv.fr/abonnements/rss/actu-actualites-particuliers.rss",
+        "name": "Service-Public - Actualités",
+        "url": "https://www.service-public.fr/rss/actualites",
         "domain": "service-public.fr",
+        "trust_level": "OFFICIAL",
+        "category": "general"
+    },
+    {
+        "name": "Direction de l'information légale et administrative",
+        "url": "https://www.vie-publique.fr/rss/actualites",
+        "domain": "vie-publique.fr",
+        "trust_level": "OFFICIAL",
+        "category": "sante"
+    },
+    {
+        "name": "CAF - Actualités",
+        "url": "https://www.caf.fr/rss.xml",
+        "domain": "caf.fr",
         "trust_level": "OFFICIAL",
         "category": "famille"
     },
     {
-        "name": "Service-Public - Professionnels",
-        "url": "https://www.service-public.gouv.fr/abonnements/rss/actu-actu-pro.rss",
-        "domain": "service-public.fr",
+        "name": "Ameli - Assurés",
+        "url": "https://www.ameli.fr/rss-assures.xml",
+        "domain": "ameli.fr",
         "trust_level": "OFFICIAL",
-        "category": "professionnel"
+        "category": "sante"
     }
 ]

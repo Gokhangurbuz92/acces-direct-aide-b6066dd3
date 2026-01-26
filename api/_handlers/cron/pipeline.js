@@ -2,18 +2,13 @@
 import { PrismaClient } from '@prisma/client';
 import Parser from 'rss-parser';
 import crypto from 'crypto';
-import fs from 'fs';
-import path from 'path';
 import { summarizeToFalc } from '../../lib/falc-summarizer.js';
-import ingestStructures from './ingest-structures.js';
-import ingestAids from './ingest-aids.js';
 
 const prisma = new PrismaClient();
 const parser = new Parser();
 
 // Helper: Slugify
 function slugify(text) {
-    if (!text) return '';
     return text
         .toString()
         .toLowerCase()
@@ -25,17 +20,17 @@ function slugify(text) {
         .replace(/-+$/, '');
 }
 
-export default async function handler(req, res) {
+export async function GET(request) {
     // 1. Authorization
     if (!process.env.CRON_SECRET) {
         console.error("CRITICAL: CRON_SECRET environment variable is not defined.");
-        return res.status(500).json({ error: 'Server configuration error' });
+        return new Response('Server configuration error', { status: 500 });
     }
 
-    // req.query is available in Vercel function, or parsed by dev-server
-    const secret = req.query?.secret || new URL(req.url, `http://${req.headers.host}`).searchParams.get('secret');
-    const vercelCronHeader = req.headers['x-vercel-cron'];
-    const authHeader = req.headers['authorization'];
+    const urlObj = new URL(request.url);
+    const secret = urlObj.searchParams.get('secret');
+    const vercelCronHeader = request.headers.get('x-vercel-cron');
+    const authHeader = request.headers.get('authorization');
 
     const isAuthorized =
         secret === process.env.CRON_SECRET ||
@@ -44,7 +39,7 @@ export default async function handler(req, res) {
 
     if (!isAuthorized) {
         console.warn("Unauthorized Pipeline Attempt");
-        return res.status(401).json({ error: 'Unauthorized' });
+        return new Response('Unauthorized', { status: 401 });
     }
 
     const runId = crypto.randomUUID();
@@ -74,48 +69,20 @@ export default async function handler(req, res) {
 
     const pipelineLogic = async () => {
         // ==========================================
-        // STEP 0: SEED CONFIG (Ensure Sources Exist)
-        // ==========================================
-        try {
-            const configPath = path.join(process.cwd(), 'config', 'rss-sources.json');
-            if (fs.existsSync(configPath)) {
-                 const configSources = JSON.parse(fs.readFileSync(configPath, 'utf8'));
-                 for (const src of configSources) {
-                     await prisma.rssSource.upsert({
-                         where: { feed_url: src.url },
-                         update: {
-                             name: src.name,
-                             domain: src.domain,
-                             trust_level: src.trust_level,
-                             enabled: true // Re-enable if in config
-                         },
-                         create: {
-                             name: src.name,
-                             feed_url: src.url,
-                             domain: src.domain,
-                             trust_level: src.trust_level,
-                             enabled: true
-                         }
-                     });
-                 }
-            }
-        } catch (e) {
-            console.error("Pipeline: Seed Config failed", e);
-        }
-
-        // ==========================================
-        // STEP 0.5: CORE INGESTION (Structures & Aids)
+        // STEP 0: CORE INGESTION (Structures & Aids)
         // ==========================================
         // Structures
         try {
-            await ingestStructures({ query: { secret: process.env.CRON_SECRET } }, {
+            const structuresHandler = await import('./ingest-structures.js');
+            await structuresHandler.default({ query: { secret: process.env.CRON_SECRET } }, {
                 status: () => ({ json: (d) => { if (d && d.created) stats.ingested += d.created; } })
             });
         } catch (e) { console.error("Pipeline: Ingest Structures failed", e); }
 
         // Aids
         try {
-            await ingestAids({ query: { secret: process.env.CRON_SECRET } }, {
+            const aidsHandler = await import('./ingest-aids.js');
+            await aidsHandler.default({ query: { secret: process.env.CRON_SECRET } }, {
                 status: () => ({ json: (d) => { if (d && d.created) stats.ingested += d.created; } })
             });
         } catch (e) { console.error("Pipeline: Ingest Aids failed", e); }
@@ -141,7 +108,6 @@ export default async function handler(req, res) {
                             titre: item.title || "Sans titre",
                             slug: slugify(item.title || "info") + '-' + hash.substring(0, 6),
                             contenu: item.content || item.contentSnippet || "",
-                            resume: item.contentSnippet || item.content || "", // Raw summary
                             canonical_url: item.link,
                             guid: item.guid || item.link,
                             source_id: source.id,
@@ -149,13 +115,12 @@ export default async function handler(req, res) {
                             source_url: source.feed_url,
                             dedupe_hash: hash,
                             ingest_batch: runId,
-                            statut: "brouillon", // Default to draft, auto-publish step will handle it
+                            statut: "brouillon",
                             falc_status: "pending",
                             quality_score: isOfficial ? 60 : 40,
                             auto_publish: isOfficial,
                             date_publication: item.isoDate ? new Date(item.isoDate) : new Date(),
-                            fetched_at: new Date(),
-                            tags: [] // Can map from source if available
+                            fetched_at: new Date()
                         };
 
                         const result = await prisma.actualite.upsert({
@@ -230,7 +195,7 @@ export default async function handler(req, res) {
             await prisma.actualite.update({
                 where: { id: item.id },
                 data: {
-                    statut: 'publie', // FIXED: actif -> publie
+                    statut: 'actif',
                     published_at: new Date()
                 }
             });
@@ -262,10 +227,13 @@ export default async function handler(req, res) {
                     logs: JSON.stringify(globalErr.message)
                 }
             });
-        } catch (e) { /* ignore */ }
+        } catch (e) { /* ignore */ } // eslint-disable-line no-unused-vars
 
-        return res.status(500).json({ error: globalErr.message });
+        return new Response(JSON.stringify({ error: globalErr.message }), { status: 500 });
     }
 
-    return res.status(200).json(stats);
+    return new Response(JSON.stringify(stats), {
+        status: 200,
+        headers: { 'Content-Type': 'application/json' }
+    });
 }

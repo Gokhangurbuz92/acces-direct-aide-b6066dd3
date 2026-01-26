@@ -1,7 +1,6 @@
 
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
-import Logo from '@/components/Brand/Logo';
 import { createPageUrl } from '@/utils';
 import {
   Menu,
@@ -204,7 +203,12 @@ export default function Layout({ children, currentPageName }) {
               className="flex items-center gap-2"
               aria-label="AccesDirectAide - Accueil"
             >
-              <Logo variant="header" />
+              <div className="w-10 h-10 rounded-xl bg-blue-600 flex items-center justify-center">
+                <HandHeart className="h-6 w-6 text-white" />
+              </div>
+              <span className="text-xl font-bold text-slate-900 hidden sm:block">
+                AccesDirectAide
+              </span>
             </Link>
 
             {/* Navigation desktop */}
@@ -335,12 +339,15 @@ export default function Layout({ children, currentPageName }) {
           <div className="grid md:grid-cols-4 gap-8">
             {/* Logo et description */}
             <div className="md:col-span-2">
-              <div className="mb-6">
-                <Logo variant="footer" />
+              <div className="flex items-center gap-2 mb-4">
+                <div className="w-10 h-10 rounded-xl bg-blue-600 flex items-center justify-center">
+                  <HandHeart className="h-6 w-6 text-white" />
+                </div>
+                <span className="text-xl font-bold">AccesDirectAide</span>
               </div>
               <p className="text-slate-400 text-sm mb-4">
                 Un site non lucratif pour vous aider à trouver les aides,
-                les démarches et les structures d&apos;accompagnement près de chez vous.
+                les démarches et les structures d'accompagnement près de chez vous.
               </p>
               <p className="text-slate-400 text-sm">
                 Toutes les informations sont vérifiées et sourcées.

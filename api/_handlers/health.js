@@ -3,25 +3,22 @@ import { PrismaClient } from '@prisma/client';
 const prisma = new PrismaClient();
 
 export default async function handler(req, res) {
-    let dbStatus = 'disconnected';
     try {
+        // Check DB
         await prisma.$queryRaw`SELECT 1`;
-        dbStatus = 'connected';
-    } catch (e) {
-        console.error("Health DB Error:", e);
+
+        return res.status(200).json({
+            status: 'ok',
+            timestamp: new Date().toISOString(),
+            version: process.env.npm_package_version || '1.0.0',
+            database: 'connected'
+        });
+    } catch (error) {
+        console.error('Health Check Failed:', error);
+        return res.status(500).json({
+            status: 'error',
+            database: 'disconnected',
+            error: error.message
+        });
     }
-
-    const info = {
-        status: dbStatus === 'connected' ? 'ok' : 'error',
-        timestamp: new Date().toISOString(),
-        version: process.env.npm_package_version || '0.0.0',
-        commitSha: process.env.VERCEL_GIT_COMMIT_SHA || process.env.VITE_GIT_COMMIT_SHA || 'dev',
-        database: dbStatus
-    };
-
-    if (dbStatus !== 'connected') {
-        return res.status(503).json(info);
-    }
-
-    return res.status(200).json(info);
 }

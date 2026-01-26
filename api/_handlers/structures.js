@@ -23,10 +23,17 @@ export default async function handler(req, res) {
         }
         const params = validation.data;
 
-        // 1. Single Item (ID or Slug)
-        if (params.id || params.slug) {
+        // 1. Single Item (slugOrId)
+        const slugOrId = params.slug || params.id;
+
+        if (slugOrId) {
             const structure = await prisma.structure.findFirst({
-                where: params.id ? { id: params.id } : { slug: params.slug },
+                where: {
+                    OR: [
+                        { slug: slugOrId },
+                        { id: slugOrId }
+                    ]
+                },
                 include: { proServices: true }
             });
 

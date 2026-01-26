@@ -238,7 +238,7 @@ export default function Demarches() {
                         </div>
                         <div className="bg-slate-50 px-6 py-3 border-t border-slate-100">
                           <Link
-                            to={demarche.slug ? `/demarches/${demarche.slug}` : `/demarches/view?id=${demarche.id}`}
+                            to={`/demarches/${demarche.slug ?? demarche.id}`}
                             className="inline-flex items-center gap-2 text-blue-600 hover:text-blue-800 font-bold text-sm"
                           >
                             Démarrer la démarche

@@ -17,10 +17,17 @@ export default async function handler(req, res) {
         }
         const params = validation.data;
 
-        // 1. Single Item
-        if (params.id || params.slug) {
+        // 1. Single Item (slugOrId)
+        const slugOrId = params.slug || params.id;
+
+        if (slugOrId) {
             const demarche = await prisma.demarche.findFirst({
-                where: params.id ? { id: params.id } : { slug: params.slug },
+                where: {
+                    OR: [
+                        { slug: slugOrId },
+                        { id: slugOrId }
+                    ]
+                },
                 include: { category: true, situations: true }
             });
 

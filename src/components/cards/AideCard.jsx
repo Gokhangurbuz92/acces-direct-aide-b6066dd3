@@ -106,7 +106,7 @@ export default function AideCard({ aide, compact = false }) {
 
           {/* Lien */}
           <Link
-            to={aide.slug ? `/aides/${aide.slug}` : `/aide/view?id=${aide.id}`}
+            to={`/aides/${aide.slug ?? aide.id}`}
             className="inline-flex items-center gap-2 text-blue-600 hover:text-blue-800 font-medium text-sm mt-2 group/link"
             aria-label={`Voir l'aide ${aide.titre}`}
           >

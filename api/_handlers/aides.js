@@ -24,10 +24,18 @@ export default async function handler(req, res) {
         }
         const params = validation.data;
 
-        // 1. Single Item (Direct access via ID/Slug)
-        if (params.id || params.slug) {
+        // 1. Single Item (Direct access via slugOrId)
+        // Support both /api/aides?slug=X and /api/aides?id=X for backward compat
+        const slugOrId = params.slug || params.id;
+
+        if (slugOrId) {
             const aide = await prisma.aide.findFirst({
-                where: params.id ? { id: params.id } : { slug: params.slug },
+                where: {
+                    OR: [
+                        { slug: slugOrId },
+                        { id: slugOrId }
+                    ]
+                },
                 include: { category: true, situations: true }
             });
 

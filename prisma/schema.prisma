@@ -47,6 +47,11 @@ model Aide {
   source                AidSource?      @relation(fields: [sourceId], references: [id])
   situations            LifeSituation[] @relation("AideToLifeSituation")
 
+  // Ingestion Fields
+  source_url_exact String?
+  territory_scope  String?
+  content_hash     String?
+
   @@index([statut, published_at])
   @@index([categoryId, statut])
   @@index([statut])
@@ -121,6 +126,11 @@ model Structure {
   siret              String?        @unique
   source_id          String?
   source_url         String?
+  // Ingestion Fields
+  source_url_exact   String?
+  territory_scope    String?
+  content_hash       String?
+
   appointments       Appointment[]
   availabilities     Availability[]
   invitations        Invitation[]
@@ -133,6 +143,7 @@ model Structure {
   @@index([statut, ville])
   @@index([departement])
   @@index([type_structure])
+  @@index([statut, nom])
 }
 
 model Demarche {
@@ -163,6 +174,11 @@ model Demarche {
   categoryId            String?
   category              AidCategory?    @relation("DemarcheToCategory", fields: [categoryId], references: [id])
   situations            LifeSituation[] @relation("DemarcheToSituation")
+
+  // Ingestion Fields
+  source_url_exact String?
+  territory_scope  String?
+  content_hash     String?
 
   @@index([statut, published_at])
   @@index([categoryId, statut])
@@ -202,6 +218,7 @@ model Actualite {
   quality_score      Int       @default(0)
   raw_data_hash      String?   @unique
   raw_payload_json   Json?
+  resume             String?
   score_fiabilite    Int       @default(0)
   source_nom         String?
   source_url         String?
@@ -212,6 +229,7 @@ model Actualite {
   @@index([dedupe_hash])
   @@index([source_id])
   @@index([raw_data_hash])
+  @@index([statut, date_publication])
 }
 
 model ImportLog {
@@ -399,6 +417,7 @@ model Appointment {
   @@index([proId, start_at])
   @@index([cancel_token_hash])
   @@index([access_token_hash])
+  @@index([structureId, status, start_at])
 }
 
 model Message {
@@ -407,6 +426,7 @@ model Message {
   sender            String
   content_encrypted String
   createdAt         DateTime     @default(now())
+  read_at           DateTime?
   attachments       Attachment[]
   appointment       Appointment  @relation(fields: [appointmentId], references: [id], onDelete: Cascade)
 
@@ -441,6 +461,8 @@ model Guide {
   published_at DateTime?
   createdAt    DateTime  @default(now())
   updatedAt    DateTime  @updatedAt
+
+  @@index([statut, published_at])
 }
 
 model ToolboxItem {
@@ -457,6 +479,8 @@ model ToolboxItem {
   published_at DateTime?
   createdAt    DateTime  @default(now())
   updatedAt    DateTime  @updatedAt
+
+  @@index([statut, published_at])
 }
 
 model PartnershipRequest {
@@ -501,4 +525,39 @@ model Dispositif {
   summary_falc     String?
   createdAt        DateTime  @default(now())
   updatedAt        DateTime  @updatedAt
+
+  // Ingestion Fields
+  source_url_exact String?
+  territory_scope  String?
+  content_hash     String?
+
+  @@index([statut, published_at])
+}
+
+model SourceSnapshot {
+  id           String   @id @default(uuid())
+  entity_type  String
+  entity_id    String
+  fetched_at   DateTime @default(now())
+  raw_excerpt  String?
+  content_hash String?
+  http_status  Int?
+  final_url    String?
+  createdAt    DateTime @default(now())
+
+  @@index([entity_type, entity_id])
+  @@index([fetched_at])
+}
+
+model ResourceAccessibility {
+  id              String   @id @default(uuid())
+  slug            String   @unique
+  title           String
+  type            String
+  content         String?
+  source_url      String?
+  territory_scope String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  status          String   @default("draft")
 }

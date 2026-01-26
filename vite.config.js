@@ -18,7 +18,7 @@ export default defineConfig({
   },
   server: {
     allowedHosts: true,
-    proxy: {
+    /* proxy: {
       '/api': {
         target: 'http://localhost:3000',
         changeOrigin: true,
@@ -34,7 +34,7 @@ export default defineConfig({
         changeOrigin: true,
         secure: false,
       }
-    }
+    } */
 
   },
   resolve: {

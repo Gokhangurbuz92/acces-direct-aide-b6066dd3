@@ -59,12 +59,24 @@ export default function StructureDetail() {
     return <NotFound />;
   }
 
+  const breadcrumbs = [
+    { name: 'Accueil', url: '/' },
+    { name: 'Annuaire', url: '/annuaire' },
+    { name: structure.nom, url: `/structures/${structure.slug}` }
+  ];
+
+  const schema = [
+    generateBreadcrumbSchema(breadcrumbs),
+    generateStructureSchema(structure)
+  ].filter(Boolean);
+
   return (
     <div className="min-h-screen bg-slate-50">
       <SEO
         title={structure.nom}
         description={structure.description_courte || `Détails de ${structure.nom}`}
-        url={window.location.href}
+        path={`/structures/${structure.slug}`}
+        schema={schema}
       />
       {/* Fil d'Ariane */}
       <div className="bg-white border-b border-slate-200">

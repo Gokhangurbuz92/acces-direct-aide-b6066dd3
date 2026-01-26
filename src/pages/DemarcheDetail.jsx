@@ -62,12 +62,24 @@ export default function DemarcheDetail() {
     return <NotFound />;
   }
 
+  const breadcrumbs = [
+    { name: 'Accueil', url: '/' },
+    { name: 'Démarches', url: '/demarches' },
+    { name: demarche.titre, url: `/demarches/${demarche.slug}` }
+  ];
+
+  const schema = [
+    generateBreadcrumbSchema(breadcrumbs),
+    generateDemarcheSchema(demarche)
+  ].filter(Boolean);
+
   return (
     <div className="min-h-screen bg-slate-50">
       <SEO
         title={demarche.titre}
         description={demarche.description_courte}
-        url={window.location.href}
+        path={`/demarches/${demarche.slug}`}
+        schema={schema}
       />
       {/* Fil d'Ariane */}
       <div className="bg-white border-b border-slate-200">

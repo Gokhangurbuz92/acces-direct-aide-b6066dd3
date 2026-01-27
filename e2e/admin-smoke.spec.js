@@ -1,6 +1,12 @@
 import { test, expect } from '@playwright/test';
 
+import { setupAdminMocks } from './_mocks/adminApiMocks';
+
 test.describe('Admin Smoke Test', () => {
+    test.beforeEach(async ({ page }) => {
+        await setupAdminMocks(page);
+    });
+
     test('Full Content Lifecycle: Create -> Publish -> Verify', async ({ page }) => {
         // 1. Login
         // We rely on CI environment variables for credentials
@@ -17,6 +23,7 @@ test.describe('Admin Smoke Test', () => {
 
         // 2. Create Aide (Draft)
         await page.goto('/adminaides');
+        await expect(page.getByRole('heading', { name: 'Gestion des Aides' })).toBeVisible();
         await page.getByRole('button', { name: 'Créer' }).click();
 
         const timestamp = Date.now();

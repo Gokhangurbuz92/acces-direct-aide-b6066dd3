@@ -19,7 +19,8 @@ import {
   CheckCircle,
   AlertCircle,
   Loader2,
-  FileText
+  FileText,
+  Plus
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { createPageUrl } from '@/utils';
@@ -65,13 +66,21 @@ export default function AdminAides() {
     <div className="min-h-screen bg-slate-50">
       {/* Header */}
       <div className="bg-white border-b border-slate-200 py-6">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6">
-          <h1 className="text-2xl font-bold text-slate-900 mb-2">
-            Gestion des Aides
-          </h1>
-          <p className="text-slate-600">
-            Gérez les fiches d'aides et démarches
-          </p>
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 flex justify-between items-center">
+          <div>
+            <h1 className="text-2xl font-bold text-slate-900 mb-2">
+              Gestion des Aides
+            </h1>
+            <p className="text-slate-600">
+              Gérez les fiches d'aides et démarches
+            </p>
+          </div>
+          <Link to={createPageUrl('AdminAideEdit')}>
+            <Button>
+              <Plus className="h-4 w-4 mr-2" />
+              Créer
+            </Button>
+          </Link>
         </div>
       </div>
 

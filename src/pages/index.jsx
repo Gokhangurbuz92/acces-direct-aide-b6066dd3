@@ -301,6 +301,8 @@ function PagesContent() {
 
                 <Route path="/aidedetail" element={<AideDetail />} />
                 <Route path="/aide/view" element={<AideDetail />} />
+                {/* Canonical Redirect for legacy singular path */}
+                <Route path="/aide/:slug" element={<Navigate to="/aides/:slug" replace />} />
                 <Route path="/aides/:slug" element={<AideDetail />} />
 
                 <Route path="/aides" element={<Aides />} />

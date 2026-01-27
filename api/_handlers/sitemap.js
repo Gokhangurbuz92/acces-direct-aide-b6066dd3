@@ -61,7 +61,7 @@ export default async function handler(req, res) {
 
         // Add dynamic content
         aides.filter(a => a.slug).forEach(a => {
-            urls.push(`  <url><loc>${BASE_URL}/aide/${a.slug}</loc><lastmod>${a.updatedAt.toISOString().split('T')[0]}</lastmod><priority>0.7</priority></url>`);
+            urls.push(`  <url><loc>${BASE_URL}/aides/${a.slug}</loc><lastmod>${a.updatedAt.toISOString().split('T')[0]}</lastmod><priority>0.7</priority></url>`);
         });
 
         demarches.filter(d => d.slug).forEach(d => {

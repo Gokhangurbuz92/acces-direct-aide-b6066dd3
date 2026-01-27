@@ -38,6 +38,7 @@ jobs:
           node-version: '20'
           cache: 'npm'
       - run: npm ci
+      - run: node scripts/verify-handler-imports.js
       - run: npx prisma generate
       - run: npm run build
 

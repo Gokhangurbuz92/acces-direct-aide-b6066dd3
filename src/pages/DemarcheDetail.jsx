@@ -1,5 +1,5 @@
-import React from 'react';
-import { Link, useParams, useSearchParams } from 'react-router-dom';
+import React, { useEffect } from 'react';
+import { Link, useParams, useSearchParams, useNavigate } from 'react-router-dom';
 import SEO from '@/components/SEO';
 import NotFound from "./NotFound";
 import { createPageUrl } from '@/utils';
@@ -41,6 +41,7 @@ const CATEGORIE_LABELS = {
 export default function DemarcheDetail() {
   const { slug } = useParams();
   const [searchParams] = useSearchParams();
+  const navigate = useNavigate();
   const id = searchParams.get('id');
   const identifier = slug || id;
 
@@ -49,6 +50,13 @@ export default function DemarcheDetail() {
     queryFn: () => client.entities.Demarche.filter(slug ? { slug } : { id }),
     enabled: !!identifier
   });
+
+  // Canonical Redirect: If accessed via ID but slug exists, redirect to slug URL
+  useEffect(() => {
+    if (demarche && !slug && demarche.slug) {
+      navigate(`/demarches/${demarche.slug}`, { replace: true });
+    }
+  }, [demarche, slug, navigate]);
 
   if (isLoading) {
     return (

@@ -50,6 +50,13 @@ export default function AideDetail() {
     enabled: !!slug || !!aideId
   });
 
+  // Canonical Redirect: If accessed via ID but slug exists, redirect to slug URL
+  useEffect(() => {
+    if (aide && !slug && aide.slug) {
+      navigate(`/aides/${aide.slug}`, { replace: true });
+    }
+  }, [aide, slug, navigate]);
+
   const { data: structuresData } = useQuery({
     queryKey: ['structures-aide', aide?.categorie],
     queryFn: () => client.entities.Structure.filter({

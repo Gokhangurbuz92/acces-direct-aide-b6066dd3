@@ -37,15 +37,22 @@ const TYPE_LABELS = {
 export default function StructureDetail() {
   const { slug } = useParams();
   const [searchParams] = useSearchParams();
-  const id = searchParams.get('id');
-  const identifier = slug || id;
+  const navigate = useNavigate();
+  const structureId = searchParams.get('id');
 
-  const { data: structure, isLoading } = useQuery({
-    queryKey: ['structure', identifier],
-    queryFn: () => client.entities.Structure.filter(slug ? { slug } : { id }),
+  const { data: structure, isLoading, error } = useQuery({
+    queryKey: ['structure', slug || structureId],
+    queryFn: () => client.entities.Structure.filter(slug ? { slug } : { id: structureId }),
     // API now returns single object for id/slug queries
-    enabled: !!identifier
+    enabled: !!slug || !!structureId
   });
+
+  // Canonical Redirect: If accessed via ID but slug exists, redirect to slug URL
+  useEffect(() => {
+    if (structure && !slug && structure.slug) {
+      navigate(`/structures/${structure.slug}`, { replace: true });
+    }
+  }, [structure, slug, navigate]);
 
   if (isLoading) {
     return (
@@ -237,11 +244,11 @@ export default function StructureDetail() {
                     Prendre rendez-vous
                   </h2>
                   <p className="text-slate-700 mb-4">
-                      Cette structure propose la prise de rendez-vous en ligne.
+                    Cette structure propose la prise de rendez-vous en ligne.
                   </p>
                   <Button className="w-full bg-indigo-600 hover:bg-indigo-700" asChild>
                     <Link to={createPageUrl('AppointmentRequest') + `?structure_id=${structure.id}`}>
-                        Voir les créneaux disponibles
+                      Voir les créneaux disponibles
                     </Link>
                   </Button>
                 </CardContent>
@@ -278,12 +285,12 @@ export default function StructureDetail() {
                     </Link>
                   </Button>
                 ) : (
-                    <Button className="w-full bg-blue-600 hover:bg-blue-700" asChild>
-                        <Link to={createPageUrl('AppointmentRequest') + `?structure_id=${structure.id}`}>
-                            <Calendar className="mr-2 h-4 w-4" />
-                            Demander un RDV
-                        </Link>
-                    </Button>
+                  <Button className="w-full bg-blue-600 hover:bg-blue-700" asChild>
+                    <Link to={createPageUrl('AppointmentRequest') + `?structure_id=${structure.id}`}>
+                      <Calendar className="mr-2 h-4 w-4" />
+                      Demander un RDV
+                    </Link>
+                  </Button>
                 )}
 
                 {structure.telephone && (

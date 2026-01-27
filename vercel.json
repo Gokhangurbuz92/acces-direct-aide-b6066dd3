@@ -16,6 +16,11 @@
             "permanent": true
         },
         {
+            "source": "/aide/:slug",
+            "destination": "/aides/:slug",
+            "permanent": true
+        },
+        {
             "source": "/login/pro",
             "destination": "/pro/login",
             "permanent": true

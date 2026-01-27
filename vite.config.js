@@ -18,24 +18,6 @@ export default defineConfig({
   },
   server: {
     allowedHosts: true,
-    /* proxy: {
-      '/api': {
-        target: 'http://localhost:3000',
-        changeOrigin: true,
-        secure: false,
-      },
-      '/sitemap.xml': {
-        target: 'http://localhost:3000',
-        changeOrigin: true,
-        secure: false,
-      },
-      '/robots.txt': {
-        target: 'http://localhost:3000',
-        changeOrigin: true,
-        secure: false,
-      }
-    } */
-
   },
   resolve: {
     alias: {
@@ -53,4 +35,11 @@ export default defineConfig({
   build: {
     sourcemap: true,
   },
-}) 
+  test: {
+    globals: true,
+    environment: 'node',
+    // Explicitly exclude e2e and playwright specs
+    include: ['src/**/*.{test,spec}.{js,mjs,cjs,ts,mts,cts,jsx,tsx}', 'tests/**/*.{test,spec}.{js,mjs,cjs,ts,mts,cts,jsx,tsx}', 'api/**/*.{test,spec}.{js,mjs,cjs,ts,mts,cts,jsx,tsx}', 'scripts/**/*.{test,spec}.{js,mjs,cjs,ts,mts,cts,jsx,tsx}'],
+    exclude: ['node_modules', 'dist', '.vercel', 'e2e', '**/*.spec.js'],
+  },
+})

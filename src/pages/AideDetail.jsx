@@ -96,7 +96,7 @@ export default function AideDetail() {
   const breadcrumbs = [
     { name: 'Accueil', url: '/' },
     { name: 'Aides', url: '/aides' },
-    { name: aide.titre, url: `/aide/${aide.slug}` }
+    { name: aide.titre, url: `/aides/${aide.slug}` }
   ];
 
   const schema = [
@@ -109,7 +109,7 @@ export default function AideDetail() {
       <SEO
         title={aide.titre}
         description={aide.summary_falc || aide.cest_quoi?.substring(0, 150)}
-        path={`/aide/${aide.slug}`}
+        path={`/aides/${aide.slug}`}
         schema={schema}
       />
       {/* Fil d'Ariane */}

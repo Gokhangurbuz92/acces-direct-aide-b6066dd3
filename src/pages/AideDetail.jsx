@@ -1,5 +1,5 @@
-import React from 'react';
-import { Link, useParams } from 'react-router-dom';
+import React, { useEffect } from 'react';
+import { Link, useParams, useNavigate } from 'react-router-dom';
 import { createPageUrl } from '@/utils';
 import { client } from '@/api/client';
 import { useQuery } from '@tanstack/react-query';
@@ -22,6 +22,7 @@ import {
   Loader2,
   Flag
 } from 'lucide-react';
+import { generateBreadcrumbSchema, generateAideSchema } from '@/utils/schema';
 
 const CATEGORIE_LABELS = {
   logement: 'Logement',
@@ -41,6 +42,7 @@ const CATEGORIE_LABELS = {
 
 export default function AideDetail() {
   const { slug } = useParams();
+  const navigate = useNavigate();
   const urlParams = new URLSearchParams(window.location.search);
   const aideId = urlParams.get('id');
 

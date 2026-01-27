@@ -1,5 +1,5 @@
-import React from 'react';
-import { Link, useParams, useSearchParams } from 'react-router-dom';
+import React, { useEffect } from 'react';
+import { Link, useParams, useSearchParams, useNavigate } from 'react-router-dom';
 import SEO from '@/components/SEO';
 import NotFound from "./NotFound";
 import { createPageUrl } from '@/utils';
@@ -21,6 +21,7 @@ import {
   Calendar,
   Loader2
 } from 'lucide-react';
+import { generateBreadcrumbSchema, generateStructureSchema } from '@/utils/schema';
 
 const TYPE_LABELS = {
   association: 'Association',

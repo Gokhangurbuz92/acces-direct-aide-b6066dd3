@@ -17,7 +17,7 @@ const MOCK_AIDES = {
 const MOCK_AIDE_DETAIL = {
     id: 'aide-1',
     slug: 'aide-test',
-    titre: 'Aide Test Detail',
+    titre: 'Aide Test',
     providerName: 'Test Provider',
     cest_quoi: 'Description longue',
     categorie: 'logement',
@@ -41,7 +41,7 @@ const MOCK_DEMARCHES = {
 const MOCK_DEMARCHE_DETAIL = {
     id: 'demarche-1',
     slug: 'demarche-test',
-    titre: 'Démarche Test Detail',
+    titre: 'Démarche Test',
     statut: 'publie'
 };
 
@@ -63,7 +63,7 @@ const MOCK_STRUCTURES = {
 const MOCK_STRUCTURE_DETAIL = {
     id: 'struct-1',
     slug: 'structure-test',
-    nom: 'Structure Test Detail',
+    nom: 'Structure Test',
     adresse: '1 rue Test',
     ville: 'Testville',
     statut: 'actif',
@@ -87,7 +87,7 @@ const MOCK_ACTUALITES = [
 const MOCK_ACTUALITE_DETAIL = {
     id: 'actu-1',
     slug: 'actu-test',
-    titre: 'Actualité Test Detail',
+    titre: 'Actualité Test',
     contenu: 'Contenu actu',
     date_publication: new Date().toISOString(),
     published_at: new Date().toISOString()

@@ -5,6 +5,7 @@ import crypto from 'crypto';
 import fs from 'fs';
 import path from 'path';
 import { summarizeToFalc } from '../../lib/falc-summarizer.js';
+import { ensureSlug } from '../../lib/slug.js';
 import ingestStructures from './ingest-structures.js';
 import ingestAids from './ingest-aids.js';
 
@@ -79,25 +80,25 @@ export default async function handler(req, res) {
         try {
             const configPath = path.join(process.cwd(), 'config', 'rss-sources.json');
             if (fs.existsSync(configPath)) {
-                 const configSources = JSON.parse(fs.readFileSync(configPath, 'utf8'));
-                 for (const src of configSources) {
-                     await prisma.rssSource.upsert({
-                         where: { feed_url: src.url },
-                         update: {
-                             name: src.name,
-                             domain: src.domain,
-                             trust_level: src.trust_level,
-                             enabled: true // Re-enable if in config
-                         },
-                         create: {
-                             name: src.name,
-                             feed_url: src.url,
-                             domain: src.domain,
-                             trust_level: src.trust_level,
-                             enabled: true
-                         }
-                     });
-                 }
+                const configSources = JSON.parse(fs.readFileSync(configPath, 'utf8'));
+                for (const src of configSources) {
+                    await prisma.rssSource.upsert({
+                        where: { feed_url: src.url },
+                        update: {
+                            name: src.name,
+                            domain: src.domain,
+                            trust_level: src.trust_level,
+                            enabled: true // Re-enable if in config
+                        },
+                        create: {
+                            name: src.name,
+                            feed_url: src.url,
+                            domain: src.domain,
+                            trust_level: src.trust_level,
+                            enabled: true
+                        }
+                    });
+                }
             }
         } catch (e) {
             console.error("Pipeline: Seed Config failed", e);
@@ -137,9 +138,16 @@ export default async function handler(req, res) {
                     // Using upsert to handle concurrency and idempotency
                     // Note: We catch potential conflicts on canonical_url if it differs from hash
                     try {
+                        // Generate slug (with collision handling)
+                        const itemSlug = await ensureSlug(prisma, 'actualite', {
+                            id: null, // No ID yet for new items
+                            titre: item.title || "Sans titre",
+                            slug: null
+                        }, 'titre');
+
                         const upsertData = {
                             titre: item.title || "Sans titre",
-                            slug: slugify(item.title || "info") + '-' + hash.substring(0, 6),
+                            slug: itemSlug || (slugify(item.title || "info") + '-' + hash.substring(0, 6)), // Fallback
                             contenu: item.content || item.contentSnippet || "",
                             resume: item.contentSnippet || item.content || "", // Raw summary
                             canonical_url: item.link,
@@ -169,10 +177,10 @@ export default async function handler(req, res) {
                             stats.ingested++;
                         }
                     } catch (e) {
-                         if (!e.message.includes('Unique constraint')) {
-                             throw e;
-                         }
-                         // Ignore duplicate canonical_url
+                        if (!e.message.includes('Unique constraint')) {
+                            throw e;
+                        }
+                        // Ignore duplicate canonical_url
                     }
                 }
             } catch (err) {
@@ -255,7 +263,7 @@ export default async function handler(req, res) {
         console.error("Pipeline Global Error:", globalErr);
         // Try to log the failure to DB if possible
         try {
-             await prisma.importLog.create({
+            await prisma.importLog.create({
                 data: {
                     source_name: 'CRON_PIPELINE',
                     status: 'ERROR',

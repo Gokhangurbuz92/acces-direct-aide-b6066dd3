@@ -23,6 +23,7 @@ import {
   Euro,
   Lightbulb
 } from 'lucide-react';
+import { generateBreadcrumbSchema, generateDemarcheSchema } from '@/utils/schema';
 
 const CATEGORIE_LABELS = {
   logement: 'Logement',

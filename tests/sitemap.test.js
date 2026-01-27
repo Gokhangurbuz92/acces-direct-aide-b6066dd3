@@ -1,12 +1,12 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 
 const { mockFindMany } = vi.hoisted(() => {
-  return { mockFindMany: vi.fn() }
+    return { mockFindMany: vi.fn() }
 });
 
 vi.mock('@prisma/client', () => {
     return {
-        PrismaClient: vi.fn().mockImplementation(function() {
+        PrismaClient: vi.fn().mockImplementation(function () {
             return {
                 aide: { findMany: mockFindMany },
                 demarche: { findMany: mockFindMany },
@@ -67,7 +67,7 @@ describe('Sitemap Handler', () => {
         // Check URLs
         // Note: api/_utils/seo.js getCanonicalBaseUrl logic forces production domain usually.
         // So we expect the hardcoded production domain if logic dictates, even if host is localhost.
-        expect(xml).toContain('<loc>https://www.accesdirectaide.fr/aide/aide-1</loc>'); // Singular (kept)
+        expect(xml).toContain('<loc>https://www.accesdirectaide.fr/aides/aide-1</loc>'); // Plural (Verified Fix)
         expect(xml).toContain('<loc>https://www.accesdirectaide.fr/demarches/demarche-1</loc>'); // Plural (Verified Fix)
         expect(xml).toContain('<loc>https://www.accesdirectaide.fr/structures/structure-1</loc>'); // Plural (Verified Fix)
     });

@@ -11,7 +11,7 @@
     "db:seed": "prisma db seed",
     "postinstall": "prisma generate && node scripts/generate-build-info.js",
     "lint": "eslint .",
-    "test": "npm run test:api",
+    "test": "vitest run",
     "test:api": "vitest run tests/integration",
     "verify": "node scripts/verify-lot9a-routes.js && node scripts/verify-rdv.js && node scripts/verify-actualites.js && node scripts/verify-sitemap.js && node scripts/verify-robots.js",
     "preview": "vite preview"

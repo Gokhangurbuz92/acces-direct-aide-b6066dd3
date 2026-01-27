@@ -50,20 +50,20 @@ vi.mock('../../lib/falc-summarizer.js', () => ({
 
 // Mock FS for config
 vi.mock('fs', async () => {
-    const actual = await vi.importActual('fs');
-    return {
-        ...actual,
-        existsSync: vi.fn().mockReturnValue(true),
-        readFileSync: vi.fn().mockReturnValue(JSON.stringify([{
-            name: "Test Source",
-            url: "http://test.com/rss",
-            domain: "test.com",
-            trust_level: "OFFICIAL"
-        }]))
-    };
+  const actual = await vi.importActual('fs');
+  return {
+    ...actual,
+    existsSync: vi.fn().mockReturnValue(true),
+    readFileSync: vi.fn().mockReturnValue(JSON.stringify([{
+      name: "Test Source",
+      url: "http://test.com/rss",
+      domain: "test.com",
+      trust_level: "OFFICIAL"
+    }]))
+  };
 });
 
-import { GET } from './pipeline.js';
+import handler from './pipeline.js';
 
 describe('News Pipeline', () => {
   beforeEach(() => {
@@ -76,32 +76,36 @@ describe('News Pipeline', () => {
       url: 'http://localhost/api/cron/pipeline',
       headers: { get: () => null }
     };
-    const res = await GET(req);
-    expect(res.status).toBe(401);
+    const resMock = {
+      status: vi.fn().mockReturnThis(),
+      json: vi.fn()
+    };
+    await handler(req, resMock);
+    expect(resMock.status).toHaveBeenCalledWith(401);
   });
 
   it('should run pipeline successfully', async () => {
     // Setup mocks
     mocks.findMany.mockImplementation((args) => {
-        if (args && args.where && args.where.enabled === true) {
-             return Promise.resolve([{ // Sources
-                id: 'src1',
-                name: 'Test Source',
-                feed_url: 'http://test.com/rss',
-                trust_level: 'OFFICIAL',
-                enabled: true
-            }]);
-        }
-        return Promise.resolve([]);
+      if (args && args.where && args.where.enabled === true) {
+        return Promise.resolve([{ // Sources
+          id: 'src1',
+          name: 'Test Source',
+          feed_url: 'http://test.com/rss',
+          trust_level: 'OFFICIAL',
+          enabled: true
+        }]);
+      }
+      return Promise.resolve([]);
     });
 
     mocks.parseURL.mockResolvedValueOnce({
-        items: [{
-            title: 'Test News',
-            link: 'http://test.com/news/1',
-            contentSnippet: 'Summary',
-            isoDate: new Date().toISOString()
-        }]
+      items: [{
+        title: 'Test News',
+        link: 'http://test.com/news/1',
+        contentSnippet: 'Summary',
+        isoDate: new Date().toISOString()
+      }]
     });
 
     const req = {
@@ -109,8 +113,12 @@ describe('News Pipeline', () => {
       headers: { get: () => null }
     };
 
-    const res = await GET(req);
-    expect(res.status).toBe(200);
+    const resMock = {
+      status: vi.fn().mockReturnThis(),
+      json: vi.fn()
+    };
+    await handler(req, resMock);
+    expect(resMock.status).toHaveBeenCalledWith(200);
 
     // Verify RssSource upsert (from config)
     expect(mocks.upsert).toHaveBeenCalled();

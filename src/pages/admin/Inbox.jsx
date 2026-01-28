@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { apiClient } from '@/api/client';
 import SEO from '@/components/SEO';
 import { Button } from "@/components/ui/button";
@@ -17,7 +17,7 @@ export default function AdminInbox() {
     const [page, setPage] = useState(1);
     const [selectedIds, setSelectedIds] = useState([]);
 
-    const fetchInbox = async () => {
+    const fetchInbox = useCallback(async () => {
         setLoading(true);
         try {
             const res = await apiClient.admin.getInbox(statusFilter, page);
@@ -27,11 +27,11 @@ export default function AdminInbox() {
         } finally {
             setLoading(false);
         }
-    };
+    }, [statusFilter, page]);
 
     useEffect(() => {
         fetchInbox();
-    }, [statusFilter, page]);
+    }, [fetchInbox]);
 
     const handleAction = async (action, id) => {
         const ids = id ? [id] : selectedIds;

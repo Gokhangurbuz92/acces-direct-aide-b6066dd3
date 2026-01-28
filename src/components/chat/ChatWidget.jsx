@@ -2,10 +2,10 @@ import React, { useState, useRef, useEffect } from 'react';
 import { client } from '@/api/client';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { 
-  MessageCircle, 
-  X, 
-  Send, 
+import {
+  MessageCircle,
+  X,
+  Send,
   Loader2,
   HelpCircle,
   ExternalLink
@@ -26,31 +26,27 @@ export default function ChatWidget() {
   const [conversationId, setConversationId] = useState(null);
   const messagesEndRef = useRef(null);
 
-  const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  };
-
   useEffect(() => {
-    scrollToBottom();
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
   useEffect(() => {
+    const initConversation = async () => {
+      try {
+        const conv = await client.agents.createConversation({
+          agent_name: 'assistant_aide',
+          metadata: { name: 'Conversation utilisateur' }
+        });
+        setConversationId(conv.id);
+      } catch (error) {
+        console.log('Agent non disponible, utilisation du mode de secours');
+      }
+    };
+
     if (isOpen && !conversationId) {
       initConversation();
     }
-  }, [isOpen]);
-
-  const initConversation = async () => {
-    try {
-      const conv = await client.agents.createConversation({
-        agent_name: 'assistant_aide',
-        metadata: { name: 'Conversation utilisateur' }
-      });
-      setConversationId(conv.id);
-    } catch (error) {
-      console.log('Agent non disponible, utilisation du mode de secours');
-    }
-  };
+  }, [isOpen, conversationId]);
 
   const handleSend = async () => {
     if (!input.trim() || isLoading) return;
@@ -64,7 +60,7 @@ export default function ChatWidget() {
       if (conversationId) {
         const conv = await client.agents.getConversation(conversationId);
         await client.agents.addMessage(conv, userMessage);
-        
+
         // Subscribe to updates
         const unsubscribe = client.agents.subscribeToConversation(conversationId, (data) => {
           setMessages([
@@ -88,14 +84,14 @@ export default function ChatWidget() {
           - Propose de consulter le site pour plus d'informations
           - Sois chaleureux et rassurant`,
         });
-        
+
         setMessages(prev => [...prev, { role: 'assistant', content: response }]);
         setIsLoading(false);
       }
     } catch (error) {
-      setMessages(prev => [...prev, { 
-        role: 'assistant', 
-        content: "Je suis désolé, je n'ai pas pu traiter votre demande. Vous pouvez utiliser la recherche du site ou contacter une structure d'aide." 
+      setMessages(prev => [...prev, {
+        role: 'assistant',
+        content: "Je suis désolé, je n'ai pas pu traiter votre demande. Vous pouvez utiliser la recherche du site ou contacter une structure d'aide."
       }]);
       setIsLoading(false);
     }
@@ -167,11 +163,10 @@ export default function ChatWidget() {
                   className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}
                 >
                   <div
-                    className={`max-w-[80%] rounded-2xl px-4 py-3 ${
-                      msg.role === 'user'
-                        ? 'bg-blue-600 text-white'
-                        : 'bg-white border border-slate-200 text-slate-700'
-                    }`}
+                    className={`max-w-[80%] rounded-2xl px-4 py-3 ${msg.role === 'user'
+                      ? 'bg-blue-600 text-white'
+                      : 'bg-white border border-slate-200 text-slate-700'
+                      }`}
                   >
                     {msg.role === 'user' ? (
                       <p className="text-sm">{msg.content}</p>
@@ -195,7 +190,7 @@ export default function ChatWidget() {
                   </div>
                 </div>
               ))}
-              
+
               {isLoading && (
                 <div className="flex justify-start">
                   <div className="bg-white border border-slate-200 rounded-2xl px-4 py-3">
@@ -203,7 +198,7 @@ export default function ChatWidget() {
                   </div>
                 </div>
               )}
-              
+
               <div ref={messagesEndRef} />
             </div>
 

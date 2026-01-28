@@ -1,11 +1,8 @@
-/* eslint-env node */
-import { PrismaClient } from '@prisma/client';
 import { kv } from '../../../_utils/kv.js';
 import crypto from 'crypto';
 import { checkRateLimit } from '../../../_utils/rateLimit.js';
 import { logProAudit } from '../../../lib/pro-auth.js';
-
-const prisma = new PrismaClient();
+import prisma from '../../../_utils/prisma.js';
 
 export default async function handler(req, res) {
     if (req.method !== 'POST') {
@@ -13,7 +10,8 @@ export default async function handler(req, res) {
     }
 
     const { email } = req.body;
-    const ip = req.headers['x-forwarded-for'] || req.socket.remoteAddress;
+    const rawIp = req.headers['x-forwarded-for'] || req.socket.remoteAddress;
+    const ip = rawIp ? String(rawIp).split(',')[0].trim() : 'unknown';
 
     if (!email) {
         return res.status(400).json({ error: "Email required" });
@@ -43,7 +41,7 @@ export default async function handler(req, res) {
         await kv.set(key, { userId: user.id, email: user.email }, { ex: 3600 });
 
         // Mock Email
-        const resetLink = `${process.env.VITE_BASE_URL || 'http://localhost:3000'}/pro/reset-password?token=${token}`;
+        const resetLink = `${process.env.APP_BASE_URL || process.env.VITE_BASE_URL || 'http://localhost:3000'}/pro/reset-password?token=${token}`;
         console.log(`[MOCK EMAIL] To: ${email} | Subject: Reset Password | Link: ${resetLink}`);
 
         await logProAudit('RESET_REQUESTED', user.id, user.structureId, {}, ip);

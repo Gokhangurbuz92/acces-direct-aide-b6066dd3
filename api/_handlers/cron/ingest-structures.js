@@ -14,6 +14,17 @@ const DATASETS = [
     }
 ];
 
+// Helper: Safe Header Access
+function getHeader(req, name) {
+    const n = name.toLowerCase();
+    const h = req?.headers;
+    // Fetch/Edge style
+    if (h && typeof h.get === "function") return h.get(name) ?? h.get(n) ?? undefined;
+    // Node style
+    if (h && typeof h === "object") return h[n] ?? h[name] ?? undefined;
+    return undefined;
+}
+
 function slugify(text) {
     if (!text) return '';
     return text.toString().toLowerCase().trim()
@@ -32,7 +43,7 @@ export default async function handler(req, res) {
     }
 
     const secret = req.query?.secret || new URL(req.url, 'http://localhost').searchParams.get('secret');
-    const vercelCronHeader = req.headers['x-vercel-cron'];
+    const vercelCronHeader = getHeader(req, 'x-vercel-cron');
 
     if (secret !== process.env.CRON_SECRET && vercelCronHeader !== '1') {
         console.warn("Unauthorized Ingest-Structures Attempt");

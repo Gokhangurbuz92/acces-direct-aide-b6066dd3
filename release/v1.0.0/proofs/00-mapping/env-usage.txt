@@ -1,0 +1,75 @@
+src/main.jsx:if (import.meta.env.VITE_SENTRY_DSN) {
+src/main.jsx:        dsn: import.meta.env.VITE_SENTRY_DSN,
+src/main.jsx:        release: import.meta.env.VITE_GIT_COMMIT_SHA,
+src/main.jsx:        environment: import.meta.env.MODE,
+src/pages/SentryTestPage.jsx:        if (import.meta.env.VITE_SENTRY_DSN) {
+src/pages/LoginPro.jsx:    const isEnabled = import.meta.env.VITE_DEV_LOGIN_ENABLED === 'true';
+src/pages/index.jsx:    // LOT 5.1: Production Hardening - Only available if VITE_PUBLIC_DIAGNOSTICS is true
+src/pages/index.jsx:    if (location.pathname === '/__sentry_test' && import.meta.env.VITE_PUBLIC_DIAGNOSTICS === 'true') {
+src/pages/index.jsx:                {import.meta.env.VITE_DEV_LOGIN_ENABLED === 'true' && (
+api/_utils/kv.js:if (process.env.KV_REST_API_URL && process.env.KV_REST_API_TOKEN) {
+api/_utils/kv.js:        url: process.env.KV_REST_API_URL,
+api/_utils/kv.js:        token: process.env.KV_REST_API_TOKEN
+api/_utils/logger.js:const environment = process.env.VERCEL_ENV || process.env.VITE_ENV || 'development';
+api/_utils/logger.js:const release = process.env.VERCEL_GIT_COMMIT_SHA || process.env.VITE_GIT_COMMIT_SHA || 'dev';
+api/_utils/logger.js:    level: process.env.LOG_LEVEL || 'info',
+api/_utils/rateLimit.js:const envUrl = process.env.KV_REST_API_URL || process.env.STORAGE_REST_API_URL;
+api/_utils/rateLimit.js:const envToken = process.env.KV_REST_API_TOKEN || process.env.STORAGE_REST_API_TOKEN;
+api/_utils/rateLimit.js:const envRedisUrl = process.env.REDIS_URL;
+api/_utils/wrapper.js:             if (process.env.VERCEL_ENV !== 'production') {
+api/_utils/wrapper.js:         if (process.env.VERCEL_ENV !== 'production') {
+api/_utils/auth.js:    if (!process.env.ADMIN_TOKEN) {
+api/_utils/auth.js:    return token === process.env.ADMIN_TOKEN;
+api/_utils/sentry.js:const dsn = process.env.VITE_SENTRY_DSN || process.env.SENTRY_DSN;
+api/_utils/sentry.js:const environment = process.env.VERCEL_ENV || process.env.VITE_ENV || 'development';
+api/_utils/sentry.js:const release = process.env.VERCEL_GIT_COMMIT_SHA || process.env.VITE_GIT_COMMIT_SHA || 'dev';
+api/_utils/crypto.js:const ENCRYPTION_KEY = process.env.ENCRYPTION_KEY || 'default-long-secret-key-32-chars-!!';
+api/tests/rbac.test.js:process.env.JWT_SECRET = 'test-secret';
+api/tests/admin-security.test.js:process.env.JWT_SECRET = 'test-jwt-secret';
+api/tests/admin-security.test.js:process.env.ADMIN_TOKEN = 'test-admin-token';
+api/index.js:    if (process.env.VERCEL_GIT_COMMIT_SHA) {
+api/index.js:        res.setHeader('x-release-sha', process.env.VERCEL_GIT_COMMIT_SHA);
+api/index.js:            (process.env.VERCEL_ENV === 'production' || process.env.VERCEL_ENV === 'preview')) {
+api/index.js:                release: process.env.VERCEL_GIT_COMMIT_SHA || "dev"
+api/__dev/create-test-appointment.js:    const isDev = process.env.NODE_ENV === 'development' || process.env.VITE_DEV_LOGIN_ENABLED === 'true';
+api/__dev/create-test-appointment.js:    if (!isDev && process.env.ALLOW_DEV_TOOLS !== 'true') {
+api/_handlers/sitemap.js:    const BASE_URL = host ? `${protocol}://${host}` : (process.env.PUBLIC_BASE_URL || 'https://www.accesdirectaide.fr');
+api/_handlers/tools.js:    if (process.env.VITE_DEV_LOGIN_ENABLED === 'true') return true;
+api/_handlers/tools.js:        const decoded = jwt.verify(token, process.env.JWT_SECRET);
+api/_handlers/health.js:        version: process.env.npm_package_version || '0.0.0',
+api/_handlers/health.js:        commitSha: process.env.VERCEL_GIT_COMMIT_SHA || process.env.VITE_GIT_COMMIT_SHA || 'dev',
+api/_handlers/ratelimit-test.js:    if (process.env.VITE_PUBLIC_DIAGNOSTICS !== 'true') {
+api/_handlers/ratelimit-test.js:            backend_hint: process.env.KV_REST_API_URL || process.env.STORAGE_REST_API_URL || process.env.REDIS_URL ? 'KV' : 'MEMORY'
+api/_handlers/pro/auth/forgot-password.js:        const resetLink = `${process.env.VITE_BASE_URL || 'http://localhost:3000'}/pro/reset-password?token=${token}`;
+api/_handlers/auth/me.js:            email: process.env.ADMIN_EMAIL || 'admin@accesdirectaide.fr',
+api/_handlers/auth/login.js:    const validEmail = process.env.ADMIN_EMAIL || 'admin@accesdirectaide.fr';
+api/_handlers/auth/login.js:    const validPassword = process.env.ADMIN_PASSWORD;
+api/_handlers/auth/login.js:        const token = process.env.ADMIN_TOKEN;
+api/_handlers/guides.js:    if (process.env.VITE_DEV_LOGIN_ENABLED === 'true') return true;
+api/_handlers/guides.js:        const decoded = jwt.verify(token, process.env.JWT_SECRET);
+api/_handlers/admin/partnerships.js:    if (process.env.VITE_DEV_LOGIN_ENABLED === 'true') return true;
+api/_handlers/admin/partnerships.js:        const decoded = jwt.verify(token, process.env.JWT_SECRET);
+api/_handlers/version.js:    const debugToken = process.env.DEBUG_TOKEN;
+api/_handlers/version.js:    const dbUrl = process.env.DATABASE_URL || process.env.POSTGRES_PRISMA_URL;
+api/_handlers/version.js:        commitSha: process.env.VERCEL_GIT_COMMIT_SHA || process.env.VITE_GIT_COMMIT_SHA || 'dev',
+api/_handlers/version.js:        vercelEnv: process.env.VERCEL_ENV || process.env.VITE_ENV || 'development',
+api/_handlers/login-pro-guard.js:    if (process.env.VITE_DEV_LOGIN_ENABLED !== 'true') {
+api/_handlers/login-pro-guard.js:    // Actually, the user requirement is: "si VITE_DEV_LOGIN_ENABLED !== 'true' => 404".
+api/_handlers/sentry-test.js:if (process.env.VITE_SENTRY_DSN) {
+api/_handlers/sentry-test.js:        dsn: process.env.VITE_SENTRY_DSN,
+api/_handlers/sentry-test.js:        environment: process.env.VITE_ENV || process.env.VERCEL_ENV || 'development'
+api/_handlers/sentry-test.js:    if (process.env.VITE_PUBLIC_DIAGNOSTICS !== 'true') {
+api/_handlers/cron/gdpr-purge.js:const CRON_SECRET = process.env.CRON_SECRET || 'dev-secret-key';
+api/_handlers/cron/ingest-aids.js:    if (!process.env.CRON_SECRET || secret !== process.env.CRON_SECRET) {
+api/_handlers/cron/pipeline.test.js:    process.env.CRON_SECRET = 'test-secret';
+api/_handlers/cron/ingest-structures.js:    if (!process.env.CRON_SECRET) {
+api/_handlers/cron/ingest-structures.js:    if (secret !== process.env.CRON_SECRET && vercelCronHeader !== '1') {
+api/_handlers/cron/pipeline.js:    if (!process.env.CRON_SECRET) {
+api/_handlers/cron/pipeline.js:        secret === process.env.CRON_SECRET ||
+api/_handlers/cron/pipeline.js:        authHeader === `Bearer ${process.env.CRON_SECRET}`;
+api/_handlers/cron/pipeline.js:            await ingestStructures({ query: { secret: process.env.CRON_SECRET } }, {
+api/_handlers/cron/pipeline.js:            await ingestAids({ query: { secret: process.env.CRON_SECRET } }, {
+api/lib/pro-auth.js:const JWT_SECRET = process.env.JWT_SECRET;
+api/lib/crypto.js:const ENCRYPTION_KEY = process.env.ENCRYPTION_KEY
+api/lib/crypto.js:    ? Buffer.from(process.env.ENCRYPTION_KEY, 'hex')
+api/lib/crypto.js:    // If strict privacy, maybe pepper? 'process.env.HASH_PEPPER'

@@ -2,6 +2,8 @@ import { routes } from './routes.js';
 import Sentry from './_utils/sentry.js';
 import logger from './_utils/logger.js';
 import { randomUUID } from 'crypto';
+import { attachNoStoreOnError } from "./_utils/cache.js";
+import { applyCachePolicy } from "./_utils/cachePolicy.js";
 
 export default async function handler(req, res) {
     const requestId = randomUUID();
@@ -50,6 +52,13 @@ export default async function handler(req, res) {
             return res.status(403).json({ error: "Forbidden" });
         }
 
+        // --- CACHE CONTROL (CENTRALIZED) ---
+        // 1. Guard against error caching
+        attachNoStoreOnError(res);
+        // 2. Apply whitelist policy
+        applyCachePolicy(req, res);
+        // -----------------------------------
+
         let routeHandler = null;
         const route = routes.find(r => {
             if (r.match === 'exact') return r.path === path;
@@ -81,6 +90,9 @@ export default async function handler(req, res) {
         await routeHandler(req, res);
 
     } catch (error) {
+        // Force no-store if we crash
+        try { const { setNoStore } = await import("./_utils/cache.js"); setNoStore(res); } catch { }
+
         const duration = Date.now() - startTime;
         log.error({
             msg: "Request Error",

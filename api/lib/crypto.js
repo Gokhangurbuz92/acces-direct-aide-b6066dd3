@@ -7,16 +7,24 @@ const ALGORITHM = 'aes-256-gcm';
 const IV_LENGTH = 16; // AES block size
 const AUTH_TAG_LENGTH = 16;
 // Key Management
-// Key MUST be 32 bytes (64 hex class)
-const ENCRYPTION_KEY = process.env.ENCRYPTION_KEY
-    ? Buffer.from(process.env.ENCRYPTION_KEY, 'hex')
-    : null;
+// Key MUST be 32 bytes (64 hex characters)
+const KEY_HEX = process.env.ADA_ENCRYPTION_KEY || process.env.ENCRYPTION_KEY;
 
-if (!ENCRYPTION_KEY || ENCRYPTION_KEY.length !== 32) {
-    // Strict validation: Key must be present and 32 bytes.
-    // User requirement: "Validation stricte... Aucune clé fallback".
-    throw new Error("⛔ FATAL: ENCRYPTION_KEY environment variable (32 bytes hex) is REQUIRED. Server cannot start without it.");
+if (!KEY_HEX) {
+    throw new Error("FATAL: encryption key missing (ADA_ENCRYPTION_KEY)");
 }
+
+if (!/^[0-9a-fA-F]{64}$/.test(KEY_HEX)) {
+    throw new Error("FATAL: encryption key must be 32 bytes hex (64 hex chars)");
+}
+
+// Buffer length check
+const ENCRYPTION_KEY = Buffer.from(KEY_HEX, "hex");
+if (ENCRYPTION_KEY.length !== 32) {
+    throw new Error("FATAL: encryption key must be 32 bytes");
+}
+const KEY = ENCRYPTION_KEY; // Alias for export if needed strictly as KEY, but file uses ENCRYPTION_KEY internally
+
 
 // Rotation Strategy:
 // To rotate keys:

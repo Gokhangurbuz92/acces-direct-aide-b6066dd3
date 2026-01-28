@@ -1,5 +1,5 @@
 import React from 'react';
-import { Link, useParams, useSearchParams } from 'react-router-dom';
+import { Link, useParams, useSearchParams, useNavigate } from 'react-router-dom';
 import { createPageUrl } from '@/utils';
 import { client } from '@/api/client';
 import { useQuery } from '@tanstack/react-query';
@@ -51,14 +51,26 @@ const CATEGORIES = {
 export default function ActualiteDetail() {
   const { slug } = useParams();
   const [searchParams] = useSearchParams();
+  const navigate = useNavigate();
   const id = searchParams.get('id');
   const identifier = slug || id;
 
-  const { data: actu, isLoading } = useQuery({
+  const { data: queryData, isLoading } = useQuery({
     queryKey: ['actualite', identifier],
     queryFn: () => client.entities.Actualite.filter(slug ? { slug } : { id }),
     enabled: !!identifier
   });
+
+  const actu = Array.isArray(queryData)
+    ? queryData[0]
+    : (queryData?.items ? queryData?.items[0] : queryData);
+
+  // Canonical Redirect: If accessed via ID but slug exists, redirect to slug URL
+  React.useEffect(() => {
+    if (actu && !slug && actu.slug) {
+      navigate(`/actualites/${actu.slug}`, { replace: true });
+    }
+  }, [actu, slug, navigate]);
 
   if (isLoading) {
     return (

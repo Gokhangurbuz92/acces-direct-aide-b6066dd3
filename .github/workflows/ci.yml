@@ -10,8 +10,8 @@ env:
   DATABASE_URL: "postgresql://user:password@localhost:5432/mydb" # Dummy for build/schema validation
   JWT_SECRET: "super-secret-jwt-key-for-ci-testing-only"
   CRON_SECRET: "cron-secret-for-ci"
-  ENCRYPTION_KEY: "0000000000000000000000000000000000000000000000000000000000000000" # 32-byte hex (64 chars) or 32 chars? Memory said 32-byte hex. 64 hex chars.
-  # "The ENCRYPTION_KEY environment variable is mandatory and must be a 32-byte hex string"
+  ADA_ENCRYPTION_KEY: "0000000000000000000000000000000000000000000000000000000000000000" # 32-byte hex (64 chars) or 32 chars? Memory said 32-byte hex. 64 hex chars.
+  # "The ADA_ENCRYPTION_KEY environment variable is mandatory and must be a 32-byte hex string"
   # 32 bytes = 64 hex chars.
   # Let's generate a valid one: 32 bytes * 2 = 64 chars.
   # "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef"

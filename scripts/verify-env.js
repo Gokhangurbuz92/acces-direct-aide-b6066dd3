@@ -35,8 +35,8 @@ const REQUIRED_KEYS = [
     { key: 'CRON_SECRET', type: 'string' },
     // ADMIN_TOKEN is used for admin auth
     { key: 'ADMIN_TOKEN', type: 'string' },
-    // ENCRYPTION_KEY important for storage
-    { key: 'ENCRYPTION_KEY', type: 'string' }
+    // ADA_ENCRYPTION_KEY important for storage (Mission P0)
+    { key: 'ADA_ENCRYPTION_KEY', type: 'string' }
 ];
 
 let hasError = false;

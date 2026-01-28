@@ -7,8 +7,8 @@ import path from 'path';
 const prisma = new PrismaClient();
 const API_URL = 'http://localhost:3000/api';
 
-if (!process.env.ENCRYPTION_KEY) {
-    console.error("⚠️ ENCRYPTION_KEY missing.");
+if (!process.env.ADA_ENCRYPTION_KEY) {
+    console.error("⚠️ ADA_ENCRYPTION_KEY missing.");
     process.exit(1);
 }
 

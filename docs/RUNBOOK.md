@@ -10,7 +10,7 @@ Ce document décrit les procédures de résolution d'incidents et de maintenance
    - Dashboard Neon > Connection string.
    - Vérifier `DATABASE_URL` dans les env vars Vercel.
 3. **Vérifier les Secrets** :
-   - `JWT_SECRET`, `ENCRYPTION_KEY`, `CRON_SECRET` sont-ils présents ?
+   - `JWT_SECRET`, `ADA_ENCRYPTION_KEY`, `CRON_SECRET` sont-ils présents ?
 
 ### Base de Données Inaccessible
 1. Vérifier le status Neon.tech.

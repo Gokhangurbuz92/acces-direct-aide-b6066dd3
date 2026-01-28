@@ -19,7 +19,7 @@ Le Blueprint impose une architecture **Monorepo Hybride (Vite + Serverless)** st
     *   **UI:** Admin "Inbox" centralisée pour validation.
 4.  **RGPD "Zero-Call" & Encryption**
     *   **Exigence:** Aucune donnée sensible (PII) en clair en base.
-    *   **Technique:** Chiffrement champ à champ (AES-256) + Hachage pour lookup. Clé `ENCRYPTION_KEY` rotative (pas de dur).
+    *   **Technique:** Chiffrement champ à champ (AES-256) + Hachage pour lookup. Clé `ADA_ENCRYPTION_KEY` rotative (pas de dur).
 5.  **Fail-Fast Security**
     *   **Exigence:** L'app ne démarre pas si les clés critiques (Encryption, Cron Secret) sont absentes.
 

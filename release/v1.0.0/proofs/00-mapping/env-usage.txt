@@ -23,7 +23,7 @@ api/_utils/auth.js:    return token === process.env.ADMIN_TOKEN;
 api/_utils/sentry.js:const dsn = process.env.VITE_SENTRY_DSN || process.env.SENTRY_DSN;
 api/_utils/sentry.js:const environment = process.env.VERCEL_ENV || process.env.VITE_ENV || 'development';
 api/_utils/sentry.js:const release = process.env.VERCEL_GIT_COMMIT_SHA || process.env.VITE_GIT_COMMIT_SHA || 'dev';
-api/_utils/crypto.js:const ENCRYPTION_KEY = process.env.ENCRYPTION_KEY || 'default-long-secret-key-32-chars-!!';
+api/_utils/crypto.js:const ADA_ENCRYPTION_KEY = process.env.ADA_ENCRYPTION_KEY || 'default-long-secret-key-32-chars-!!';
 api/tests/rbac.test.js:process.env.JWT_SECRET = 'test-secret';
 api/tests/admin-security.test.js:process.env.JWT_SECRET = 'test-jwt-secret';
 api/tests/admin-security.test.js:process.env.ADMIN_TOKEN = 'test-admin-token';
@@ -70,6 +70,6 @@ api/_handlers/cron/pipeline.js:        authHeader === `Bearer ${process.env.CRON
 api/_handlers/cron/pipeline.js:            await ingestStructures({ query: { secret: process.env.CRON_SECRET } }, {
 api/_handlers/cron/pipeline.js:            await ingestAids({ query: { secret: process.env.CRON_SECRET } }, {
 api/lib/pro-auth.js:const JWT_SECRET = process.env.JWT_SECRET;
-api/lib/crypto.js:const ENCRYPTION_KEY = process.env.ENCRYPTION_KEY
-api/lib/crypto.js:    ? Buffer.from(process.env.ENCRYPTION_KEY, 'hex')
+api/lib/crypto.js:const ADA_ENCRYPTION_KEY = process.env.ADA_ENCRYPTION_KEY
+api/lib/crypto.js:    ? Buffer.from(process.env.ADA_ENCRYPTION_KEY, 'hex')
 api/lib/crypto.js:    // If strict privacy, maybe pepper? 'process.env.HASH_PEPPER'

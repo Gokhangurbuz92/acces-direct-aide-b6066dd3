@@ -3,27 +3,19 @@
 import crypto from 'crypto';
 
 // Encryption Algorithm
+// Encryption Algorithm
 const ALGORITHM = 'aes-256-gcm';
 const IV_LENGTH = 16; // AES block size
 const AUTH_TAG_LENGTH = 16;
+
 // Key Management
-// Key MUST be 32 bytes (64 hex characters)
-const KEY_HEX = process.env.ADA_ENCRYPTION_KEY || process.env.ENCRYPTION_KEY;
+const KEY_HEX = process.env.ADA_ENCRYPTION_KEY;
 
-if (!KEY_HEX) {
-    throw new Error("FATAL: encryption key missing (ADA_ENCRYPTION_KEY)");
-}
+const KEY = KEY_HEX ? Buffer.from(KEY_HEX, 'hex') : null;
 
-if (!/^[0-9a-fA-F]{64}$/.test(KEY_HEX)) {
-    throw new Error("FATAL: encryption key must be 32 bytes hex (64 hex chars)");
+if (!KEY || KEY.length !== 32) {
+    throw new Error("⛔ FATAL: ADA_ENCRYPTION_KEY (64 hex chars = 32 bytes) is REQUIRED.");
 }
-
-// Buffer length check
-const ENCRYPTION_KEY = Buffer.from(KEY_HEX, "hex");
-if (ENCRYPTION_KEY.length !== 32) {
-    throw new Error("FATAL: encryption key must be 32 bytes");
-}
-const KEY = ENCRYPTION_KEY; // Alias for export if needed strictly as KEY, but file uses ENCRYPTION_KEY internally
 
 
 // Rotation Strategy:
@@ -40,10 +32,10 @@ const KEY = ENCRYPTION_KEY; // Alias for export if needed strictly as KEY, but f
  */
 export function encrypt(text) {
     if (!text) return null;
-    if (!ENCRYPTION_KEY) throw new Error("Missing ENCRYPTION_KEY");
+    if (!KEY) throw new Error("Missing ADA_KEY");
 
     const iv = crypto.randomBytes(IV_LENGTH);
-    const cipher = crypto.createCipheriv(ALGORITHM, ENCRYPTION_KEY, iv);
+    const cipher = crypto.createCipheriv(ALGORITHM, KEY, iv);
 
     let encrypted = cipher.update(text, 'utf8', 'hex');
     encrypted += cipher.final('hex');
@@ -59,7 +51,7 @@ export function encrypt(text) {
  */
 export function decrypt(encryptedText) {
     if (!encryptedText) return null;
-    if (!ENCRYPTION_KEY) throw new Error("Missing ENCRYPTION_KEY");
+    if (!KEY) throw new Error("Missing ADA_KEY");
 
     const parts = encryptedText.split(':');
     if (parts.length !== 3) {
@@ -73,7 +65,7 @@ export function decrypt(encryptedText) {
     try {
         const decipher = crypto.createDecipheriv(
             ALGORITHM,
-            ENCRYPTION_KEY,
+            KEY,
             Buffer.from(ivHex, 'hex')
         );
 
@@ -105,10 +97,10 @@ export function hash(text) {
  * Returns: Buffer [IV(16) + AuthTag(16) + EncryptedData]
  */
 export function encryptBuffer(buffer) {
-    if (!ENCRYPTION_KEY) throw new Error("Missing ENCRYPTION_KEY");
+    if (!KEY) throw new Error("Missing ADA_KEY");
 
     const iv = crypto.randomBytes(IV_LENGTH);
-    const cipher = crypto.createCipheriv(ALGORITHM, ENCRYPTION_KEY, iv);
+    const cipher = crypto.createCipheriv(ALGORITHM, KEY, iv);
 
     const encrypted = Buffer.concat([cipher.update(buffer), cipher.final()]);
     const tag = cipher.getAuthTag();
@@ -121,7 +113,7 @@ export function encryptBuffer(buffer) {
  * Returns: Buffer (Decrypted)
  */
 export function decryptBuffer(encryptedBuffer) {
-    if (!ENCRYPTION_KEY) throw new Error("Missing ENCRYPTION_KEY");
+    if (!KEY) throw new Error("Missing ADA_KEY");
 
     if (encryptedBuffer.length < IV_LENGTH + AUTH_TAG_LENGTH) return null;
 
@@ -130,7 +122,7 @@ export function decryptBuffer(encryptedBuffer) {
     const text = encryptedBuffer.subarray(IV_LENGTH + AUTH_TAG_LENGTH);
 
     try {
-        const decipher = crypto.createDecipheriv(ALGORITHM, ENCRYPTION_KEY, iv);
+        const decipher = crypto.createDecipheriv(ALGORITHM, KEY, iv);
         decipher.setAuthTag(tag);
 
         return Buffer.concat([decipher.update(text), decipher.final()]);
@@ -146,7 +138,7 @@ export function decryptBuffer(encryptedBuffer) {
  * Token: base64(json(payload)).base64(hmac)
  */
 export function generateAttachmentToken(attachmentId, expiresInSeconds = 3600) {
-    if (!ENCRYPTION_KEY) throw new Error("Missing ENCRYPTION_KEY");
+    if (!KEY) throw new Error("Missing ADA_KEY");
 
     const payload = {
         id: attachmentId,
@@ -155,7 +147,7 @@ export function generateAttachmentToken(attachmentId, expiresInSeconds = 3600) {
 
     const payloadStr = Buffer.from(JSON.stringify(payload)).toString('base64url');
     const signature = crypto
-        .createHmac('sha256', ENCRYPTION_KEY)
+        .createHmac('sha256', KEY)
         .update(payloadStr)
         .digest('base64url');
 
@@ -168,13 +160,13 @@ export function generateAttachmentToken(attachmentId, expiresInSeconds = 3600) {
  */
 export function verifyAttachmentToken(token) {
     if (!token) return null;
-    if (!ENCRYPTION_KEY) throw new Error("Missing ENCRYPTION_KEY");
+    if (!KEY) throw new Error("Missing ADA_KEY");
 
     const [payloadStr, signature] = token.split('.');
     if (!payloadStr || !signature) return null;
 
     const expectedSignature = crypto
-        .createHmac('sha256', ENCRYPTION_KEY)
+        .createHmac('sha256', KEY)
         .update(payloadStr)
         .digest('base64url');
 

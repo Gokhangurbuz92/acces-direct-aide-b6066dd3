@@ -64,7 +64,7 @@ L'API utilise un pattern hybride : dispatch centralisé via `api/index.js` ET ha
 | `JWT_SECRET` | Signature Tokens Auth | Critique |
 | `ADMIN_TOKEN` | Auth Admin Simple (Legacy?) | Critique |
 | `CRON_SECRET` | Protection Endpoints Cron | Critique |
-| `ENCRYPTION_KEY` | Chiffrement Données (Crypto) | Critique |
+| `ADA_ENCRYPTION_KEY` | Chiffrement Données (Crypto) | Critique |
 | `VITE_SENTRY_DSN` / `SENTRY_DSN` | Monitoring Sentry | Moyen |
 | `VITE_DEV_LOGIN_ENABLED` | Bypass Auth en Dev | **STOP LIST** (Si true en prod) |
 | `KV_REST_API_*` / `REDIS_URL` | Rate Limiting / Cache | Moyen |
@@ -76,7 +76,7 @@ Les éléments suivants nécessitent une attention immédiate (P0) :
 
 | Fichier | Problème | Gravité |
 | :--- | :--- | :--- |
-| `api/lib/crypto.js` | **Hardcoded Fallback Key**: `default-long-secret-key-32-chars-!!` si `ENCRYPTION_KEY` manquant. | **CRITIQUE** |
+| `api/lib/crypto.js` | **Hardcoded Fallback Key**: `default-long-secret-key-32-chars-!!` si `ADA_ENCRYPTION_KEY` manquant. | **CRITIQUE** |
 | `api/_utils/auth.js` | **Weak Auth Check**: `token === process.env.ADMIN_TOKEN`. Auth statique sans rotation facile. | Élevée |
 | `api/_handlers/tools.js` | **Backdoor**: `if (process.env.VITE_DEV_LOGIN_ENABLED === 'true') return true;`. Risque majeur si activé en prod. | **CRITIQUE** |
 | `api/_handlers/sentry-test.js` | **Exposition DSN?**: Vérifier si d'autres secrets ne sont pas exposés via ce handler de test. | Moyenne |

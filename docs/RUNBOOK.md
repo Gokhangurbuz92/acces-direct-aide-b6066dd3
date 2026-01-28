@@ -20,7 +20,16 @@ Ce document décrit les procédures de résolution d'incidents et de maintenance
 ### Cron Jobs en échec
 1. Vérifier `/api/admin/runs` pour voir les logs d'exécution.
 2. Si timeout, réduire le volume de données traité par batch.
-3. Déclencher manuellement via l'URL : `curl -H "Authorization: Bearer <CRON_SECRET>" https://.../api/cron/pipeline`
+3. Déclencher manuellement via l'URL :
+   ```bash
+   # Run Structures (Limit default)
+   curl -X POST "https://.../api/cron/pipeline?source=structures" \
+     -H "Authorization: Bearer <CRON_SECRET>"
+
+   # Run Aids (Smoke Check - 5 items)
+   curl -X POST "https://.../api/cron/pipeline?source=aides&mode=smoke" \
+     -H "Authorization: Bearer <CRON_SECRET>"
+   ```
 
 ## Procédures de Rollback
 

@@ -58,7 +58,13 @@ export default async function handler(req, res) {
             }
 
             const data = await response.json();
-            const items = data.results || data.records || [];
+            let items = data.results || data.records || [];
+
+            // Limit support
+            const limit = req.query.limit ? parseInt(req.query.limit, 10) : undefined;
+            if (limit && limit > 0) {
+                items = items.slice(0, limit);
+            }
 
             for (const item of items) {
                 try {

@@ -39,6 +39,15 @@ export default async function handler(req, res) {
             console.warn("External source unreachable, skipping automated enrichment.");
         }
 
+        // Limit support
+        const limitParam = req.query.limit;
+        if (limitParam) {
+            const limit = parseInt(limitParam, 10);
+            if (limit > 0) {
+                externalAids = externalAids.slice(0, limit);
+            }
+        }
+
         // Process items
         for (const item of externalAids) {
             const hash = crypto.createHash('md5').update(JSON.stringify(item)).digest('hex');

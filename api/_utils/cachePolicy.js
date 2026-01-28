@@ -19,12 +19,29 @@ function isPrivatePath(pathname) {
 
 function isVariesByUserPublicUnsafe(pathname) {
     // Per your audit: these may expose drafts for admin/pro
+    // Per your audit: these may expose drafts for admin/pro
     return pathname === "/api/actualites" || pathname === "/api/guides" || pathname === "/api/tools";
 }
 
+function isVercelDefaultCacheControl(v) {
+    const s = String(v || "").toLowerCase();
+    // Vercel runtime default we want to override:
+    // "public, max-age=0, must-revalidate"
+    return (
+        s.includes("public") &&
+        s.includes("max-age=0") &&
+        s.includes("must-revalidate") &&
+        !s.includes("s-maxage") &&
+        !s.includes("stale-while-revalidate") &&
+        !s.includes("no-store")
+    );
+}
+
 export function applyCachePolicy(req, res) {
-    // If handler already set Cache-Control, don't fight it.
-    if (getHeader(res, "Cache-Control")) return;
+    // If handler already set Cache-Control, respectfully bail...
+    // UNLESS it's the Vercel default "public, max-age=0, must-revalidate" which kills CDN caching.
+    const existing = getHeader(res, "Cache-Control");
+    if (existing && !isVercelDefaultCacheControl(existing)) return;
 
     const method = (req.method || "GET").toUpperCase();
     const url = parseUrl(req);

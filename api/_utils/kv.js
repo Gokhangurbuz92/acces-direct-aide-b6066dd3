@@ -1,7 +1,7 @@
 
 import { createClient } from '@vercel/kv';
 
-/* eslint-env node */
+
 
 const memoryStore = new Map();
 
@@ -43,11 +43,11 @@ export const kv = {
     },
     // Add other methods if needed
     async incr(key) {
-         if (kvClient) return kvClient.incr(key);
-         const data = memoryStore.get(key);
-         let val = (data?.value || 0) + 1;
-         memoryStore.set(key, { value: val, expires: data?.expires });
-         return val;
+        if (kvClient) return kvClient.incr(key);
+        const data = memoryStore.get(key);
+        let val = (data?.value || 0) + 1;
+        memoryStore.set(key, { value: val, expires: data?.expires });
+        return val;
     },
     async expire(key, seconds) {
         if (kvClient) return kvClient.expire(key, seconds);

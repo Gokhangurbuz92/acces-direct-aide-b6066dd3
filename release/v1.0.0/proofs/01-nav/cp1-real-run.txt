@@ -1,0 +1,1 @@
+Running npx playwright test e2e/cp1_real.spec.ts -> SUCCESS

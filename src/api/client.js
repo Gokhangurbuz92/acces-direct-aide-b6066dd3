@@ -9,25 +9,51 @@ var getToken = function () {
     return null;
 };
 
+var shouldAttachAuth = function (path, opt) {
+    if (opt && opt.auth === false) return false;
+    if (opt && opt.auth === true) return true;
+    // Default: only attach token to /api/admin, /api/auth, /api/pro
+    return /^\/api\/(admin|auth|pro)\b/.test(path);
+};
+
 var apiRequest = async function (path, options) {
     var opt = options || {};
-    var headers = { 'Content-Type': 'application/json' };
+
+    var headers = {
+        "Content-Type": "application/json",
+        ...(opt.headers || {}),
+    };
+
     var token = getToken();
-    if (token) {
-        headers['Authorization'] = 'Bearer ' + token;
+    // Use helper to decide if we send Authorization header
+    if (token && shouldAttachAuth(path, opt)) {
+        headers["Authorization"] = "Bearer " + token;
     }
 
     var res = await fetch(path, {
-        method: opt.method || 'GET',
+        method: opt.method || "GET",
         headers: headers,
-        body: opt.body ? JSON.stringify(opt.body) : undefined
+        body: opt.body ? JSON.stringify(opt.body) : undefined,
+        signal: opt.signal,
     });
 
-    if (!res.ok) {
-        throw new Error('API Error: ' + res.status);
+    var contentType = res.headers.get("content-type") || "";
+    var payload = null;
+
+    if (contentType.includes("application/json")) {
+        payload = await res.json().catch(() => null);
+    } else {
+        payload = await res.text().catch(() => null);
     }
 
-    return res.json();
+    if (!res.ok) {
+        var err = new Error("API Error: " + res.status);
+        err.status = res.status;
+        err.payload = payload;
+        throw err;
+    }
+
+    return payload;
 };
 
 var createEntityClient = function (endpoint) {

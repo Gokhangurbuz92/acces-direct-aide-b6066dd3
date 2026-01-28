@@ -4,7 +4,7 @@ const baseSearchSchema = z.object({
   q: z.string().optional(),
   page: z.coerce.number().int().min(1).default(1),
   pageSize: z.coerce.number().int().min(1).max(100).default(20),
-  id: z.string().uuid().optional(),
+  id: z.string().optional(),
   slug: z.string().optional(),
 });
 

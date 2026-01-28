@@ -18,9 +18,9 @@
 ### Phase P0 : Sécurité & Hygiene (IMMÉDIAT)
 Ces actions sont bloquantes pour toute mise en prod (CP1).
 
-- [ ] **SEC-01**: Supprimer le fallback hardcodé dans `api/lib/crypto.js`. Si `ENCRYPTION_KEY` manque -> `throw Error`.
+- [ ] **SEC-01**: Supprimer le fallback hardcodé dans `api/lib/crypto.js`. Si `ADA_ENCRYPTION_KEY` manque -> `throw Error`.
 - [ ] **SEC-02**: Sécuriser `api/_handlers/tools.js` et autres backdoors. S'assurer que `VITE_DEV_LOGIN_ENABLED` est ignoré si `NODE_ENV === 'production'`.
-- [ ] **ENV-01**: Vérifier la présence des vars critiques dans Vercel (`CRON_SECRET`, `ENCRYPTION_KEY`).
+- [ ] **ENV-01**: Vérifier la présence des vars critiques dans Vercel (`CRON_SECRET`, `ADA_ENCRYPTION_KEY`).
 
 ### Phase P1 : Consolidation Architecture
 - [ ] **ARCH-01**: Vérifier que `api/_handlers/aides.js` et `structures.js` suivent bien le pattern "Unified".

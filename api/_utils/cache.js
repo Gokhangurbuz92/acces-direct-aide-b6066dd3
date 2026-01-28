@@ -38,7 +38,7 @@ export function setNoStore(res) {
 }
 
 export function setPublicCache(res, { sMaxage = 600, swr = 86400 } = {}) {
-    setHeader(res, "Cache-Control", `public, s-maxage=${sMaxage}, stale-while-revalidate=${swr}`);
+    setHeader(res, "Cache-Control", `public, max-age=0, s-maxage=${sMaxage}, stale-while-revalidate=${swr}`);
 }
 
 // Safety: if request is authorized, never public-cache it.

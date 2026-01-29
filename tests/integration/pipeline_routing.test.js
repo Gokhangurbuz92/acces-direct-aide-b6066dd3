@@ -51,6 +51,25 @@ describe('Cron Pipeline Routing', () => {
         expect(res.json).toHaveBeenCalledWith({ error: 'Unauthorized' });
     });
 
+    it('should authorize via Bearer token', async () => {
+        const { req, res } = createMocks({ source: 'structures' }, { authorization: `Bearer ${CRON_SECRET}` });
+        const ingestStructures = (await import('../../api/_handlers/cron/ingest-structures.js')).default;
+
+        await pipelineHandler(req, res);
+        expect(res.status).toHaveBeenCalledWith(200);
+        expect(ingestStructures).toHaveBeenCalled();
+    });
+
+    it('should authorize via query param', async () => {
+        const { req, res } = createMocks({ source: 'structures', secret: CRON_SECRET });
+        // Clean mock
+        const ingestStructures = (await import('../../api/_handlers/cron/ingest-structures.js')).default;
+        ingestStructures.mockClear();
+
+        await pipelineHandler(req, res);
+        expect(res.status).toHaveBeenCalledWith(200);
+    });
+
     it('should return 400 if source is missing', async () => {
         const { req, res } = createMocks({ secret: CRON_SECRET });
         await pipelineHandler(req, res);

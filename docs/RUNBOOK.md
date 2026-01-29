@@ -19,17 +19,30 @@ Ce document décrit les procédures de résolution d'incidents et de maintenance
 
 ### Cron Jobs en échec
 1. Vérifier `/api/admin/runs` pour voir les logs d'exécution.
-2. Si timeout, réduire le volume de données traité par batch.
-3. Déclencher manuellement via l'URL :
-   ```bash
-   # Run Structures (Limit default)
-   curl -X POST "https://.../api/cron/pipeline?source=structures" \
-     --header "Authorization: Bearer \$CRON_SECRET"
+2. Si timeout, réduire le volume de données traité### 3. Commandes Utiles
 
-   # Run Aids (via Alias 'demarches') - Mode Smoke (5 items)
-   curl -X POST "https://.../api/cron/pipeline?source=demarches&mode=smoke" \
-     --header "Authorization: Bearer \$CRON_SECRET"
+Pour déclencher le pipeline manuellement (Production ou Local) :
 
+Il y a 3 méthodes d'authentification supportées :
+1.  **Header Bearer** (Recommandé) : `-H "Authorization: Bearer <CRON_SECRET>"`
+2.  **Query Param** (Fallback) : `?secret=<CRON_SECRET>`
+3.  **Vercel Cron** (Automatique) : Header `x-vercel-cron: 1`
+
+#### Smoke Test (Vérification Rapide)
+```bash
+# Via Bearer Token
+curl -X POST "https://votre-url.net/api/cron/pipeline?source=structures&mode=smoke" \
+     -H "Authorization: Bearer $CRON_SECRET"
+
+# Via Query Param
+curl -X POST "https://votre-url.net/api/cron/pipeline?source=structures&mode=smoke&secret=$CRON_SECRET"
+```
+
+#### Ingestion Complète (Aides)
+```bash
+curl -X POST "https://votre-url.net/api/cron/pipeline?source=aides" \
+     -H "Authorization: Bearer $CRON_SECRET"
+```
    # Run RSS (via Alias 'actualites') - Safe Limit (Start with 50)
    # Note: Ajustez la limite si durationMs > 35s (Timeout à 50s)
    curl -X POST "https://.../api/cron/pipeline?source=actualites&limit=50" \

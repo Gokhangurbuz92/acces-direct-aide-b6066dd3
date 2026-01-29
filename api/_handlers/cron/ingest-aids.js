@@ -1,3 +1,4 @@
+import { isCronAuthorized } from '../../_utils/cronAuth.js';
 import { PrismaClient } from '@prisma/client';
 import crypto from 'crypto';
 
@@ -16,8 +17,7 @@ function slugify(text) {
 }
 
 export default async function handler(req, res) {
-    const secret = req.query.secret;
-    if (!process.env.CRON_SECRET || secret !== process.env.CRON_SECRET) {
+    if (!isCronAuthorized(req)) {
         return res.status(401).json({ error: 'Unauthorized' });
     }
 
@@ -49,7 +49,15 @@ export default async function handler(req, res) {
             stats.durationByStage.fetchMs = Date.now() - startFetch;
 
             if (response.ok) {
+                // Anti Silent Failure Logs
+                // We check headers/content-type if needed, but here response.ok means we got it.
+                // We read JSON and THEN check length.
                 externalAids = await response.json();
+
+                if (!externalAids || externalAids.length === 0) {
+                    console.warn(`[AIDS] 0 items. status=${response.status} ct=${response.headers.get('content-type')} keys=${Array.isArray(externalAids) ? '[]' : Object.keys(externalAids).join(',')}`);
+                }
+
                 stats.fetched = externalAids.length;
             }
         } catch (e) {

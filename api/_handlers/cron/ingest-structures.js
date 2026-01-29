@@ -1,3 +1,4 @@
+import { isCronAuthorized } from '../../_utils/cronAuth.js';
 import { PrismaClient } from '@prisma/client';
 import crypto from 'crypto';
 // Native fetch used
@@ -14,17 +15,6 @@ const DATASETS = [
     }
 ];
 
-// Helper: Safe Header Access
-function getHeader(req, name) {
-    const n = name.toLowerCase();
-    const h = req?.headers;
-    // Fetch/Edge style
-    if (h && typeof h.get === "function") return h.get(name) ?? h.get(n) ?? undefined;
-    // Node style
-    if (h && typeof h === "object") return h[n] ?? h[name] ?? undefined;
-    return undefined;
-}
-
 function slugify(text) {
     if (!text) return '';
     return text.toString().toLowerCase().trim()
@@ -37,15 +27,7 @@ function slugify(text) {
 
 export default async function handler(req, res) {
     // 1. Authorization
-    if (!process.env.CRON_SECRET) {
-        console.error("CRITICAL: CRON_SECRET environment variable is not defined.");
-        return res.status(500).json({ error: 'Server configuration error' });
-    }
-
-    const secret = req.query?.secret || new URL(req.url, 'http://localhost').searchParams.get('secret');
-    const vercelCronHeader = getHeader(req, 'x-vercel-cron');
-
-    if (secret !== process.env.CRON_SECRET && vercelCronHeader !== '1') {
+    if (!isCronAuthorized(req)) {
         console.warn("Unauthorized Ingest-Structures Attempt");
         return res.status(401).json({ error: 'Unauthorized' });
     }
@@ -81,6 +63,12 @@ export default async function handler(req, res) {
 
             const data = await response.json();
             let items = data.results || data.records || [];
+
+            // Anti Silent Failure Logging
+            if (!items || items.length === 0) {
+                console.warn(`[STRUCTURES] 0 items. status=${response.status} ct=${response.headers.get('content-type')} keys=${data ? Object.keys(data).join(',') : 'null'}`);
+            }
+
             stats.fetched += items.length;
 
             // Limit support

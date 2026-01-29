@@ -143,8 +143,15 @@ export default async function handler(req, res) {
                 const subQuery = { secret: process.env.CRON_SECRET };
                 if (limit) subQuery.limit = limit.toString();
 
-                await ingestStructures({ query: subQuery, headers: {}, url: '/' }, {
-                    status: () => ({ json: (d) => mergeStats(d) })
+                await ingestStructures({ query: subQuery }, {
+                    status: () => ({
+                        json: (d) => {
+                            if (d) {
+                                stats.ingested += (d.created || 0);
+                                if (d.errors) stats.errors.push(...d.errors);
+                            }
+                        }
+                    })
                 });
             } catch (e) {
                 console.error("Pipeline: Ingest Structures failed", e);
@@ -157,8 +164,15 @@ export default async function handler(req, res) {
                 const subQuery = { secret: process.env.CRON_SECRET };
                 if (limit) subQuery.limit = limit.toString();
 
-                await ingestAids({ query: subQuery, headers: {}, url: '/' }, {
-                    status: () => ({ json: (d) => mergeStats(d) })
+                await ingestAids({ query: subQuery }, {
+                    status: () => ({
+                        json: (d) => {
+                            if (d) {
+                                stats.ingested += (d.created || 0);
+                                if (d.errors) stats.errors.push(...d.errors);
+                            }
+                        }
+                    })
                 });
             } catch (e) {
                 console.error("Pipeline: Ingest Aids failed", e);

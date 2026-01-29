@@ -1,4 +1,5 @@
 /* global process */
+import { isCronAuthorized } from '../../_utils/cronAuth.js';
 import { PrismaClient } from '@prisma/client';
 import Parser from 'rss-parser';
 import crypto from 'crypto';
@@ -26,38 +27,14 @@ function slugify(text) {
         .replace(/-+$/, '');
 }
 
-// Helper: Safe Header Access
-function getHeader(req, name) {
-    const n = name.toLowerCase();
-    const h = req?.headers;
-    if (h && typeof h.get === "function") return h.get(name) ?? h.get(n) ?? undefined;
-    if (h && typeof h === "object") return h[n] ?? h[name] ?? undefined;
-    return undefined;
-}
-
 export default async function handler(req, res) {
     // 1. Authorization
-    if (!process.env.CRON_SECRET) {
-        console.error("CRITICAL: CRON_SECRET environment variable is not defined.");
-        return res.status(500).json({ error: 'Server configuration error' });
-    }
-
-    const query = req.query || {};
-    // Safe header access
-    const secret = query.secret || new URL(req.url, `http://${req.headers?.host || 'localhost'}`).searchParams.get('secret');
-    const vercelCronHeader = getHeader(req, 'x-vercel-cron');
-    const authHeader = getHeader(req, 'authorization');
-
-    const isAuthorized =
-        secret === process.env.CRON_SECRET ||
-        vercelCronHeader === '1' ||
-        authHeader === `Bearer ${process.env.CRON_SECRET}`;
-
-    if (!isAuthorized) {
+    if (!isCronAuthorized(req)) {
         console.warn("Unauthorized Pipeline Attempt");
         return res.status(401).json({ error: 'Unauthorized' });
     }
 
+    const query = req.query || {};
     // 2. Validation & Parameters (with Aliases)
     let sourceInput = query.source;
     let sourceResolved = sourceInput;
@@ -138,11 +115,13 @@ export default async function handler(req, res) {
         // ROUTING LOGIC
         // ==========================================
 
+        // Pass original headers to sustain auth
+        const proxyHeaders = req.headers || {};
+
         if (sourceResolved === 'structures') {
             try {
                 const subQuery = { secret: process.env.CRON_SECRET };
                 if (limit) subQuery.limit = limit.toString();
-
                 await ingestStructures({ query: subQuery }, {
                     status: () => ({
                         json: (d) => {
@@ -163,7 +142,6 @@ export default async function handler(req, res) {
             try {
                 const subQuery = { secret: process.env.CRON_SECRET };
                 if (limit) subQuery.limit = limit.toString();
-
                 await ingestAids({ query: subQuery }, {
                     status: () => ({
                         json: (d) => {

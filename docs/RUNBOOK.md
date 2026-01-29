@@ -24,11 +24,35 @@ Ce document décrit les procédures de résolution d'incidents et de maintenance
    ```bash
    # Run Structures (Limit default)
    curl -X POST "https://.../api/cron/pipeline?source=structures" \
-     -H "Authorization: Bearer <CRON_SECRET>"
+     --header "Authorization: Bearer \$CRON_SECRET"
 
-   # Run Aids (Smoke Check - 5 items)
-   curl -X POST "https://.../api/cron/pipeline?source=aides&mode=smoke" \
-     -H "Authorization: Bearer <CRON_SECRET>"
+   # Run Aids (via Alias 'demarches') - Mode Smoke (5 items)
+   curl -X POST "https://.../api/cron/pipeline?source=demarches&mode=smoke" \
+     --header "Authorization: Bearer \$CRON_SECRET"
+
+   # Run RSS (via Alias 'actualites') - Safe Limit (Start with 50)
+   # Note: Ajustez la limite si durationMs > 35s (Timeout à 50s)
+   curl -X POST "https://.../api/cron/pipeline?source=actualites&limit=50" \
+     --header "Authorization: Bearer \$CRON_SECRET"
+   ```
+
+   **Réponse Type (JSON):**
+   Le pipeline retourne désormais des statistiques détaillées pour le monitoring :
+   ```json
+   {
+     "ok": true,
+     "source": "demarches",
+     "sourceResolved": "aides",
+     "stats": {
+       "fetched": 5,
+       "processed": 5,
+       "created": 2,
+       "updated": 3,
+       "skippedExisting": 0,
+       "errors": [],
+       "durationByStage": { "fetchMs": 120, "processingMs": 45 }
+     }
+   }
    ```
 
 ## Procédures de Rollback

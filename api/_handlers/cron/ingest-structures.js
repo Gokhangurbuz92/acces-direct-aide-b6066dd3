@@ -52,17 +52,28 @@ export default async function handler(req, res) {
 
     const runId = crypto.randomUUID();
     const stats = {
+        fetched: 0,
+        processed: 0,
         created: 0,
         updated: 0,
-        skipped: 0,
-        errors: []
+        skippedExisting: 0,
+        errors: [],
+        durationByStage: {
+            fetchMs: 0,
+            processingMs: 0
+        }
     };
 
     try {
+        const startTotal = Date.now();
+
         for (const dataset of DATASETS) {
             console.log(`Pipeline Structures: Ingesting ${dataset.name}`);
 
+            const startFetch = Date.now();
             const response = await fetch(dataset.url);
+            stats.durationByStage.fetchMs += (Date.now() - startFetch);
+
             if (!response.ok) {
                 stats.errors.push(`${dataset.id}: HTTP ${response.status}`);
                 continue;
@@ -70,6 +81,7 @@ export default async function handler(req, res) {
 
             const data = await response.json();
             let items = data.results || data.records || [];
+            stats.fetched += items.length;
 
             // Limit support
             const limit = req.query.limit ? parseInt(req.query.limit, 10) : undefined;
@@ -77,7 +89,9 @@ export default async function handler(req, res) {
                 items = items.slice(0, limit);
             }
 
+            const startProcess = Date.now();
             for (const item of items) {
+                stats.processed++;
                 try {
                     const f = item.fields || item;
                     const nom = f.nom || f.name || f.raison_sociale || f.structure_nom_usage || "Inconnu";
@@ -177,6 +191,7 @@ export default async function handler(req, res) {
                     stats.errors.push(`Record fail: ${recErr.message}`);
                 }
             }
+            stats.durationByStage.processingMs += (Date.now() - startProcess);
         }
 
         // Log the Run
@@ -185,8 +200,9 @@ export default async function handler(req, res) {
                 source_name: 'CRON_STRUCTURES_ALSACE',
                 status: stats.errors.length > 0 ? 'PARTIAL' : 'SUCCESS',
                 items_new: stats.created,
-                items_total: stats.created + stats.updated,
-                logs: stats.errors.length ? JSON.stringify(stats.errors) : null
+                items_total: stats.processed,
+                logs: stats.errors.length ? JSON.stringify(stats.errors) : null,
+                duration_ms: Date.now() - startTotal
             }
         });
 

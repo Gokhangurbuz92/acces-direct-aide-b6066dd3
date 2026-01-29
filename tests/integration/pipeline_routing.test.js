@@ -80,6 +80,37 @@ describe('Cron Pipeline Routing', () => {
         expect(callArgs.query.limit).toBe("5");
     });
 
+
+    it('should support aliases: demarches -> aides', async () => {
+        const { req, res } = createMocks({ secret: CRON_SECRET, source: 'demarches' });
+        const ingestAids = (await import('../../api/_handlers/cron/ingest-aids.js')).default;
+
+        await pipelineHandler(req, res);
+
+        expect(ingestAids).toHaveBeenCalled();
+        expect(res.json).toHaveBeenCalledWith(expect.objectContaining({
+            source: 'demarches',
+            sourceResolved: 'aides',
+            ok: true
+        }));
+    });
+
+    it('should return rich stats structure', async () => {
+        const { req, res } = createMocks({ secret: CRON_SECRET, source: 'structures' });
+
+        await pipelineHandler(req, res);
+
+        expect(res.json).toHaveBeenCalledWith(expect.objectContaining({
+            stats: expect.objectContaining({
+                fetched: expect.any(Number),
+                processed: expect.any(Number),
+                created: expect.any(Number),
+                skippedExisting: expect.any(Number),
+                durationByStage: expect.any(Object)
+            })
+        }));
+    });
+
     it('should return 400 for invalid source', async () => {
         const { req, res } = createMocks({ secret: CRON_SECRET, source: 'invalid' });
 

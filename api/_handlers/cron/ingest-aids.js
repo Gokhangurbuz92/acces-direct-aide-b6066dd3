@@ -21,7 +21,20 @@ export default async function handler(req, res) {
         return res.status(401).json({ error: 'Unauthorized' });
     }
 
-    const stats = { created: 0, updated: 0, errors: [] };
+    const stats = {
+        fetched: 0,
+        processed: 0,
+        created: 0,
+        updated: 0,
+        skippedExisting: 0,
+        errors: [],
+        durationByStage: {
+            fetchMs: 0,
+            processingMs: 0
+        }
+    };
+
+    const startTotal = Date.now();
 
     try {
         // For this implementation, we use a reliable curated source or the starter pack logic
@@ -31,9 +44,13 @@ export default async function handler(req, res) {
         // Fetch external data (fallback to local if unreachable)
         let externalAids = [];
         try {
+            const startFetch = Date.now();
             const response = await fetch(SOURCE_URL);
+            stats.durationByStage.fetchMs = Date.now() - startFetch;
+
             if (response.ok) {
                 externalAids = await response.json();
+                stats.fetched = externalAids.length;
             }
         } catch (e) {
             console.warn("External source unreachable, skipping automated enrichment.");
@@ -48,31 +65,56 @@ export default async function handler(req, res) {
             }
         }
 
+        const startProcess = Date.now();
         // Process items
         for (const item of externalAids) {
+            stats.processed++;
             const hash = crypto.createHash('md5').update(JSON.stringify(item)).digest('hex');
             const slug = slugify(item.title);
 
-            await prisma.aide.upsert({
-                where: { slug },
-                update: {
-                    titre: item.title,
-                    summary_falc: item.summary,
-                    providerName: item.provider,
-                    statut: 'publie',
-                    published_at: new Date()
-                },
-                create: {
-                    titre: item.title,
-                    slug,
-                    summary_falc: item.summary,
-                    providerName: item.provider,
-                    statut: 'publie',
-                    published_at: new Date()
+            const existing = await prisma.aide.findUnique({ where: { slug } });
+
+            if (existing) {
+                await prisma.aide.update({
+                    where: { slug },
+                    data: {
+                        titre: item.title,
+                        summary_falc: item.summary,
+                        providerName: item.provider,
+                        statut: 'publie',
+                        published_at: new Date()
+                    }
+                });
+                stats.updated++;
+            } else {
+                await prisma.aide.create({
+                    data: {
+                        titre: item.title,
+                        slug,
+                        summary_falc: item.summary,
+                        providerName: item.provider,
+                        statut: 'publie',
+                        published_at: new Date()
+                    }
+                });
+                stats.created++;
+            }
+        }
+        stats.durationByStage.processingMs = Date.now() - startProcess;
+
+        // Log the Run
+        try {
+            await prisma.importLog.create({
+                data: {
+                    source_name: 'CRON_AIDS',
+                    status: stats.errors.length > 0 ? 'PARTIAL' : 'SUCCESS',
+                    items_new: stats.created,
+                    items_total: stats.processed,
+                    logs: stats.errors.length ? JSON.stringify(stats.errors) : null,
+                    duration_ms: Date.now() - startTotal
                 }
             });
-            stats.created++;
-        }
+        } catch (e) { /* ignore log error */ }
 
         return res.status(200).json(stats);
     } catch (error) {

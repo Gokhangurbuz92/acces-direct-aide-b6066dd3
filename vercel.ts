@@ -39,10 +39,6 @@ const config = {
                     value:
                         "default-src 'self'; connect-src 'self' https: wss: *.sentry.io; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline'; worker-src 'self' blob:; img-src 'self' data: https: blob:; font-src 'self' data:; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'; upgrade-insecure-requests;",
                 },
-                {
-                    key: "x-release-sha",
-                    value: process.env.VERCEL_GIT_COMMIT_SHA ?? "unknown"
-                },
             ],
         },
     ],

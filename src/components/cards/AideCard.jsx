@@ -56,10 +56,11 @@ export default function AideCard({ aide, compact = false }) {
   const targetUrl = aide.slug ? `/aides/${aide.slug}` : `/aide/view?id=${aide.id}`;
 
   return (
-    <Card className="group hover:shadow-lg transition-all duration-300 border-slate-200 hover:border-blue-300 bg-white relative">
+    <Card className="group hover:shadow-lg transition-all duration-300 border-slate-200 hover:border-blue-300 bg-white relative" data-testid="aide-card">
       {/* Overlay Link for Clickable Card */}
       <Link
         to={targetUrl}
+        data-testid={`aide-card-link-${aide.id}`}
         className="absolute inset-0 z-10 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 rounded-xl"
         aria-label={`Voir l'aide ${aide.titre}`}
       >
@@ -90,7 +91,7 @@ export default function AideCard({ aide, compact = false }) {
           </div>
 
           {/* Titre */}
-          <h3 className={`font-semibold text-slate-900 group-hover:text-blue-700 transition-colors ${compact ? 'text-base' : 'text-lg'}`}>
+          <h3 className={`font-semibold text-slate-900 group-hover:text-blue-700 transition-colors ${compact ? 'text-base' : 'text-lg'}`} data-testid="aide-title">
             {aide.titre}
           </h3>
 

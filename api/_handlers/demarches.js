@@ -6,6 +6,11 @@ const prisma = new PrismaClient();
 
 export default async function handler(req, res) {
     try {
+        // CRUD Operations (Admin Only)
+        if (req.method === 'POST') return createEntity(req, res, prisma.demarche);
+        if (req.method === 'PUT') return updateEntity(req, res, prisma.demarche);
+        if (req.method === 'DELETE') return deleteEntity(req, res, prisma.demarche);
+
         if (req.method !== 'GET') {
             return res.status(405).json({ error: 'Method not allowed' });
         }
@@ -24,7 +29,8 @@ export default async function handler(req, res) {
                 include: { category: true, situations: true }
             });
 
-            if (!demarche || demarche.statut !== 'publie') {
+            if (!demarche) return res.status(404).json({ error: "Démarche non trouvée" });
+            if (!isAdmin && demarche.statut !== 'publie') {
                 return res.status(404).json({ error: "Démarche non trouvée" });
             }
             return res.status(200).json(demarche);

@@ -1,9 +1,10 @@
 import React from 'react';
-import { Link, useParams, useSearchParams } from 'react-router-dom';
+import { Link, useParams, useSearchParams, useNavigate } from 'react-router-dom';
 import { createPageUrl } from '@/utils';
 import { client } from '@/api/client';
 import { useQuery } from '@tanstack/react-query';
 import SEO from '@/components/SEO';
+import { generateActualiteSchema, generateBreadcrumbSchema } from '@/utils/schema';
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
@@ -50,14 +51,26 @@ const CATEGORIES = {
 export default function ActualiteDetail() {
   const { slug } = useParams();
   const [searchParams] = useSearchParams();
+  const navigate = useNavigate();
   const id = searchParams.get('id');
   const identifier = slug || id;
 
-  const { data: actu, isLoading } = useQuery({
+  const { data: queryData, isLoading } = useQuery({
     queryKey: ['actualite', identifier],
     queryFn: () => client.entities.Actualite.filter(slug ? { slug } : { id }),
     enabled: !!identifier
   });
+
+  const actu = Array.isArray(queryData)
+    ? queryData[0]
+    : (queryData?.items ? queryData?.items[0] : queryData);
+
+  // Canonical Redirect: If accessed via ID but slug exists, redirect to slug URL
+  React.useEffect(() => {
+    if (actu && !slug && actu.slug) {
+      navigate(`/actualites/${actu.slug}`, { replace: true });
+    }
+  }, [actu, slug, navigate]);
 
   if (isLoading) {
     return (
@@ -82,12 +95,24 @@ export default function ActualiteDetail() {
 
   const TypeIcon = TYPE_ICONS[actu.type_actu] || Info;
 
+  const breadcrumbs = [
+    { name: 'Accueil', url: '/' },
+    { name: 'Actualités', url: '/actualites' },
+    { name: actu.titre, url: `/actualites/${actu.slug}` }
+  ];
+
+  const schema = [
+    generateBreadcrumbSchema(breadcrumbs),
+    generateActualiteSchema(actu)
+  ].filter(Boolean);
+
   return (
     <div className="min-h-screen bg-slate-50">
       <SEO
         title={actu.titre}
         description={actu.summary_falc || actu.contenu?.substring(0, 150)}
-        url={window.location.href}
+        path={`/actualites/${actu.slug}`}
+        schema={schema}
       />
 
       {/* Fil d'Ariane */}

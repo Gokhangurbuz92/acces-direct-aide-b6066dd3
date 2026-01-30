@@ -1,0 +1,11 @@
+ RUN  v4.0.18 /Users/gokhan/Dropbox/Mac/Downloads/acces-direct-aide-b6066dd3
+
+ ✓ scripts/test-sitemap-handler.test.js (2 tests) 5ms
+   ✓ Sitemap Handler (2)                        
+     ✓ should return correct headers and content 4ms
+     ✓ should handle HEAD request 0ms
+                        
+ Test Files  1 passed (1)
+      Tests  2 passed (2)
+   Start at  10:31:13
+   Duration  295ms (transform 46ms, setup 0ms, import 62ms, tests 5ms, environment 0ms)

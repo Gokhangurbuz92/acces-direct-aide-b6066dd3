@@ -1,5 +1,5 @@
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { Loader2, ArrowLeft, Calendar, User, Video, MapPin } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -37,9 +37,9 @@ export default function ProAppointmentDetail() {
         if (activeTab === 'messages' && appointment) {
             fetchMessages();
         }
-    }, [activeTab, appointment]);
+    }, [activeTab, appointment, fetchMessages]);
 
-    const fetchMessages = () => {
+    const fetchMessages = useCallback(() => {
         setLoadingMsgs(true);
         fetch(`/api/pro/messages?appointmentId=${id}`, {
             headers: { Authorization: `Bearer ${token}` }
@@ -48,7 +48,7 @@ export default function ProAppointmentDetail() {
             .then(data => setMessages(data.messages || []))
             .catch(console.error)
             .finally(() => setLoadingMsgs(false));
-    };
+    }, [id, token]);
 
     const handleSendMessage = async (content) => {
         try {

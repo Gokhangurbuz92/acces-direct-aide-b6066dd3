@@ -10,7 +10,7 @@ const IP = '192.168.1.1';
 
 // Config: Limit 3
 for (let i = 1; i <= 5; i++) {
-    const result = checkRateLimit('OTP_GEN', IP);
+    const result = await checkRateLimit('OTP_GEN', IP);
     console.log(`Attempt ${i}: Allowed=${result.allowed}`);
     if (!result.allowed) {
         console.log("  -> Error (FALC):", result.error.message);

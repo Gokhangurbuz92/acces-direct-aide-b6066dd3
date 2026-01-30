@@ -1,0 +1,1 @@
+SELECT count(*) FROM "Structure" WHERE slug IS NULL OR slug=''; -> 0

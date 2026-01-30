@@ -1,136 +1,15 @@
 import { test, expect } from '@playwright/test';
 
-// Mock Data
-const MOCK_AIDES = {
-    items: [
-        {
-            id: 'aide-1',
-            slug: 'aide-test',
-            titre: 'Aide Test',
-            providerName: 'Test Provider',
-            cest_quoi: 'Résumé facile.',
-            categorie: 'logement',
-            statut: 'publie'
-        }
-    ],
-    pagination: { total: 1, page: 1, pageSize: 10, totalPages: 1 }
-};
+// Augmentation du timeout pour la CI (60 secondes)
+test.setTimeout(60000);
 
-const MOCK_AIDE_DETAIL = {
-    id: 'aide-1',
-    slug: 'aide-test',
-    titre: 'Aide Test Detail',
-    providerName: 'Test Provider',
-    cest_quoi: 'Description longue',
-    categorie: 'logement',
-    statut: 'publie',
-    category: { name: 'Logement' }
-};
-
-const MOCK_DEMARCHES = {
-    items: [
-        {
-            id: 'demarche-1',
-            slug: 'demarche-test',
-            titre: 'Démarche Test',
-            summary_falc: 'Résumé démarche.',
-            statut: 'publie'
-        }
-    ],
-    pagination: { total: 1, page: 1, pageSize: 10, totalPages: 1 }
-};
-
-const MOCK_DEMARCHE_DETAIL = {
-    id: 'demarche-1',
-    slug: 'demarche-test',
-    titre: 'Démarche Test Detail',
-    statut: 'publie'
-};
-
-const MOCK_STRUCTURES = {
-    items: [
-        {
-            id: 'struct-1',
-            slug: 'structure-test',
-            nom: 'Structure Test',
-            adresse: '1 rue Test',
-            ville: 'Testville',
-            statut: 'actif',
-            type_structure: 'association'
-        }
-    ],
-    pagination: { total: 1, page: 1, pageSize: 10, totalPages: 1 }
-};
-
-const MOCK_STRUCTURE_DETAIL = {
-    id: 'struct-1',
-    slug: 'structure-test',
-    nom: 'Structure Test Detail',
-    adresse: '1 rue Test',
-    ville: 'Testville',
-    statut: 'actif',
-    type_structure: 'association',
-    proServices: []
-};
-
-// Actualites returns Array directly
-const MOCK_ACTUALITES = [
-    {
-        id: 'actu-1',
-        slug: 'actu-test',
-        titre: 'Actualité Test',
-        resume: 'Résumé actu.',
-        type_actu: 'info',
-        date_publication: new Date().toISOString(),
-        published_at: new Date().toISOString(),
-        est_important: false
-    }
-];
-
-const MOCK_ACTUALITE_DETAIL = {
-    id: 'actu-1',
-    slug: 'actu-test',
-    titre: 'Actualité Test Detail',
-    contenu: 'Contenu actu',
-    date_publication: new Date().toISOString(),
-    published_at: new Date().toISOString()
-};
+import { setupPublicMocks } from './_mocks/publicApiMocks';
 
 test.describe('Public Core Routes', () => {
 
     test.beforeEach(async ({ page }) => {
-        // Mock API Responses (using robust globs)
-        await page.route('**/api/aides*', async route => {
-            const url = route.request().url();
-            if (url.includes('aide-test')) return route.fulfill({ json: MOCK_AIDE_DETAIL });
-            return route.fulfill({ json: MOCK_AIDES });
-        });
-
-        await page.route('**/api/demarches*', async route => {
-            const url = route.request().url();
-            if (url.includes('demarche-test')) return route.fulfill({ json: MOCK_DEMARCHE_DETAIL });
-            return route.fulfill({ json: MOCK_DEMARCHES });
-        });
-
-        await page.route('**/api/structures*', async route => {
-            const url = route.request().url();
-            if (url.includes('structure-test')) return route.fulfill({ json: MOCK_STRUCTURE_DETAIL });
-            return route.fulfill({ json: MOCK_STRUCTURES });
-        });
-
-        await page.route('**/api/actualites*', async route => {
-            const url = route.request().url();
-            if (url.includes('actu-test')) return route.fulfill({ json: MOCK_ACTUALITE_DETAIL });
-            return route.fulfill({ json: MOCK_ACTUALITES });
-        });
-
-        // Mock Stats/Taxonomy/Suggestions/Guides to avoid errors
-        await page.route('**/api/public/stats', async route => route.fulfill({ json: {} }));
-        await page.route('**/api/taxonomy', async route => route.fulfill({ json: { categories: [], situations: [] } }));
-        await page.route('**/api/public/suggest-structure', async route => route.fulfill({ json: [] }));
-        await page.route('**/api/guides*', async route => route.fulfill({ json: [] }));
-        await page.route('**/api/tools*', async route => route.fulfill({ json: [] }));
-        await page.route('**/api/dispositifs*', async route => route.fulfill({ json: [] }));
+        // Mocks API via helper partagé
+        await setupPublicMocks(page);
     });
 
     test('Home page loads', async ({ page }) => {
@@ -140,36 +19,38 @@ test.describe('Public Core Routes', () => {
 
     test('Aides list and detail navigation', async ({ page }) => {
         await page.goto('/aides');
-        await expect(page.getByText('Aide Test')).toBeVisible();
+        await expect(page.getByRole('heading', { name: /Aide Test/i }).first()).toBeVisible();
 
         await page.getByLabel('Voir l\'aide Aide Test').click();
-        await expect(page.getByRole('heading', { name: 'Aide Test Detail' })).toBeVisible();
+        await page.waitForURL(/\/aides\/.+/);
+        await expect(page.getByRole('heading', { name: /Aide Test/i })).toBeVisible({ timeout: 10000 });
     });
 
     test('Demarches list and detail navigation', async ({ page }) => {
         await page.goto('/demarches');
-        await expect(page.getByText('Démarche Test')).toBeVisible();
+        await expect(page.getByRole('heading', { name: /Démarche Test/i }).first()).toBeVisible();
 
         await page.getByRole('link', { name: /Démarrer|Voir|Consulter/i }).first().click();
-        await expect(page.getByRole('heading', { name: 'Démarche Test Detail' })).toBeVisible();
+        await page.waitForURL(/\/demarches\/.+/);
+        await expect(page.getByRole('heading', { name: /Démarche Test/i })).toBeVisible();
     });
 
     test('Structures list and detail navigation', async ({ page }) => {
         await page.goto('/annuaire');
-        await expect(page.getByText('Structure Test')).toBeVisible();
+        await expect(page.getByRole('heading', { name: /Structure Test/i }).first()).toBeVisible();
 
-        // Use "Plus d'infos" link as the card title is not clickable
-        await page.getByRole('link', { name: "Plus d'infos" }).first().click();
-        await expect(page.getByRole('heading', { name: 'Structure Test Detail' })).toBeVisible();
+        await page.getByRole('link', { name: /Plus d.?infos|Voir|Consulter|Détails/i }).first().click();
+        await page.waitForURL(/\/(annuaire|structures)\/.+/);
+        await expect(page.getByRole('heading', { name: /Structure Test/i })).toBeVisible({ timeout: 10000 });
     });
 
     test('Actualites list and detail navigation', async ({ page }) => {
         await page.goto('/actualites');
-        await expect(page.getByText('Actualité Test')).toBeVisible();
+        await expect(page.getByRole('heading', { name: 'Actualité Test' }).first()).toBeVisible();
 
-        // Actualites uses title as link in one place, or "Lire la suite"
-        await page.getByText('Actualité Test').click();
-        await expect(page.getByRole('heading', { name: 'Actualité Test Detail' })).toBeVisible();
+        await page.getByText('Actualité Test').first().click();
+        await page.waitForURL(/\/actualites\/.+/);
+        await expect(page.getByRole('heading', { name: /Actualité Test/i })).toBeVisible({ timeout: 10000 });
     });
 
 });

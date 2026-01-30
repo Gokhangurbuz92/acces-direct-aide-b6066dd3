@@ -1,7 +1,5 @@
-import { PrismaClient } from '@prisma/client';
 import { requireAuth } from '../../lib/pro-auth.js';
-
-const prisma = new PrismaClient();
+import prisma from '../../_utils/prisma.js';
 
 async function handler(req, res) {
     if (req.method !== 'GET') {

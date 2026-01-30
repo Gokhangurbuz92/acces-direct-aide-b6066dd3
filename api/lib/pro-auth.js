@@ -1,11 +1,9 @@
 
-/* eslint-env node */
 import jwt from 'jsonwebtoken';
-import { PrismaClient } from '@prisma/client';
+import prisma from '../_utils/prisma.js';
 import crypto from 'crypto';
 import { checkRateLimit as checkRateLimitUtil } from '../_utils/rateLimit.js';
 
-const prisma = new PrismaClient();
 const JWT_SECRET = process.env.JWT_SECRET;
 
 if (!JWT_SECRET) {
@@ -33,13 +31,19 @@ export function signProToken(user) {
         { expiresIn: '8h' }
     );
 }
+// ... (rest is same)
+
+// ...
 
 /**
  * Verify a JWT token
+ * Hardened: Enforce HS256 to prevent algorithm confusion attacks
  */
 export function verifyProToken(token) {
     try {
-        return jwt.verify(token, JWT_SECRET);
+        return jwt.verify(token, JWT_SECRET, {
+            algorithms: ['HS256']
+        });
     } catch {
         return null;
     }
@@ -89,8 +93,11 @@ export async function logProAudit(action, actorId, structureId, details, ip) {
 export function requireAuth(handler, allowedRoles = []) {
     return async (req, res) => {
         let token = null;
-        if (req.headers && req.headers.authorization) {
-            token = req.headers.authorization.replace('Bearer ', '');
+        const authHeader = req.headers?.authorization || "";
+        const match = authHeader.match(/^Bearer\s+(.+)$/i);
+
+        if (match) {
+            token = match[1];
         }
 
         const user = verifyProToken(token);
@@ -99,10 +106,10 @@ export function requireAuth(handler, allowedRoles = []) {
         }
 
         if (allowedRoles.length > 0 && !allowedRoles.includes(user.role)) {
-             // SUPERADMIN override
-             if (user.role !== ROLE.SUPERADMIN) {
-                 return res.status(403).json({ error: 'Forbidden' });
-             }
+            // SUPERADMIN override
+            if (user.role !== ROLE.SUPERADMIN) {
+                return res.status(403).json({ error: 'Forbidden' });
+            }
         }
 
         req.user = user;

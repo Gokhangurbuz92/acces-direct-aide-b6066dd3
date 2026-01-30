@@ -2,6 +2,7 @@
 ./.cursor
 ./.cursor/rules
 ./.cursor/rules/snyk_rules.mdc
+./.env.example
 ./.github
 ./.github/workflows
 ./.github/workflows/automerge.yml

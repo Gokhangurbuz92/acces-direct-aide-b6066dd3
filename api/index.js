@@ -93,6 +93,13 @@ export default async function handler(req, res) {
             });
         });
 
+        // PIPELINE SENTINEL: Route Level
+        if (path === 'cron/pipeline') {
+            const runId = req.query.runId || req.headers['x-run-id'] || 'N/A';
+            const source = req.query.source || 'N/A';
+            console.log(`PIPELINE_ROUTE_ENTER source=${source} runId=${runId}`);
+        }
+
         await routeHandler(req, res);
 
     } catch (bootError) {

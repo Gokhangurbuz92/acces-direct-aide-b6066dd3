@@ -1,0 +1,10 @@
+# Global owner
+* @Gokhangurbuz92
+
+# Backend & API
+api/** @Gokhangurbuz92
+prisma/** @Gokhangurbuz92
+
+# Config & CI/CD
+.github/** @Gokhangurbuz92
+vercel.json @Gokhangurbuz92

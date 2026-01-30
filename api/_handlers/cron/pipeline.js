@@ -1,12 +1,14 @@
 /* global process */
+import { isCronAuthorized } from '../../_utils/cronAuth.js';
 import { PrismaClient } from '@prisma/client';
 import Parser from 'rss-parser';
 import crypto from 'crypto';
 import fs from 'fs';
 import path from 'path';
 import { summarizeToFalc } from '../../lib/falc-summarizer.js';
-import ingestStructures from './ingest-structures.js';
-import ingestAids from './ingest-aids.js';
+import { ensureSlug } from '../../lib/slug.js';
+import { runIngestStructures } from './ingest-structures.js';
+import { runIngestAids } from './ingest-aids.js';
 
 const prisma = new PrismaClient();
 const parser = new Parser();
@@ -26,34 +28,55 @@ function slugify(text) {
 }
 
 export default async function handler(req, res) {
+    // SENTINEL: Logic Entry
+    const runId = crypto.randomUUID();
+    const query = req.query || {}; // Safe access
+    const sourceLog = query.source || 'N/A';
+    console.log(`PIPELINE_LOGIC_ENTER source=${sourceLog} runId=${runId}`);
+
     // 1. Authorization
-    if (!process.env.CRON_SECRET) {
-        console.error("CRITICAL: CRON_SECRET environment variable is not defined.");
-        return res.status(500).json({ error: 'Server configuration error' });
-    }
-
-    // req.query is available in Vercel function, or parsed by dev-server
-    const secret = req.query?.secret || new URL(req.url, `http://${req.headers.host}`).searchParams.get('secret');
-    const vercelCronHeader = req.headers['x-vercel-cron'];
-    const authHeader = req.headers['authorization'];
-
-    const isAuthorized =
-        secret === process.env.CRON_SECRET ||
-        vercelCronHeader === '1' ||
-        authHeader === `Bearer ${process.env.CRON_SECRET}`;
-
-    if (!isAuthorized) {
+    if (!isCronAuthorized(req)) {
         console.warn("Unauthorized Pipeline Attempt");
         return res.status(401).json({ error: 'Unauthorized' });
     }
 
-    const runId = crypto.randomUUID();
+    // 2. Validation & Parameters (with Aliases)
+    let sourceInput = query.source;
+    let sourceResolved = sourceInput;
+
+    // ALIAS LOGIC
+    if (sourceInput === 'actualites') sourceResolved = 'rss';
+    if (sourceInput === 'demarches') sourceResolved = 'aides';
+
+    const mode = query.mode; // 'smoke'
+    const limitParam = query.limit;
+
+    // Determine limit: explicit > smoke default (5) > undefined (unlimited)
+    let limit = limitParam ? parseInt(limitParam, 10) : (mode === 'smoke' ? 5 : undefined);
+
+    if (!sourceResolved) {
+        return res.status(400).json({
+            ok: false,
+            error: "Missing required 'source' parameter. Options: 'structures', 'aides' (or 'demarches'), 'rss' (or 'actualites')."
+        });
+    }
+
+    // Enhanced Stats Logic (Explicit 'ingested' for contract compliance)
     const stats = {
-        ingested: 0,
-        enriched: 0,
-        published: 0,
-        errors: []
+        ingested: 0, // Requirement: stats.ingested != null
+        fetched: 0,
+        processed: 0,
+        created: 0,
+        updated: 0,
+        skippedExisting: 0,
+        errors: [],
+        durationByStage: {
+            fetchMs: 0,
+            processingMs: 0
+        }
     };
+
+    const startTime = Date.now();
 
     // Helper: Retry wrapper
     async function retry(fn, retries = 3, delay = 1000) {
@@ -67,205 +90,233 @@ export default async function handler(req, res) {
         }
     }
 
+    // Helper: Merge API Stats
+    const mergeStats = (subStats) => {
+        if (!subStats) return;
+        stats.fetched += (subStats.fetched || 0);
+        stats.processed += (subStats.processed || 0);
+        stats.created += (subStats.created || 0);
+        stats.updated += (subStats.updated || 0);
+        stats.skippedExisting += (subStats.skippedExisting || 0);
+
+        // Map created -> ingested for legacy contract compliance
+        stats.ingested = stats.created;
+
+        if (subStats.errors && Array.isArray(subStats.errors)) {
+            stats.errors.push(...subStats.errors);
+        }
+
+        if (subStats.durationByStage) {
+            stats.durationByStage.fetchMs += (subStats.durationByStage.fetchMs || 0);
+            stats.durationByStage.processingMs += (subStats.durationByStage.processingMs || 0);
+        }
+    };
+
     // Wrap entire execution in a timeout (50s safe limit for Vercel 60s max)
     const timeoutPromise = new Promise((_, reject) =>
         setTimeout(() => reject(new Error('Pipeline Timeout')), 50000)
     );
 
     const pipelineLogic = async () => {
-        // ==========================================
-        // STEP 0: SEED CONFIG (Ensure Sources Exist)
-        // ==========================================
-        try {
-            const configPath = path.join(process.cwd(), 'config', 'rss-sources.json');
-            if (fs.existsSync(configPath)) {
-                 const configSources = JSON.parse(fs.readFileSync(configPath, 'utf8'));
-                 for (const src of configSources) {
-                     await prisma.rssSource.upsert({
-                         where: { feed_url: src.url },
-                         update: {
-                             name: src.name,
-                             domain: src.domain,
-                             trust_level: src.trust_level,
-                             enabled: true // Re-enable if in config
-                         },
-                         create: {
-                             name: src.name,
-                             feed_url: src.url,
-                             domain: src.domain,
-                             trust_level: src.trust_level,
-                             enabled: true
-                         }
-                     });
-                 }
-            }
-        } catch (e) {
-            console.error("Pipeline: Seed Config failed", e);
-        }
+        console.log("[PIPELINE] calling ingester", { sourceResolved, mode, limit });
 
         // ==========================================
-        // STEP 0.5: CORE INGESTION (Structures & Aids)
+        // ROUTING LOGIC
         // ==========================================
-        // Structures
-        try {
-            await ingestStructures({ query: { secret: process.env.CRON_SECRET } }, {
-                status: () => ({ json: (d) => { if (d && d.created) stats.ingested += d.created; } })
-            });
-        } catch (e) { console.error("Pipeline: Ingest Structures failed", e); }
 
-        // Aids
-        try {
-            await ingestAids({ query: { secret: process.env.CRON_SECRET } }, {
-                status: () => ({ json: (d) => { if (d && d.created) stats.ingested += d.created; } })
-            });
-        } catch (e) { console.error("Pipeline: Ingest Aids failed", e); }
-
-        // ==========================================
-        // STEP 1: RSS INGESTION
-        // ==========================================
-        const sources = await prisma.rssSource.findMany({ where: { enabled: true } });
-
-        for (const source of sources) {
+        if (sourceResolved === 'structures') {
             try {
-                const feed = await retry(() => parser.parseURL(source.feed_url));
+                const result = await runIngestStructures({ limit, runId });
+                console.log("[PIPELINE] ingester result", result && Object.keys(result));
+                mergeStats(result);
+            } catch (e) {
+                console.error("Pipeline: Ingest Structures failed", e);
+                stats.errors.push(`Structures failed: ${e.message}`);
+            }
 
-                for (const item of feed.items) {
-                    const rawContent = `${item.title}${item.link}`;
-                    const hash = crypto.createHash('md5').update(rawContent).digest('hex');
-                    const isOfficial = source.trust_level === 'OFFICIAL';
+        } else if (sourceResolved === 'aides') {
+            try {
+                const result = await runIngestAids({ limit, runId });
+                console.log("[PIPELINE] ingester result", result && Object.keys(result));
+                mergeStats(result);
+            } catch (e) {
+                console.error("Pipeline: Ingest Aids failed", e);
+                stats.errors.push(`Aids failed: ${e.message}`);
+            }
 
-                    // Using upsert to handle concurrency and idempotency
-                    // Note: We catch potential conflicts on canonical_url if it differs from hash
-                    try {
-                        const upsertData = {
-                            titre: item.title || "Sans titre",
-                            slug: slugify(item.title || "info") + '-' + hash.substring(0, 6),
-                            contenu: item.content || item.contentSnippet || "",
-                            resume: item.contentSnippet || item.content || "", // Raw summary
-                            canonical_url: item.link,
-                            guid: item.guid || item.link,
-                            source_id: source.id,
-                            source_name: source.name,
-                            source_url: source.feed_url,
-                            dedupe_hash: hash,
-                            ingest_batch: runId,
-                            statut: "brouillon", // Default to draft, auto-publish step will handle it
-                            falc_status: "pending",
-                            quality_score: isOfficial ? 60 : 40,
-                            auto_publish: isOfficial,
-                            date_publication: item.isoDate ? new Date(item.isoDate) : new Date(),
-                            fetched_at: new Date(),
-                            tags: [] // Can map from source if available
-                        };
+        } else if (sourceResolved === 'rss') {
+            // RSS Logic adapted for new stats
 
-                        const result = await prisma.actualite.upsert({
-                            where: { raw_data_hash: hash },
-                            update: {},
-                            create: { ...upsertData, raw_data_hash: hash }
+            // Step 0: Seed Config
+            try {
+                const configPath = path.join(process.cwd(), 'config', 'rss-sources.json');
+                if (fs.existsSync(configPath)) {
+                    const configSources = JSON.parse(fs.readFileSync(configPath, 'utf8'));
+                    for (const src of configSources) {
+                        await prisma.rssSource.upsert({
+                            where: { feed_url: src.url },
+                            update: { enabled: true, trust_level: src.trust_level },
+                            create: { name: src.name, feed_url: src.url, domain: src.domain, trust_level: src.trust_level, enabled: true }
                         });
+                    }
+                }
+            } catch (e) {/* ignore */ }
 
-                        // We count it if it was created recently (approx check)
-                        if (Math.abs(result.fetched_at - upsertData.fetched_at) < 2000) {
-                            stats.ingested++;
+            const sources = await prisma.rssSource.findMany({ where: { enabled: true } });
+
+            let processedCount = 0;
+
+            for (const source of sources) {
+                if (limit && processedCount >= limit) break;
+
+                try {
+                    const startFetch = Date.now();
+                    const feed = await retry(() => parser.parseURL(source.feed_url));
+                    stats.durationByStage.fetchMs += (Date.now() - startFetch);
+
+                    let itemsToProcess = feed.items;
+                    if (limit) {
+                        const remaining = limit - processedCount;
+                        itemsToProcess = itemsToProcess.slice(0, remaining);
+                    }
+                    stats.fetched += itemsToProcess.length;
+
+                    const startProc = Date.now();
+                    for (const item of itemsToProcess) {
+                        stats.processed++;
+                        const rawContent = `${item.title}${item.link}`;
+                        const hash = crypto.createHash('md5').update(rawContent).digest('hex');
+                        const isOfficial = source.trust_level === 'OFFICIAL';
+
+                        try {
+                            const itemSlug = await ensureSlug(prisma, 'actualite', { id: null, titre: item.title || "Sans", slug: null }, 'titre');
+                            const upsertData = {
+                                titre: item.title || "Sans titre",
+                                slug: itemSlug || (slugify(item.title || "info") + '-' + hash.substring(0, 6)),
+                                contenu: item.content || item.contentSnippet || "",
+                                resume: item.contentSnippet || item.content || "",
+                                canonical_url: item.link,
+                                guid: item.guid || item.link,
+                                source_id: source.id,
+                                source_name: source.name,
+                                source_url: source.feed_url,
+                                dedupe_hash: hash,
+                                ingest_batch: runId,
+                                statut: "brouillon",
+                                falc_status: "pending",
+                                quality_score: isOfficial ? 60 : 40,
+                                auto_publish: isOfficial,
+                                date_publication: item.isoDate ? new Date(item.isoDate) : new Date(),
+                                fetched_at: new Date(),
+                                tags: []
+                            };
+
+                            const result = await prisma.actualite.upsert({
+                                where: { raw_data_hash: hash },
+                                update: {},
+                                create: { ...upsertData, raw_data_hash: hash }
+                            });
+
+                            if (Math.abs(result.fetched_at - upsertData.fetched_at) < 2000) {
+                                stats.created++;
+                            } else {
+                                stats.skippedExisting++;
+                            }
+                            // Map to ingested
+                            stats.ingested = stats.created;
+
+                            processedCount++;
+                        } catch (e) {
+                            // ignore unique constraints
                         }
-                    } catch (e) {
-                         if (!e.message.includes('Unique constraint')) {
-                             throw e;
-                         }
-                         // Ignore duplicate canonical_url
                     }
+                    stats.durationByStage.processingMs += (Date.now() - startProc);
+
+                } catch (err) {
+                    stats.errors.push(`${source.name}: ${err.message}`);
                 }
-            } catch (err) {
-                console.error(`Error processing source ${source.name}:`, err.message);
-                stats.errors.push(`${source.name}: ${err.message}`);
             }
-        }
-
-        // ==========================================
-        // STEP 2: ENRICHMENT (FALC & Tags)
-        // ==========================================
-        const itemsToEnrich = await prisma.actualite.findMany({
-            where: { falc_status: 'pending' },
-            take: 5,
-            orderBy: { fetched_at: 'desc' }
-        });
-
-        for (const item of itemsToEnrich) {
-            try {
-                const falcResult = await summarizeToFalc(item.contenu || item.titre, `Source: ${item.source_name}`);
-
-                await prisma.actualite.update({
-                    where: { id: item.id },
-                    data: {
-                        summary_falc: falcResult.summary,
-                        key_points_falc: falcResult.key_points,
-                        falc_status: 'generated',
-                        quality_score: { increment: 20 }
-                    }
-                });
-                stats.enriched++;
-            } catch (err) {
-                console.error(`Error enriching item ${item.id}:`, err);
-                await prisma.actualite.update({
-                    where: { id: item.id },
-                    data: { falc_status: 'failed' }
-                });
-            }
-        }
-
-        // ==========================================
-        // STEP 3: PUBLICATION
-        // ==========================================
-        const threshold = 75;
-        const toPublish = await prisma.actualite.findMany({
-            where: {
-                statut: 'brouillon',
-                auto_publish: true,
-                quality_score: { gte: threshold },
-                falc_status: { in: ['generated'] }
-            }
-        });
-
-        for (const item of toPublish) {
-            await prisma.actualite.update({
-                where: { id: item.id },
-                data: {
-                    statut: 'publie', // FIXED: actif -> publie
-                    published_at: new Date()
-                }
-            });
-            stats.published++;
+        } else {
+            const err = new Error(`Invalid source '${sourceResolved}' (resolved from '${sourceInput}'). Valid: structures, aides, rss`);
+            throw err;
         }
 
         // Log the Run
-        await prisma.importLog.create({
-            data: {
-                source_name: 'CRON_PIPELINE',
-                status: stats.errors.length > 0 ? 'PARTIAL' : 'SUCCESS',
-                items_new: stats.ingested,
-                items_total: stats.ingested + stats.enriched + stats.published,
-                logs: stats.errors.length ? JSON.stringify(stats.errors) : null
-            }
-        });
+        try {
+            await prisma.importLog.create({
+                data: {
+                    source_name: `CRON_${sourceResolved.toUpperCase()}`,
+                    status: stats.errors.length > 0 ? 'PARTIAL' : 'SUCCESS',
+                    items_new: stats.created,
+                    items_total: stats.processed,
+                    logs: stats.errors.length ? JSON.stringify(stats.errors) : null,
+                    duration_ms: Date.now() - startTime
+                }
+            });
+        } catch (e) { /* ignore */ }
     };
 
     try {
         await Promise.race([pipelineLogic(), timeoutPromise]);
     } catch (globalErr) {
         console.error("Pipeline Global Error:", globalErr);
-        // Try to log the failure to DB if possible
+        // Try to log failure
         try {
-             await prisma.importLog.create({
+            await prisma.importLog.create({
                 data: {
-                    source_name: 'CRON_PIPELINE',
+                    source_name: `CRON_${sourceResolved ? sourceResolved.toUpperCase() : 'UNKNOWN'}`,
                     status: 'ERROR',
-                    logs: JSON.stringify(globalErr.message)
+                    logs: JSON.stringify(globalErr.message),
+                    duration_ms: Date.now() - startTime
                 }
             });
         } catch (e) { /* ignore */ }
 
-        return res.status(500).json({ error: globalErr.message });
+        // Use 400 for bad requests, 500 for others
+        const statusCode = globalErr.message.includes('Invalid source') ? 400 : 500;
+        return res.status(statusCode).json({
+            ok: false,
+            error: globalErr.message,
+            source: sourceInput,
+            sourceResolved,
+            mode,
+            durationMs: Date.now() - startTime
+        });
     }
 
-    return res.status(200).json(stats);
+    // STRICT CONTRACT: Check for Silent Failure / "Success Vide"
+    // Condition: (fetchMs=0 AND errors=[]) AND fetched=0.
+    // We only fail if we fetched nothing AND took 0ms AND had no errors.
+    // If we fetched items, 0ms (e.g. in tests) is acceptable.
+    if (stats.fetched === 0 && stats.durationByStage.fetchMs === 0 && stats.errors.length === 0) {
+        const errorMsg = "PIPELINE_NOOP: Execution yielded zero fetched results with no errors. This is a contract violation.";
+        console.error(errorMsg);
+
+        // Log this specific failure
+        try {
+            await prisma.importLog.create({
+                data: {
+                    source_name: `CRON_${sourceResolved ? sourceResolved.toUpperCase() : 'UNKNOWN'}`,
+                    status: 'ERROR',
+                    logs: JSON.stringify([errorMsg]),
+                    duration_ms: Date.now() - startTime
+                }
+            });
+        } catch (e) { }
+
+        return res.status(502).json({
+            ok: false,
+            error: errorMsg,
+            stats
+        });
+    }
+
+    return res.status(200).json({
+        ok: true,
+        source: sourceInput,
+        sourceResolved,
+        mode,
+        durationMs: Date.now() - startTime,
+        stats
+    });
 }

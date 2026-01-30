@@ -1,0 +1,96 @@
+/**
+ * Slug generation utility
+ * Shared between backfill script and ingestion pipeline
+ */
+
+import slugify from '@sindresorhus/slugify';
+
+/**
+ * Generate a unique slug for a given text and Prisma model
+ * 
+ * @param {PrismaClient} prisma - Prisma client instance
+ * @param {string} modelName - Model name (lowercase: 'aide', 'demarche', 'structure', 'actualite')
+ * @param {string} baseText - Text to slugify (titre, nom, etc.)
+ * @param {string|null} excludeId - Optional ID to exclude from uniqueness check (for updates)
+ * @returns {Promise<string>} Unique slug
+ */
+export async function generateUniqueSlug(prisma, modelName, baseText, excludeId = null) {
+    if (!baseText || typeof baseText !== 'string' || baseText.trim() === '') {
+        throw new Error('Cannot generate slug from empty or invalid text');
+    }
+
+    // Truncate if too long (before slugify to avoid very long slugs)
+    const truncated = baseText.length > 200 ? baseText.substring(0, 200) : baseText;
+
+    let baseSlug = slugify(truncated, { locale: 'fr' });
+
+    // Fallback if slugify returns empty (e.g., text with only special chars)
+    if (!baseSlug || baseSlug.length < 2) {
+        baseSlug = 'item';
+    }
+
+    let suffix = 0;
+    let isUnique = false;
+    let finalSlug = baseSlug;
+
+    while (!isUnique) {
+        const testSlug = suffix === 0 ? baseSlug : `${baseSlug}-${suffix}`;
+
+        // Check if slug exists (excluding current item if updating)
+        const existing = await prisma[modelName].findFirst({
+            where: {
+                slug: testSlug,
+                ...(excludeId ? { id: { not: excludeId } } : {})
+            },
+            select: { id: true }
+        });
+
+        if (!existing) {
+            isUnique = true;
+            finalSlug = testSlug;
+        } else {
+            suffix++;
+
+            // Safety: prevent infinite loop on pathological cases
+            if (suffix > 999) {
+                // Extremely unlikely, but fallback to random suffix
+                finalSlug = `${baseSlug}-${Date.now().toString(36)}`;
+                break;
+            }
+        }
+    }
+
+    return finalSlug;
+}
+
+/**
+ * Generate slug for item if missing, with error handling
+ * Safe to call during ingestion - returns null if generation fails
+ * 
+ * @param {PrismaClient} prisma - Prisma client instance
+ * @param {string} modelName - Model name (lowercase)
+ * @param {object} item - Item with title/nom field
+ * @param {string} titleField - Field name to use as base ('titre', 'nom')
+ * @returns {Promise<string|null>} Generated slug or null if failed
+ */
+export async function ensureSlug(prisma, modelName, item, titleField = 'titre') {
+    // If slug already exists, return it
+    if (item.slug && item.slug.trim() !== '') {
+        return item.slug;
+    }
+
+    // Get title/nom
+    const baseText = item[titleField];
+
+    if (!baseText || typeof baseText !== 'string' || baseText.trim() === '') {
+        console.warn(`[Slug] Cannot generate slug for ${modelName} - missing ${titleField}`);
+        return null;
+    }
+
+    try {
+        return await generateUniqueSlug(prisma, modelName, baseText, item.id || null);
+    } catch (error) {
+        console.error(`[Slug] Error generating slug for ${modelName}:`, error.message);
+        return null;
+    }
+}

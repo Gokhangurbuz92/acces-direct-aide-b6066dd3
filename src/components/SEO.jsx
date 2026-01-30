@@ -15,7 +15,8 @@ export default function SEO({
     description,
     path = '',
     image = DEFAULT_IMAGE,
-    noindex = false
+    noindex = false,
+    schema = null
 }) {
     const fullTitle = title ? `${title} - ${SITE_NAME}` : SITE_NAME;
 
@@ -56,6 +57,13 @@ export default function SEO({
             <meta name="twitter:title" content={fullTitle} />
             <meta name="twitter:description" content={description} />
             <meta name="twitter:image" content={imageUrl} />
+
+            {/* Schema.org */}
+            {schema && (
+                <script type="application/ld+json">
+                    {JSON.stringify(schema)}
+                </script>
+            )}
         </Helmet>
     );
 }
@@ -65,5 +73,9 @@ SEO.propTypes = {
     description: PropTypes.string.isRequired,
     path: PropTypes.string,
     image: PropTypes.string,
-    noindex: PropTypes.bool
+    noindex: PropTypes.bool,
+    schema: PropTypes.oneOfType([
+        PropTypes.object,
+        PropTypes.array
+    ])
 };

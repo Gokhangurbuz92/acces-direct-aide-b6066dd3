@@ -7,7 +7,7 @@ console.log("Verifying Handler Imports...");
 // Set dummy env vars to pass runtime checks
 const env = {
     ...process.env,
-    ENCRYPTION_KEY: '0000000000000000000000000000000000000000000000000000000000000000', // 64 chars hex = 32 bytes
+    ADA_ENCRYPTION_KEY: '0000000000000000000000000000000000000000000000000000000000000000', // 64 chars hex = 32 bytes
     JWT_SECRET: 'dummy-secret',
     CRON_SECRET: 'dummy-cron',
     DATABASE_URL: 'postgres://dummy:dummy@localhost:5432/dummy'

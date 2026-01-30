@@ -48,7 +48,7 @@ test.describe('Public Core Routes', () => {
         await page.goto('/actualites');
         await expect(page.getByRole('heading', { name: 'Actualité Test' }).first()).toBeVisible();
 
-        await page.getByText('Actualité Test').first().click();
+        await page.getByRole('link', { name: /Lire l'actualité Actualité Test/i }).first().click();
         await page.waitForURL(/\/actualites\/.+/);
         await expect(page.getByRole('heading', { name: /Actualité Test/i })).toBeVisible({ timeout: 10000 });
     });

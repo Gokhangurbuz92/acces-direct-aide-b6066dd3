@@ -18,6 +18,8 @@ find . -maxdepth 5 \
   -not -path '*/coverage' \
   -not -path '*/test-results/*' \
   -not -path '*/test-results' \
+  -not -path '*/playwright-report/*' \
+  -not -path '*/playwright-report' \
   -not -path '*/venv/*' \
   -not -path '*/venv' \
   -not -path '*/__pycache__/*' \

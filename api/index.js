@@ -126,6 +126,8 @@ export default async function handler(req, res) {
         try {
             Sentry.captureException(bootError, { tags: { requestId, phase: "boot" } });
             await Sentry.flush(2000);
-        } catch { }
+        } catch (e) {
+            // Ignore Sentry error
+        }
     }
 }

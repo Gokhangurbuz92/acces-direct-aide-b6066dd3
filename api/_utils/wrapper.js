@@ -9,10 +9,10 @@ export function createHandler(handler, schemas = {}) {
     // Generate Request ID
     const requestId = req.headers['x-request-id'] || crypto.randomUUID();
 
-    // Add requestId to Sentry Scope
-    SentryClient.configureScope(scope => {
-      scope.setTag("request_id", requestId);
-    });
+    // Add requestId to Sentry Scope (Sentry v8+ uses setTag directly)
+    if (SentryClient.setTag) {
+      SentryClient.setTag("request_id", requestId);
+    }
 
     try {
       // Validation

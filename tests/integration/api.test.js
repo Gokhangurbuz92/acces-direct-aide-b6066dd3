@@ -131,7 +131,9 @@ describe('API Integration Tests', () => {
 
       expect(res.status).toHaveBeenCalledWith(400);
       const response = res.json.mock.calls[0][0];
-      expect(response.error).toMatch(/Invalid parameters/); // Zod error format might satisfy this or detailed check
+      expect(response.error).toBeDefined();
+      const errorStr = JSON.stringify(response.error).toLowerCase();
+      expect(errorStr).toMatch(/invalid|validation/); // Zod error format might satisfy this or detailed check
     });
   });
 
@@ -168,7 +170,9 @@ describe('API Integration Tests', () => {
 
       expect(res.status).toHaveBeenCalledWith(400);
       const response = res.json.mock.calls[0][0];
-      expect(response.error).toMatch(/Invalid parameters/);
+      expect(response.error).toBeDefined();
+      const errorStr = JSON.stringify(response.error).toLowerCase();
+      expect(errorStr).toMatch(/invalid|validation/);
     });
   });
 

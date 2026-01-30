@@ -6,11 +6,27 @@ import { runIngestAids } from '../../api/_handlers/cron/ingest-aids.js';
 
 // Mock dependencies
 vi.mock('../../api/_handlers/cron/ingest-structures.js', () => ({
-    runIngestStructures: vi.fn().mockResolvedValue({ created: 10, errors: [], durationByStage: {} }),
+    runIngestStructures: vi.fn().mockResolvedValue({
+        fetched: 10,
+        processed: 10,
+        created: 10,
+        updated: 0,
+        skippedExisting: 0,
+        errors: [],
+        durationByStage: { fetchMs: 100, processingMs: 50 }
+    }),
     default: vi.fn()
 }));
 vi.mock('../../api/_handlers/cron/ingest-aids.js', () => ({
-    runIngestAids: vi.fn().mockResolvedValue({ created: 5, errors: [], durationByStage: {} }),
+    runIngestAids: vi.fn().mockResolvedValue({
+        fetched: 5,
+        processed: 5,
+        created: 5,
+        updated: 0,
+        skippedExisting: 0,
+        errors: [],
+        durationByStage: { fetchMs: 80, processingMs: 30 }
+    }),
     default: vi.fn()
 }));
 vi.mock('@prisma/client', () => {

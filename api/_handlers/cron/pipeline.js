@@ -7,8 +7,8 @@ import fs from 'fs';
 import path from 'path';
 import { summarizeToFalc } from '../../lib/falc-summarizer.js';
 import { ensureSlug } from '../../lib/slug.js';
-import ingestStructures from './ingest-structures.js';
-import ingestAids from './ingest-aids.js';
+import * as ingestStructures from './ingest-structures.js';
+import * as ingestAids from './ingest-aids.js';
 
 const prisma = new PrismaClient();
 const parser = new Parser();
@@ -112,10 +112,12 @@ export default async function handler(req, res) {
         // ==========================================
 
         if (sourceResolved === 'structures') {
-            return await ingestStructures(makeSubReq(req, { limit }), res);
+            const result = await ingestStructures.runIngestStructures({ limit, runId });
+            Object.assign(stats, result);
 
         } else if (sourceResolved === 'aides') {
-            return await ingestAids(makeSubReq(req, { limit }), res);
+            const result = await ingestAids.runIngestAids({ limit, runId });
+            Object.assign(stats, result);
 
         } else if (sourceResolved === 'rss') {
             // RSS Logic adapted for new stats
@@ -283,7 +285,7 @@ export default async function handler(req, res) {
                     duration_ms: Date.now() - startTime
                 }
             });
-        } catch (e) { }
+        } catch (e) { /* ignore */ }
 
         return res.status(502).json({
             ok: false,
@@ -291,6 +293,9 @@ export default async function handler(req, res) {
             stats
         });
     }
+
+    // Map 'created' to 'ingested' for backward compatibility
+    stats.ingested = stats.created || 0;
 
     return res.status(200).json({
         ok: true,

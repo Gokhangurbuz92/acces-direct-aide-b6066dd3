@@ -31,7 +31,10 @@ export default async function handler(req, res) {
                 include: { category: true, situations: true }
             });
 
-            if (!aide || aide.statut !== 'publie') {
+            if (!aide) return res.status(404).json({ error: "Aide non trouvée" });
+
+            // Enforce visibility
+            if (!isAdmin && aide.statut !== 'publie') {
                 return res.status(404).json({ error: "Aide non trouvée" });
             }
             return res.status(200).json(aide);

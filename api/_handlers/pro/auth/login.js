@@ -1,9 +1,7 @@
 
-import { PrismaClient } from '@prisma/client';
 import bcrypt from 'bcryptjs';
 import { signProToken, checkRateLimit, logProAudit } from '../../../lib/pro-auth.js';
-
-const prisma = new PrismaClient();
+import prisma from '../../../_utils/prisma.js';
 
 export default async function handler(req, res) {
     if (req.method !== 'POST') {
@@ -11,7 +9,8 @@ export default async function handler(req, res) {
     }
 
     const { email, password } = req.body;
-    const ip = req.headers['x-forwarded-for'] || req.socket.remoteAddress;
+    const rawIp = req.headers['x-forwarded-for'] || req.socket.remoteAddress;
+    const ip = rawIp ? String(rawIp).split(',')[0].trim() : 'unknown';
 
     if (!email || !password) {
         return res.status(400).json({ error: "Email and password required" });

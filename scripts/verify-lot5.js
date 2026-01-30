@@ -8,8 +8,8 @@ const API_URL = 'http://localhost:3000/api';
 
 // MOCK ENVS if not set (for local script execution without explicit env vars)
 // Ideally loaded from .env
-if (!process.env.ENCRYPTION_KEY) {
-    console.error("⚠️ ENCRYPTION_KEY missing. Please run with env vars.");
+if (!process.env.ADA_ENCRYPTION_KEY) {
+    console.error("⚠️ ADA_ENCRYPTION_KEY missing. Please run with env vars.");
     process.exit(1);
 }
 

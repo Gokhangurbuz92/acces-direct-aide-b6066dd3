@@ -1,5 +1,5 @@
-import React from 'react';
-import { Link, useParams, useSearchParams } from 'react-router-dom';
+import React, { useEffect } from 'react';
+import { Link, useParams, useSearchParams, useNavigate } from 'react-router-dom';
 import SEO from '@/components/SEO';
 import NotFound from "./NotFound";
 import { createPageUrl } from '@/utils';
@@ -23,6 +23,7 @@ import {
   Euro,
   Lightbulb
 } from 'lucide-react';
+import { generateBreadcrumbSchema, generateDemarcheSchema } from '@/utils/schema';
 
 const CATEGORIE_LABELS = {
   logement: 'Logement',
@@ -41,14 +42,27 @@ const CATEGORIE_LABELS = {
 export default function DemarcheDetail() {
   const { slug } = useParams();
   const [searchParams] = useSearchParams();
+  const navigate = useNavigate();
   const id = searchParams.get('id');
   const identifier = slug || id;
 
-  const { data: demarche, isLoading } = useQuery({
+  const { data: queryData, isLoading } = useQuery({
     queryKey: ['demarche', identifier],
     queryFn: () => client.entities.Demarche.filter(slug ? { slug } : { id }),
     enabled: !!identifier
   });
+
+  // Safe unwrap: The API filter might return an array or { items: [] } depending on the implementation
+  const demarche = Array.isArray(queryData)
+    ? queryData[0]
+    : (queryData?.items ? queryData?.items[0] : queryData);
+
+  // Canonical Redirect: If accessed via ID but slug exists, redirect to slug URL
+  useEffect(() => {
+    if (demarche && !slug && demarche.slug) {
+      navigate(`/demarches/${demarche.slug}`, { replace: true });
+    }
+  }, [demarche, slug, navigate]);
 
   if (isLoading) {
     return (
@@ -62,12 +76,24 @@ export default function DemarcheDetail() {
     return <NotFound />;
   }
 
+  const breadcrumbs = [
+    { name: 'Accueil', url: '/' },
+    { name: 'Démarches', url: '/demarches' },
+    { name: demarche.titre, url: `/demarches/${demarche.slug}` }
+  ];
+
+  const schema = [
+    generateBreadcrumbSchema(breadcrumbs),
+    generateDemarcheSchema(demarche)
+  ].filter(Boolean);
+
   return (
     <div className="min-h-screen bg-slate-50">
       <SEO
         title={demarche.titre}
         description={demarche.description_courte}
-        url={window.location.href}
+        path={`/demarches/${demarche.slug}`}
+        schema={schema}
       />
       {/* Fil d'Ariane */}
       <div className="bg-white border-b border-slate-200">

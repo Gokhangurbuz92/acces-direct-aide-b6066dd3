@@ -1,6 +1,6 @@
+import { isCronAuthorized } from '../../_utils/cronAuth.js';
 import { PrismaClient } from '@prisma/client';
 import crypto from 'crypto';
-// Native fetch used
 import { geocodeAddress } from '../../_utils/geocoder.js';
 
 const prisma = new PrismaClient();
@@ -24,159 +24,233 @@ function slugify(text) {
         .replace(/-+$/, '');
 }
 
-export default async function handler(req, res) {
-    // 1. Authorization
-    if (!process.env.CRON_SECRET) {
-        console.error("CRITICAL: CRON_SECRET environment variable is not defined.");
-        return res.status(500).json({ error: 'Server configuration error' });
-    }
+/**
+ * Pure ingestion logic for Structures
+ * @param {Object} params
+ * @param {number} params.limit
+ * @param {string} params.runId
+ * @returns {Promise<Object>} stats
+ */
+export async function runIngestStructures({ limit, runId }) {
+    // Log format: INGEST_<SOURCE>_ENTER url=<...>
+    // URL is from DATASETS[0] for simplicity in this loop
+    console.log(`INGEST_STRUCTURES_ENTER url=${DATASETS[0].url}`);
 
-    const secret = req.query?.secret || new URL(req.url, 'http://localhost').searchParams.get('secret');
-    const vercelCronHeader = req.headers['x-vercel-cron'];
+    // Ensure runId
+    if (!runId) runId = crypto.randomUUID();
 
-    if (secret !== process.env.CRON_SECRET && vercelCronHeader !== '1') {
-        console.warn("Unauthorized Ingest-Structures Attempt");
-        return res.status(401).json({ error: 'Unauthorized' });
-    }
-
-    const runId = crypto.randomUUID();
     const stats = {
+        fetched: 0,
+        processed: 0,
         created: 0,
         updated: 0,
-        skipped: 0,
-        errors: []
+        skippedExisting: 0,
+        errors: [],
+        durationByStage: {
+            fetchMs: 0,
+            processingMs: 0
+        }
     };
 
-    try {
-        for (const dataset of DATASETS) {
-            console.log(`Pipeline Structures: Ingesting ${dataset.name}`);
+    const startTotal = Date.now();
 
-            const response = await fetch(dataset.url);
-            if (!response.ok) {
-                stats.errors.push(`${dataset.id}: HTTP ${response.status}`);
-                continue;
-            }
+    for (const dataset of DATASETS) {
+        // console.log(`[STRUCTURES] Ingesting ${dataset.name}`);
 
-            const data = await response.json();
-            const items = data.results || data.records || [];
+        const startFetch = Date.now();
+        let response;
+        try {
+            response = await fetch(dataset.url);
+        } catch (fetchErr) {
+            stats.errors.push(`${dataset.id}: Fetch failed - ${fetchErr.message}`);
+            console.error(`[STRUCTURES] Fetch Error: ${fetchErr.message}`);
+            continue;
+        }
 
-            for (const item of items) {
-                try {
-                    const f = item.fields || item;
-                    const nom = f.nom || f.name || f.raison_sociale || f.structure_nom_usage || "Inconnu";
+        const fetchDuration = Date.now() - startFetch;
+        stats.durationByStage.fetchMs += fetchDuration;
 
-                    let fullAdresse = [f.adresse_num, f.adresse_lib, f.adresse_cplt].filter(Boolean).join(' ');
-                    if (!fullAdresse && f.adresse) fullAdresse = f.adresse;
+        // console.log(`[STRUCTURES] Fetch Status: ${response.status} CT: ${response.headers.get('content-type')}`);
 
-                    const ville = f.commune || f.ville || "Strasbourg";
-                    const cp = (f.code_postal || f.cp || "").toString();
+        if (!response.ok) {
+            const bodyText = await response.text();
+            const errorMsg = `${dataset.id}: HTTP ${response.status} - ${bodyText.substring(0, 200)}`;
+            stats.errors.push(errorMsg);
+            console.error(`[STRUCTURES] ${errorMsg}`);
+            continue;
+        }
 
-                    // Dedupe Logic: Hash of Name + Address
-                    const rawContent = `${nom}${fullAdresse}${ville}`.toLowerCase();
-                    const hash = crypto.createHash('md5').update(rawContent).digest('hex');
+        let data;
+        try {
+            data = await response.json();
+            // Log keys for diagnosis
+            // console.log(`[STRUCTURES] Data Keys: ${data ? Object.keys(data).join(',') : 'null'}`);
+        } catch (parseErr) {
+            stats.errors.push(`${dataset.id}: JSON Parse Error - ${parseErr.message}`);
+            continue;
+        }
 
-                    // Check if exists
-                    const existing = await prisma.structure.findFirst({
-                        where: {
-                            OR: [
-                                { raw_data_hash: hash },
-                                { slug: slugify(nom) + '-' + hash.substring(0, 6) }
-                            ]
+        // Handle OpenDataSoft v2.1 format: { total_count, results: [...] }
+        let items = data.results || data.records || [];
+
+        if (!Array.isArray(items)) {
+            // Fallback: maybe the root is the array?
+            if (Array.isArray(data)) items = data;
+        }
+
+        if (items.length === 0) {
+            const msg = `[STRUCTURES] 0 items found. status=${response.status} keys=${data ? Object.keys(data).join(',') : 'null'}`;
+            console.warn(msg);
+            stats.errors.push(msg);
+        }
+
+        // Log format: INGEST_<SOURCE>_FETCH_DONE status=<...> ct=<...> fetchMs=<...> items=<...>
+        console.log(`INGEST_STRUCTURES_FETCH_DONE status=${response.status} ct=${response.headers.get('content-type')} fetchMs=${fetchDuration} items=${items.length}`);
+
+        stats.fetched += items.length;
+
+        // Apply Limit
+        if (limit && limit > 0) {
+            items = items.slice(0, limit);
+        }
+
+        const startProcess = Date.now();
+        for (const item of items) {
+            stats.processed++;
+            try {
+                // Determine fields based on API version (v2.1 has direct fields, v1 had 'fields' wrapper)
+                const f = item.fields || item;
+                const nom = f.nom || f.name || f.raison_sociale || f.structure_nom_usage || "Inconnu";
+
+                let fullAdresse = [f.adresse_num, f.adresse_lib, f.adresse_cplt].filter(Boolean).join(' ');
+                if (!fullAdresse && f.adresse) fullAdresse = f.adresse;
+
+                const ville = f.commune || f.ville || "Strasbourg";
+                const cp = (f.code_postal || f.cp || "").toString();
+
+                // Dedupe Logic: Hash of Name + Address
+                const rawContent = `${nom}${fullAdresse}${ville}`.toLowerCase();
+                const hash = crypto.createHash('md5').update(rawContent).digest('hex');
+
+                // Check if exists
+                const existing = await prisma.structure.findFirst({
+                    where: {
+                        OR: [
+                            { raw_data_hash: hash },
+                            { slug: slugify(nom) + '-' + hash.substring(0, 6) }
+                        ]
+                    }
+                });
+
+                if (existing) {
+                    // UPDATE
+                    await prisma.structure.update({
+                        where: { id: existing.id },
+                        data: {
+                            last_sync: new Date(),
+                            import_batch: runId,
+                            telephone: existing.telephone || f.tel || f.telephone || null,
+                            email: existing.email || f.mail || f.email || null,
+                            site_web: existing.site_web || f.url || f.site_internet || null,
+                            raw_data_hash: hash
+                        }
+                    });
+                    stats.updated++;
+                } else {
+                    // CREATE - Valve 1: Ingest
+                    const newStructure = await prisma.structure.create({
+                        data: {
+                            nom,
+                            slug: slugify(nom) + '-' + hash.substring(0, 6),
+                            adresse: `${fullAdresse} ${cp} ${ville}`.trim(),
+                            ville,
+                            code_postal: cp,
+                            telephone: f.tel || f.telephone || null,
+                            email: f.mail || f.email || null,
+                            site_web: f.url || f.site_internet || null,
+                            source_id: dataset.id,
+                            source_url: dataset.url,
+                            raw_data_hash: hash,
+                            import_batch: runId,
+                            statut: "brouillon",
+                            import_status: "active"
                         }
                     });
 
-                    if (existing) {
-                        // UPDATE
+                    // Valve 2: Enrich (Geocoding)
+                    const geo = await geocodeAddress(`${fullAdresse}, ${cp} ${ville}`);
+                    if (geo && geo.score > 0.7) {
                         await prisma.structure.update({
-                            where: { id: existing.id },
+                            where: { id: newStructure.id },
                             data: {
-                                last_sync: new Date(),
-                                import_batch: runId,
-                                telephone: existing.telephone || f.tel || f.telephone || null,
-                                email: existing.email || f.mail || f.email || null,
-                                site_web: existing.site_web || f.url || f.site_internet || null,
-                                raw_data_hash: hash
+                                latitude: geo.lat,
+                                longitude: geo.lng,
+                                geoloc_status: "success",
+                                quality_score: 80
                             }
                         });
-                        stats.updated++;
                     } else {
-                        // CREATE - Valve 1: Ingest
-                        const newStructure = await prisma.structure.create({
-                            data: {
-                                nom,
-                                slug: slugify(nom) + '-' + hash.substring(0, 6),
-                                adresse: `${fullAdresse} ${cp} ${ville}`.trim(),
-                                ville,
-                                code_postal: cp,
-                                telephone: f.tel || f.telephone || null,
-                                email: f.mail || f.email || null,
-                                site_web: f.url || f.site_internet || null,
-                                source_id: dataset.id,
-                                source_url: dataset.url,
-                                raw_data_hash: hash,
-                                import_batch: runId,
-                                statut: "brouillon",
-                                import_status: "active"
-                            }
+                        await prisma.structure.update({
+                            where: { id: newStructure.id },
+                            data: { geoloc_status: "failed", quality_score: 40 }
                         });
+                    }
 
-                        // Valve 2: Enrich (Geocoding)
-                        const geo = await geocodeAddress(`${fullAdresse}, ${cp} ${ville}`);
-                        if (geo && geo.score > 0.7) {
+                    // Valve 3: Publish
+                    if (dataset.trust_level === "OFFICIAL") {
+                        const updated = await prisma.structure.findUnique({ where: { id: newStructure.id } });
+                        if (updated.quality_score >= 80) {
                             await prisma.structure.update({
                                 where: { id: newStructure.id },
                                 data: {
-                                    latitude: geo.lat,
-                                    longitude: geo.lng,
-                                    geoloc_status: "success",
-                                    quality_score: 80
+                                    statut: "actif",
+                                    published_at: new Date()
                                 }
                             });
-                        } else {
-                            await prisma.structure.update({
-                                where: { id: newStructure.id },
-                                data: { geoloc_status: "failed", quality_score: 40 }
-                            });
                         }
-
-                        // Valve 3: Publish
-                        if (dataset.trust_level === "OFFICIAL") {
-                            const updated = await prisma.structure.findUnique({ where: { id: newStructure.id } });
-                            if (updated.quality_score >= 80) {
-                                await prisma.structure.update({
-                                    where: { id: newStructure.id },
-                                    data: {
-                                        statut: "actif",
-                                        published_at: new Date()
-                                    }
-                                });
-                            }
-                        }
-
-                        stats.created++;
                     }
-                } catch (recErr) {
-                    console.error("Structure Record Error:", recErr.message);
-                    stats.errors.push(`Record fail: ${recErr.message}`);
+
+                    stats.created++;
                 }
+            } catch (recErr) {
+                console.error("Structure Record Error:", recErr.message);
+                stats.errors.push(`Record fail: ${recErr.message}`);
             }
         }
+        stats.durationByStage.processingMs += (Date.now() - startProcess);
+    }
 
-        // Log the Run
+    // Log the Run
+    try {
         await prisma.importLog.create({
             data: {
                 source_name: 'CRON_STRUCTURES_ALSACE',
                 status: stats.errors.length > 0 ? 'PARTIAL' : 'SUCCESS',
                 items_new: stats.created,
-                items_total: stats.created + stats.updated,
-                logs: stats.errors.length ? JSON.stringify(stats.errors) : null
+                items_total: stats.processed,
+                logs: stats.errors.length ? JSON.stringify(stats.errors) : null,
+                duration_ms: Date.now() - startTotal
             }
         });
+    } catch (e) { console.error("Log Create Failed", e); }
 
-    } catch (globalErr) {
-        console.error("Structures Pipeline Global Error:", globalErr);
-        return res.status(500).json({ error: globalErr.message });
+    return stats;
+}
+
+export default async function handler(req, res) {
+    // 1. Authorization
+    if (!isCronAuthorized(req)) {
+        console.warn("Unauthorized Ingest-Structures Attempt");
+        return res.status(401).json({ error: 'Unauthorized' });
     }
 
-    return res.status(200).json(stats);
+    const limit = req.query.limit ? parseInt(req.query.limit, 10) : undefined;
+
+    try {
+        const stats = await runIngestStructures({ limit, runId: crypto.randomUUID() });
+        return res.status(200).json(stats);
+    } catch (err) {
+        console.error("Handler Structure Error", err);
+        return res.status(500).json({ error: err.message });
+    }
 }

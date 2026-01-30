@@ -13,13 +13,13 @@ export default function DemarcheCard({ demarche }) {
   const targetUrl = demarche.slug ? `/demarches/${demarche.slug}` : `/demarches/view?id=${demarche.id}`;
 
   return (
-    <Card className="hover:shadow-md transition-all border-slate-200 overflow-hidden group relative bg-white">
+    <Card className="hover:shadow-md transition-all border-slate-200 overflow-hidden group relative bg-white" data-testid="demarche-card">
       <Link
         to={targetUrl}
         className="absolute inset-0 z-10 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 rounded-xl"
         aria-label={`Voir la démarche ${demarche.titre}`}
       >
-         <span className="sr-only">Voir la démarche {demarche.titre}</span>
+        <span className="sr-only">Voir la démarche {demarche.titre}</span>
       </Link>
 
       <CardContent className="p-0">
@@ -32,7 +32,7 @@ export default function DemarcheCard({ demarche }) {
               <FileText className="h-5 w-5 text-blue-600" />
             </div>
           </div>
-          <h3 className="text-lg font-bold text-slate-900 group-hover:text-blue-700 transition-colors mb-2">
+          <h3 className="text-lg font-bold text-slate-900 group-hover:text-blue-700 transition-colors mb-2" data-testid="demarche-title">
             {demarche.titre}
           </h3>
           <p className="text-slate-600 text-sm line-clamp-2 mb-6">

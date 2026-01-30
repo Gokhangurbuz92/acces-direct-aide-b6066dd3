@@ -1,5 +1,5 @@
 
-/* eslint-env node */
+
 import busboy from 'busboy';
 import { encryptBuffer, encrypt, hash } from '../lib/crypto.js';
 import { storage } from '../lib/storage.js';
@@ -73,7 +73,7 @@ export default async function handler(req, res) {
                 const proAuth = await verifyProToken(req);
                 if (proAuth) {
                     if (appointment.structureId !== proAuth.structureId) {
-                         return resolve(res.status(403).json({ error: "Forbidden: Different Structure" }));
+                        return resolve(res.status(403).json({ error: "Forbidden: Different Structure" }));
                     }
                     senderRole = 'PRO';
                 }
@@ -83,7 +83,7 @@ export default async function handler(req, res) {
                     if (!access_token) return resolve(res.status(401).json({ error: "Unauthorized" }));
                     const tokenHash = hash(access_token);
                     if (appointment.access_token_hash !== tokenHash) {
-                         return resolve(res.status(401).json({ error: "Invalid token" }));
+                        return resolve(res.status(401).json({ error: "Invalid token" }));
                     }
                     senderRole = 'BENEFICIARY';
                 }

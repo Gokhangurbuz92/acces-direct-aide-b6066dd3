@@ -1,85 +1,75 @@
-# Carte du Répertoire (Repository Map)
+# Cartographie du Dépôt (Official Repository Map)
 
-Ce document décrit l'organisation du code source du projet **AccesDirectAide**.
+## 1. Racine / Configuration
+**Dossier :** `/`
+- **Rôle :** Configuration globale du projet, dépendances, règles de build et de déploiement.
+- **Fichiers clés :**
+  - `package.json` : Dépendances et scripts NPM.
+  - `vite.config.js` : Configuration du build Front (Vite).
+  - `vercel.json` : Configuration du déploiement Vercel (rewrites, crons, headers).
+  - `.env.example` : Template des variables d'environnement.
+  - `eslint.config.js` : Règles de linting.
+- **Owner :** DevOps / Tech Lead.
+- **Risques :** Une mauvaise configuration ici casse le build ou le déploiement (ex: variables manquantes).
 
-## 1. Racine & Configuration
+## 2. Front App (SPA)
+**Dossier :** `src/`
+- **Rôle :** Application React (SPA) côté client.
+- **Sous-dossiers :**
+  - `pages/` : Composants pages (vues).
+  - `components/` : Composants UI réutilisables.
+  - `api/` : Client API (fetch wrappers).
+  - `hooks/` : Hooks React personnalisés.
+  - `utils/` : Utilitaires front-end.
+- **Owner :** Front-end Developer.
+- **Risques :** Routes orphelines, erreurs de rendu, appels API incorrects.
 
-| Fichier / Dossier | Rôle |
-| ----------------- | ---- |
-| `README.md` | Point d'entrée, documentation générale. |
-| `package.json` | Définition des dépendances et scripts NPM. |
-| `vite.config.js` | Configuration du bundler Vite (Frontend). |
-| `vercel.json` | Configuration du déploiement Vercel (rewrites, crons, headers). |
-| `eslint.config.js` | Configuration du linter ESLint. |
-| `.gitignore` | Exclusions Git (fichiers générés, secrets). |
-| `.env.example` | Modèle des variables d'environnement requises. |
+## 3. API (Serverless)
+**Dossier :** `api/`
+- **Rôle :** Backend serverless (Vercel Functions).
+- **Structure :**
+  - `index.js` : Point d'entrée unique (monolithic entrypoint).
+  - `routes.js` : Mapping centralisé des routes vers les handlers.
+  - `_handlers/` : Logique métier par domaine (aides, demarches, booking...).
+  - `_utils/` : Fonctions transverses (auth, rateLimit, crypto).
+  - `lib/` : Bibliothèques métier (ex: falc-summarizer).
+- **Owner :** Back-end Developer.
+- **Risques :** Shadowing de routes, failles de sécurité (auth bypass), timeouts.
 
-## 2. Frontend (`src/`)
+## 4. Prisma (Base de données)
+**Dossier :** `prisma/`
+- **Rôle :** ORM, Schéma de base de données et Migrations.
+- **Fichiers clés :**
+  - `schema.prisma` : Définition des modèles de données.
+  - `migrations/` : Historique des changements de schéma SQL.
+  - `seed.js` : Script de peuplement initial.
+- **Owner :** Database Engineer / Back-end.
+- **Risques :** Perte de données, migrations destructives, désynchronisation code/DB.
 
-L'application est une Single Page Application (SPA) React construite avec Vite.
+## 5. Scripts (Ops & CI)
+**Dossier :** `scripts/`
+- **Rôle :** Scripts d'automatisation, vérification, ingestion de données et maintenance.
+- **Types de scripts :**
+  - `verify-*.js` : Tests de santé et vérifications post-déploiement.
+  - `seed-*.js` : Scripts d'import de données.
+  - `generate-*.js` : Génération d'artefacts (build-info, repo-map).
+- **Owner :** Ops / DevOps.
+- **Risques :** Scripts obsolètes, corruption de données en prod si mal utilisés.
 
-| Dossier | Contenu |
-| ------- | ------- |
-| `src/pages/` | Composants de pages (Vues). Contient aussi le routeur `index.jsx`. |
-| `src/components/` | Composants React réutilisables (UI, Layout, Business). |
-| `src/api/` | Client API frontend (appels vers le backend). |
-| `src/hooks/` | Hooks React personnalisés. |
-| `src/lib/` | Utilitaires frontend (ex: `utils.js`). |
-| `src/utils/` | Fonctions utilitaires partagées. |
+## 6. Documentation
+**Dossier :** `docs/`
+- **Rôle :** Documentation technique, fonctionnelle et opérationnelle.
+- **Fichiers clés :** `REPO_MAP.md`, `ROUTES_API.md`, `ROUTES_FRONT.md`, `RUNBOOK.md`.
+- **Owner :** Tout le monde.
 
-## 3. API Backend (`api/`)
+## 7. Data
+**Dossier :** `data/`
+- **Rôle :** Données statiques brutes (CSV, JSON) pour les seeds ou les tests.
+- **Owner :** Product Manager / Data.
 
-Architecture Serverless (Vercel Functions) simulant une API monolithique via un routeur central.
-
-| Dossier | Contenu |
-| ------- | ------- |
-| `api/index.js` | Point d'entrée de la fonction serverless. |
-| `api/routes.js` | Définition centralisée des routes et mapping vers les handlers. |
-| `api/_handlers/` | Logique métier des endpoints (Aides, Démarches, Structures, etc.). |
-| `api/_utils/` | Utilitaires transverses (Auth, RateLimit, Crypto, Sentry). |
-| `api/lib/` | Services et bibliothèques métier (Storage, Search, FALC). |
-
-## 4. Base de Données (`prisma/`)
-
-Le projet utilise Prisma comme ORM avec une base PostgreSQL (Neon).
-
-| Fichier / Dossier | Rôle |
-| ----------------- | ---- |
-| `prisma/schema.prisma` | Définition du modèle de données. |
-| `prisma/migrations/` | Historique des migrations de base de données. |
-| `prisma/seed.js` | Script de peuplement initial de la base de données. |
-
-## 5. Scripts & Outillage (`scripts/`)
-
-Scripts de maintenance, vérification, ingestion de données et CI.
-
-| Type | Exemples |
-| ---- | -------- |
-| **Ingestion** | `import-csv.js`, `seed-*.js` |
-| **Vérification** | `verify-*.js`, `ci-healthcheck.js` |
-| **Maintenance** | `generate-repo-map.sh`, `backfill-slugs.js` |
-
-## 6. Documentation (`docs/`)
-
-Documentation technique et fonctionnelle du projet.
-
-| Fichier | Sujet |
-| ------- | ----- |
-| `REPO_MAP.md` | Cette carte. |
-| `ROUTES_FRONT.md` | Liste des routes frontend et pages associées. |
-| `ROUTES_API.md` | Documentation des endpoints API. |
-| `RUNBOOK.md` | Procédures d'exploitation et gestion d'incidents. |
-
-## 7. Données (`data/`)
-
-Fichiers de données statiques ou sources pour l'ingestion (CSV, JSON).
-
-## 8. Tests (`e2e/`, `tests/`)
-
-| Dossier | Type de test |
-| ------- | ------------ |
-| `e2e/` | Tests End-to-End (Playwright). |
-| `tests/` | Tests d'intégration et unitaires. |
-
----
-**Note:** Ce fichier est maintenu manuellement pour décrire la structure logique. Pour la liste exhaustive des fichiers, voir `docs/REPO_FILES.txt`.
+## 8. Tests
+**Dossiers :** `tests/` (Unit/Integration), `e2e/` (End-to-End)
+- **Rôle :** Assurance qualité.
+- **Outils :** Vitest (Unit), Playwright (E2E).
+- **Owner :** QA / Dev.
+- **Risques :** Tests instables (flaky) bloquant la CI.

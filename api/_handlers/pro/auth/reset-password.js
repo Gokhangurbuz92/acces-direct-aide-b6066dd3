@@ -1,10 +1,8 @@
-import { PrismaClient } from '@prisma/client';
 import { kv } from '../../../_utils/kv.js';
 import bcrypt from 'bcryptjs';
 import { checkRateLimit } from '../../../_utils/rateLimit.js';
 import { logProAudit } from '../../../lib/pro-auth.js';
-
-const prisma = new PrismaClient();
+import prisma from '../../../_utils/prisma.js';
 
 export default async function handler(req, res) {
     if (req.method !== 'POST') {
@@ -12,7 +10,8 @@ export default async function handler(req, res) {
     }
 
     const { token, password } = req.body;
-    const ip = req.headers['x-forwarded-for'] || req.socket.remoteAddress;
+    const rawIp = req.headers['x-forwarded-for'] || req.socket.remoteAddress;
+    const ip = rawIp ? String(rawIp).split(',')[0].trim() : 'unknown';
 
     if (!token || !password) {
         return res.status(400).json({ error: "Missing fields" });

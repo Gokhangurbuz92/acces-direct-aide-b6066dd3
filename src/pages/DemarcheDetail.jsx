@@ -46,11 +46,16 @@ export default function DemarcheDetail() {
   const id = searchParams.get('id');
   const identifier = slug || id;
 
-  const { data: demarche, isLoading } = useQuery({
+  const { data: queryData, isLoading } = useQuery({
     queryKey: ['demarche', identifier],
     queryFn: () => client.entities.Demarche.filter(slug ? { slug } : { id }),
     enabled: !!identifier
   });
+
+  // Safe unwrap: The API filter might return an array or { items: [] } depending on the implementation
+  const demarche = Array.isArray(queryData)
+    ? queryData[0]
+    : (queryData?.items ? queryData?.items[0] : queryData);
 
   // Canonical Redirect: If accessed via ID but slug exists, redirect to slug URL
   useEffect(() => {

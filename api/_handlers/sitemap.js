@@ -1,4 +1,3 @@
-/* eslint-disable no-undef */
 import { PrismaClient } from '@prisma/client';
 import { getCanonicalBaseUrl, isIndexable } from '../_utils/seo.js';
 import crypto from 'crypto';

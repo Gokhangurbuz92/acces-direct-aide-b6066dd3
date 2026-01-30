@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { History, RotateCcw, Clock, User, AlertCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Alert, AlertDescription } from '@/components/ui/alert';
@@ -13,9 +13,9 @@ export default function EntityHistory({ entityType, entityId, onRestored }) {
 
     useEffect(() => {
         fetchVersions();
-    }, [entityType, entityId]);
+    }, [fetchVersions]);
 
-    const fetchVersions = async () => {
+    const fetchVersions = useCallback(async () => {
         try {
             setLoading(true);
             const token = localStorage.getItem('token');
@@ -30,7 +30,7 @@ export default function EntityHistory({ entityType, entityId, onRestored }) {
         } finally {
             setLoading(false);
         }
-    };
+    }, [entityType, entityId]);
 
     const handleRestore = async (versionId) => {
         if (!window.confirm("Voulez-vous vraiment restaurer cette version ? L'état actuel sera sauvegardé avant la restauration.")) return;

@@ -1,0 +1,3 @@
+CP3 E2E Report
+Generated: 2026-01-27T20:36:01.141Z
+All scenarios (Aides, Structures, Demarches, Actualites) passed redirection checks.

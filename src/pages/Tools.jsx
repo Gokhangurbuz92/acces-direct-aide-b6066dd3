@@ -21,29 +21,28 @@ export default function Tools() {
     }, []);
 
     useEffect(() => {
+        async function fetchTools() {
+            setLoading(true);
+            const query = new URLSearchParams();
+            if (filters.type) query.append('type', filters.type);
+            if (filters.categorie) query.append('categorie', filters.categorie);
+            if (filters.public) query.append('public', filters.public);
+            query.append('statut', 'publie');
+
+            try {
+                const res = await fetch(`/api/tools?${query.toString()}`);
+                if (res.ok) {
+                    const data = await res.json();
+                    setTools(data);
+                }
+            } catch (e) {
+                console.error("Error fetching tools", e);
+            } finally {
+                setLoading(false);
+            }
+        }
         fetchTools();
     }, [filters]);
-
-    async function fetchTools() {
-        setLoading(true);
-        const query = new URLSearchParams();
-        if (filters.type) query.append('type', filters.type);
-        if (filters.categorie) query.append('categorie', filters.categorie);
-        if (filters.public) query.append('public', filters.public);
-        query.append('statut', 'publie');
-
-        try {
-            const res = await fetch(`/api/tools?${query.toString()}`);
-            if (res.ok) {
-                const data = await res.json();
-                setTools(data);
-            }
-        } catch (e) {
-            console.error("Error fetching tools", e);
-        } finally {
-            setLoading(false);
-        }
-    }
 
     const typeLabels = {
         methode: "Méthode",

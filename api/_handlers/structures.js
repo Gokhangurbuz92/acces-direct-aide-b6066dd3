@@ -7,6 +7,11 @@ const prisma = new PrismaClient();
 
 export default async function handler(req, res) {
     try {
+        // CRUD Operations
+        if (req.method === 'POST') return createEntity(req, res, prisma.structure);
+        if (req.method === 'PUT') return updateEntity(req, res, prisma.structure);
+        if (req.method === 'DELETE') return deleteEntity(req, res, prisma.structure);
+
         if (req.method !== 'GET') {
             return res.status(405).json({ error: 'Method not allowed' });
         }

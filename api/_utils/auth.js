@@ -11,8 +11,6 @@ export function verifyAdmin(req) {
     const authHeader = req.headers['authorization'] || req.headers['Authorization'];
     if (!authHeader || !authHeader.startsWith('Bearer ')) return false;
 
-    // 2. Extract token
-    // Format: "Bearer <token>"
     const token = authHeader.split(' ')[1];
 
     // Constant-time comparison to prevent timing attacks
@@ -24,9 +22,9 @@ export function verifyAdmin(req) {
     return crypto.timingSafeEqual(tokenBuffer, adminTokenBuffer);
 };
 
-export const getAuthenticatedUser = async (req) => {
+export async function getAuthenticatedUser(req) {
     if (verifyAdmin(req)) {
-        return { email: 'admin@system', role: 'admin' };
+        return { email: 'admin@accesdirectaide.fr', role: 'admin' };
     }
     return null;
-};
+}

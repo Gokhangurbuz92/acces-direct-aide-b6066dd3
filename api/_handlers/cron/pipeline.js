@@ -7,8 +7,8 @@ import fs from 'fs';
 import path from 'path';
 import { summarizeToFalc } from '../../lib/falc-summarizer.js';
 import { ensureSlug } from '../../lib/slug.js';
-import ingestStructures from './ingest-structures.js';
-import ingestAids from './ingest-aids.js';
+import { runIngestStructures } from './ingest-structures.js';
+import { runIngestAids } from './ingest-aids.js';
 
 const prisma = new PrismaClient();
 const parser = new Parser();
@@ -28,13 +28,18 @@ function slugify(text) {
 }
 
 export default async function handler(req, res) {
+    // SENTINEL: Logic Entry
+    const runId = crypto.randomUUID();
+    const query = req.query || {}; // Safe access
+    const sourceLog = query.source || 'N/A';
+    console.log(`PIPELINE_LOGIC_ENTER source=${sourceLog} runId=${runId}`);
+
     // 1. Authorization
     if (!isCronAuthorized(req)) {
         console.warn("Unauthorized Pipeline Attempt");
         return res.status(401).json({ error: 'Unauthorized' });
     }
 
-    const query = req.query || {};
     // 2. Validation & Parameters (with Aliases)
     let sourceInput = query.source;
     let sourceResolved = sourceInput;
@@ -56,10 +61,9 @@ export default async function handler(req, res) {
         });
     }
 
-    const runId = crypto.randomUUID();
-
-    // Enhanced Stats Logic
+    // Enhanced Stats Logic (Explicit 'ingested' for contract compliance)
     const stats = {
+        ingested: 0, // Requirement: stats.ingested != null
         fetched: 0,
         processed: 0,
         created: 0,
@@ -95,6 +99,9 @@ export default async function handler(req, res) {
         stats.updated += (subStats.updated || 0);
         stats.skippedExisting += (subStats.skippedExisting || 0);
 
+        // Map created -> ingested for legacy contract compliance
+        stats.ingested = stats.created;
+
         if (subStats.errors && Array.isArray(subStats.errors)) {
             stats.errors.push(...subStats.errors);
         }
@@ -111,47 +118,27 @@ export default async function handler(req, res) {
     );
 
     const pipelineLogic = async () => {
+        console.log("[PIPELINE] calling ingester", { sourceResolved, mode, limit });
+
         // ==========================================
         // ROUTING LOGIC
         // ==========================================
 
-        // Pass original headers to sustain auth
-        const proxyHeaders = req.headers || {};
-
         if (sourceResolved === 'structures') {
             try {
-                const subQuery = { secret: process.env.CRON_SECRET };
-                if (limit) subQuery.limit = limit.toString();
-                await ingestStructures({ query: subQuery }, {
-                    status: () => ({
-                        json: (d) => {
-                            if (d) {
-                                stats.ingested += (d.created || 0);
-                                if (d.errors) stats.errors.push(...d.errors);
-                            }
-                        }
-                    })
-                });
+                const result = await runIngestStructures({ limit, runId });
+                console.log("[PIPELINE] ingester result", result && Object.keys(result));
+                mergeStats(result);
             } catch (e) {
                 console.error("Pipeline: Ingest Structures failed", e);
                 stats.errors.push(`Structures failed: ${e.message}`);
-                // Don't throw logic error to crash pipeline stats return if possible
             }
 
         } else if (sourceResolved === 'aides') {
             try {
-                const subQuery = { secret: process.env.CRON_SECRET };
-                if (limit) subQuery.limit = limit.toString();
-                await ingestAids({ query: subQuery }, {
-                    status: () => ({
-                        json: (d) => {
-                            if (d) {
-                                stats.ingested += (d.created || 0);
-                                if (d.errors) stats.errors.push(...d.errors);
-                            }
-                        }
-                    })
-                });
+                const result = await runIngestAids({ limit, runId });
+                console.log("[PIPELINE] ingester result", result && Object.keys(result));
+                mergeStats(result);
             } catch (e) {
                 console.error("Pipeline: Ingest Aids failed", e);
                 stats.errors.push(`Aids failed: ${e.message}`);
@@ -235,6 +222,9 @@ export default async function handler(req, res) {
                             } else {
                                 stats.skippedExisting++;
                             }
+                            // Map to ingested
+                            stats.ingested = stats.created;
+
                             processedCount++;
                         } catch (e) {
                             // ignore unique constraints
@@ -291,6 +281,33 @@ export default async function handler(req, res) {
             sourceResolved,
             mode,
             durationMs: Date.now() - startTime
+        });
+    }
+
+    // STRICT CONTRACT: Check for Silent Failure / "Success Vide"
+    // Condition: (fetchMs=0 AND errors=[]) AND fetched=0.
+    // We only fail if we fetched nothing AND took 0ms AND had no errors.
+    // If we fetched items, 0ms (e.g. in tests) is acceptable.
+    if (stats.fetched === 0 && stats.durationByStage.fetchMs === 0 && stats.errors.length === 0) {
+        const errorMsg = "PIPELINE_NOOP: Execution yielded zero fetched results with no errors. This is a contract violation.";
+        console.error(errorMsg);
+
+        // Log this specific failure
+        try {
+            await prisma.importLog.create({
+                data: {
+                    source_name: `CRON_${sourceResolved ? sourceResolved.toUpperCase() : 'UNKNOWN'}`,
+                    status: 'ERROR',
+                    logs: JSON.stringify([errorMsg]),
+                    duration_ms: Date.now() - startTime
+                }
+            });
+        } catch (e) { }
+
+        return res.status(502).json({
+            ok: false,
+            error: errorMsg,
+            stats
         });
     }
 

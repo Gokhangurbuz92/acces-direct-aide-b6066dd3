@@ -1,51 +1,44 @@
-// Rate Limiter: Hybrid (KV Redis + Standard Redis + In-Memory Fallback)
+// Rate Limiter: Upstash REST (Primary) + In-Memory Fallback
 import crypto from 'crypto';
-import { createClient as createVercelClient } from '@vercel/kv';
-import { createClient as createRedisClient } from 'redis';
+import { Redis } from '@upstash/redis';
+import { Ratelimit } from '@upstash/ratelimit';
 
 // 1. Determine Backend Type
-const envUrl = process.env.KV_REST_API_URL || process.env.STORAGE_REST_API_URL;
-const envToken = process.env.KV_REST_API_TOKEN || process.env.STORAGE_REST_API_TOKEN;
-const envRedisUrl = process.env.REDIS_URL;
+// STRICT: Only use REST API (Upstash / Vercel KV)
+const envUrl = process.env.KV_REST_API_URL || process.env.UPSTASH_REDIS_REST_URL;
+const envToken = process.env.KV_REST_API_TOKEN || process.env.UPSTASH_REDIS_REST_TOKEN;
 
 const hasHttpKv = !!(envUrl && envToken);
-const hasRedisUrl = !!envRedisUrl && !hasHttpKv;
-
-const USE_KV = hasHttpKv || hasRedisUrl;
-const BACKEND_NAME = hasHttpKv ? "KV_HTTP" : (hasRedisUrl ? "KV_REDIS_URL" : "MEMORY_FALLBACK");
+const BACKEND_NAME = hasHttpKv ? "KV_REST_API" : "MEMORY";
 
 console.log(`[RateLimit] Init: Backend=${BACKEND_NAME}`);
 
 // 2. Initialize Clients
-let kvClient = null;
-let redisClient = null;
+let redisClient = null; // Module-level singleton
+const limiterCache = new Map(); // Cache for per-action limiters
 
 if (hasHttpKv) {
-    kvClient = createVercelClient({
+    redisClient = new Redis({
         url: envUrl,
-        token: envToken
+        token: envToken,
     });
-} else if (hasRedisUrl) {
-    // Standard Redis Client (lazy connection handled in wrapper)
-    redisClient = createRedisClient({ url: envRedisUrl });
-    redisClient.on('error', err => console.error('[RateLimit] Redis Client Error', err));
 }
 
 // Fallback in-memory store
 const memoryStore = new Map();
 
 const CONFIG = {
-    OTP_GEN: { limit: 3, window: 60 * 1000 },    // 3 per min
-    OTP_VERIFY: { limit: 5, window: 60 * 1000 }, // 5 per min
-    BOOK: { limit: 10, window: 60 * 60 * 1000 }, // 10 per hour
-    CONFIRM: { limit: 10, window: 60 * 60 * 1000 }, // 10 per hour
+    OTP_GEN: { limit: 3, window: 60 },      // 3 per min
+    OTP_VERIFY: { limit: 5, window: 60 },   // 5 per min
+    BOOK: { limit: 10, window: 3600 },      // 10 per hour
+    CONFIRM: { limit: 10, window: 3600 },   // 10 per hour
     // Auth
-    LOGIN_PRO: { limit: 5, window: 15 * 60 * 1000 },     // 5 per 15 min
-    RESET_PASSWORD: { limit: 3, window: 60 * 60 * 1000 }, // 3 per hour
+    LOGIN_PRO: { limit: 5, window: 900 },   // 5 per 15 min
+    RESET_PASSWORD: { limit: 3, window: 3600 }, // 3 per hour
     // Search & Taxonomy
-    SEARCH_AIDES: { limit: 30, window: 60 * 1000 },      // 30 per min
-    SEARCH_STRUCTURES: { limit: 30, window: 60 * 1000 }, // 30 per min
-    TAXONOMY: { limit: 60, window: 60 * 1000 }           // 60 per min
+    SEARCH_AIDES: { limit: 30, window: 60 },      // 30 per min
+    SEARCH_STRUCTURES: { limit: 30, window: 60 }, // 30 per min
+    TAXONOMY: { limit: 60, window: 60 }           // 60 per min
 };
 
 function hashKey(key) {
@@ -58,10 +51,12 @@ function checkRateLimitInMemory(action, identifier) {
     const now = Date.now();
     const key = `${action}:${identifier}`;
     const hashedKey = hashKey(key);
+    // Convert seconds to ms for memory check
+    const windowMs = config.window * 1000;
 
     const record = memoryStore.get(key) || { count: 0, startTime: now };
 
-    if (now - record.startTime > config.window) {
+    if (now - record.startTime > windowMs) {
         record.count = 0;
         record.startTime = now;
     }
@@ -76,38 +71,37 @@ function checkRateLimitInMemory(action, identifier) {
     return { allowed: true };
 }
 
-// Internal: Vercel KV / Redis Implementation
+// Internal: Vercel KV / Upstash REST Implementation
 async function checkRateLimitKV(action, identifier) {
     const config = CONFIG[action];
-    const key = `ratelimit:${action}:${identifier}`;
+    const key = `${action}:${identifier}`;
     const hashedKey = hashKey(key);
 
     try {
-        let count;
+        // Reuse or Create Limiter for this Action
+        let actionLimiter = limiterCache.get(action);
 
-        if (hasHttpKv) {
-            // Vercel KV (HTTP)
-            count = await kvClient.incr(key);
-            if (count === 1) {
-                await kvClient.expire(key, Math.floor(config.window / 1000));
-            }
-        } else if (hasRedisUrl) {
-            // Standard Redis (TCP)
-            if (!redisClient.isOpen) await redisClient.connect();
-
-            count = await redisClient.incr(key);
-            if (count === 1) {
-                await redisClient.expire(key, Math.floor(config.window / 1000));
-            }
+        if (!actionLimiter) {
+            actionLimiter = new Ratelimit({
+                redis: redisClient, // Reuse singleton client
+                limiter: Ratelimit.slidingWindow(config.limit, `${config.window} s`),
+                analytics: false,
+                prefix: "@upstash/ratelimit"
+            });
+            limiterCache.set(action, actionLimiter);
         }
 
-        if (count > config.limit) {
-            console.warn(`[AUDIT] Rate Limit Denied: Backend=${BACKEND_NAME} Action=${action} KeyHash=${hashedKey} Count=${count}`);
+        const { success, limit, remaining } = await actionLimiter.limit(key);
+
+        if (!success) {
+            console.warn(`[AUDIT] Rate Limit Denied: Backend=${BACKEND_NAME} Action=${action} KeyHash=${hashedKey} Remaining=${remaining}`);
             return { allowed: false, error: getErrorObject() };
         }
+
         return { allowed: true };
+
     } catch (e) {
-        console.error(`[RateLimit] KV/Redis Error (Switching to Memory):`, e);
+        console.error(`[RateLimit] KV REST Error (Switching to Memory):`, e);
         return checkRateLimitInMemory(action, identifier);
     }
 }
@@ -133,7 +127,7 @@ export async function checkRateLimit(action, identifier) {
     const config = CONFIG[action];
     if (!config) throw new Error(`Unknown action: ${action}`);
 
-    if (USE_KV) {
+    if (hasHttpKv) {
         return checkRateLimitKV(action, identifier);
     } else {
         return checkRateLimitInMemory(action, identifier);

@@ -32,7 +32,7 @@ describe('Sitemap Handler', () => {
         };
         res = {
             setHeader: vi.fn(),
-            writeHeader: vi.fn(),
+
             writeHead: vi.fn(),
             end: vi.fn(),
             status: vi.fn().mockReturnThis(),

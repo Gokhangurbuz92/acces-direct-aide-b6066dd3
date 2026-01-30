@@ -98,7 +98,7 @@ ${urls.join('\n')}
             return;
         }
 
-        res.writeHeader(200, {
+        res.writeHead(200, {
             'Content-Type': 'application/xml; charset=utf-8',
             'Cache-Control': 'public, s-maxage=3600, stale-while-revalidate=600',
             'X-Robots-Tag': indexable ? 'all' : 'noindex, nofollow',
@@ -119,7 +119,7 @@ ${urls.join('\n')}
   <url><loc>https://www.accesdirectaide.fr/</loc><priority>1.0</priority></url>
 </urlset>`;
 
-        res.writeHeader(200, {
+        res.writeHead(200, {
             'Content-Type': 'application/xml; charset=utf-8'
         });
         res.end(fallbackXml);

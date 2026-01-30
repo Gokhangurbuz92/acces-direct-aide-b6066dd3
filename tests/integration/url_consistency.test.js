@@ -35,7 +35,7 @@ describe('URL Canonical Consistency', () => {
 
         // Mock Response
         const res = {
-            writeHeader: vi.fn(),
+
             end: vi.fn(),
             writeHead: vi.fn()
         };

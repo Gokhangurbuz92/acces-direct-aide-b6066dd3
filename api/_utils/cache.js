@@ -1,7 +1,9 @@
 export function getHeader(res, key) {
     try {
         if (typeof res.getHeader === "function") return res.getHeader(key);
-    } catch { }
+    } catch {
+        // Intentionally ignore: res object may not support getHeader in all environments
+    }
     return undefined;
 }
 
@@ -9,7 +11,9 @@ export function setHeader(res, key, value) {
     try {
         if (typeof res.setHeader === "function") return res.setHeader(key, value);
         if (typeof res.set === "function") return res.set(key, value);
-    } catch { }
+    } catch {
+        // Intentionally ignore: res object may not support setHeader/set in all environments
+    }
 }
 
 export function setCachePolicyTag(res, value) {
@@ -23,7 +27,9 @@ export function setCachePolicyTag(res, value) {
     try {
         if (typeof res.setHeader === "function") return res.setHeader("x-cache-policy", value);
         if (typeof res.set === "function") return res.set("x-cache-policy", value);
-    } catch { }
+    } catch {
+        // Intentionally ignore: debug header is optional, failure is non-critical
+    }
 }
 
 export function hasAuthHeader(req) {

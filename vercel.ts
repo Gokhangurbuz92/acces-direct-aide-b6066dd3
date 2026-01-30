@@ -41,7 +41,7 @@ const config = {
                 },
                 {
                     key: "x-release-sha",
-                    value: process.env.VERCEL_GIT_COMMIT_SHA ?? "unknown"
+                    value: "git-sha-placeholder"
                 },
             ],
         },

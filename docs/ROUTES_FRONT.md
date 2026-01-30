@@ -1,62 +1,91 @@
-# Cartographie des Routes Front-End
+# Cartographie des Routes Frontend
 
-Ce document liste l'ensemble des routes définies dans `src/pages/index.jsx`, leur page associée, le layout, et les règles de sécurité.
+Ce document recense les routes définies dans `src/pages/index.jsx` et les pages correspondantes.
 
-| Route | Page Component | Layout | Guard / Auth | Notes |
-|-------|---------------|--------|--------------|-------|
-| `/` | `Home` | Public | - | Page d'accueil |
-| `/home` | `Home` | Public | - | Alias |
-| `/aides` | `Aides` | Public | - | Liste des aides |
-| `/aides/:slug` | `AideDetail` | Public | - | Détail d'une aide |
-| `/categories/:slug` | `Aides` | Public | - | Filtre aides par catégorie |
-| `/situations/:slug` | `Aides` | Public | - | Filtre aides par situation |
-| `/demarches` | `Demarches` | Public | - | Liste des démarches |
-| `/demarches/:slug` | `DemarcheDetail` | Public | - | Détail d'une démarche |
-| `/structures` | `Annuaire` | Public | - | Annuaire des structures |
-| `/structures/:slug` | `StructureDetail` | Public | - | Détail d'une structure |
-| `/annuaire` | `Annuaire` | Public | - | Redirige vers `/structures` |
-| `/actualites` | `Actualites` | Public | - | Liste des actualités |
-| `/actualites/:slug` | `ActualiteDetail` | Public | - | Détail d'une actualité |
-| `/bonnes-pratiques` | `Guides` | Public | - | Guides / Bonnes pratiques |
-| `/bonnes-pratiques/:slug` | `GuideDetail` | Public | - | Détail guide |
-| `/outils` | `Tools` | Public | - | Outils |
-| `/outils/:slug` | `ToolDetail` | Public | - | Détail outil |
-| `/dispositifs` | `Dispositifs` | Public | - | Liste dispositifs |
-| `/dispositifs/:slug` | `DispositifDetail` | Public | - | Détail dispositif |
-| `/appointmentrequest` | `AppointmentRequest` | Public | - | Prise de RDV public |
-| `/proposer-une-structure` | `SuggestStructure` | Public | - | Formulaire suggestion |
-| `/contact` | `Contact` | Public | - | Page contact |
-| `/apropos` | `APropos` | Public | - | À propos |
-| `/accessibilite` | `Accessibilite` | Public | - | Déclaration accessibilité |
-| `/mentionslegales` | `MentionsLegales` | Public | - | Mentions légales |
-| `/confidentialite` | `Confidentialite` | Public | - | Politique de confidentialité |
-| `/cookies` | `Cookies` | Public | - | Gestion cookies |
-| `/impact` | `Impact` | Public | - | Page Impact |
-| `/notre-mission` | `Mission` | Public | - | Page Mission |
-| `/notre-methode` | `Method` | Public | - | Page Méthode |
-| `/sources` | `Sources` | Public | - | Page Sources |
-| `/sourcesmethode` | `SourcesMethode` | Public | - | Legacy ? |
-| `/securite-et-rgpd` | `Security` | Public | - | Page Sécurité |
-| `/partenaires` | `Partners` | Public | - | Page Partenaires |
-| `/dossier-subventions` | `SubventionDossier` | Public | - | Dossier Subventions |
-| `/r/:token/messages` | `BeneficiaryMessages` | Public | Token | Messagerie bénéficiaire (FALC) |
-| `/pro/login` | `ProLogin` | ProLayout | - | Login Espace Pro |
-| `/pro/register` | `ProRegister` | ProLayout | - | Inscription Pro |
-| `/pro/dashboard` | `ProDashboard` | ProLayout | Pro Auth | Dashboard Pro |
-| `/pro/services` | `ProServices` | ProLayout | Pro Auth | Services Pro |
-| `/pro/team` | `ProTeam` | ProLayout | Pro Auth | Équipe Pro |
-| `/pro/structure` | `ProStructure` | ProLayout | Pro Auth | Structure Pro |
-| `/pro/appointments` | `ProAppointments` | ProLayout | Pro Auth | RDV Pro |
-| `/admin/login` | `AdminLogin` | Public | - | Login Admin |
-| `/admin/inbox` | `AdminInbox` | Public | AdminRoute | Boîte de réception Admin |
-| `/admin/runs` | `AdminRuns` | Public | AdminRoute | Logs Cron |
-| `/adminaides` | `AdminAides` | Public | AdminRoute | Gestion Aides |
-| `/adminaideedit` | `AdminAideEdit` | Public | AdminRoute | Édition Aide |
-| `/admindemarches` | `AdminDemarches` | Public | RequireAuth | Gestion Démarches |
-| `/adminstructures` | `AdminStructures` | Public | RequireAuth | Gestion Structures |
-| `/adminappointments` | `AdminAppointments` | Public | RequireAuth | Gestion RDV Admin |
-| `/adminsync` | `AdminSync` | Public | RequireAuth | Synchro pipeline |
-| `/admin/review` | `AdminReview` | Public | AdminRoute | Revue contenu |
-| `/sentry-test` | `SentryTest` | Public | - | Test Sentry |
+## Pages Publiques (Site)
 
-**Note**: Les routes Admin utilisent `AdminRoute` ou `RequireAuth` qui vérifient l'authentification via `apiClient.auth.getUser()`.
+| Route (URL) | Page Component | Rôle | API Calls Attendus |
+|---|---|---|---|
+| `/` | `Home` | Accueil | - |
+| `/home` | `Home` | Accueil | - |
+| `/aides` | `Aides` | Liste des aides | `/api/aides`, `/api/taxonomy` |
+| `/categories/:slug` | `Aides` | Liste aides filtrée | `/api/aides` |
+| `/situations/:slug` | `Aides` | Liste aides filtrée | `/api/aides` |
+| `/aides/:slug` | `AideDetail` | Détail d'une aide | `/api/aides?slug=:slug` |
+| `/demarches` | `Demarches` | Liste démarches | `/api/demarches` |
+| `/demarches/:slug` | `DemarcheDetail` | Détail démarche | `/api/demarches?slug=:slug` |
+| `/structures` | `Annuaire` | Liste structures | `/api/structures` |
+| `/structures/:slug` | `StructureDetail` | Détail structure | `/api/structures?slug=:slug` |
+| `/annuaire` | `Annuaire` (Redirect) | Alias structures | - |
+| `/actualites` | `Actualites` | Liste actualités | `/api/actualites` |
+| `/actualites/:slug` | `ActualiteDetail` | Détail actualité | `/api/actualites?slug=:slug` |
+| `/bonnes-pratiques` | `Guides` | Liste guides | `/api/guides` |
+| `/bonnes-pratiques/:slug` | `GuideDetail` | Détail guide | `/api/guides?slug=:slug` |
+| `/outils` | `Tools` | Liste outils | `/api/tools` |
+| `/outils/:slug` | `ToolDetail` | Détail outil | `/api/tools?slug=:slug` |
+| `/dispositifs` | `Dispositifs` | Liste dispositifs | `/api/dispositifs` |
+| `/proposer-une-structure` | `SuggestStructure` | Formulaire suggestion | `/api/public/suggest-structure` |
+| `/contact` | `Contact` | Page contact | `/api/public/messages` |
+| `/accessibilite` | `Accessibilite` | Déclaration accessibilité | - |
+| `/mentions-legales` | `MentionsLegales` | Mentions légales | - |
+| `/confidentialite` | `Confidentialite` | Politique confidentialité | `/api/public/consent` |
+| `/cookies` | `Cookies` | Gestion cookies | `/api/public/consent` |
+| `/a-propos` | `APropos` | À propos | - |
+| `/impact` | `Impact` | Page Impact | - |
+| `/notre-mission` | `Mission` | Mission | - |
+| `/notre-methode` | `Method` | Méthode | - |
+| `/sources` | `Sources` | Sources données | - |
+| `/sourcesmethode` | `SourcesMethode` | Sources & Méthode | - |
+| `/partenaires` | `Partners` | Partenaires | - |
+| `/securite-et-rgpd` | `Security` | Sécurité | - |
+| `/dossier-subventions` | `SubventionDossier` | Info subventions | - |
+
+## Espace Rendez-vous (Public)
+
+| Route (URL) | Page Component | Rôle | API Calls Attendus |
+|---|---|---|---|
+| `/appointmentrequest` | `AppointmentRequest` | Demande de RDV | `/api/public/appointments`, `/api/public/availability` |
+| `/appointments` | `AppointmentRequest` (via API) | Création RDV | `/api/appointments` |
+
+## Espace Pro
+
+| Route (URL) | Page Component | Rôle | API Calls Attendus |
+|---|---|---|---|
+| `/pro/login` | `ProLogin` | Connexion Pro | `/api/pro/auth/login` |
+| `/pro/register` | `ProRegister` | Inscription Pro | `/api/pro/auth/register` |
+| `/pro/dashboard` | `ProDashboard` | Tableau de bord | `/api/pro/me`, `/api/public/stats` |
+| `/pro/appointments` | `ProAppointments` | Gestion RDV | `/api/pro/appointments` |
+| `/pro/appointments/:id` | `ProAppointmentDetail` | Détail RDV | `/api/pro/appointments` |
+| `/pro/availability` | `ProAvailability` | Disponibilités | `/api/pro/availability` |
+| `/pro/services` | `ProServices` | Services proposés | `/api/pro/services` |
+| `/pro/team` | `ProTeam` | Gestion équipe | `/api/pro/team` |
+| `/pro/structure` | `ProStructure` | Info structure | `/api/pro/structure` |
+| `/login/pro` | `LoginPro` | Alias (Dev/Legacy) | - |
+
+## Admin (Back-office)
+
+| Route (URL) | Page Component | Rôle |
+|---|---|---|
+| `/admin/login` | `AdminLogin` | Connexion Admin |
+| `/adminaides` | `AdminAides` | Gestion Aides |
+| `/adminaideedit` | `AdminAideEdit` | Édition Aide |
+| `/admindemarches` | `AdminDemarches` | Gestion Démarches |
+| `/admindemarcheedit` | `AdminDemarcheEdit` | Édition Démarche |
+| `/adminstructures` | `AdminStructures` | Gestion Structures |
+| `/adminappointments` | `AdminAppointments` | Gestion RDV (Admin) |
+| `/adminsources` | `AdminSources` | Sources RSS |
+| `/adminsync` | `AdminSync` | Synchronisation |
+| `/adminrecentsyncs` | `AdminRecentSyncs` | Logs synchro |
+| `/adminguidesync` | `AdminGuideSync` | Sync Guides |
+| `/adminmessages` | `AdminMessages` | Messagerie Admin |
+| `/admin/inbox` | `AdminInbox` | Boîte réception |
+| `/admin/runs` | `AdminRuns` | Historique Cron |
+| `/admin/review` | `AdminReview` | Revue contenu |
+
+## Autres / Tech
+
+| Route (URL) | Page Component | Rôle |
+|---|---|---|
+| `/sentry-test` | `SentryTest` | Test Sentry |
+| `/r/:token/messages` | `BeneficiaryMessages` | Messagerie Bénéficiaire |
+| `*` | `NotFound` | 404 |

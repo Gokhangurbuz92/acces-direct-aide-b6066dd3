@@ -1,4 +1,3 @@
-/* eslint-disable no-undef */
 import { PrismaClient } from '@prisma/client';
 import { getCanonicalBaseUrl, isIndexable } from '../_utils/seo.js';
 import crypto from 'crypto';
@@ -61,15 +60,15 @@ export default async function handler(req, res) {
 
         // Add dynamic content
         aides.filter(a => a.slug).forEach(a => {
-            urls.push(`  <url><loc>${BASE_URL}/aide/${a.slug}</loc><lastmod>${a.updatedAt.toISOString().split('T')[0]}</lastmod><priority>0.7</priority></url>`);
+            urls.push(`  <url><loc>${BASE_URL}/aides/${a.slug}</loc><lastmod>${a.updatedAt.toISOString().split('T')[0]}</lastmod><priority>0.7</priority></url>`);
         });
 
         demarches.filter(d => d.slug).forEach(d => {
-            urls.push(`  <url><loc>${BASE_URL}/demarche/${d.slug}</loc><lastmod>${d.updatedAt.toISOString().split('T')[0]}</lastmod><priority>0.7</priority></url>`);
+            urls.push(`  <url><loc>${BASE_URL}/demarches/${d.slug}</loc><lastmod>${d.updatedAt.toISOString().split('T')[0]}</lastmod><priority>0.7</priority></url>`);
         });
 
         structures.filter(s => s.slug).forEach(s => {
-            urls.push(`  <url><loc>${BASE_URL}/structure/${s.slug}</loc><lastmod>${s.updatedAt.toISOString().split('T')[0]}</lastmod><priority>0.6</priority></url>`);
+            urls.push(`  <url><loc>${BASE_URL}/structures/${s.slug}</loc><lastmod>${s.updatedAt.toISOString().split('T')[0]}</lastmod><priority>0.6</priority></url>`);
         });
 
         guides.filter(g => g.slug).forEach(g => {
@@ -126,4 +125,3 @@ ${urls.join('\n')}
         res.end(fallbackXml);
     }
 }
-

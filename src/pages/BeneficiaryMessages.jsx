@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useParams } from 'react-router-dom';
 import ChatWindow from '@/components/Messaging/ChatWindow';
 
@@ -12,7 +12,7 @@ export default function BeneficiaryMessages() {
 
     const API_BASE = '/api'; // Proxied to localhost:3000
 
-    const fetchMessages = async () => {
+    const fetchMessages = useCallback(async () => {
         try {
             setLoading(true);
             const res = await fetch(`${API_BASE}/public/messages?token=${token}`);
@@ -64,11 +64,11 @@ export default function BeneficiaryMessages() {
         } finally {
             setLoading(false);
         }
-    };
+    }, [token]);
 
     useEffect(() => {
         if (token) fetchMessages();
-    }, [token]);
+    }, [token, fetchMessages]);
 
     const handleSendMessage = async (content) => {
         try {

@@ -1,5 +1,5 @@
-import React from 'react';
-import { Link, useParams } from 'react-router-dom';
+import React, { useEffect } from 'react';
+import { Link, useParams, useNavigate } from 'react-router-dom';
 import { createPageUrl } from '@/utils';
 import { client } from '@/api/client';
 import { useQuery } from '@tanstack/react-query';
@@ -22,6 +22,7 @@ import {
   Loader2,
   Flag
 } from 'lucide-react';
+import { generateBreadcrumbSchema, generateAideSchema } from '@/utils/schema';
 
 const CATEGORIE_LABELS = {
   logement: 'Logement',
@@ -41,14 +42,26 @@ const CATEGORIE_LABELS = {
 
 export default function AideDetail() {
   const { slug } = useParams();
+  const navigate = useNavigate();
   const urlParams = new URLSearchParams(window.location.search);
   const aideId = urlParams.get('id');
 
-  const { data: aide, isLoading, error } = useQuery({
+  const { data: queryData, isLoading, error } = useQuery({
     queryKey: ['aide', slug || aideId],
     queryFn: () => client.entities.Aide.filter(slug ? { slug } : { id: aideId }),
     enabled: !!slug || !!aideId
   });
+
+  const aide = Array.isArray(queryData)
+    ? queryData[0]
+    : (queryData?.items ? queryData?.items[0] : queryData);
+
+  // Canonical Redirect: If accessed via ID but slug exists, redirect to slug URL
+  useEffect(() => {
+    if (aide && !slug && aide.slug) {
+      navigate(`/aides/${aide.slug}`, { replace: true });
+    }
+  }, [aide, slug, navigate]);
 
   const { data: structuresData } = useQuery({
     queryKey: ['structures-aide', aide?.categorie],
@@ -58,7 +71,9 @@ export default function AideDetail() {
     enabled: !!aide?.categorie
   });
 
-  const structures = structuresData?.items || [];
+  const structures = Array.isArray(structuresData)
+    ? structuresData
+    : (structuresData?.items || []);
 
   const filteredStructures = structures.filter(s =>
     s.categories_aidees?.includes(aide?.categorie)
@@ -86,12 +101,24 @@ export default function AideDetail() {
     }).join(', ');
   };
 
+  const breadcrumbs = [
+    { name: 'Accueil', url: '/' },
+    { name: 'Aides', url: '/aides' },
+    { name: aide.titre, url: `/aides/${aide.slug}` }
+  ];
+
+  const schema = [
+    generateBreadcrumbSchema(breadcrumbs),
+    generateAideSchema(aide)
+  ].filter(Boolean);
+
   return (
     <div className="min-h-screen bg-slate-50">
       <SEO
         title={aide.titre}
         description={aide.summary_falc || aide.cest_quoi?.substring(0, 150)}
-        url={`https://www.accesdirectaide.fr/aide/${aide.slug}`}
+        path={`/aides/${aide.slug}`}
+        schema={schema}
       />
       {/* Fil d'Ariane */}
       <div className="bg-white border-b border-slate-200">
@@ -298,12 +325,12 @@ export default function AideDetail() {
                   <Download className="mr-2 h-4 w-4" />
                   Télécharger en PDF (ou imprimer)
                 </Button>
-                <Link to={createPageUrl('Contact') + `?page=${encodeURIComponent(window.location.href)}&sujet=signalement_erreur`}>
-                  <Button variant="ghost" className="w-full text-slate-600">
+                <Button variant="ghost" className="w-full text-slate-600" asChild>
+                  <Link to={createPageUrl('Contact') + `?page=${encodeURIComponent(window.location.href)}&sujet=signalement_erreur`}>
                     <Flag className="mr-2 h-4 w-4" />
                     Signaler une erreur
-                  </Button>
-                </Link>
+                  </Link>
+                </Button>
               </CardContent>
             </Card>
 

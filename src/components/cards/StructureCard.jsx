@@ -39,7 +39,7 @@ export default function StructureCard({ structure, compact = false }) {
   const targetUrl = structure.slug ? `/structures/${structure.slug}` : `/structures/view?id=${structure.id}`;
 
   return (
-    <Card className="group hover:shadow-lg transition-all duration-300 border-slate-200 hover:border-blue-300 bg-white relative">
+    <Card className="group hover:shadow-lg transition-all duration-300 border-slate-200 hover:border-blue-300 bg-white relative" data-testid="structure-card">
       {/* Overlay Link */}
       <Link
         to={targetUrl}
@@ -82,7 +82,7 @@ export default function StructureCard({ structure, compact = false }) {
           </div>
 
           {/* Nom */}
-          <h3 className={`font-semibold text-slate-900 group-hover:text-blue-700 transition-colors ${compact ? 'text-base' : 'text-lg'}`}>
+          <h3 className={`font-semibold text-slate-900 group-hover:text-blue-700 transition-colors ${compact ? 'text-base' : 'text-lg'}`} data-testid="structure-title">
             {structure.nom}
           </h3>
 
@@ -95,7 +95,7 @@ export default function StructureCard({ structure, compact = false }) {
 
           {/* Infos de contact */}
           <div className="space-y-2 text-sm text-slate-600 relative z-20">
-             {/* Note: Links inside here like telephone/email must be z-20 to be clickable. */}
+            {/* Note: Links inside here like telephone/email must be z-20 to be clickable. */}
             {structure.adresse && (
               <div className="flex items-start gap-2">
                 <MapPin className="h-4 w-4 text-slate-400 mt-0.5 flex-shrink-0" />

@@ -114,7 +114,16 @@ export default function Actualites() {
                 : `/actualites/view?id=${actu.id}`;
 
               return (
-                <Card key={actu.id} className={`hover:shadow-lg transition-shadow ${actu.est_important ? 'border-l-4 border-l-blue-500' : ''}`}>
+                <Card key={actu.id} className={`group hover:shadow-lg transition-all relative ${actu.est_important ? 'border-l-4 border-l-blue-500' : ''}`} data-testid="actualite-card">
+                  {/* Overlay Link */}
+                  <Link
+                    to={linkUrl}
+                    className="absolute inset-0 z-10 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 rounded-xl"
+                    aria-label={`Lire l'actualité ${actu.titre}`}
+                  >
+                    <span className="sr-only">Lire l'actualité {actu.titre}</span>
+                  </Link>
+
                   <CardContent className="p-6">
                     <div className="flex flex-wrap gap-2 mb-3">
                       <Badge className={TYPE_COLORS[actu.type_actu] || 'bg-slate-100 text-slate-800'}>
@@ -135,17 +144,17 @@ export default function Actualites() {
                       )}
                     </div>
 
-                    <Link to={linkUrl} className="hover:underline block mb-3">
-                      <h2 className="text-xl font-bold text-slate-900">
+                    <div className="block mb-3">
+                      <h2 className="text-xl font-bold text-slate-900 group-hover:text-blue-700 transition-colors" data-testid="actualite-title">
                         {actu.titre}
                       </h2>
-                    </Link>
+                    </div>
 
                     <p className="text-slate-600 mb-4 leading-relaxed line-clamp-3">
                       {actu.summary_falc || actu.contenu}
                     </p>
 
-                    <div className="flex flex-wrap items-center justify-between gap-4 pt-4 border-t border-slate-100">
+                    <div className="flex flex-wrap items-center justify-between gap-4 pt-4 border-t border-slate-100 relative z-20">
                       <div className="flex items-center gap-4 text-sm text-slate-500">
                         <span className="flex items-center gap-1">
                           <Calendar className="h-4 w-4" />
@@ -162,20 +171,21 @@ export default function Actualites() {
 
                       <div className="flex items-center gap-4">
                         {actu.source_url && (
-                            <a
+                          <a
                             href={actu.source_url}
                             target="_blank"
                             rel="noopener noreferrer"
                             className="text-slate-500 hover:text-blue-600 text-sm font-medium flex items-center gap-1"
-                            >
+                            onClick={(e) => e.stopPropagation()}
+                          >
                             Source
                             <ExternalLink className="h-3 w-3" />
-                            </a>
+                          </a>
                         )}
-                        <Link to={linkUrl} className="text-blue-600 hover:text-blue-800 text-sm font-bold flex items-center gap-1">
-                            Lire la suite
-                            <ArrowRight className="h-4 w-4" />
-                        </Link>
+                        <span className="text-blue-600 group-hover:text-blue-800 text-sm font-bold flex items-center gap-1 transition-colors">
+                          Lire la suite
+                          <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
+                        </span>
                       </div>
                     </div>
                   </CardContent>

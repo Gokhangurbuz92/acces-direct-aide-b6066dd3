@@ -22,29 +22,28 @@ export default function Guides() {
     }, []);
 
     useEffect(() => {
+        async function fetchGuides() {
+            setLoading(true);
+            const query = new URLSearchParams();
+            if (filters.categorie) query.append('categorie', filters.categorie);
+            if (filters.public) query.append('public', filters.public);
+            if (filters.contexte) query.append('contexte', filters.contexte);
+            query.append('statut', 'publie');
+
+            try {
+                const res = await fetch(`/api/guides?${query.toString()}`);
+                if (res.ok) {
+                    const data = await res.json();
+                    setGuides(data);
+                }
+            } catch (e) {
+                console.error("Error fetching guides", e);
+            } finally {
+                setLoading(false);
+            }
+        }
         fetchGuides();
     }, [filters]);
-
-    async function fetchGuides() {
-        setLoading(true);
-        const query = new URLSearchParams();
-        if (filters.categorie) query.append('categorie', filters.categorie);
-        if (filters.public) query.append('public', filters.public);
-        if (filters.contexte) query.append('contexte', filters.contexte);
-        query.append('statut', 'publie');
-
-        try {
-            const res = await fetch(`/api/guides?${query.toString()}`);
-            if (res.ok) {
-                const data = await res.json();
-                setGuides(data);
-            }
-        } catch (e) {
-            console.error("Error fetching guides", e);
-        } finally {
-            setLoading(false);
-        }
-    }
 
     return (
         <div className="container mx-auto px-4 py-8">

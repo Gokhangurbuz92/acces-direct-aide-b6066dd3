@@ -7,8 +7,8 @@ import fs from 'fs';
 import path from 'path';
 import { summarizeToFalc } from '../../lib/falc-summarizer.js';
 import { ensureSlug } from '../../lib/slug.js';
-import { runIngestStructures } from './ingest-structures.js';
-import { runIngestAids } from './ingest-aids.js';
+import ingestStructures from './ingest-structures.js';
+import ingestAids from './ingest-aids.js';
 
 const prisma = new PrismaClient();
 const parser = new Parser();
@@ -26,6 +26,15 @@ function slugify(text) {
         .replace(/^-+/, '')
         .replace(/-+$/, '');
 }
+
+// Helper: Make Sub Request
+const makeSubReq = (req, queryOverride = {}) => ({
+    ...req,
+    method: req.method || "POST",
+    headers: req.headers,
+    url: req.url,
+    query: { ...(req.query || {}), ...queryOverride },
+});
 
 export default async function handler(req, res) {
     // SENTINEL: Logic Entry
@@ -90,28 +99,6 @@ export default async function handler(req, res) {
         }
     }
 
-    // Helper: Merge API Stats
-    const mergeStats = (subStats) => {
-        if (!subStats) return;
-        stats.fetched += (subStats.fetched || 0);
-        stats.processed += (subStats.processed || 0);
-        stats.created += (subStats.created || 0);
-        stats.updated += (subStats.updated || 0);
-        stats.skippedExisting += (subStats.skippedExisting || 0);
-
-        // Map created -> ingested for legacy contract compliance
-        stats.ingested = stats.created;
-
-        if (subStats.errors && Array.isArray(subStats.errors)) {
-            stats.errors.push(...subStats.errors);
-        }
-
-        if (subStats.durationByStage) {
-            stats.durationByStage.fetchMs += (subStats.durationByStage.fetchMs || 0);
-            stats.durationByStage.processingMs += (subStats.durationByStage.processingMs || 0);
-        }
-    };
-
     // Wrap entire execution in a timeout (50s safe limit for Vercel 60s max)
     const timeoutPromise = new Promise((_, reject) =>
         setTimeout(() => reject(new Error('Pipeline Timeout')), 50000)
@@ -125,24 +112,10 @@ export default async function handler(req, res) {
         // ==========================================
 
         if (sourceResolved === 'structures') {
-            try {
-                const result = await runIngestStructures({ limit, runId });
-                console.log("[PIPELINE] ingester result", result && Object.keys(result));
-                mergeStats(result);
-            } catch (e) {
-                console.error("Pipeline: Ingest Structures failed", e);
-                stats.errors.push(`Structures failed: ${e.message}`);
-            }
+            return await ingestStructures(makeSubReq(req, { limit }), res);
 
         } else if (sourceResolved === 'aides') {
-            try {
-                const result = await runIngestAids({ limit, runId });
-                console.log("[PIPELINE] ingester result", result && Object.keys(result));
-                mergeStats(result);
-            } catch (e) {
-                console.error("Pipeline: Ingest Aids failed", e);
-                stats.errors.push(`Aids failed: ${e.message}`);
-            }
+            return await ingestAids(makeSubReq(req, { limit }), res);
 
         } else if (sourceResolved === 'rss') {
             // RSS Logic adapted for new stats
@@ -258,6 +231,13 @@ export default async function handler(req, res) {
 
     try {
         await Promise.race([pipelineLogic(), timeoutPromise]);
+
+        // Handlers (structures/aides) will have already responded and returned.
+        // We check if response is finished to avoid double-response.
+        if (res.writableEnded || res.headersSent) {
+            return;
+        }
+
     } catch (globalErr) {
         console.error("Pipeline Global Error:", globalErr);
         // Try to log failure
@@ -271,6 +251,9 @@ export default async function handler(req, res) {
                 }
             });
         } catch (e) { /* ignore */ }
+
+        // If headers already sent by sub-handler, we can't do anything but log
+        if (res.writableEnded || res.headersSent) return;
 
         // Use 400 for bad requests, 500 for others
         const statusCode = globalErr.message.includes('Invalid source') ? 400 : 500;
@@ -286,8 +269,6 @@ export default async function handler(req, res) {
 
     // STRICT CONTRACT: Check for Silent Failure / "Success Vide"
     // Condition: (fetchMs=0 AND errors=[]) AND fetched=0.
-    // We only fail if we fetched nothing AND took 0ms AND had no errors.
-    // If we fetched items, 0ms (e.g. in tests) is acceptable.
     if (stats.fetched === 0 && stats.durationByStage.fetchMs === 0 && stats.errors.length === 0) {
         const errorMsg = "PIPELINE_NOOP: Execution yielded zero fetched results with no errors. This is a contract violation.";
         console.error(errorMsg);

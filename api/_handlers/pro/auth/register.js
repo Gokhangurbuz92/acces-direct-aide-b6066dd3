@@ -1,17 +1,14 @@
-/* eslint-env node */
-import { PrismaClient } from '@prisma/client';
 import bcrypt from 'bcryptjs';
 import { signProToken, checkRateLimit, logProAudit } from '../../../lib/pro-auth.js';
-
-const prisma = new PrismaClient();
+import prisma from '../../../_utils/prisma.js';
 
 function slugify(text) {
-  return text.toString().toLowerCase()
-    .replace(/\s+/g, '-')           // Replace spaces with -
-    .replace(/[^\w-]+/g, '')       // Remove all non-word chars
-    .replace(/--+/g, '-')         // Replace multiple - with single -
-    .replace(/^-+/, '')             // Trim - from start
-    .replace(/-+$/, '');            // Trim - from end
+    return text.toString().toLowerCase()
+        .replace(/\s+/g, '-')           // Replace spaces with -
+        .replace(/[^\w-]+/g, '')       // Remove all non-word chars
+        .replace(/--+/g, '-')         // Replace multiple - with single -
+        .replace(/^-+/, '')             // Trim - from start
+        .replace(/-+$/, '');            // Trim - from end
 }
 
 export default async function handler(req, res) {
@@ -21,7 +18,8 @@ export default async function handler(req, res) {
 
     const { email, password, structureName } = req.body;
     // Handle IP for rate limiting - support Vercel/Standard headers
-    const ip = req.headers['x-forwarded-for'] || req.socket.remoteAddress;
+    const rawIp = req.headers['x-forwarded-for'] || req.socket.remoteAddress;
+    const ip = rawIp ? String(rawIp).split(',')[0].trim() : 'unknown';
 
     if (!email || !password || !structureName) {
         return res.status(400).json({ error: "Tous les champs sont requis" });
@@ -40,7 +38,7 @@ export default async function handler(req, res) {
         });
 
         if (existingUser) {
-             return res.status(400).json({ error: "Cet email est déjà utilisé." });
+            return res.status(400).json({ error: "Cet email est déjà utilisé." });
         }
 
         // Create Structure

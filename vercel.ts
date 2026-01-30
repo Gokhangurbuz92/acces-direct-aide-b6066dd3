@@ -1,0 +1,47 @@
+const config = {
+    crons: [
+        { path: "/api/cron/pipeline", schedule: "0 * * * *" },
+        { path: "/api/cron/ingest-structures", schedule: "0 2 * * 0" },
+    ],
+
+    redirects: [
+        { source: "/guide/:slug", destination: "/demarches", permanent: true },
+        { source: "/aide/:slug", destination: "/aides/:slug", permanent: true },
+        { source: "/login/pro", destination: "/pro/login", permanent: true },
+    ],
+
+    rewrites: [
+        { source: "/sitemap.xml", destination: "/api" },
+        { source: "/robots.txt", destination: "/api" },
+        { source: "/__dev/:path*", destination: "/api" },
+        { source: "/api/(.*)", destination: "/api" },
+        { source: "/((?!api/|.*\\..*).*)", destination: "/index.html" },
+    ],
+
+    headers: [
+        {
+            source: "/(.*)",
+            headers: [
+                { key: "X-Content-Type-Options", value: "nosniff" },
+                { key: "X-Frame-Options", value: "DENY" },
+                { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
+                {
+                    key: "Permissions-Policy",
+                    value:
+                        "camera=(), microphone=(), geolocation=(), browsing-topics=(), interest-cohort=()",
+                },
+                {
+                    key: "Strict-Transport-Security",
+                    value: "max-age=63072000; includeSubDomains; preload",
+                },
+                {
+                    key: "Content-Security-Policy",
+                    value:
+                        "default-src 'self'; connect-src 'self' https: wss: *.sentry.io; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline'; worker-src 'self' blob:; img-src 'self' data: https: blob:; font-src 'self' data:; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'; upgrade-insecure-requests;",
+                },
+            ],
+        },
+    ],
+};
+
+export default config;

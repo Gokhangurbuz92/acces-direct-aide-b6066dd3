@@ -1,5 +1,5 @@
 
-/* eslint-env node */
+
 import { PrismaClient } from '@prisma/client';
 import { verifyAttachmentToken, decrypt, decryptBuffer } from '../lib/crypto.js';
 import { storage } from '../lib/storage.js';

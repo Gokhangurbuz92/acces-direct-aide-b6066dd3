@@ -1,0 +1,8 @@
+Starting Smoke Check against https://www.accesdirectaide.fr at Tue Jan 27 23:11:10 CET 2026
+✅ PASS: / returned 200
+✅ PASS: /aides returned 200
+✅ PASS: /demarches returned 200
+✅ PASS: /structures returned 200
+✅ PASS: /actualites returned 200
+✅ PASS: /robots.txt returned 200
+Smoke Check Complete. All targets healthy.

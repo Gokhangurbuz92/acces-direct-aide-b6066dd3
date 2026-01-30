@@ -1,0 +1,84 @@
+src/pages/index.jsx:                <Route path="/__sentry_test" element={<SentryTestPage />} />
+src/pages/index.jsx:                <Route path="/pro" element={<ProLayout />}>
+src/pages/index.jsx:                    <Route path="login" element={<ProLogin />} />
+src/pages/index.jsx:                    <Route path="register" element={<ProRegister />} />
+src/pages/index.jsx:                    <Route path="forgot-password" element={<ProForgotPassword />} />
+src/pages/index.jsx:                    <Route path="reset-password" element={<ProResetPassword />} />
+src/pages/index.jsx:                    <Route path="dashboard" element={<ProDashboard />} />
+src/pages/index.jsx:                    <Route path="services" element={<ProServices />} />
+src/pages/index.jsx:                    <Route path="team" element={<ProTeam />} />
+src/pages/index.jsx:                    <Route path="structure" element={<ProStructure />} />
+src/pages/index.jsx:                    <Route path="appointments" element={<ProAppointments />} />
+src/pages/index.jsx:                    <Route path="appointments/:id" element={<ProAppointmentDetail />} />
+src/pages/index.jsx:                <Route path="/" element={<Home />} />
+src/pages/index.jsx:                <Route path="/a-propos" element={<APropos />} />
+src/pages/index.jsx:                <Route path="/accessibilite" element={<Accessibilite />} />
+src/pages/index.jsx:                <Route path="/actualites" element={<Actualites />} />
+src/pages/index.jsx:                <Route path="/actualites/:slug" element={<ActualiteDetail />} />
+src/pages/index.jsx:                <Route path="/admin/login" element={<AdminLogin />} />
+src/pages/index.jsx:                <Route path="/admin/inbox" element={<AdminRoute><AdminInbox /></AdminRoute>} />
+src/pages/index.jsx:                <Route path="/admin/runs" element={<AdminRoute><AdminRuns /></AdminRoute>} />
+src/pages/index.jsx:                <Route path="/adminaideedit" element={<AdminRoute><AdminAideEdit /></AdminRoute>} />
+src/pages/index.jsx:                <Route path="/adminaides" element={<AdminRoute><AdminAides /></AdminRoute>} />
+src/pages/index.jsx:                <Route path="/admin" element={<Navigate to="/adminaides" replace />} />
+src/pages/index.jsx:                <Route path="/adminguidesync" element={<AdminRoute><AdminGuideSync /></AdminRoute>} />
+src/pages/index.jsx:                <Route path="/adminmessages" element={<AdminRoute><AdminMessages /></AdminRoute>} />
+src/pages/index.jsx:                <Route path="/admin/review" element={<AdminRoute><AdminReview /></AdminRoute>} />
+src/pages/index.jsx:                <Route path="/adminrecentsyncs" element={<AdminRoute><AdminRecentSyncs /></AdminRoute>} />
+src/pages/index.jsx:                <Route path="/adminsources" element={<AdminRoute><AdminSources /></AdminRoute>} />
+src/pages/index.jsx:                <Route path="/adminrecentsyncs" element={<RequireAuth><AdminRecentSyncs /></RequireAuth>} />
+src/pages/index.jsx:                <Route path="/adminsources" element={<RequireAuth><AdminSources /></RequireAuth>} />
+src/pages/index.jsx:                <Route path="/adminsync" element={<RequireAuth><AdminSync /></RequireAuth>} />
+src/pages/index.jsx:                <Route path="/admintestsync" element={<RequireAuth><AdminTestSync /></RequireAuth>} />
+src/pages/index.jsx:                <Route path="/appointmentrequest" element={<AppointmentRequest />} />
+src/pages/index.jsx:                <Route path="/adminappointments" element={<RequireAuth><AdminAppointments /></RequireAuth>} />
+src/pages/index.jsx:                <Route path="/adminstructures" element={<RequireAuth><AdminStructures /></RequireAuth>} />
+src/pages/index.jsx:                <Route path="/admindemarches" element={<RequireAuth><AdminDemarches /></RequireAuth>} />
+src/pages/index.jsx:                <Route path="/admindemarcheedit" element={<RequireAuth><AdminDemarcheEdit /></RequireAuth>} />
+src/pages/index.jsx:                <Route path="/aidedetail" element={<AideDetail />} />
+src/pages/index.jsx:                <Route path="/aide/view" element={<AideDetail />} />
+src/pages/index.jsx:                <Route path="/aide/:slug" element={<Navigate to="/aides/:slug" replace />} />
+src/pages/index.jsx:                <Route path="/aides/:slug" element={<AideDetail />} />
+src/pages/index.jsx:                <Route path="/aides" element={<Aides />} />
+src/pages/index.jsx:                <Route path="/categories/:slug" element={<Aides />} />
+src/pages/index.jsx:                <Route path="/situations/:slug" element={<Aides />} />
+src/pages/index.jsx:                <Route path="/annuaire" element={<Navigate to="/structures" replace />} />
+src/pages/index.jsx:                <Route path="/structures" element={<Annuaire />} />
+src/pages/index.jsx:                <Route path="/structures/view" element={<StructureDetail />} />
+src/pages/index.jsx:                <Route path="/structures/:slug" element={<StructureDetail />} />
+src/pages/index.jsx:                <Route path="/confidentialite" element={<Confidentialite />} />
+src/pages/index.jsx:                <Route path="/contact" element={<Contact />} />
+src/pages/index.jsx:                <Route path="/cookies" element={<Cookies />} />
+src/pages/index.jsx:                <Route path="/demarches/view" element={<DemarcheDetail />} />
+src/pages/index.jsx:                <Route path="/demarches/:slug" element={<DemarcheDetail />} />
+src/pages/index.jsx:                    <Route path="/login/pro" element={<LoginPro />} />
+src/pages/index.jsx:                <Route path="/demarches" element={<Demarches />} />
+src/pages/index.jsx:                <Route path="/home" element={<Home />} />
+src/pages/index.jsx:                <Route path="/mentions-legales" element={<MentionsLegales />} />
+src/pages/index.jsx:                <Route path="/sourcesmethode" element={<SourcesMethode />} />
+src/pages/index.jsx:                <Route path="/sentry-test" element={<SentryTest />} />
+src/pages/index.jsx:                <Route path="/r/:token/messages" element={<BeneficiaryMessages />} />
+src/pages/index.jsx:                <Route path="/bonnes-pratiques" element={<Guides />} />
+src/pages/index.jsx:                <Route path="/bonnes-pratiques/:slug" element={<GuideDetail />} />
+src/pages/index.jsx:                <Route path="/outils" element={<Tools />} />
+src/pages/index.jsx:                <Route path="/outils/:slug" element={<ToolDetail />} />
+src/pages/index.jsx:                <Route path="/dispositifs" element={<Dispositifs />} />
+src/pages/index.jsx:                <Route path="/dispositifs/:slug" element={<DispositifDetail />} />
+src/pages/index.jsx:                <Route path="/dispositifs/view" element={<DispositifDetail />} />
+src/pages/index.jsx:                <Route path="/impact" element={<Impact />} />
+src/pages/index.jsx:                <Route path="/notre-mission" element={<Mission />} />
+src/pages/index.jsx:                <Route path="/notre-methode" element={<Method />} />
+src/pages/index.jsx:                <Route path="/sources" element={<Sources />} />
+src/pages/index.jsx:                <Route path="/securite-et-rgpd" element={<Security />} />
+src/pages/index.jsx:                <Route path="/partenaires" element={<Partners />} />
+src/pages/index.jsx:                <Route path="/proposer-une-structure" element={<SuggestStructure />} />
+src/pages/index.jsx:                <Route path="/dossier-subventions" element={<SubventionDossier />} />
+src/pages/index.jsx:                <Route path="/actualites/view" element={<ActualiteDetail />} />
+src/pages/index.jsx:                <Route path="/AideDetail" element={<Navigate to="/aidedetail" replace />} />
+src/pages/index.jsx:                <Route path="/StructureDetail" element={<Navigate to="/annuaire" replace />} />
+src/pages/index.jsx:                <Route path="/structuredetail" element={<Navigate to="/annuaire" replace />} />
+src/pages/index.jsx:                <Route path="/DemarcheDetail" element={<Navigate to="/demarches" replace />} />
+src/pages/index.jsx:                <Route path="/demarchedetail" element={<Navigate to="/demarches" replace />} />
+src/pages/index.jsx:                <Route path="/Annuaire" element={<Navigate to="/annuaire" replace />} />
+src/pages/index.jsx:                <Route path="/Aides" element={<Navigate to="/aides" replace />} />
+src/pages/index.jsx:                <Route path="*" element={<NotFound />} />

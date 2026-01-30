@@ -1,65 +1,69 @@
 import { verifyAdmin } from './auth.js';
-import { createSnapshot } from './snapshot.js';
+import { ZodError } from 'zod';
 
-export async function createEntity(req, res, modelDelegate) {
-    if (!verifyAdmin(req)) return res.status(401).json({ error: 'Unauthorized' });
+/**
+ * Standardized CRUD operations for Admin.
+ * Handles:
+ * - Admin Verification
+ * - Input Validation (Zod)
+ * - Prisma Operations
+ * - Standard Responses
+ */
+
+export async function handleAdminCreate(req, res, prismaDelegate, schema, transformData = (d) => d) {
+    if (!verifyAdmin(req)) {
+        return res.status(401).json({ error: "Unauthorized" });
+    }
 
     try {
-        const data = req.body;
-        // Enforce defaults
-        data.statut = 'brouillon';
-        data.updatedBy = 'admin'; // TODO: Extract from token if possible
+        const body = schema ? schema.parse(req.body) : req.body;
+        const data = transformData(body);
 
-        const item = await modelDelegate.create({ data });
+        // Handle Slug generation if not present?
+        // For now, assume transformData handles it or it's in body.
+
+        const item = await prismaDelegate.create({ data });
         return res.status(201).json(item);
     } catch (error) {
-        console.error('Create Error:', error);
-        return res.status(500).json({ error: 'Creation failed', details: error.message });
+        if (error instanceof ZodError) {
+            return res.status(400).json({ error: "Validation Error", details: error.errors });
+        }
+        throw error; // Let wrapper handle 500/Prisma errors
     }
 }
 
-export async function updateEntity(req, res, modelDelegate, entityType = null) {
-    if (!verifyAdmin(req)) return res.status(401).json({ error: 'Unauthorized' });
+export async function handleAdminUpdate(req, res, prismaDelegate, id, schema, transformData = (d) => d) {
+    if (!verifyAdmin(req)) {
+        return res.status(401).json({ error: "Unauthorized" });
+    }
 
-    const { id } = req.query;
-    if (!id) return res.status(400).json({ error: 'ID required' });
+    if (!id) return res.status(400).json({ error: "Missing ID" });
 
     try {
-        if (entityType) {
-            // Restore snapshot functionality
-            // We assume admin is 'admin@accesdirectaide.fr' for now as per auth.js
-            await createSnapshot(entityType, id, 'admin@accesdirectaide.fr');
-        }
+        const body = schema ? schema.parse(req.body) : req.body;
+        const data = transformData(body);
 
-        const data = req.body;
-        delete data.id; // Protect ID
-        data.updatedBy = 'admin';
-        // updatedAt is handled by Prisma @updatedAt
-
-        const item = await modelDelegate.update({
-            where: { id: String(id) },
+        const item = await prismaDelegate.update({
+            where: { id },
             data
         });
         return res.status(200).json(item);
     } catch (error) {
-        console.error('Update Error:', error);
-        return res.status(500).json({ error: 'Update failed', details: error.message });
+        if (error instanceof ZodError) {
+            return res.status(400).json({ error: "Validation Error", details: error.errors });
+        }
+        // Prisma P2025 (Not Found) handled by wrapper usually, but good to catch here?
+        throw error;
     }
 }
 
-export async function deleteEntity(req, res, modelDelegate) {
-    if (!verifyAdmin(req)) return res.status(401).json({ error: 'Unauthorized' });
-
-    const { id } = req.query;
-    if (!id) return res.status(400).json({ error: 'ID required' });
-
-    try {
-        await modelDelegate.delete({
-            where: { id: String(id) }
-        });
-        return res.status(200).json({ success: true });
-    } catch (error) {
-        console.error('Delete Error:', error);
-        return res.status(500).json({ error: 'Delete failed', details: error.message });
+export async function handleAdminDelete(req, res, prismaDelegate, id) {
+    if (!verifyAdmin(req)) {
+        return res.status(401).json({ error: "Unauthorized" });
     }
+
+    if (!id) return res.status(400).json({ error: "Missing ID" });
+
+    await prismaDelegate.delete({ where: { id } });
+    return res.status(200).json({ success: true });
 }

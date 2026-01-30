@@ -1,13 +1,26 @@
 
+import crypto from 'crypto';
+
 export function verifyAdmin(req) {
-    const authHeader = req.headers['authorization'];
-    if (!authHeader) return false;
+    if (!process.env.ADMIN_TOKEN) {
+        console.error("FATAL: ADMIN_TOKEN is not set.");
+        return false;
+    }
+
+    // 1. Check for Authorization header
+    const authHeader = req.headers['authorization'] || req.headers['Authorization'];
+    if (!authHeader || !authHeader.startsWith('Bearer ')) return false;
 
     const token = authHeader.split(' ')[1];
-    if (!token) return false;
 
-    return token === process.env.ADMIN_TOKEN;
-}
+    // Constant-time comparison to prevent timing attacks
+    const tokenBuffer = Buffer.from(token);
+    const adminTokenBuffer = Buffer.from(process.env.ADMIN_TOKEN);
+
+    if (tokenBuffer.length !== adminTokenBuffer.length) return false;
+
+    return crypto.timingSafeEqual(tokenBuffer, adminTokenBuffer);
+};
 
 export async function getAuthenticatedUser(req) {
     if (verifyAdmin(req)) {

@@ -1,7 +1,7 @@
 
 import React, { useEffect, useState } from 'react';
 import { Navigate, useLocation } from 'react-router-dom';
-import { adminClient } from '@/api/base44Client';
+import { adminClient } from '@/api/client';
 import { Loader2 } from 'lucide-react';
 
 export default function RequireAuth({ children }) {
@@ -11,7 +11,7 @@ export default function RequireAuth({ children }) {
     useEffect(() => {
         const checkAuth = async () => {
             try {
-                // Base44 SDK should handle token persistence. 
+                // Auth client handles token persistence via sessionStorage. 
                 // We check if we can get the current user or if the client is authenticated.
                 const user = adminClient.auth?.user || await adminClient.auth?.getUser?.().catch(() => null);
 
@@ -41,7 +41,7 @@ export default function RequireAuth({ children }) {
 
     if (!isAuthorized) {
         // Redirect to Home or a Login page if one existed. 
-        // Since we don't have a public login page yet (just Base44 management), sending to Home is safer.
+        // Since we don't have a public login page yet, sending to Home is safer.
         return <Navigate to="/home" state={{ from: location }} replace />;
     }
 

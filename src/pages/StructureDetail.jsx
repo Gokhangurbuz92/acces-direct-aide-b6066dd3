@@ -1,5 +1,5 @@
-import React from 'react';
-import { Link, useParams, useSearchParams } from 'react-router-dom';
+import React, { useEffect } from 'react';
+import { Link, useParams, useSearchParams, useNavigate } from 'react-router-dom';
 import SEO from '@/components/SEO';
 import NotFound from "./NotFound";
 import { createPageUrl } from '@/utils';
@@ -21,6 +21,7 @@ import {
   Calendar,
   Loader2
 } from 'lucide-react';
+import { generateBreadcrumbSchema, generateStructureSchema } from '@/utils/schema';
 
 const TYPE_LABELS = {
   association: 'Association',
@@ -37,15 +38,26 @@ const TYPE_LABELS = {
 export default function StructureDetail() {
   const { slug } = useParams();
   const [searchParams] = useSearchParams();
-  const id = searchParams.get('id');
-  const identifier = slug || id;
+  const navigate = useNavigate();
+  const structureId = searchParams.get('id');
 
-  const { data: structure, isLoading } = useQuery({
-    queryKey: ['structure', identifier],
-    queryFn: () => client.entities.Structure.filter(slug ? { slug } : { id }),
+  const { data: queryData, isLoading, error } = useQuery({
+    queryKey: ['structure', slug || structureId],
+    queryFn: () => client.entities.Structure.filter(slug ? { slug } : { id: structureId }),
     // API now returns single object for id/slug queries
-    enabled: !!identifier
+    enabled: !!slug || !!structureId
   });
+
+  const structure = Array.isArray(queryData)
+    ? queryData[0]
+    : (queryData?.items ? queryData?.items[0] : queryData);
+
+  // Canonical Redirect: If accessed via ID but slug exists, redirect to slug URL
+  useEffect(() => {
+    if (structure && !slug && structure.slug) {
+      navigate(`/structures/${structure.slug}`, { replace: true });
+    }
+  }, [structure, slug, navigate]);
 
   if (isLoading) {
     return (
@@ -59,12 +71,24 @@ export default function StructureDetail() {
     return <NotFound />;
   }
 
+  const breadcrumbs = [
+    { name: 'Accueil', url: '/' },
+    { name: 'Annuaire', url: '/annuaire' },
+    { name: structure.nom, url: `/structures/${structure.slug}` }
+  ];
+
+  const schema = [
+    generateBreadcrumbSchema(breadcrumbs),
+    generateStructureSchema(structure)
+  ].filter(Boolean);
+
   return (
     <div className="min-h-screen bg-slate-50">
       <SEO
         title={structure.nom}
         description={structure.description_courte || `Détails de ${structure.nom}`}
-        url={window.location.href}
+        path={`/structures/${structure.slug}`}
+        schema={schema}
       />
       {/* Fil d'Ariane */}
       <div className="bg-white border-b border-slate-200">
@@ -225,11 +249,11 @@ export default function StructureDetail() {
                     Prendre rendez-vous
                   </h2>
                   <p className="text-slate-700 mb-4">
-                      Cette structure propose la prise de rendez-vous en ligne.
+                    Cette structure propose la prise de rendez-vous en ligne.
                   </p>
                   <Button className="w-full bg-indigo-600 hover:bg-indigo-700" asChild>
                     <Link to={createPageUrl('AppointmentRequest') + `?structure_id=${structure.id}`}>
-                        Voir les créneaux disponibles
+                      Voir les créneaux disponibles
                     </Link>
                   </Button>
                 </CardContent>
@@ -266,12 +290,12 @@ export default function StructureDetail() {
                     </Link>
                   </Button>
                 ) : (
-                    <Button className="w-full bg-blue-600 hover:bg-blue-700" asChild>
-                        <Link to={createPageUrl('AppointmentRequest') + `?structure_id=${structure.id}`}>
-                            <Calendar className="mr-2 h-4 w-4" />
-                            Demander un RDV
-                        </Link>
-                    </Button>
+                  <Button className="w-full bg-blue-600 hover:bg-blue-700" asChild>
+                    <Link to={createPageUrl('AppointmentRequest') + `?structure_id=${structure.id}`}>
+                      <Calendar className="mr-2 h-4 w-4" />
+                      Demander un RDV
+                    </Link>
+                  </Button>
                 )}
 
                 {structure.telephone && (

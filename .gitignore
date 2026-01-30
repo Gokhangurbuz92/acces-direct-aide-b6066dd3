@@ -39,11 +39,14 @@ __pycache__/
 
 # Testing & Artifacts
 test-results/
+test-results/**
 playwright-report/
+playwright-report/**
 coverage/
 cookies*.txt
 test-img*.jpg
 
 # Local Storage (Mock)
 uploads_mock/
+uploads_mock/**
 api/_utils/build-info.js

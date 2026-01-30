@@ -1,4 +1,5 @@
 #!/bin/bash
+# Generates a map of the repository files, excluding ignored/build directories.
 
 # Create docs directory if it doesn't exist
 mkdir -p docs

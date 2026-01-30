@@ -40,4 +40,4 @@ Les rôles sont définis (implicitement ou explicitement) :
 - **PII (Personal Identifiable Information)** : Minimisation de la collecte.
 - **Logs** : Les emails et téléphones sont masqués dans les logs applicatifs (`api/lib/logger.js`).
 - **Base de données** : Hébergée sur Neon (Postgres), accès sécurisé.
-- **Chiffrement** : `ENCRYPTION_KEY` (32 bytes) utilisée pour chiffrer les données sensibles au repos si nécessaire.
+- **Chiffrement** : `ADA_ENCRYPTION_KEY` (32 bytes) utilisée pour chiffrer les données sensibles au repos si nécessaire.

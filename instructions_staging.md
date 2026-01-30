@@ -46,5 +46,5 @@ This will output:
 - **Start**: `npm run start`
 
 ## Notes
-- `ENCRYPTION_KEY` is server-side. Frontend has no crypto logic.
+- `ADA_ENCRYPTION_KEY` is server-side. Frontend has no crypto logic.
 - Logs in terminal might show errors if env vars missing.

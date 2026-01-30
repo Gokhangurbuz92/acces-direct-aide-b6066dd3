@@ -41,12 +41,16 @@ export default function StructureDetail() {
   const navigate = useNavigate();
   const structureId = searchParams.get('id');
 
-  const { data: structure, isLoading, error } = useQuery({
+  const { data: queryData, isLoading, error } = useQuery({
     queryKey: ['structure', slug || structureId],
     queryFn: () => client.entities.Structure.filter(slug ? { slug } : { id: structureId }),
     // API now returns single object for id/slug queries
     enabled: !!slug || !!structureId
   });
+
+  const structure = Array.isArray(queryData)
+    ? queryData[0]
+    : (queryData?.items ? queryData?.items[0] : queryData);
 
   // Canonical Redirect: If accessed via ID but slug exists, redirect to slug URL
   useEffect(() => {

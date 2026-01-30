@@ -45,6 +45,7 @@ import dispositifs from './_handlers/dispositifs/index.js';
 // --- Cron ---
 import cronPipeline from './_handlers/cron/pipeline.js';
 import cronIngestStructures from './_handlers/cron/ingest-structures.js';
+import cronIngestAids from './_handlers/cron/ingest-aids.js';
 import cronPurge from './_handlers/cron/purge.js';
 
 // --- Admin ---
@@ -103,6 +104,7 @@ export const routes = [
     // --- Cron ---
     { path: 'cron/pipeline', match: 'exact', handler: cronPipeline },
     { path: 'cron/ingest-structures', match: 'exact', handler: cronIngestStructures },
+    { path: 'cron/ingest-aids', match: 'exact', handler: cronIngestAids },
     { path: 'cron/purge', match: 'exact', handler: cronPurge },
 
     // --- Admin ---

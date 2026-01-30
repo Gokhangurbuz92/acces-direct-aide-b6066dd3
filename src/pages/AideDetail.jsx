@@ -46,11 +46,15 @@ export default function AideDetail() {
   const urlParams = new URLSearchParams(window.location.search);
   const aideId = urlParams.get('id');
 
-  const { data: aide, isLoading, error } = useQuery({
+  const { data: queryData, isLoading, error } = useQuery({
     queryKey: ['aide', slug || aideId],
     queryFn: () => client.entities.Aide.filter(slug ? { slug } : { id: aideId }),
     enabled: !!slug || !!aideId
   });
+
+  const aide = Array.isArray(queryData)
+    ? queryData[0]
+    : (queryData?.items ? queryData?.items[0] : queryData);
 
   // Canonical Redirect: If accessed via ID but slug exists, redirect to slug URL
   useEffect(() => {
@@ -67,7 +71,9 @@ export default function AideDetail() {
     enabled: !!aide?.categorie
   });
 
-  const structures = structuresData?.items || [];
+  const structures = Array.isArray(structuresData)
+    ? structuresData
+    : (structuresData?.items || []);
 
   const filteredStructures = structures.filter(s =>
     s.categories_aidees?.includes(aide?.categorie)
@@ -319,12 +325,12 @@ export default function AideDetail() {
                   <Download className="mr-2 h-4 w-4" />
                   Télécharger en PDF (ou imprimer)
                 </Button>
-                <Link to={createPageUrl('Contact') + `?page=${encodeURIComponent(window.location.href)}&sujet=signalement_erreur`}>
-                  <Button variant="ghost" className="w-full text-slate-600">
+                <Button variant="ghost" className="w-full text-slate-600" asChild>
+                  <Link to={createPageUrl('Contact') + `?page=${encodeURIComponent(window.location.href)}&sujet=signalement_erreur`}>
                     <Flag className="mr-2 h-4 w-4" />
                     Signaler une erreur
-                  </Button>
-                </Link>
+                  </Link>
+                </Button>
               </CardContent>
             </Card>
 

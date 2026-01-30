@@ -1,0 +1,18 @@
+# Verification of CP1 Fix
+
+## Issue
+Navigation from Listing to Detail failed when fallback IDs (non-UUID) were used because `searchAidesSchema` enforced UUID format.
+
+## Fix
+Modified `api/_utils/validators.js` to allow string IDs (removed `.uuid()` constraint).
+
+## Verification Output
+Running `node reproduce_issue.js` after fix:
+
+```
+--- Reproduction: Testing Non-UUID ID in Search Schema ---
+❌ BUG NOT REPRODUCED: Validation succeeded.
+Parsed data: { page: 1, pageSize: 20, id: 'rec123456789' }
+```
+
+(The "BUG NOT REPRODUCED" message confirms the fix works as the validation now succeeds for legacy IDs).

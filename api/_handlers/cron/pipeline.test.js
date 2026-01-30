@@ -109,8 +109,21 @@ describe('News Pipeline', () => {
     });
 
     const req = {
-      url: 'http://localhost/api/cron/pipeline?secret=test-secret',
-      headers: { get: () => null }
+      // IMPORTANT: mettre source dans l'URL aussi pour new URL()
+      url: 'http://localhost/api/cron/pipeline?source=actualites&mode=smoke&secret=test-secret',
+      query: {
+        source: 'actualites',
+        mode: 'smoke',
+        secret: 'test-secret'
+      },
+      headers: {
+        get: (name) => {
+          if (name === 'authorization') return 'Bearer test-secret';
+          return null;
+        },
+        authorization: 'Bearer test-secret',
+        host: 'localhost'
+      }
     };
 
     const resMock = {

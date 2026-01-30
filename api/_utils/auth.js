@@ -1,21 +1,27 @@
-export const verifyAdmin = (req) => {
+
+import crypto from 'crypto';
+
+export function verifyAdmin(req) {
+    if (!process.env.ADMIN_TOKEN) {
+        console.error("FATAL: ADMIN_TOKEN is not set.");
+        return false;
+    }
+
     // 1. Check for Authorization header
     const authHeader = req.headers['authorization'] || req.headers['Authorization'];
-    if (!authHeader) return false;
+    if (!authHeader || !authHeader.startsWith('Bearer ')) return false;
 
     // 2. Extract token
     // Format: "Bearer <token>"
     const token = authHeader.split(' ')[1];
-    if (!token) return false;
 
-    // 3. Validate against Environment Variable
-    // If ADMIN_TOKEN is not set in env, we fail closed (secure by default)
-    if (!process.env.ADMIN_TOKEN) {
-        console.error("CRITICAL: ADMIN_TOKEN is not defined in environment variables.");
-        return false;
-    }
+    // Constant-time comparison to prevent timing attacks
+    const tokenBuffer = Buffer.from(token);
+    const adminTokenBuffer = Buffer.from(process.env.ADMIN_TOKEN);
 
-    return token === process.env.ADMIN_TOKEN;
+    if (tokenBuffer.length !== adminTokenBuffer.length) return false;
+
+    return crypto.timingSafeEqual(tokenBuffer, adminTokenBuffer);
 };
 
 export const getAuthenticatedUser = async (req) => {

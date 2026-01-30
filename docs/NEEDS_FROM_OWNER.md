@@ -5,7 +5,7 @@ Pour garantir le fonctionnement en production et en pré-production (Preview Ver
 ## 🚨 Critiques (Bloquants)
 *   **`DATABASE_URL`**: URL de connexion PostgreSQL (Neon).
     *   *Usage:* Prisma Client (`api/index.js`, handlers).
-*   **`ENCRYPTION_KEY`**: Chaîne hexadécimale de 32 octets (64 caractères).
+*   **`ADA_ENCRYPTION_KEY`**: Chaîne hexadécimale de 32 octets (64 caractères).
     *   *Usage:* Chiffrement des messages et données sensibles (`api/lib/crypto.js`).
     *   *Commande pour générer:* `openssl rand -hex 32`
 *   **`JWT_SECRET`**: Secret pour la signature des tokens d'authentification Pro.

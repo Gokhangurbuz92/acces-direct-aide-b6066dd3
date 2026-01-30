@@ -6,7 +6,8 @@ import SearchBar from '@/components/search/SearchBar';
 import AideCard from '@/components/cards/AideCard';
 import SEO from '@/components/SEO';
 import { Loader2, Filter, X } from 'lucide-react';
-import EmptyState from '@/components/ui/EmptyState';
+import EmptyState from '@/components/feedback/EmptyState';
+import { trackBusinessEvent } from '@/utils/analytics';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 
@@ -42,6 +43,18 @@ export default function Aides() {
       pageSize: 12
     }),
   });
+
+  // Tracking: Zero Results
+  useEffect(() => {
+    if (!isLoading && data && data.items && data.items.length === 0) {
+      trackBusinessEvent('SEARCH_ZERO_RESULTS', {
+        query,
+        category,
+        situation,
+        geo
+      });
+    }
+  }, [isLoading, data, query, category, situation, geo]);
 
   const aides = data?.items || [];
   const pagination = data?.pagination || {};
@@ -231,10 +244,9 @@ export default function Aides() {
             ) : (
               <EmptyState
                 title="Aucune aide trouvée"
-                message="Essayez de modifier vos filtres ou d'élargir votre recherche."
+                message="Essayez de modifier vos filtres ou d'élargir votre recherche. Vous pouvez aussi consulter l'annuaire des structures."
                 actionLabel="Réinitialiser les filtres"
                 onAction={clearFilters}
-                type="search"
               />
             )}
           </main>

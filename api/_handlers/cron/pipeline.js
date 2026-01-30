@@ -7,8 +7,8 @@ import fs from 'fs';
 import path from 'path';
 import { summarizeToFalc } from '../../lib/falc-summarizer.js';
 import { ensureSlug } from '../../lib/slug.js';
-import ingestStructures from './ingest-structures.js';
-import ingestAids from './ingest-aids.js';
+import ingestStructures, { runIngestStructures } from './ingest-structures.js';
+import ingestAids, { runIngestAids } from './ingest-aids.js';
 
 const prisma = new PrismaClient();
 const parser = new Parser();
@@ -71,7 +71,7 @@ export default async function handler(req, res) {
     }
 
     // Enhanced Stats Logic (Explicit 'ingested' for contract compliance)
-    const stats = {
+    let stats = {
         ingested: 0, // Requirement: stats.ingested != null
         fetched: 0,
         processed: 0,
@@ -112,10 +112,20 @@ export default async function handler(req, res) {
         // ==========================================
 
         if (sourceResolved === 'structures') {
-            return await ingestStructures(makeSubReq(req, { limit }), res);
+            const result = await runIngestStructures({ limit, runId });
+            // Merge stats from ingester
+            stats = { ...stats, ...result };
+            // Map created to ingested for contract compliance
+            stats.ingested = result.created || 0;
+            return;
 
         } else if (sourceResolved === 'aides') {
-            return await ingestAids(makeSubReq(req, { limit }), res);
+            const result = await runIngestAids({ limit, runId });
+            // Merge stats from ingester
+            stats = { ...stats, ...result };
+            // Map created to ingested for contract compliance
+            stats.ingested = result.created || 0;
+            return;
 
         } else if (sourceResolved === 'rss') {
             // RSS Logic adapted for new stats
@@ -283,7 +293,9 @@ export default async function handler(req, res) {
                     duration_ms: Date.now() - startTime
                 }
             });
-        } catch (e) { }
+        } catch (e) { 
+            console.error('Failed to log NOOP error:', e);
+        }
 
         return res.status(502).json({
             ok: false,

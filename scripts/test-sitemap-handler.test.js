@@ -24,7 +24,6 @@ describe('Sitemap Handler', () => {
     const res = {
       setHeader: vi.fn(),
       writeHead: vi.fn(),
-      writeHeader: vi.fn(),
       end: vi.fn(),
       status: vi.fn().mockReturnThis(),
       json: vi.fn(),
@@ -35,13 +34,13 @@ describe('Sitemap Handler', () => {
 
     await handler(req, res);
 
-    expect(res.writeHeader).toHaveBeenCalledWith(200, expect.objectContaining({
+    expect(res.writeHead).toHaveBeenCalledWith(200, expect.objectContaining({
       'Content-Type': 'application/xml; charset=utf-8'
     }));
 
     // Extract ETag from calls
     // Call args are [200, headersObject]
-    const headerCall = res.writeHeader.mock.calls.find(args => args[0] === 200 && args[1].ETag);
+    const headerCall = res.writeHead.mock.calls.find(args => args[0] === 200 && args[1].ETag);
     const etag = headerCall ? headerCall[1].ETag : 'W/"expected-etag"';
 
     expect(res.end).toHaveBeenCalledWith(expect.stringContaining('<?xml'));
@@ -51,7 +50,6 @@ describe('Sitemap Handler', () => {
     const res2 = {
       setHeader: vi.fn(),
       writeHead: vi.fn(),
-      writeHeader: vi.fn(),
       end: vi.fn(),
       status: vi.fn().mockReturnThis(),
       json: vi.fn(),
@@ -67,14 +65,13 @@ describe('Sitemap Handler', () => {
     const res = {
       setHeader: vi.fn(),
       writeHead: vi.fn(),
-      writeHeader: vi.fn(),
       end: vi.fn(),
       status: vi.fn().mockReturnThis(),
       json: vi.fn(),
     };
 
     await handler(req, res);
-    expect(res.writeHeader).toHaveBeenCalledWith(200, expect.anything());
+    expect(res.writeHead).toHaveBeenCalledWith(200, expect.anything());
     expect(res.end).toHaveBeenCalledWith(); // No body
   });
 });

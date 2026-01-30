@@ -3,12 +3,15 @@ import actualitesHandler from '../../api/_handlers/actualites.js';
 
 // Mock Auth
 vi.mock('../../api/_utils/auth.js', () => ({
+    verifyAdmin: vi.fn().mockReturnValue(false),
     getAuthenticatedUser: vi.fn(),
 }));
 
-// Mock Snapshot
-vi.mock('../../api/_utils/snapshot.js', () => ({
-    createSnapshot: vi.fn(),
+// Mock CRUD
+vi.mock('../../api/_utils/crud.js', () => ({
+    createEntity: vi.fn(),
+    updateEntity: vi.fn(),
+    deleteEntity: vi.fn(),
 }));
 
 // Mock Prisma

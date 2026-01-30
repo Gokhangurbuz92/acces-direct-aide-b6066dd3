@@ -11,7 +11,13 @@ Ce document décrit les procédures de résolution d'incidents et de maintenance
    - Vérifier `DATABASE_URL` dans les env vars Vercel.
 3. **Vérifier les Secrets** :
    - `JWT_SECRET`, `ADA_ENCRYPTION_KEY`, `CRON_SECRET` sont-ils présents ?
+   - `KV_REST_API_URL` et `KV_REST_API_TOKEN` (Upstash REST) pour le Rate Limit.
 
+### Rate Limit (Quota Exceeded)
+Le système utilise **Upstash REST** (via HTTPS).
+- Backend Actif : Vérifier les logs pour `[RateLimit] Init: Backend=KV_REST_API`.
+- Fallback : Si les clés manquent ou échouent, le système passe en `MEMORY` (logs: `Backend=MEMORY`).
+- Configuration : `api/_utils/rateLimit.js`.
 ### Base de Données Inaccessible
 1. Vérifier le status Neon.tech.
 2. Si maintenance, activer le mode maintenance (page statique sur Vercel si configuré).

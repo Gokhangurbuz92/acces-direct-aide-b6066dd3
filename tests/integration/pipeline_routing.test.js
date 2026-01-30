@@ -1,13 +1,17 @@
 
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import pipelineHandler from '../../api/_handlers/cron/pipeline.js';
+import { runIngestStructures } from '../../api/_handlers/cron/ingest-structures.js';
+import { runIngestAids } from '../../api/_handlers/cron/ingest-aids.js';
 
 // Mock dependencies
 vi.mock('../../api/_handlers/cron/ingest-structures.js', () => ({
-    default: vi.fn().mockResolvedValue({ created: 10, errors: [] })
+    runIngestStructures: vi.fn().mockResolvedValue({ created: 10, errors: [], durationByStage: {} }),
+    default: vi.fn()
 }));
 vi.mock('../../api/_handlers/cron/ingest-aids.js', () => ({
-    default: vi.fn().mockResolvedValue({ created: 5, errors: [] })
+    runIngestAids: vi.fn().mockResolvedValue({ created: 5, errors: [], durationByStage: {} }),
+    default: vi.fn()
 }));
 vi.mock('@prisma/client', () => {
     const MockPrismaClient = vi.fn();
@@ -53,18 +57,14 @@ describe('Cron Pipeline Routing', () => {
 
     it('should authorize via Bearer token', async () => {
         const { req, res } = createMocks({ source: 'structures' }, { authorization: `Bearer ${CRON_SECRET}` });
-        const ingestStructures = (await import('../../api/_handlers/cron/ingest-structures.js')).default;
 
         await pipelineHandler(req, res);
         expect(res.status).toHaveBeenCalledWith(200);
-        expect(ingestStructures).toHaveBeenCalled();
+        expect(runIngestStructures).toHaveBeenCalled();
     });
 
     it('should authorize via query param', async () => {
         const { req, res } = createMocks({ source: 'structures', secret: CRON_SECRET });
-        // Clean mock
-        const ingestStructures = (await import('../../api/_handlers/cron/ingest-structures.js')).default;
-        ingestStructures.mockClear();
 
         await pipelineHandler(req, res);
         expect(res.status).toHaveBeenCalledWith(200);
@@ -79,34 +79,33 @@ describe('Cron Pipeline Routing', () => {
 
     it('should route to structures when source=structures', async () => {
         const { req, res } = createMocks({ secret: CRON_SECRET, source: 'structures' });
-        const ingestStructures = (await import('../../api/_handlers/cron/ingest-structures.js')).default;
 
         await pipelineHandler(req, res);
 
-        expect(ingestStructures).toHaveBeenCalled();
+        expect(runIngestStructures).toHaveBeenCalled();
         expect(res.status).toHaveBeenCalledWith(200);
         expect(res.json).toHaveBeenCalledWith(expect.objectContaining({ source: 'structures', ok: true }));
     });
 
     it('should pass limiting params when mode=smoke', async () => {
         const { req, res } = createMocks({ secret: CRON_SECRET, source: 'structures', mode: 'smoke' });
-        const ingestStructures = (await import('../../api/_handlers/cron/ingest-structures.js')).default;
 
         await pipelineHandler(req, res);
 
-        // Check if limit was passed (implementation detail: pipeline passes query with limit)
-        const callArgs = ingestStructures.mock.calls[0][0]; // first arg is req-like object
-        expect(callArgs.query.limit).toBe("5");
+        // Check if limit was passed
+        // pipeline logic: if mode=smoke, limit=5
+        expect(runIngestStructures).toHaveBeenCalledWith(expect.objectContaining({
+            limit: 5,
+            runId: expect.any(String)
+        }));
     });
-
 
     it('should support aliases: demarches -> aides', async () => {
         const { req, res } = createMocks({ secret: CRON_SECRET, source: 'demarches' });
-        const ingestAids = (await import('../../api/_handlers/cron/ingest-aids.js')).default;
 
         await pipelineHandler(req, res);
 
-        expect(ingestAids).toHaveBeenCalled();
+        expect(runIngestAids).toHaveBeenCalled();
         expect(res.json).toHaveBeenCalledWith(expect.objectContaining({
             source: 'demarches',
             sourceResolved: 'aides',
@@ -130,6 +129,7 @@ describe('Cron Pipeline Routing', () => {
         }));
     });
 
+
     it('should return 400 for invalid source', async () => {
         const { req, res } = createMocks({ secret: CRON_SECRET, source: 'invalid' });
 
@@ -137,5 +137,25 @@ describe('Cron Pipeline Routing', () => {
 
         expect(res.status).toHaveBeenCalledWith(400);
         expect(res.json).toHaveBeenCalledWith(expect.objectContaining({ ok: false, error: expect.stringContaining("Invalid source") }));
+    });
+
+    it('should report errors if ingester returns errors (Anti Silent Failure)', async () => {
+        const { req, res } = createMocks({ secret: CRON_SECRET, source: 'structures' });
+
+        // Mock returning an error
+        runIngestStructures.mockResolvedValueOnce({
+            fetched: 0,
+            processed: 0,
+            errors: ['[STRUCTURES] 0 items found'],
+            durationByStage: { fetchMs: 100 }
+        });
+
+        await pipelineHandler(req, res);
+
+        expect(res.json).toHaveBeenCalledWith(expect.objectContaining({
+            stats: expect.objectContaining({
+                errors: expect.arrayContaining(['[STRUCTURES] 0 items found'])
+            })
+        }));
     });
 });

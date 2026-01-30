@@ -1,8 +1,7 @@
 #!/bin/bash
 # Generates a map of the repository files, excluding ignored/build directories.
 
-# Create docs directory if it doesn't exist
-mkdir -p docs
+# Generates a map of the repository files, excluding ignored/build directories.
 
 # Generate repo map
 # Excludes: node_modules, dist, .git, .vercel, coverage, test-results, venv, .env*, uploads_mock, cookies*

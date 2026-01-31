@@ -1,0 +1,247 @@
+# HOTFIX: Production White Screen (Chunk Cycle)
+
+## 🚨 Root Cause
+
+**Production white screen caused by circular chunk dependencies in Vite build configuration.**
+
+### Technical Details
+
+The custom `manualChunks` configuration in `vite.config.js` was creating circular dependencies between vendor chunks:
+
+```
+Circular chunk: vendor -> vendor-react -> vendor
+Circular chunk: vendor -> vendor-react -> vendor-sentry -> vendor
+```
+
+**Why this caused a white screen:**
+
+1. The circular dependency disrupted the module loading order in production
+2. When `useMergeRef.js` (from `@radix-ui` components) tried to access React's `useLayoutEffect`, React was `undefined`
+3. This threw an uncaught runtime error: `Cannot read properties of undefined (reading 'useLayoutEffect')`
+4. The error crashed the entire React application before any UI could render
+
+**Evidence from build logs:**
+- Before fix: Multiple "Circular chunk" warnings during `vite build`
+- After fix: Clean build with no circular dependency warnings
+
+## ✅ Fix Applied
+
+**Replaced complex manual chunking with Vite's safe `splitVendorChunkPlugin()`**
+
+### Changes Made
+
+**File: `vite.config.js`**
+
+1. **Added** `splitVendorChunkPlugin` import and plugin
+2. **Removed** entire `rollupOptions.output.manualChunks` configuration (80+ lines)
+3. **Result**: Vite now handles vendor chunking automatically without circular dependencies
+
+**Before:**
+```javascript
+build: {
+  rollupOptions: {
+    output: {
+      manualChunks(id) {
+        // Complex custom chunking logic that created cycles
+        if (id.includes("/react/")) return "vendor-react";
+        if (id.includes("/@sentry/")) return "vendor-sentry";
+        return "vendor"; // ← This created the circular dependency
+      }
+    }
+  }
+}
+```
+
+**After:**
+```javascript
+import { defineConfig, splitVendorChunkPlugin } from "vite";
+
+export default defineConfig({
+  plugins: [
+    react(),
+    splitVendorChunkPlugin(), // ← Safe, automatic vendor chunking
+    // ...
+  ],
+  build: {
+    sourcemap: process.env.SENTRY_AUTH_TOKEN ? "hidden" : true,
+    // splitVendorChunkPlugin() handles chunking automatically
+  },
+});
+```
+
+## 🧪 Anti-Regression: Smoke Test
+
+**Added: `e2e/smoke-home.spec.js`**
+
+Minimal smoke test that catches white screen regressions:
+
+- ✅ Detects uncaught page errors (like the `useLayoutEffect` error)
+- ✅ Detects critical console errors related to React/undefined
+- ✅ Verifies home page renders visible content (not blank)
+- ✅ Fast execution (~4.5s for 2 tests)
+
+**Test coverage:**
+1. Home page loads without runtime errors
+2. Main content is visible (not white screen)
+
+## 📊 Verification Results
+
+### Build Comparison
+
+**Before (with circular chunks):**
+```
+Circular chunk: vendor -> vendor-react -> vendor
+Circular chunk: vendor -> vendor-react -> vendor-sentry -> vendor
+
+Output:
+- vendor-DtNtaDht.js (527 kB)
+- vendor-react-9Ky7egSp.js (149 kB)
+- vendor-sentry-DOaSoAFE.js (108 kB)
+- vendor-ui-uIbO4iFh.js (122 kB)
+- vendor-router-CmzZ3CLW.js (36 kB)
+- vendor-dates-dWC2vNof.js (28 kB)
+```
+
+**After (no circular chunks):**
+```
+✓ No circular chunk warnings
+
+Output:
+- vendor-WLxldAYq.js (893 kB) ← Single vendor chunk, no cycles
+- index-LlVS8bii.js (46 kB)
+- Other route chunks...
+```
+
+### Test Results
+
+✅ **Lint:** Passed (1 pre-existing warning, unrelated)
+```bash
+npm run lint
+# ✓ No new errors
+```
+
+✅ **Unit Tests:** All passed (55 tests)
+```bash
+npm test
+# Test Files  17 passed (17)
+# Tests  55 passed (55)
+```
+
+✅ **Build:** Clean, no circular chunk warnings
+```bash
+npm run build
+# ✓ built in 6.43s
+# No "Circular chunk" warnings
+```
+
+✅ **Smoke Test:** Passed (2/2 tests)
+```bash
+npx playwright test e2e/smoke-home.spec.js
+# 2 passed (4.5s)
+```
+
+✅ **Preview:** Home page renders correctly
+```bash
+npm run preview
+# ✓ Server running, home page visible
+```
+
+## 🎯 How to Verify
+
+### Local Verification
+
+```bash
+# 1. Clean install
+npm ci
+
+# 2. Build (should have NO circular chunk warnings)
+npm run build
+
+# 3. Preview (should show home page, not white screen)
+npm run preview
+# Open http://localhost:4173 in browser
+
+# 4. Run smoke test
+npx playwright test e2e/smoke-home.spec.js
+# Should pass 2/2 tests
+
+# 5. Full validation
+npm run lint
+npm test
+npx playwright test
+```
+
+### Production Verification (Vercel)
+
+After deployment:
+
+1. **Open production URL** → Should see home page (not white screen)
+2. **Check browser console** → No `useLayoutEffect` or `undefined` errors
+3. **Navigate app** → All routes should work
+4. **Check Vercel build logs** → No "Circular chunk" warnings
+
+## 📝 Files Modified
+
+### Core Fix
+- `vite.config.js` - Replaced manual chunking with `splitVendorChunkPlugin()`
+
+### Anti-Regression
+- `e2e/smoke-home.spec.js` - New smoke test to catch white screen issues
+
+### Auto-Generated (Ignore)
+- `api/_utils/build-info.js` - Auto-generated by postinstall script
+- `release/v1.0.0/proofs/**/*.png` - Test artifacts (binary changes)
+
+## 🔍 Additional Context
+
+### Why `splitVendorChunkPlugin()` is Safe
+
+Vite's `splitVendorChunkPlugin()` uses a simple, proven strategy:
+- Splits `node_modules` into a single `vendor` chunk
+- Splits app code into separate chunks
+- **Never creates circular dependencies**
+- Recommended by Vite team for most use cases
+
+### Performance Impact
+
+**Bundle size:** Slightly larger single vendor chunk (893 kB vs. multiple smaller chunks)
+- **Trade-off:** Simpler, more reliable loading order
+- **Benefit:** Better caching (vendor chunk changes less frequently)
+- **Result:** No white screen, stable production builds
+
+### Future Optimization (Optional)
+
+If custom chunking is needed later:
+1. Use a **minimal** `manualChunks` strategy
+2. **Never** return different chunk names for dependencies of the same package
+3. **Always** test for circular dependencies with `npm run build`
+
+Example safe pattern:
+```javascript
+manualChunks(id) {
+  if (id.includes('node_modules')) {
+    return 'vendor'; // Single vendor chunk, no cycles
+  }
+}
+```
+
+## ✅ Checklist
+
+- [x] Root cause identified and documented
+- [x] Fix applied (minimal, atomic change)
+- [x] Build produces no circular chunk warnings
+- [x] Smoke test added to prevent regression
+- [x] All tests pass (lint, unit, smoke)
+- [x] Preview verified locally
+- [x] No secrets in repo
+- [x] PR description complete (Root cause / Fix / How to verify)
+
+## 🚀 Ready for Deployment
+
+This hotfix is **minimal, tested, and ready for production deployment**.
+
+**Expected outcome:**
+- ✅ Production site displays home page (no white screen)
+- ✅ No `useLayoutEffect` runtime errors
+- ✅ Clean build logs (no circular chunk warnings)
+- ✅ CI passes (all tests green)

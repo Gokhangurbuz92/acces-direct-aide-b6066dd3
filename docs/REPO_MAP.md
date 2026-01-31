@@ -1,85 +1,85 @@
-# Carte du Répertoire (Repository Map)
+# Repository Map (Source of Truth)
 
-Ce document décrit l'organisation du code source du projet **AccesDirectAide**.
+This document provides a high-level overview of the repository structure, designating ownership and purpose for each section.
 
-## 1. Racine & Configuration
+## 1. Root & Configuration
+**Owner:** DevOps / Lead
+**Role:** Project configuration, dependency management, and build settings.
 
-| Fichier / Dossier | Rôle |
-| ----------------- | ---- |
-| `README.md` | Point d'entrée, documentation générale. |
-| `package.json` | Définition des dépendances et scripts NPM. |
-| `vite.config.js` | Configuration du bundler Vite (Frontend). |
-| `vercel.json` | Configuration du déploiement Vercel (rewrites, crons, headers). |
-| `eslint.config.js` | Configuration du linter ESLint. |
-| `.gitignore` | Exclusions Git (fichiers générés, secrets). |
-| `.env.example` | Modèle des variables d'environnement requises. |
+| Path | Purpose | Dependencies | Risk |
+|------|---------|--------------|------|
+| `package.json` | Project dependencies and scripts | - | High (Build/Run) |
+| `vercel.json` | Deployment configuration (rewrites, crons) | - | High (Routing) |
+| `vite.config.js` | Frontend build configuration | - | High (Build) |
+| `eslint.config.js` | Linting rules (separated Browser/Node) | - | Low |
+| `.gitignore` | Git exclusion rules | - | Low |
 
 ## 2. Frontend (`src/`)
+**Owner:** Frontend
+**Role:** React Single Page Application (Vite).
 
-L'application est une Single Page Application (SPA) React construite avec Vite.
+| Path | Purpose | Dependencies | Risk |
+|------|---------|--------------|------|
+| `src/pages/` | Route components (Lazy loaded) | React Router | High (UX) |
+| `src/components/` | Reusable UI components | Tailwind | Medium |
+| `src/api/` | API Client (`client.js`) | `api/routes.js` (contract) | High (Data) |
+| `src/utils/` | Shared logic (analytics, schema) | - | Low |
 
-| Dossier | Contenu |
-| ------- | ------- |
-| `src/pages/` | Composants de pages (Vues). Contient aussi le routeur `index.jsx`. |
-| `src/components/` | Composants React réutilisables (UI, Layout, Business). |
-| `src/api/` | Client API frontend (appels vers le backend). |
-| `src/hooks/` | Hooks React personnalisés. |
-| `src/lib/` | Utilitaires frontend (ex: `utils.js`). |
-| `src/utils/` | Fonctions utilitaires partagées. |
+## 3. API (`api/`)
+**Owner:** Backend
+**Role:** Node.js Serverless Functions (Monolithic Router pattern).
 
-## 3. API Backend (`api/`)
+| Path | Purpose | Dependencies | Risk |
+|------|---------|--------------|------|
+| `api/index.js` | Vercel Entrypoint | `api/routes.js` | Critical |
+| `api/routes.js` | Route definition (Method -> Handler) | Handlers | Critical |
+| `api/_handlers/` | Business logic endpoints | Prisma, Utils | High |
+| `api/_utils/` | Shared backend logic (Auth, RateLimit) | Redis/KV | Critical (Security) |
+| `api/lib/` | Service adapters (FALC, Storage) | External APIs | Medium |
 
-Architecture Serverless (Vercel Functions) simulant une API monolithique via un routeur central.
+## 4. Database (`prisma/`)
+**Owner:** Backend / DBA
+**Role:** Database schema and migrations (Postgres).
 
-| Dossier | Contenu |
-| ------- | ------- |
-| `api/index.js` | Point d'entrée de la fonction serverless. |
-| `api/routes.js` | Définition centralisée des routes et mapping vers les handlers. |
-| `api/_handlers/` | Logique métier des endpoints (Aides, Démarches, Structures, etc.). |
-| `api/_utils/` | Utilitaires transverses (Auth, RateLimit, Crypto, Sentry). |
-| `api/lib/` | Services et bibliothèques métier (Storage, Search, FALC). |
+| Path | Purpose | Dependencies | Risk |
+|------|---------|--------------|------|
+| `prisma/schema.prisma` | Data models and relations | Neon DB | Critical (Data Loss) |
+| `prisma/migrations/` | SQL migration history | - | High |
 
-## 4. Base de Données (`prisma/`)
+## 5. Scripts (`scripts/`)
+**Owner:** DevOps
+**Role:** Utility scripts for CI, verification, and data population.
 
-Le projet utilise Prisma comme ORM avec une base PostgreSQL (Neon).
-
-| Fichier / Dossier | Rôle |
-| ----------------- | ---- |
-| `prisma/schema.prisma` | Définition du modèle de données. |
-| `prisma/migrations/` | Historique des migrations de base de données. |
-| `prisma/seed.js` | Script de peuplement initial de la base de données. |
-
-## 5. Scripts & Outillage (`scripts/`)
-
-Scripts de maintenance, vérification, ingestion de données et CI.
-
-| Type | Exemples |
-| ---- | -------- |
-| **Ingestion** | `import-csv.js`, `seed-*.js` |
-| **Vérification** | `verify-*.js`, `ci-healthcheck.js` |
-| **Maintenance** | `generate-repo-map.sh`, `backfill-slugs.js` |
+| Path | Purpose | Dependencies | Risk |
+|------|---------|--------------|------|
+| `scripts/ci-healthcheck.js` | CI Smoke tests | - | High (CI Gate) |
+| `scripts/generate-repo-map.sh`| Documentation generator | - | Low |
 
 ## 6. Documentation (`docs/`)
+**Owner:** All
+**Role:** Project knowledge base and operational procedures.
 
-Documentation technique et fonctionnelle du projet.
+| Path | Purpose |
+|------|---------|
+| `docs/REPO_MAP.md` | This file |
+| `docs/REPO_FILES.txt` | Automated file inventory |
+| `docs/ROUTES_FRONT.md` | Frontend routing map |
+| `docs/ROUTES_API.md` | API endpoint map |
 
-| Fichier | Sujet |
-| ------- | ----- |
-| `REPO_MAP.md` | Cette carte. |
-| `ROUTES_FRONT.md` | Liste des routes frontend et pages associées. |
-| `ROUTES_API.md` | Documentation des endpoints API. |
-| `RUNBOOK.md` | Procédures d'exploitation et gestion d'incidents. |
+## 7. Tests
+**Owner:** QA / Dev
+**Role:** Automated verification.
 
-## 7. Données (`data/`)
+| Path | Purpose | Tool |
+|------|---------|------|
+| `e2e/` | End-to-end tests | Playwright |
+| `tests/` | Unit/Integration tests | Vitest |
 
-Fichiers de données statiques ou sources pour l'ingestion (CSV, JSON).
+## 8. Data
+**Owner:** Data
+**Role:** Seed data and configuration.
 
-## 8. Tests (`e2e/`, `tests/`)
-
-| Dossier | Type de test |
-| ------- | ------------ |
-| `e2e/` | Tests End-to-End (Playwright). |
-| `tests/` | Tests d'intégration et unitaires. |
-
----
-**Note:** Ce fichier est maintenu manuellement pour décrire la structure logique. Pour la liste exhaustive des fichiers, voir `docs/REPO_FILES.txt`.
+| Path | Purpose |
+|------|---------|
+| `data/` | CSV/JSON seeds |
+| `config/` | App config (e.g. RSS sources) |

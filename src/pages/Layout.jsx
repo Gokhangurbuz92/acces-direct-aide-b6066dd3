@@ -203,7 +203,7 @@ export default function Layout({ children, currentPageName }) {
               {/* Mobile: Logo Icon Only */}
               <Link
                 to={createPageUrl('Home')}
-                className="sm:hidden flex items-center justify-center p-1.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-primary focus-visible:ring-offset-2 rounded-full bg-surface border border-border shadow-sm hover:shadow-md transition-shadow"
+                className="sm:hidden flex items-center justify-center p-1.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-primary focus-visible:ring-offset-2 rounded-full bg-slate-50 border border-border shadow-sm hover:shadow-md transition-shadow"
                 aria-label="AccesDirectAide - Accueil"
               >
                 <Logo variant="icon" size={32} />
@@ -211,7 +211,7 @@ export default function Layout({ children, currentPageName }) {
               {/* Desktop: Logo Full */}
               <Link
                 to={createPageUrl('Home')}
-                className="hidden sm:flex items-center px-4 py-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-primary focus-visible:ring-offset-2 rounded-full bg-surface border border-border shadow-sm hover:shadow-md transition-shadow gap-2"
+                className="hidden sm:flex items-center px-4 py-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-primary focus-visible:ring-offset-2 rounded-full bg-slate-50 border border-border shadow-sm hover:shadow-md transition-shadow gap-2"
                 aria-label="AccesDirectAide - Accueil"
               >
                 <Logo variant="full" size={28} />
@@ -226,10 +226,10 @@ export default function Layout({ children, currentPageName }) {
                     <>
                       <Link
                         to={createPageUrl(item.page)}
-                        className={`flex items-center gap-1 px-3 py-2 rounded-lg text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-primary focus-visible:ring-offset-2
+                        className={`flex items-center gap-1 px-3 py-2 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-primary focus-visible:ring-offset-2 rounded-md
                           ${currentPageName === item.page
-                            ? 'text-brand-primary bg-brand-highlight/10'
-                            : 'text-text-body hover:text-brand-primary hover:bg-surface'
+                            ? 'text-brand-primary border-b-2 border-brand-primary'
+                            : 'text-text-body hover:text-brand-primary hover:bg-brand-highlight/10'
                           }`}
                         aria-haspopup="menu"
                         aria-controls={`nav-${item.page.toLowerCase()}-menu`}
@@ -260,10 +260,10 @@ export default function Layout({ children, currentPageName }) {
                   ) : (
                     <Link
                       to={createPageUrl(item.page)}
-                      className={`flex items-center gap-1 px-3 py-2 rounded-lg text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-primary focus-visible:ring-offset-2
+                      className={`flex items-center gap-1 px-3 py-2 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-primary focus-visible:ring-offset-2 rounded-md
                         ${currentPageName === item.page
-                          ? 'text-brand-primary bg-brand-highlight/10'
-                          : 'text-text-body hover:text-brand-primary hover:bg-surface'
+                          ? 'text-brand-primary border-b-2 border-brand-primary'
+                          : 'text-text-body hover:text-brand-primary hover:bg-brand-highlight/10'
                         }`}
                     >
                       {item.label}

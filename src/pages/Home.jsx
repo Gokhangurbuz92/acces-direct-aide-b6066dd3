@@ -55,7 +55,10 @@ export default function Home() {
       <section className="bg-gradient-to-br from-blue-600 via-blue-700 to-indigo-800 text-white py-16 md:py-24">
         <div className="max-w-5xl mx-auto px-4 sm:px-6 text-center">
           <div className="mb-8 flex justify-center">
-            <Logo variant="hero" />
+            <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/10 border border-white/20 backdrop-blur-sm">
+              <Logo variant="icon" tone="white" size={24} />
+              <span className="text-white font-medium text-sm">AccesDirectAide</span>
+            </div>
           </div>
           <h1 className="text-3xl md:text-5xl font-bold mb-6 leading-tight">
             Trouvez les aides et les services

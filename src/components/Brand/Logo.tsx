@@ -8,14 +8,16 @@ import { Link } from 'react-router-dom';
  * Design System v1.0 - Branding
  * 
  * @param {Object} props
- * @param {'full' | 'icon'} props.variant - Type de logo (full = complet, icon = icône seule)
- * @param {'default' | 'white' | 'mono'} props.tone - Tonalité (default = couleur, white = blanc, mono = monochrome)
- * @param {number} props.size - Hauteur en pixels (défaut: 40)
+ * @param {'a' | 'b' | 'c' | 'current'} props.family - Famille de logo (a/b/c pour preview, current pour prod)
+ * @param {'full' | 'icon' | 'tagline'} props.variant - Type de logo
+ * @param {'default' | 'white'} props.tone - Tonalité (default = couleur, white = blanc)
+ * @param {number | 'sm' | 'md' | 'lg'} props.size - Hauteur en pixels ou preset
  * @param {boolean} props.asLink - Si true, enveloppe dans un Link vers l'accueil
  * @param {string} props.alt - Texte alternatif personnalisé
  * @param {string} props.className - Classes CSS additionnelles
  */
 const Logo = ({ 
+    family = 'current',
     variant = 'full', 
     tone = 'default',
     size = 40,
@@ -24,27 +26,38 @@ const Logo = ({
     className,
     ...props 
 }) => {
+    // Conversion size preset vers pixels
+    const sizeMap = {
+        sm: 24,
+        md: 40,
+        lg: 64
+    };
+    const heightPx = typeof size === 'string' ? sizeMap[size] : size;
+    
     // Chemins des assets
     const basePath = '/assets/branding';
     
-    // Sélection du fichier selon variant et tone
+    // Déterminer le suffixe de famille (a/b/c ou vide pour current)
+    const familySuffix = family === 'current' ? '' : `-${family}`;
+    
+    // Sélection du fichier selon family, variant et tone
     let logoSrc;
     let fallbackSrc;
     
-    if (variant === 'icon') {
-        logoSrc = `${basePath}/logo-icon.svg`;
-        fallbackSrc = tone === 'white' 
-            ? '/brand/logo-mark-transparent.png'
-            : '/brand/logo-mark.png';
+    if (tone === 'white') {
+        // Version blanche (toutes familles)
+        logoSrc = `${basePath}/logo${familySuffix}-white.svg`;
+        fallbackSrc = '/brand/logo-horizontal-transparent.png';
+    } else if (variant === 'icon') {
+        logoSrc = `${basePath}/logo${familySuffix}-icon.svg`;
+        fallbackSrc = '/brand/logo-mark.png';
+    } else if (variant === 'tagline') {
+        logoSrc = `${basePath}/logo${familySuffix}-tagline.svg`;
+        fallbackSrc = '/brand/logo-horizontal.png';
     } else {
         // variant === 'full'
-        if (tone === 'white') {
-            logoSrc = `${basePath}/logo-white.svg`;
-            fallbackSrc = '/brand/logo-horizontal-transparent.png';
-        } else {
-            logoSrc = `${basePath}/logo-full.svg`;
-            fallbackSrc = '/brand/logo-horizontal.png';
-        }
+        logoSrc = `${basePath}/logo${familySuffix}-full.svg`;
+        fallbackSrc = '/brand/logo-horizontal.png';
     }
     
     // Texte alternatif
@@ -56,7 +69,7 @@ const Logo = ({
             src={logoSrc}
             alt={altText}
             className={cn("object-contain", className)}
-            style={{ height: `${size}px`, width: 'auto' }}
+            style={{ height: `${heightPx}px`, width: 'auto' }}
             onError={(e) => {
                 // Fallback vers PNG si SVG non disponible
                 e.currentTarget.src = fallbackSrc;
@@ -82,9 +95,13 @@ const Logo = ({
 };
 
 Logo.propTypes = {
-    variant: PropTypes.oneOf(['full', 'icon']),
-    tone: PropTypes.oneOf(['default', 'white', 'mono']),
-    size: PropTypes.number,
+    family: PropTypes.oneOf(['a', 'b', 'c', 'current']),
+    variant: PropTypes.oneOf(['full', 'icon', 'tagline']),
+    tone: PropTypes.oneOf(['default', 'white']),
+    size: PropTypes.oneOfType([
+        PropTypes.number,
+        PropTypes.oneOf(['sm', 'md', 'lg'])
+    ]),
     asLink: PropTypes.bool,
     alt: PropTypes.string,
     className: PropTypes.string,

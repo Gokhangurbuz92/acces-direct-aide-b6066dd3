@@ -203,18 +203,18 @@ export default function Layout({ children, currentPageName }) {
               {/* Mobile: Logo Icon Only */}
               <Link
                 to={createPageUrl('Home')}
-                className="sm:hidden flex items-center focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-primary focus-visible:ring-offset-2 rounded"
+                className="sm:hidden flex items-center justify-center p-1.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-primary focus-visible:ring-offset-2 rounded-full bg-surface border border-border shadow-sm hover:shadow-md transition-shadow"
                 aria-label="AccesDirectAide - Accueil"
               >
-                <Logo variant="icon" size={40} />
+                <Logo variant="icon" size={32} />
               </Link>
               {/* Desktop: Logo Full */}
               <Link
                 to={createPageUrl('Home')}
-                className="hidden sm:flex items-center focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-primary focus-visible:ring-offset-2 rounded"
+                className="hidden sm:flex items-center px-4 py-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-primary focus-visible:ring-offset-2 rounded-full bg-surface border border-border shadow-sm hover:shadow-md transition-shadow gap-2"
                 aria-label="AccesDirectAide - Accueil"
               >
-                <Logo variant="full" size={40} />
+                <Logo variant="full" size={28} />
               </Link>
             </div>
 

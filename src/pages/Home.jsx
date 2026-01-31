@@ -54,9 +54,6 @@ export default function Home() {
       {/* Hero Section */}
       <section className="bg-gradient-to-br from-blue-600 via-blue-700 to-indigo-800 text-white py-16 md:py-24">
         <div className="max-w-5xl mx-auto px-4 sm:px-6 text-center">
-          <div className="mb-8 flex justify-center">
-            <Logo variant="hero" />
-          </div>
           <h1 className="text-3xl md:text-5xl font-bold mb-6 leading-tight">
             Trouvez les aides et les services
             <br className="hidden md:block" />

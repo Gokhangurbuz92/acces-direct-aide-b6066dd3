@@ -2,6 +2,8 @@ import { isCronAuthorized } from '../../_utils/cronAuth.js';
 import { PrismaClient } from '@prisma/client';
 import crypto from 'crypto';
 import { geocodeAddress } from '../../_utils/geocoder.js';
+import { withLock } from '../../_utils/pipelineLock.js';
+import logger from '../../_utils/logger.js';
 
 const prisma = new PrismaClient();
 
@@ -240,17 +242,63 @@ export async function runIngestStructures({ limit, runId }) {
 export default async function handler(req, res) {
     // 1. Authorization
     if (!isCronAuthorized(req)) {
-        console.warn("Unauthorized Ingest-Structures Attempt");
+        logger.warn("Unauthorized Ingest-Structures Attempt");
         return res.status(401).json({ error: 'Unauthorized' });
     }
 
     const limit = req.query.limit ? parseInt(req.query.limit, 10) : undefined;
+    const runId = crypto.randomUUID();
 
     try {
-        const stats = await runIngestStructures({ limit, runId: crypto.randomUUID() });
+        // Use distributed lock to prevent concurrent runs
+        const stats = await withLock('ingest-structures', async () => {
+            // Log sync run start
+            const syncRun = await prisma.syncRun.create({
+                data: {
+                    id: runId,
+                    source_id: null, // Multi-source run
+                    status: 'running',
+                    started_at: new Date()
+                }
+            });
+
+            try {
+                const result = await runIngestStructures({ limit, runId });
+                
+                // Update sync run with success
+                await prisma.syncRun.update({
+                    where: { id: runId },
+                    data: {
+                        status: result.errors.length > 0 ? 'partial' : 'success',
+                        ended_at: new Date(),
+                        error: result.errors.length > 0 ? result.errors.join('; ') : null,
+                        stats: result
+                    }
+                });
+
+                return result;
+            } catch (error) {
+                // Update sync run with failure
+                await prisma.syncRun.update({
+                    where: { id: runId },
+                    data: {
+                        status: 'failed',
+                        ended_at: new Date(),
+                        error: error.message
+                    }
+                });
+                throw error;
+            }
+        });
+
         return res.status(200).json(stats);
     } catch (err) {
-        console.error("Handler Structure Error", err);
-        return res.status(500).json({ error: err.message });
+        if (err.message.includes('already running')) {
+            logger.warn({ runId }, 'Ingest-Structures already running, skipping');
+            return res.status(409).json({ error: 'Pipeline already running', runId });
+        }
+        
+        logger.error({ runId, error: err.message }, "Handler Structure Error");
+        return res.status(500).json({ error: err.message, runId });
     }
 }

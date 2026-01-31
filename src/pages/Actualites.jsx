@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { client } from '@/api/client';
 import { useQuery } from '@tanstack/react-query';
@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import SEO from '@/components/SEO';
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
 import {
   Calendar,
   ExternalLink,
@@ -15,7 +16,8 @@ import {
   Star,
   Loader2,
   Newspaper,
-  ArrowRight
+  ArrowRight,
+  Search
 } from 'lucide-react';
 import NewsFallback from '@/components/news/NewsFallback';
 
@@ -49,15 +51,33 @@ const TYPE_COLORS = {
 
 export default function Actualites() {
   const [selectedCategory, setSelectedCategory] = useState('');
+  const [searchQuery, setSearchQuery] = useState('');
 
   const { data: actualites = [], isLoading } = useQuery({
     queryKey: ['actualites'],
     queryFn: () => client.entities.Actualite.filter({ statut: 'publie' }, '-date_publication'),
   });
 
-  const filteredActualites = selectedCategory
-    ? actualites.filter(a => a.categorie === selectedCategory)
-    : actualites;
+  const filteredActualites = useMemo(() => {
+    let filtered = actualites;
+
+    // Filter by category
+    if (selectedCategory) {
+      filtered = filtered.filter(a => a.categorie === selectedCategory);
+    }
+
+    // Filter by search query
+    if (searchQuery.trim()) {
+      const query = searchQuery.toLowerCase();
+      filtered = filtered.filter(a => 
+        a.titre.toLowerCase().includes(query) ||
+        (a.summary_falc && a.summary_falc.toLowerCase().includes(query)) ||
+        (a.contenu && a.contenu.toLowerCase().includes(query))
+      );
+    }
+
+    return filtered;
+  }, [actualites, selectedCategory, searchQuery]);
 
   return (
     <div className="min-h-screen bg-slate-50">
@@ -75,6 +95,20 @@ export default function Actualites() {
           <p className="text-slate-600 mb-6">
             Les dernières informations sur les aides et les droits
           </p>
+
+          {/* Search Bar */}
+          <div className="mb-4">
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-slate-400" />
+              <Input
+                type="text"
+                placeholder="Rechercher une actualité..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="pl-10"
+              />
+            </div>
+          </div>
 
           {/* Filtres */}
           <div className="flex flex-wrap gap-2">
@@ -104,6 +138,21 @@ export default function Actualites() {
         {isLoading ? (
           <div className="flex items-center justify-center py-12">
             <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
+          </div>
+        ) : filteredActualites.length === 0 && (searchQuery || selectedCategory) ? (
+          <div className="text-center py-12">
+            <p className="text-slate-600 mb-4">
+              Aucune actualité ne correspond à votre recherche.
+            </p>
+            <Button
+              variant="outline"
+              onClick={() => {
+                setSearchQuery('');
+                setSelectedCategory('');
+              }}
+            >
+              Réinitialiser les filtres
+            </Button>
           </div>
         ) : filteredActualites.length > 0 ? (
           <div className="space-y-6">

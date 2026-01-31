@@ -1,69 +1,143 @@
 import { PrismaClient } from '@prisma/client';
-import { fetch } from 'undici';
 
 const prisma = new PrismaClient();
-const CRON_URL = 'http://localhost:3000/api/cron/rss-ingest?key=dev-secret-key';
 
 async function verifyActualites() {
-    console.log('🚀 Starting RSS Ingestion Verification...');
+    console.log('🚀 Starting Actualités System Verification...');
+    console.log('');
 
     try {
-        // 1. Check if the endpoint responds
-        console.log('📡 Calling ingestion endpoint...');
-        // Note: In this environment, we might need to mock the fetch if the server isn't running
-        // But the user requested a script, so we'll write it to be run against a local server.
+        // 1. Check RSS Sources
+        console.log('📡 Checking RSS Sources...');
+        const sources = await prisma.rssSource.findMany();
+        const enabledSources = sources.filter(s => s.enabled);
+        
+        console.log(`  Total sources: ${sources.length}`);
+        console.log(`  Enabled sources: ${enabledSources.length}`);
+        
+        if (enabledSources.length === 0) {
+            console.log('  ⚠️  No enabled RSS sources found. Run: node scripts/seed-rss-sources.js');
+        } else {
+            console.log('  ✅ RSS sources configured');
+            enabledSources.forEach(s => {
+                console.log(`    - ${s.name} (${s.trust_level})`);
+            });
+        }
+        console.log('');
 
-        // For the sake of "proof", let's manually trigger the logic or check the DB
-        const beforeCount = await prisma.actualite.count();
-        console.log(`📊 Actualites before: ${beforeCount}`);
-
-        // Mocking the behavior for the verification script
-        // In a real environment, the user would run the dev server and then this script.
-
-        console.log('✅ Ingestion endpoint logic implemented in api/cron/rss-ingest.js');
-
-        // 2. Mock some inserts to check deduplication and scoring if we were to test logic directly
-        const mockItem = {
-            titre: "TETST: Nouvelle aide 2026",
-            slug: "test-nouvelle-aide-2026",
-            url: "https://www.service-public.fr/test-1",
-            canonical_url: "https://www.service-public.fr/test-1",
-            statut: "publie",
-            score_fiabilite: 95,
-            dedupe_hash: "test-hash-123"
-        };
-
-        console.log('📝 Testing manual insertion...');
-        const created = await prisma.actualite.upsert({
-            where: { canonical_url: mockItem.url },
-            update: {},
-            create: mockItem
+        // 2. Check Actualités count
+        console.log('📊 Checking Actualités...');
+        const totalCount = await prisma.actualite.count();
+        const publishedCount = await prisma.actualite.count({ 
+            where: { statut: 'publie' } 
         });
-        console.log(`✅ Item created/verified: ${created.titre}`);
+        
+        console.log(`  Total: ${totalCount}`);
+        console.log(`  Published: ${publishedCount}`);
+        
+        if (publishedCount === 0) {
+            console.log('  ⚠️  No published actualités. Run: node scripts/trigger-rss-ingestion.js');
+        } else {
+            console.log('  ✅ Actualités populated');
+        }
+        console.log('');
 
-        // 3. Verify deduplication
-        console.log('🔄 Testing deduplication...');
-        const duplicate = await prisma.actualite.findFirst({
-            where: { dedupe_hash: "test-hash-123" }
-        });
-        if (duplicate) {
-            console.log('✅ Deduplication hash found.');
+        // 3. Check recent items
+        if (publishedCount > 0) {
+            console.log('📰 Recent Actualités:');
+            const recent = await prisma.actualite.findMany({
+                where: { statut: 'publie' },
+                orderBy: { date_publication: 'desc' },
+                take: 5,
+                select: {
+                    titre: true,
+                    categorie: true,
+                    score_fiabilite: true,
+                    source_nom: true,
+                    date_publication: true,
+                }
+            });
+
+            recent.forEach((item, i) => {
+                console.log(`  ${i + 1}. ${item.titre.substring(0, 60)}...`);
+                console.log(`     Category: ${item.categorie}, Score: ${item.score_fiabilite}, Source: ${item.source_nom}`);
+            });
+            console.log('');
         }
 
-        // 4. Check scoring logic (Integration test)
-        // This is best tested by actually running the endpoint, 
-        // but we can verify the Actualite table has the new fields.
-        const testItem = await prisma.actualite.findFirst({
-            where: { titre: "TETST: Nouvelle aide 2026" }
-        });
+        // 4. Check categories distribution
+        if (publishedCount > 0) {
+            console.log('📂 Category Distribution:');
+            const categories = await prisma.actualite.groupBy({
+                by: ['categorie'],
+                where: { statut: 'publie' },
+                _count: true,
+            });
 
-        if (testItem && testItem.score_fiabilite === 95) {
-            console.log('✅ Reliability score correctly persisted.');
+            categories
+                .sort((a, b) => b._count - a._count)
+                .forEach(cat => {
+                    console.log(`  ${cat.categorie || 'null'}: ${cat._count}`);
+                });
+            console.log('');
         }
 
-        console.log('🎉 Verification complete!');
+        // 5. Check ingestion logs
+        console.log('📝 Recent Ingestion Logs:');
+        const logs = await prisma.updateLog.findMany({
+            where: { source_name: 'RSS_INGEST' },
+            orderBy: { ran_at: 'desc' },
+            take: 3,
+        });
+
+        if (logs.length === 0) {
+            console.log('  No ingestion logs found');
+        } else {
+            logs.forEach((log, i) => {
+                console.log(`  ${i + 1}. ${log.ran_at.toISOString()}`);
+                console.log(`     Status: ${log.status}, Created: ${log.items_created_count}, Updated: ${log.items_updated_count}, Skipped: ${log.items_skipped_count}`);
+                if (log.errors && log.errors.length > 0) {
+                    console.log(`     Errors: ${log.errors.length}`);
+                }
+            });
+        }
+        console.log('');
+
+        // 6. Verify deduplication
+        console.log('🔄 Checking Deduplication...');
+        const withDedupeHash = await prisma.actualite.count({
+            where: { 
+                dedupe_hash: { not: null },
+                statut: 'publie'
+            }
+        });
+        console.log(`  Items with dedupe_hash: ${withDedupeHash}/${publishedCount}`);
+        
+        if (withDedupeHash === publishedCount && publishedCount > 0) {
+            console.log('  ✅ All items have deduplication hash');
+        } else if (publishedCount > 0) {
+            console.log('  ⚠️  Some items missing dedupe_hash');
+        }
+        console.log('');
+
+        // 7. Summary
+        console.log('📋 Summary:');
+        console.log('─'.repeat(50));
+        console.log(`  RSS Sources: ${enabledSources.length} enabled`);
+        console.log(`  Actualités: ${publishedCount} published`);
+        console.log(`  Ingestion Runs: ${logs.length} recent`);
+        console.log('');
+
+        if (enabledSources.length > 0 && publishedCount > 0) {
+            console.log('✅ Actualités system is operational!');
+        } else if (enabledSources.length === 0) {
+            console.log('⚠️  Next step: Run node scripts/seed-rss-sources.js');
+        } else if (publishedCount === 0) {
+            console.log('⚠️  Next step: Run node scripts/trigger-rss-ingestion.js');
+        }
+
     } catch (error) {
-        console.error('❌ Verification failed:', error);
+        console.error('❌ Verification failed:', error.message);
         process.exit(1);
     } finally {
         await prisma.$disconnect();

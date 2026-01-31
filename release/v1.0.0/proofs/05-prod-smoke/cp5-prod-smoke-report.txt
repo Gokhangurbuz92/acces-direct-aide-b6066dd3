@@ -1,3 +1,4 @@
-[2026-01-31T00:18:08.296Z] Starting CP5 Smoke Tests. Target: (from playwright.config.ts use.baseURL)
-[2026-01-31T00:18:08.296Z] ✅ Preflight skipped (no env URL). Using playwright.config.ts baseURL/webServer.
-[2026-01-31T00:18:09.020Z] Home Page: OK
+[2026-01-31T02:37:32.334Z] Starting CP5 Smoke Tests. Target: (from playwright.config.ts use.baseURL)
+[2026-01-31T02:37:32.334Z] ✅ Preflight skipped (no env URL). Using playwright.config.ts baseURL/webServer.
+[2026-01-31T02:37:33.048Z] Home Page: OK
+[2026-01-31T02:37:34.161Z] Aides: No detail links found (empty state or no data).

@@ -50,3 +50,6 @@ test-img*.jpg
 uploads_mock/
 uploads_mock/**
 api/_utils/build-info.js
+
+# generated build info
+api/_utils/build-info.js

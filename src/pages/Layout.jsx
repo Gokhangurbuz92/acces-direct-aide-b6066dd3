@@ -203,7 +203,7 @@ export default function Layout({ children, currentPageName }) {
               {/* Mobile: Logo Icon Only */}
               <Link
                 to={createPageUrl('Home')}
-                className="sm:hidden flex items-center focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-primary focus-visible:ring-offset-2 rounded-lg"
+                className="sm:hidden inline-flex items-center gap-2 rounded-full px-2.5 py-1.5 transition-colors hover:bg-slate-50/80 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-600 focus-visible:ring-offset-2"
                 aria-label="AccesDirectAide - Accueil"
               >
                 <Logo variant="icon" size={40} />
@@ -211,7 +211,7 @@ export default function Layout({ children, currentPageName }) {
               {/* Desktop: Logo Full */}
               <Link
                 to={createPageUrl('Home')}
-                className="hidden sm:flex items-center focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-primary focus-visible:ring-offset-2 rounded-lg"
+                className="hidden sm:inline-flex items-center gap-2 rounded-full px-2.5 py-1.5 transition-colors hover:bg-slate-50/80 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-600 focus-visible:ring-offset-2"
                 aria-label="AccesDirectAide - Accueil"
               >
                 <Logo variant="full" size={40} />

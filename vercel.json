@@ -1,0 +1,20 @@
+{
+  "crons": [
+    {
+      "path": "/api/cron/pipeline?source=demarches",
+      "schedule": "0 2 * * 0"
+    },
+    {
+      "path": "/api/cron/pipeline?source=aides",
+      "schedule": "0 3 * * 0"
+    },
+    {
+      "path": "/api/cron/pipeline?source=structures",
+      "schedule": "0 4 * * 0"
+    },
+    {
+      "path": "/api/cron/pipeline?source=rss",
+      "schedule": "0 */6 * * *"
+    }
+  ]
+}

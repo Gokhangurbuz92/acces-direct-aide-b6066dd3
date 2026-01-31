@@ -249,18 +249,31 @@ export default function DemarcheDetail() {
             )}
 
             {/* Sources */}
-            {demarche.sources?.length > 0 && (
+            {(demarche.sources?.length > 0 || demarche.source_url_exact) && (
               <Card className="bg-slate-50">
                 <CardContent className="p-6">
-                  <h2 className="text-lg font-bold text-slate-900 mb-3">Sources</h2>
+                  <h2 className="text-lg font-bold text-slate-900 mb-3">Sources officielles</h2>
                   <ul className="space-y-2">
-                    {demarche.sources.map((source, idx) => (
+                    {demarche.source_url_exact && (
+                      <li>
+                        <a
+                          href={demarche.source_url_exact}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-blue-600 hover:underline flex items-center gap-1 text-sm"
+                        >
+                          Service-Public.fr - Fiche officielle
+                          <ExternalLink className="h-3 w-3" />
+                        </a>
+                      </li>
+                    )}
+                    {demarche.sources?.map((source, idx) => (
                       <li key={idx}>
                         <a
                           href={source.url}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="text-blue-600 hover:underline flex items-center gap-1"
+                          className="text-blue-600 hover:underline flex items-center gap-1 text-sm"
                         >
                           {source.nom}
                           <ExternalLink className="h-3 w-3" />
@@ -268,6 +281,15 @@ export default function DemarcheDetail() {
                       </li>
                     ))}
                   </ul>
+                  {demarche.date_verification && (
+                    <p className="text-xs text-slate-500 mt-3">
+                      Dernière vérification : {new Date(demarche.date_verification).toLocaleDateString('fr-FR', { 
+                        year: 'numeric', 
+                        month: 'long', 
+                        day: 'numeric' 
+                      })}
+                    </p>
+                  )}
                 </CardContent>
               </Card>
             )}

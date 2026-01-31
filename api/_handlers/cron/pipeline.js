@@ -55,7 +55,7 @@ export default async function handler(req, res) {
 
     // ALIAS LOGIC
     if (sourceInput === 'actualites') sourceResolved = 'rss';
-    if (sourceInput === 'demarches') sourceResolved = 'aides';
+    if (sourceInput === 'demarches') sourceResolved = 'demarches';
 
     const mode = query.mode; // 'smoke'
     const limitParam = query.limit;
@@ -66,7 +66,7 @@ export default async function handler(req, res) {
     if (!sourceResolved) {
         return res.status(400).json({
             ok: false,
-            error: "Missing required 'source' parameter. Options: 'structures', 'aides' (or 'demarches'), 'rss' (or 'actualites')."
+            error: "Missing required 'source' parameter. Options: 'structures', 'aides', 'demarches', 'rss' (or 'actualites')."
         });
     }
 
@@ -125,6 +125,34 @@ export default async function handler(req, res) {
             stats = { ...stats, ...result };
             // Map created to ingested for contract compliance
             stats.ingested = result.created || 0;
+            return;
+
+        } else if (sourceResolved === 'demarches') {
+            // Run démarches ingestion script
+            const { execSync } = await import('child_process');
+            try {
+                const output = execSync('node scripts/ingest-demarches-real.js', {
+                    cwd: process.cwd(),
+                    encoding: 'utf8',
+                    timeout: 45000 // 45s timeout
+                });
+                console.log('[DEMARCHES INGESTION]', output);
+                
+                // Parse output for stats (basic implementation)
+                const createdMatch = output.match(/Created:\s*(\d+)/);
+                const updatedMatch = output.match(/Updated:\s*(\d+)/);
+                const skippedMatch = output.match(/Skipped:\s*(\d+)/);
+                
+                stats.created = createdMatch ? parseInt(createdMatch[1], 10) : 0;
+                stats.updated = updatedMatch ? parseInt(updatedMatch[1], 10) : 0;
+                stats.skippedExisting = skippedMatch ? parseInt(skippedMatch[1], 10) : 0;
+                stats.ingested = stats.created;
+                stats.processed = stats.created + stats.updated + stats.skippedExisting;
+                stats.fetched = stats.processed;
+            } catch (err) {
+                stats.errors.push(`Démarches ingestion failed: ${err.message}`);
+                console.error('[DEMARCHES INGESTION ERROR]', err);
+            }
             return;
 
         } else if (sourceResolved === 'rss') {

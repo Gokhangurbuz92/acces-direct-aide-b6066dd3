@@ -1,33 +1,26 @@
 #!/bin/bash
-# Generates a map of the repository files, excluding ignored/build directories.
+# scripts/generate-repo-map.sh
 
-# Generates a map of the repository files, excluding ignored/build directories.
+# Ensure docs directory exists
+mkdir -p docs
 
-# Generate repo map
-# Excludes: node_modules, dist, .git, .vercel, coverage, test-results, venv, .env*, uploads_mock, cookies*
-find . -maxdepth 5 \
-  -not -path '*/.git/*' \
-  -not -path '*/.git' \
-  -not -path '*/.vercel/*' \
-  -not -path '*/.vercel' \
-  -not -path '*/node_modules/*' \
-  -not -path '*/node_modules' \
-  -not -path '*/dist/*' \
-  -not -path '*/dist' \
-  -not -path '*/coverage/*' \
-  -not -path '*/coverage' \
-  -not -path '*/test-results/*' \
-  -not -path '*/test-results' \
-  -not -path '*/playwright-report/*' \
-  -not -path '*/playwright-report' \
-  -not -path '*/venv/*' \
-  -not -path '*/venv' \
-  -not -path '*/__pycache__/*' \
-  -not -path '*/uploads_mock/*' \
-  -not -path '*/uploads_mock' \
-  -not -name '.env*' \
-  -not -name 'cookies*.txt' \
-  -not -name 'test-img*.jpg' \
+echo "Generating repository file inventory to docs/REPO_FILES.txt..."
+
+# Use find to list files, excluding specific directories and files
+# We exclude .git explicitly, although -not -path '*/.*' might catch some .files, we want to keep some configuration files like .gitignore or .github if needed, but the prompt asked to exclude .git, .vercel, .env*
+
+find . -type f \
+  -not -path "./.git/*" \
+  -not -path "./.vercel/*" \
+  -not -path "./node_modules/*" \
+  -not -path "./dist/*" \
+  -not -path "./coverage/*" \
+  -not -path "./test-results/*" \
+  -not -path "./venv/*" \
+  -not -path "./uploads_mock/*" \
+  -not -name ".env*" \
+  -not -name ".DS_Store" \
+  -not -path "./api/_utils/build-info.js" \
   | sort > docs/REPO_FILES.txt
 
-echo "Repo map generated at docs/REPO_FILES.txt"
+echo "Inventory generated."

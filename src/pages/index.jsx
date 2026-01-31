@@ -217,7 +217,7 @@ function PagesContent() {
                     )}
 
                     <Route path="/demarches" element={<Demarches />} />
-                    <Route path="/home" element={<Home />} />
+                    <Route path="/home" element={<Navigate to="/" replace />} />
                     <Route path="/mentions-legales" element={<MentionsLegales />} />
                     <Route path="/sourcesmethode" element={<SourcesMethode />} />
                     <Route path="/sentry-test" element={<SentryTest />} />

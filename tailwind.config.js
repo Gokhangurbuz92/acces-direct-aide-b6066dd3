@@ -4,45 +4,71 @@ module.exports = {
     content: ["./index.html", "./src/**/*.{ts,tsx,js,jsx}"],
   theme: {
   	extend: {
+  		fontFamily: {
+  			sans: ['Inter', 'ui-sans-serif', 'system-ui', '-apple-system', 'Segoe UI', 'Roboto', 'Arial', 'sans-serif'],
+  		},
   		borderRadius: {
-  			lg: 'var(--radius)',
-  			md: 'calc(var(--radius) - 2px)',
-  			sm: 'calc(var(--radius) - 4px)'
+  			lg: 'var(--radius-lg)',
+  			md: 'var(--radius-md)',
+  			sm: 'var(--radius-sm)',
+  			xl: 'var(--radius-xl)',
   		},
   		colors: {
-  			background: 'hsl(var(--background))',
-  			foreground: 'hsl(var(--foreground))',
+  			// Brand colors (Design System)
+  			brand: {
+  				primary: 'rgb(var(--color-brand-primary) / <alpha-value>)',
+  				secondary: 'rgb(var(--color-brand-secondary) / <alpha-value>)',
+  				highlight: 'rgb(var(--color-brand-highlight) / <alpha-value>)',
+  				background: 'rgb(var(--color-brand-background) / <alpha-value>)',
+  			},
+  			// Text colors
+  			text: {
+  				body: 'rgb(var(--color-text-body) / <alpha-value>)',
+  				muted: 'rgb(var(--color-text-muted) / <alpha-value>)',
+  			},
+  			// Feedback colors
+  			feedback: {
+  				success: 'rgb(var(--color-feedback-success) / <alpha-value>)',
+  				error: 'rgb(var(--color-feedback-error) / <alpha-value>)',
+  			},
+  			// Semantic colors
+  			surface: 'rgb(var(--color-surface) / <alpha-value>)',
+  			border: 'rgb(var(--color-border) / <alpha-value>)',
+  			'border-muted': 'rgb(var(--color-border-muted) / <alpha-value>)',
+  			
+  			// Legacy shadcn/ui colors (mapped to new tokens for compatibility)
+  			background: 'rgb(var(--color-brand-background) / <alpha-value>)',
+  			foreground: 'rgb(var(--color-text-body) / <alpha-value>)',
   			card: {
-  				DEFAULT: 'hsl(var(--card))',
-  				foreground: 'hsl(var(--card-foreground))'
+  				DEFAULT: 'rgb(var(--color-surface) / <alpha-value>)',
+  				foreground: 'rgb(var(--color-text-body) / <alpha-value>)'
   			},
   			popover: {
-  				DEFAULT: 'hsl(var(--popover))',
-  				foreground: 'hsl(var(--popover-foreground))'
+  				DEFAULT: 'rgb(var(--color-surface) / <alpha-value>)',
+  				foreground: 'rgb(var(--color-text-body) / <alpha-value>)'
   			},
   			primary: {
-  				DEFAULT: 'hsl(var(--primary))',
-  				foreground: 'hsl(var(--primary-foreground))'
+  				DEFAULT: 'rgb(var(--color-brand-primary) / <alpha-value>)',
+  				foreground: 'rgb(var(--color-base-white) / <alpha-value>)'
   			},
   			secondary: {
-  				DEFAULT: 'hsl(var(--secondary))',
-  				foreground: 'hsl(var(--secondary-foreground))'
+  				DEFAULT: 'rgb(var(--color-brand-secondary) / <alpha-value>)',
+  				foreground: 'rgb(var(--color-text-body) / <alpha-value>)'
   			},
   			muted: {
-  				DEFAULT: 'hsl(var(--muted))',
-  				foreground: 'hsl(var(--muted-foreground))'
+  				DEFAULT: 'rgb(var(--color-border-muted) / <alpha-value>)',
+  				foreground: 'rgb(var(--color-text-muted) / <alpha-value>)'
   			},
   			accent: {
-  				DEFAULT: 'hsl(var(--accent))',
-  				foreground: 'hsl(var(--accent-foreground))'
+  				DEFAULT: 'rgb(var(--color-brand-highlight) / <alpha-value>)',
+  				foreground: 'rgb(var(--color-text-body) / <alpha-value>)'
   			},
   			destructive: {
-  				DEFAULT: 'hsl(var(--destructive))',
-  				foreground: 'hsl(var(--destructive-foreground))'
+  				DEFAULT: 'rgb(var(--color-feedback-error) / <alpha-value>)',
+  				foreground: 'rgb(var(--color-base-white) / <alpha-value>)'
   			},
-  			border: 'hsl(var(--border))',
-  			input: 'hsl(var(--input))',
-  			ring: 'hsl(var(--ring))',
+  			input: 'rgb(var(--color-border) / <alpha-value>)',
+  			ring: 'rgb(var(--color-brand-primary) / <alpha-value>)',
   			chart: {
   				'1': 'hsl(var(--chart-1))',
   				'2': 'hsl(var(--chart-2))',
@@ -60,6 +86,12 @@ module.exports = {
   				border: 'hsl(var(--sidebar-border))',
   				ring: 'hsl(var(--sidebar-ring))'
   			}
+  		},
+  		boxShadow: {
+  			sm: 'var(--shadow-sm)',
+  			md: 'var(--shadow-md)',
+  			lg: 'var(--shadow-lg)',
+  			xl: 'var(--shadow-xl)',
   		},
   		keyframes: {
   			'accordion-down': {

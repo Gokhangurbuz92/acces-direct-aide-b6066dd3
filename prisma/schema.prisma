@@ -53,9 +53,14 @@ model Aide {
   territory_scope  String?
   content_hash     String?
 
+  // Traceability
+  source_document_id String?
+  sourceDocument     SourceDocument? @relation(fields: [source_document_id], references: [id])
+
   @@index([statut, published_at])
   @@index([categoryId, statut])
   @@index([statut])
+  @@index([source_document_id])
 }
 
 model AidCategory {
@@ -87,10 +92,10 @@ model AidSource {
 }
 
 model Structure {
-  id                 String         @id @default(uuid())
+  id                 String    @id @default(uuid())
   nom                String
   type_structure     String?
-  accessibilite_pmr  Boolean        @default(false)
+  accessibilite_pmr  Boolean   @default(false)
   description_courte String?
   adresse            String?
   code_postal        String?
@@ -104,27 +109,27 @@ model Structure {
   publics_accueillis String[]
   date_verification  DateTime?
   categories_aidees  String[]
-  updatedAt          DateTime       @updatedAt
-  status             String         @default("actif")
+  updatedAt          DateTime  @updatedAt
+  status             String    @default("actif")
   commentaire_statut String?
   published_at       DateTime?
-  statut             String         @default("brouillon")
-  updatedBy             String?
+  statut             String    @default("brouillon")
+  updatedBy          String?
   mots_cles          String[]
-  slug               String?        @unique
+  slug               String?   @unique
   summary_falc       String?
-  is_pro_enabled     Boolean        @default(false)
-  settings_json      Json?          @default("{}")
-  auto_publish       Boolean        @default(false)
+  is_pro_enabled     Boolean   @default(false)
+  settings_json      Json?     @default("{}")
+  auto_publish       Boolean   @default(false)
   geoloc_status      String?
   import_batch       String?
-  import_status      String         @default("pending")
-  last_sync          DateTime       @default(now())
+  import_status      String    @default("pending")
+  last_sync          DateTime  @default(now())
   latitude           Float?
   longitude          Float?
-  quality_score      Int            @default(50)
-  raw_data_hash      String?        @unique
-  siret              String?        @unique
+  quality_score      Int       @default(50)
+  raw_data_hash      String?   @unique
+  siret              String?   @unique
   source_id          String?
   source_url         String?
   // Ingestion Fields
@@ -132,11 +137,15 @@ model Structure {
   territory_scope    String?
   content_hash       String?
 
-  appointments       Appointment[]
-  availabilities     Availability[]
-  invitations        Invitation[]
-  proUsers           ProUser[]
-  proServices        Service[]
+  // Traceability
+  source_document_id String?
+  sourceDocument     SourceDocument? @relation(fields: [source_document_id], references: [id])
+
+  appointments   Appointment[]
+  availabilities Availability[]
+  invitations    Invitation[]
+  proUsers       ProUser[]
+  proServices    Service[]
 
   @@index([source_id])
   @@index([raw_data_hash])
@@ -145,6 +154,7 @@ model Structure {
   @@index([departement])
   @@index([type_structure])
   @@index([statut, nom])
+  @@index([source_document_id])
 }
 
 model Demarche {
@@ -181,9 +191,14 @@ model Demarche {
   territory_scope  String?
   content_hash     String?
 
+  // Traceability
+  source_document_id String?
+  sourceDocument     SourceDocument? @relation(fields: [source_document_id], references: [id])
+
   @@index([statut, published_at])
   @@index([categoryId, statut])
   @@index([statut])
+  @@index([source_document_id])
 }
 
 model Actualite {
@@ -532,7 +547,12 @@ model Dispositif {
   territory_scope  String?
   content_hash     String?
 
+  // Traceability
+  source_document_id String?
+  sourceDocument     SourceDocument? @relation(fields: [source_document_id], references: [id])
+
   @@index([statut, published_at])
+  @@index([source_document_id])
 }
 
 model SourceSnapshot {
@@ -561,4 +581,71 @@ model ResourceAccessibility {
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
   status          String   @default("draft")
+
+  // Traceability
+  source_document_id String?
+  sourceDocument     SourceDocument? @relation(fields: [source_document_id], references: [id])
+
+  @@index([source_document_id])
+}
+
+// Traceability Models - Add to schema.prisma at the end
+
+model DataSource {
+  id           String    @id @default(uuid())
+  name         String
+  base_url     String?
+  region_scope String    @default("national") // national, 67, 68, etc.
+  license      String?
+  trust_level  String?   @default("OFFICIAL")
+  last_sync_at DateTime?
+  last_status  String?
+  created_at   DateTime  @default(now())
+  updated_at   DateTime  @updatedAt
+
+  documents SourceDocument[]
+  syncRuns  SyncRun[]
+
+  @@index([region_scope])
+}
+
+model SourceDocument {
+  id               String   @id @default(uuid())
+  source_id        String
+  source_url_exact String   @unique
+  fetched_at       DateTime @default(now())
+  content_hash     String?
+  raw_excerpt      String?
+  http_status      Int?
+  license          String?
+  created_at       DateTime @default(now())
+  updated_at       DateTime @updatedAt
+
+  source DataSource @relation(fields: [source_id], references: [id])
+
+  // Relations to content
+  aides       Aide[]
+  demarches   Demarche[]
+  structures  Structure[]
+  dispositifs Dispositif[]
+  resources   ResourceAccessibility[]
+
+  @@index([source_id])
+  @@index([fetched_at])
+}
+
+model SyncRun {
+  id         String    @id @default(uuid())
+  source_id  String?
+  started_at DateTime  @default(now())
+  ended_at   DateTime?
+  status     String    @default("running") // running, success, partial, failed
+  error      String?
+  stats      Json? // { fetched, created, updated, errors: [] }
+  created_at DateTime  @default(now())
+
+  source DataSource? @relation(fields: [source_id], references: [id])
+
+  @@index([source_id])
+  @@index([started_at])
 }

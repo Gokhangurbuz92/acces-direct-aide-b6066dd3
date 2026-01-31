@@ -8,6 +8,7 @@ const config = {
         { source: "/guide/:slug", destination: "/demarches", permanent: true },
         { source: "/aide/:slug", destination: "/aides/:slug", permanent: true },
         { source: "/login/pro", destination: "/pro/login", permanent: true },
+        { source: "/home", destination: "/", permanent: true },
     ],
 
     rewrites: [

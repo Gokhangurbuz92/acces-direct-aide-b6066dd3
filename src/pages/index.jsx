@@ -13,6 +13,7 @@ const ActualiteDetail = lazy(() => import("./ActualiteDetail.jsx"));
 const AideDetail = lazy(() => import("./AideDetail.jsx"));
 const Aides = lazy(() => import("./Aides.jsx"));
 const Annuaire = lazy(() => import("./Annuaire.jsx"));
+const OrganizationDetail = lazy(() => import("./OrganizationDetail.jsx"));
 const Confidentialite = lazy(() => import("./Confidentialite.jsx"));
 const Contact = lazy(() => import("./Contact.jsx"));
 const Cookies = lazy(() => import("./Cookies.jsx"));
@@ -200,7 +201,8 @@ function PagesContent() {
                     <Route path="/categories/:slug" element={<Aides />} />
                     <Route path="/situations/:slug" element={<Aides />} />
 
-                    <Route path="/annuaire" element={<Navigate to="/structures" replace />} />
+                    <Route path="/annuaire" element={<Annuaire />} />
+                    <Route path="/annuaire/:slug" element={<OrganizationDetail />} />
                     <Route path="/structures" element={<Annuaire />} />
                     <Route path="/structures/view" element={<StructureDetail />} />
                     <Route path="/structures/:slug" element={<StructureDetail />} />

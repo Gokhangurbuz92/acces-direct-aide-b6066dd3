@@ -268,3 +268,107 @@ export async function searchStructures(prisma, params) {
     total: Number(countResult[0].total || 0)
   };
 }
+
+/**
+ * Builds and executes a search query for Organizations.
+ */
+export async function searchOrganizations(prisma, params) {
+  const { q, category, city, department, type, territoire, page, pageSize } = params;
+  const LIMIT = pageSize;
+  const OFFSET = (page - 1) * LIMIT;
+
+  const conditions = [Prisma.sql`statut = 'publie'`];
+
+  if (q) {
+    // Simple text search on nom and description
+    conditions.push(Prisma.sql`(nom ILIKE ${'%' + q + '%'} OR description ILIKE ${'%' + q + '%'})`);
+  }
+
+  if (category) {
+    conditions.push(Prisma.sql`${category} = ANY(categories)`);
+  }
+
+  if (type && type !== '_all') {
+    conditions.push(Prisma.sql`type_organization = ${type}`);
+  }
+
+  if (territoire) {
+    conditions.push(Prisma.sql`territoire_couverture = ${territoire}`);
+  }
+
+  const whereClause = conditions.length > 0
+    ? Prisma.sql`WHERE ${Prisma.join(conditions, ' AND ')}`
+    : Prisma.empty;
+
+  const orderBy = Prisma.sql`ORDER BY nom ASC, id ASC`;
+
+  // Subquery to count establishments per organization
+  const itemsQuery = Prisma.sql`
+    SELECT o.*, 
+           (SELECT COUNT(*) FROM "Establishment" e WHERE e."organizationId" = o.id AND e.statut = 'actif') as "establishmentCount"
+    FROM "Organization" o
+    ${whereClause}
+    ${orderBy}
+    LIMIT ${LIMIT} OFFSET ${OFFSET}
+  `;
+
+  const countQuery = Prisma.sql`SELECT count(*) as total FROM "Organization" o ${whereClause}`;
+
+  const [items, countResult] = await Promise.all([
+    prisma.$queryRaw(itemsQuery),
+    prisma.$queryRaw(countQuery)
+  ]);
+
+  // Convert BigInt to Number for establishmentCount
+  const processedItems = items.map(item => ({
+    ...item,
+    establishmentCount: Number(item.establishmentCount || 0)
+  }));
+
+  return {
+    items: processedItems,
+    total: Number(countResult[0].total || 0)
+  };
+}
+
+/**
+ * Builds and executes a search query for Establishments.
+ */
+export async function searchEstablishments(prisma, params) {
+  const { organizationId, city, department, page, pageSize } = params;
+  const LIMIT = pageSize;
+  const OFFSET = (page - 1) * LIMIT;
+
+  const conditions = [Prisma.sql`statut = 'actif'`];
+
+  if (organizationId) {
+    conditions.push(Prisma.sql`"organizationId" = ${organizationId}`);
+  }
+
+  if (city) {
+    conditions.push(Prisma.sql`ville ILIKE ${'%' + city + '%'}`);
+  }
+
+  if (department) {
+    conditions.push(Prisma.sql`departement = ${department}`);
+  }
+
+  const whereClause = conditions.length > 0
+    ? Prisma.sql`WHERE ${Prisma.join(conditions, ' AND ')}`
+    : Prisma.empty;
+
+  const orderBy = Prisma.sql`ORDER BY ville ASC, nom ASC`;
+
+  const itemsQuery = Prisma.sql`SELECT * FROM "Establishment" ${whereClause} ${orderBy} LIMIT ${LIMIT} OFFSET ${OFFSET}`;
+  const countQuery = Prisma.sql`SELECT count(*) as total FROM "Establishment" ${whereClause}`;
+
+  const [items, countResult] = await Promise.all([
+    prisma.$queryRaw(itemsQuery),
+    prisma.$queryRaw(countQuery)
+  ]);
+
+  return {
+    items,
+    total: Number(countResult[0].total || 0)
+  };
+}

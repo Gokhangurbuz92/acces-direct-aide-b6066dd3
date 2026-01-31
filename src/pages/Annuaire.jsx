@@ -12,20 +12,16 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import StructureCard from '@/components/cards/StructureCard';
+import OrganizationCard from '@/components/cards/OrganizationCard';
 import { Search, MapPin, Filter as FilterIcon, Loader2, X } from 'lucide-react';
 import EmptyState from '@/components/ui/EmptyState';
 import { Badge } from '@/components/ui/badge';
 
-const TYPE_STRUCTURES = {
-  association: 'Association',
+const TYPE_ORGANIZATIONS = {
   service_public: 'Service public',
+  association: 'Association',
   etablissement_sante: 'Établissement de santé',
-  mairie: 'Mairie',
-  caf: 'CAF',
-  mdph: 'MDPH',
-  france_travail: 'France Travail',
-  cpam: 'CPAM',
+  reseau: 'Réseau',
 };
 
 const DEPARTEMENTS = {
@@ -39,20 +35,22 @@ export default function Annuaire() {
   const q = searchParams.get('q') || '';
   const type = searchParams.get('type') || '';
   const city = searchParams.get('city') || '';
+  const department = searchParams.get('department') || '';
   const page = searchParams.get('page') || '1';
 
   const { data, isLoading } = useQuery({
-    queryKey: ['structures', { q, type, city, page }],
-    queryFn: () => client.entities.Structure.filter({
+    queryKey: ['organizations', { q, type, city, department, page }],
+    queryFn: () => client.entities.Organization.filter({
       q,
       type,
       city,
+      department,
       page,
       pageSize: 12
     }),
   });
 
-  const structures = data?.items || [];
+  const organizations = data?.items || [];
   const pagination = data?.pagination || {};
 
   const handleParamChange = (key, value) => {
@@ -74,18 +72,18 @@ export default function Annuaire() {
 
   return (
     <div className="min-h-screen bg-slate-50">
-      <SEO title="Annuaire des structures" description="Trouvez des associations et services publics." path="/annuaire" />
+      <SEO title="Annuaire des organisations" description="Trouvez des associations et services publics." path="/annuaire" />
 
       <div className="bg-white border-b border-slate-200 py-8">
         <div className="max-w-6xl mx-auto px-4 sm:px-6">
-          <h1 className="text-3xl font-bold text-slate-900 mb-2">Annuaire des structures</h1>
-          <p className="text-slate-600 mb-8 font-medium">Trouvez les associations et services publics près de chez vous</p>
+          <h1 className="text-3xl font-bold text-slate-900 mb-2">Annuaire des organisations</h1>
+          <p className="text-slate-600 mb-8 font-medium">Trouvez les organisations et leurs établissements près de chez vous</p>
 
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
             <div className="md:col-span-2 relative">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-slate-400" />
               <Input
-                placeholder="Rechercher par nom ou service..."
+                placeholder="Rechercher une organisation..."
                 defaultValue={q}
                 onBlur={(e) => handleParamChange('q', e.target.value)}
                 className="pl-10 h-11"
@@ -95,29 +93,35 @@ export default function Annuaire() {
             <Select value={type} onValueChange={(v) => handleParamChange('type', v)}>
               <SelectTrigger className="h-11 bg-white">
                 <FilterIcon className="h-4 w-4 mr-2 text-slate-400" />
-                <SelectValue placeholder="Type de structure" />
+                <SelectValue placeholder="Type d'organisation" />
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="_all">Tous les types</SelectItem>
-                {Object.entries(TYPE_STRUCTURES).map(([val, label]) => (
+                {Object.entries(TYPE_ORGANIZATIONS).map(([val, label]) => (
                   <SelectItem key={val} value={val}>{label}</SelectItem>
                 ))}
               </SelectContent>
             </Select>
 
-            <Input
-              placeholder="Ville..."
-              defaultValue={city}
-              onBlur={(e) => handleParamChange('city', e.target.value)}
-              className="h-11 bg-white"
-            />
+            <Select value={department} onValueChange={(v) => handleParamChange('department', v)}>
+              <SelectTrigger className="h-11 bg-white">
+                <MapPin className="h-4 w-4 mr-2 text-slate-400" />
+                <SelectValue placeholder="Département" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="_all">Tous les départements</SelectItem>
+                {Object.entries(DEPARTEMENTS).map(([val, label]) => (
+                  <SelectItem key={val} value={val}>{label}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
 
-          {(q || type || city) && (
+          {(q || type || department) && (
             <div className="flex flex-wrap gap-2 mt-4">
               {q && <Badge variant="secondary">Cherche : {q} <X className="h-3 w-3 ml-2 cursor-pointer" onClick={() => handleParamChange('q', '')} /></Badge>}
-              {type && <Badge variant="secondary">Type : {TYPE_STRUCTURES[type] || type} <X className="h-3 w-3 ml-2 cursor-pointer" onClick={() => handleParamChange('type', '')} /></Badge>}
-              {city && <Badge variant="secondary">Ville : {city} <X className="h-3 w-3 ml-2 cursor-pointer" onClick={() => handleParamChange('city', '')} /></Badge>}
+              {type && <Badge variant="secondary">Type : {TYPE_ORGANIZATIONS[type] || type} <X className="h-3 w-3 ml-2 cursor-pointer" onClick={() => handleParamChange('type', '')} /></Badge>}
+              {department && <Badge variant="secondary">Département : {DEPARTEMENTS[department] || department} <X className="h-3 w-3 ml-2 cursor-pointer" onClick={() => handleParamChange('department', '')} /></Badge>}
               <Button variant="ghost" size="sm" onClick={clearFilters} className="text-blue-600">Réinitialiser</Button>
             </div>
           )}
@@ -130,11 +134,11 @@ export default function Annuaire() {
             <Loader2 className="h-10 w-10 animate-spin text-blue-600 mb-4" />
             <p className="text-slate-500">Chargement de l'annuaire...</p>
           </div>
-        ) : structures.length > 0 ? (
+        ) : organizations.length > 0 ? (
           <>
             <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {structures.map((s) => (
-                <StructureCard key={s.id} structure={s} />
+              {organizations.map((org) => (
+                <OrganizationCard key={org.id} organization={org} />
               ))}
             </div>
 
@@ -148,9 +152,9 @@ export default function Annuaire() {
           </>
         ) : (
           <EmptyState
-            title="Aucune structure trouvée"
-            message="Nous n'avons trouvé aucune structure correspondant à vos critères."
-            actionLabel="Voir toutes les structures"
+            title="Aucune organisation trouvée"
+            message="Nous n'avons trouvé aucune organisation correspondant à vos critères."
+            actionLabel="Voir toutes les organisations"
             onAction={clearFilters}
             type="search"
           />

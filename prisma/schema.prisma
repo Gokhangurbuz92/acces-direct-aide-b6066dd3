@@ -131,12 +131,15 @@ model Structure {
   source_url_exact   String?
   territory_scope    String?
   content_hash       String?
+  // Link to Organization (optional, for migration)
+  organizationId     String?
 
   appointments       Appointment[]
   availabilities     Availability[]
   invitations        Invitation[]
   proUsers           ProUser[]
   proServices        Service[]
+  organization       Organization?  @relation(fields: [organizationId], references: [id])
 
   @@index([source_id])
   @@index([raw_data_hash])
@@ -145,6 +148,7 @@ model Structure {
   @@index([departement])
   @@index([type_structure])
   @@index([statut, nom])
+  @@index([organizationId])
 }
 
 model Demarche {
@@ -561,4 +565,57 @@ model ResourceAccessibility {
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
   status          String   @default("draft")
+}
+
+model Organization {
+  id                    String          @id @default(uuid())
+  slug                  String?         @unique
+  nom                   String
+  description           String?
+  type_organization     String?
+  site_web_officiel     String?
+  territoire_couverture String?         @default("departmental")
+  categories            String[]
+  tags                  String[]
+  statut                String          @default("brouillon")
+  published_at          DateTime?
+  updatedAt             DateTime        @updatedAt
+  createdAt             DateTime        @default(now())
+  updatedBy             String?
+  establishments        Establishment[]
+  structures            Structure[]
+
+  @@index([statut, published_at])
+  @@index([type_organization])
+  @@index([territoire_couverture])
+  @@index([statut, nom])
+}
+
+model Establishment {
+  id             String        @id @default(uuid())
+  organizationId String
+  nom            String
+  adresse        String?
+  ville          String?
+  code_postal    String?
+  departement    String?
+  telephone      String?
+  email          String?
+  horaires       String?
+  services       String[]
+  latitude       Float?
+  longitude      Float?
+  source_url     String?
+  retrieved_at   DateTime?
+  statut         String        @default("actif")
+  published_at   DateTime?
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+  organization   Organization  @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@index([organizationId])
+  @@index([ville])
+  @@index([departement])
+  @@index([statut])
+  @@index([organizationId, statut])
 }

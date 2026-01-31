@@ -138,6 +138,7 @@ export const apiClient = {
     entities: {
         Aide: createEntityClient('aides'),
         Structure: createEntityClient('structures'),
+        Organization: createEntityClient('organizations'),
         Demarche: createEntityClient('demarches'),
         Actualite: createEntityClient('actualites'),
         Guide: createEntityClient('guides'),

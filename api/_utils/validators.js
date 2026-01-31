@@ -27,3 +27,17 @@ export const searchStructuresSchema = baseSearchSchema.extend({
   zip: z.string().optional(),
   type: z.string().optional(),
 });
+
+export const searchOrganizationsSchema = baseSearchSchema.extend({
+  category: z.string().optional(),
+  city: z.string().optional(),
+  department: z.string().optional(),
+  type: z.string().optional(),
+  territoire: z.string().optional(),
+});
+
+export const searchEstablishmentsSchema = baseSearchSchema.extend({
+  organizationId: z.string().optional(),
+  city: z.string().optional(),
+  department: z.string().optional(),
+});

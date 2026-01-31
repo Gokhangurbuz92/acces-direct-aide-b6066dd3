@@ -5,82 +5,105 @@ import { Link } from 'react-router-dom';
 
 /**
  * Composant Logo unifié pour l'application AccesDirectAide
+ * Design System v1.0 - Branding
  * 
- * Supports variants:
- * - header: Logo horizontal pour desktop, icône seule pour mobile
- * - hero: Logo complet avec tagline (ou stacked selon espace)
- * - footer: Logo complet avec tagline ou horizontal
- * - mark: Icône seule (carré)
+ * @param {Object} props
+ * @param {'a' | 'b' | 'c' | 'current'} props.family - Famille de logo (a/b/c pour preview, current pour prod)
+ * @param {'full' | 'icon' | 'tagline'} props.variant - Type de logo
+ * @param {'default' | 'white'} props.tone - Tonalité (default = couleur, white = blanc)
+ * @param {number | 'sm' | 'md' | 'lg'} props.size - Hauteur en pixels ou preset
+ * @param {boolean} props.asLink - Si true, enveloppe dans un Link vers l'accueil
+ * @param {string} props.alt - Texte alternatif personnalisé
+ * @param {string} props.className - Classes CSS additionnelles
  */
-const Logo = ({ variant = 'header', className, ...props }) => {
-
-    // Base paths
-    const basePath = '/brand';
-    const logoHorizontal = `${basePath}/logo-horizontal.png`;
-    const logoHorizontalTagline = `${basePath}/logo-horizontal-tagline.png`;
-    const logoStackedTagline = `${basePath}/logo-stacked-tagline.png`;
-    const logoMark = `${basePath}/logo-mark.png`;
-
-    // Default Alt text
-    const altText = "AccesDirectAide — La lumière sur vos démarches";
-
-    if (variant === 'mark') {
+const Logo = ({ 
+    family = 'current',
+    variant = 'full', 
+    tone = 'default',
+    size = 40,
+    asLink = false,
+    alt,
+    className,
+    ...props 
+}) => {
+    // Conversion size preset vers pixels
+    const sizeMap = {
+        sm: 24,
+        md: 40,
+        lg: 64
+    };
+    const heightPx = typeof size === 'string' ? sizeMap[size] : size;
+    
+    // Chemins des assets
+    const basePath = '/assets/branding';
+    
+    // Déterminer le suffixe de famille (a/b/c ou vide pour current)
+    const familySuffix = family === 'current' ? '' : `-${family}`;
+    
+    // Sélection du fichier selon family, variant et tone
+    let logoSrc;
+    let fallbackSrc;
+    
+    if (tone === 'white') {
+        // Version blanche (toutes familles)
+        logoSrc = `${basePath}/logo${familySuffix}-white.svg`;
+        fallbackSrc = '/brand/logo-horizontal-transparent.png';
+    } else if (variant === 'icon') {
+        logoSrc = `${basePath}/logo${familySuffix}-icon.svg`;
+        fallbackSrc = '/brand/logo-mark.png';
+    } else if (variant === 'tagline') {
+        logoSrc = `${basePath}/logo${familySuffix}-tagline.svg`;
+        fallbackSrc = '/brand/logo-horizontal.png';
+    } else {
+        // variant === 'full'
+        logoSrc = `${basePath}/logo${familySuffix}-full.svg`;
+        fallbackSrc = '/brand/logo-horizontal.png';
+    }
+    
+    // Texte alternatif
+    const altText = alt || "AccesDirectAide — La lumière sur vos démarches";
+    
+    // Composant image
+    const logoImage = (
+        <img
+            src={logoSrc}
+            alt={altText}
+            className={cn("object-contain", className)}
+            style={{ height: `${heightPx}px`, width: 'auto' }}
+            onError={(e) => {
+                // Fallback vers PNG si SVG non disponible
+                e.currentTarget.src = fallbackSrc;
+            }}
+            {...props}
+        />
+    );
+    
+    // Si asLink, envelopper dans un Link
+    if (asLink) {
         return (
-            <img
-                src={logoMark}
-                alt="AccesDirectAide"
-                className={cn("h-10 w-10 object-contain", className)}
-                {...props}
-            />
+            <Link 
+                to="/" 
+                className="inline-flex items-center focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-primary focus-visible:ring-offset-2 rounded"
+                aria-label="Accueil - AccesDirectAide"
+            >
+                {logoImage}
+            </Link>
         );
     }
-
-    if (variant === 'header') {
-        return (
-            <div className={cn("flex items-center", className)} {...props}>
-                {/* Mobile: Logo Mark Only */}
-                <img
-                    src={logoMark}
-                    alt={altText}
-                    className="h-10 w-auto sm:hidden"
-                />
-                {/* Tablet/Desktop: Horizontal Logo */}
-                <img
-                    src={logoHorizontal}
-                    alt={altText}
-                    className="hidden sm:block h-10 w-auto"
-                />
-            </div>
-        );
-    }
-
-    if (variant === 'hero') {
-        return (
-            <img
-                src={logoStackedTagline}
-                alt={altText}
-                className={cn("w-auto max-w-[280px] md:max-w-[400px] mx-auto", className)}
-                {...props}
-            />
-        );
-    }
-
-    if (variant === 'footer') {
-        return (
-            <img
-                src={logoHorizontalTagline}
-                alt={altText}
-                className={cn("h-12 w-auto", className)}
-                {...props}
-            />
-        );
-    }
-
-    return null;
+    
+    return logoImage;
 };
 
 Logo.propTypes = {
-    variant: PropTypes.oneOf(['header', 'hero', 'footer', 'mark']),
+    family: PropTypes.oneOf(['a', 'b', 'c', 'current']),
+    variant: PropTypes.oneOf(['full', 'icon', 'tagline']),
+    tone: PropTypes.oneOf(['default', 'white']),
+    size: PropTypes.oneOfType([
+        PropTypes.number,
+        PropTypes.oneOf(['sm', 'md', 'lg'])
+    ]),
+    asLink: PropTypes.bool,
+    alt: PropTypes.string,
     className: PropTypes.string,
 };
 

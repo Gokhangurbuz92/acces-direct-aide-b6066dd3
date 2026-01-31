@@ -49,4 +49,22 @@ test-img*.jpg
 # Local Storage (Mock)
 uploads_mock/
 uploads_mock/**
+
+# Auto-generated files
 api/_utils/build-info.js
+
+# Release artifacts (proofs, screenshots, reports)
+release/**/proofs/**
+release/**/*.png
+release/**/*.jpg
+release/**/*.jpeg
+release/**/*.gif
+release/**/*.webp
+release/**/*.pdf
+!release/**/RELEASE_CHECKLIST.md
+!release/**/README.md
+
+# Temporary files
+*.tmp
+*.temp
+.cache/

@@ -1,9 +1,6 @@
-import { PrismaClient } from '@prisma/client';
+import prisma from '../_utils/prisma.js';
 import { getCanonicalBaseUrl, isIndexable } from '../_utils/seo.js';
 import crypto from 'crypto';
-
-
-const prisma = new PrismaClient();
 
 export default async function handler(req, res) {
     if (req.method !== 'GET' && req.method !== 'HEAD') {

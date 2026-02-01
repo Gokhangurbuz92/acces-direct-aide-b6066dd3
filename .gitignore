@@ -53,3 +53,4 @@ api/_utils/build-info.js
 
 # generated build info
 api/_utils/build-info.js
+.blackboxcli/

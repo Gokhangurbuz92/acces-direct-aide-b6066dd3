@@ -1,7 +1,21 @@
-// Rate Limiter: Upstash REST (Primary) + In-Memory Fallback
+// Rate Limiter: Upstash REST (Fail-Closed Security Model)
 import crypto from 'crypto';
 import { Redis } from '@upstash/redis';
 import { Ratelimit } from '@upstash/ratelimit';
+
+// Alert function for critical KV failures
+function sendAlert(alertData) {
+    // Log structured alert data for monitoring systems to consume
+    console.error('[ALERT_WEBHOOK]', JSON.stringify({
+        severity: 'CRITICAL',
+        service: 'rate-limiter',
+        event: 'kv_failure',
+        ...alertData
+    }));
+
+    // TODO: Integrate with monitoring service (e.g., Sentry, DataDog, Vercel)
+    // Example: await fetch(process.env.ALERT_WEBHOOK_URL, { method: 'POST', body: JSON.stringify(alertData) })
+}
 
 // 1. Determine Backend Type
 // STRICT: Only use REST API (Upstash / Vercel KV)
@@ -24,7 +38,7 @@ if (hasHttpKv) {
     });
 }
 
-// Fallback in-memory store
+// In-memory store (only used when KV credentials are not configured)
 const memoryStore = new Map();
 
 const CONFIG = {
@@ -101,8 +115,31 @@ async function checkRateLimitKV(action, identifier) {
         return { allowed: true };
 
     } catch (e) {
-        console.error(`[RateLimit] KV REST Error (Switching to Memory):`, e);
-        return checkRateLimitInMemory(action, identifier);
+        // SECURITY: Fail-closed behavior - deny access when KV is unavailable
+        const hashedKey = hashKey(`${action}:${identifier}`);
+        const alertData = {
+            timestamp: new Date().toISOString(),
+            backend: BACKEND_NAME,
+            action: action,
+            keyHash: hashedKey,
+            error: e.message,
+            stack: e.stack
+        };
+
+        console.error(`[CRITICAL] [ALERT] Rate Limit KV Failure - Denying Access`, alertData);
+
+        // Send alert to monitoring system
+        sendAlert(alertData);
+
+        // Return rate limit denial to maintain security
+        return {
+            allowed: false,
+            error: {
+                error: "Service temporairement indisponible.",
+                message: "Veuillez réessayer dans quelques instants.",
+                code: "SERVICE_UNAVAILABLE"
+            }
+        };
     }
 }
 

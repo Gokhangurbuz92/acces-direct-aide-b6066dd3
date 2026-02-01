@@ -1,5 +1,6 @@
 process.env.NODE_ENV = process.env.NODE_ENV || 'test';
 process.env.JWT_SECRET = process.env.JWT_SECRET || 'test-jwt-secret-CHANGE-ME';
+process.env.ADA_ENCRYPTION_KEY = process.env.ADA_ENCRYPTION_KEY || 'a'.repeat(64); // 64 hex chars = 32 bytes
 
 // Silence noisy logs during tests (resilience checks, validation errors)
 const originalError = console.error;

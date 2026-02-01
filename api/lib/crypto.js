@@ -3,10 +3,13 @@
 import crypto from 'crypto';
 
 // Encryption Algorithm
-// Encryption Algorithm
 const ALGORITHM = 'aes-256-gcm';
 const IV_LENGTH = 16; // AES block size
 const AUTH_TAG_LENGTH = 16;
+
+// Key Versioning Constants
+const CURRENT_KEY_VERSION = 'v1';
+const LEGACY_FORMAT_INDICATOR = ':'; // Legacy format starts with hex (no 'v')
 
 // Key Management
 const KEY_HEX = process.env.ADA_ENCRYPTION_KEY;
@@ -17,55 +20,89 @@ if (!KEY || KEY.length !== 32) {
     throw new Error("⛔ FATAL: ADA_ENCRYPTION_KEY (64 hex chars = 32 bytes) is REQUIRED.");
 }
 
+// Key Registry - Maps version to key
+// For future key rotation, add new versions here (e.g., v2: NEW_KEY)
+const KEY_REGISTRY = {
+    v1: KEY,
+    // v2: process.env.ADA_ENCRYPTION_KEY_V2 ? Buffer.from(process.env.ADA_ENCRYPTION_KEY_V2, 'hex') : null,
+};
 
 // Rotation Strategy:
-// To rotate keys:
-// 1. Set NEW_KEY in env.
-// 2. Update logic to try decrypting with NEW_KEY first, then OLD_KEY? 
-//    Or usually: Decrypt with OLD, Encrypt with NEW.
-//    For MVP, simplistic single key. 
-//    Future: Store 'key_version' prefix in ciphertext (e.g. v1:iv:tag:data).
+// Current implementation supports versioned encryption format: v1:iv:authTag:data
+// - New encryptions use CURRENT_KEY_VERSION (v1)
+// - Decryption auto-detects version from prefix and uses appropriate key
+// - Legacy data (iv:authTag:data format) automatically handled by v1 key
+// To rotate keys in future:
+// 1. Set ADA_ENCRYPTION_KEY_V2 in environment
+// 2. Add v2 entry to KEY_REGISTRY with new key
+// 3. Update CURRENT_KEY_VERSION = 'v2'
+// 4. All new data encrypts with v2, old data decrypts with v1 (backward compatible)
 
 /**
- * Encrypts a text using AES-256-GCM
- * Returns: IV:AuthTag:EncryptedData (hex string)
+ * Encrypts a text using AES-256-GCM with key versioning
+ * Returns: v1:IV:AuthTag:EncryptedData (hex string)
+ * Format enables future key rotation while maintaining backward compatibility
  */
 export function encrypt(text) {
     if (!text) return null;
-    if (!KEY) throw new Error("Missing ADA_KEY");
+
+    const key = KEY_REGISTRY[CURRENT_KEY_VERSION];
+    if (!key) throw new Error("Missing encryption key for current version");
 
     const iv = crypto.randomBytes(IV_LENGTH);
-    const cipher = crypto.createCipheriv(ALGORITHM, KEY, iv);
+    const cipher = crypto.createCipheriv(ALGORITHM, key, iv);
 
     let encrypted = cipher.update(text, 'utf8', 'hex');
     encrypted += cipher.final('hex');
 
     const authTag = cipher.getAuthTag().toString('hex');
 
-    // Format: iv:authTag:encrypted
-    return `${iv.toString('hex')}:${authTag}:${encrypted}`;
+    // Format: version:iv:authTag:encrypted
+    return `${CURRENT_KEY_VERSION}:${iv.toString('hex')}:${authTag}:${encrypted}`;
 }
 
 /**
- * Decrypts a text using AES-256-GCM
+ * Decrypts a text using AES-256-GCM with automatic version detection
+ * Supports both versioned (v1:iv:authTag:data) and legacy (iv:authTag:data) formats
+ * Backward compatible with all existing encrypted data
  */
 export function decrypt(encryptedText) {
     if (!encryptedText) return null;
-    if (!KEY) throw new Error("Missing ADA_KEY");
 
     const parts = encryptedText.split(':');
-    if (parts.length !== 3) {
-        // Handle legacy or invalid data gracefully or throw?
-        // Return null to avoid crashing on bad data
+
+    let version, ivHex, authTagHex, contentHex, key;
+
+    // Detect format: versioned (4 parts) vs legacy (3 parts)
+    if (parts.length === 4 && parts[0].startsWith('v')) {
+        // Versioned format: v1:iv:authTag:data
+        [version, ivHex, authTagHex, contentHex] = parts;
+        key = KEY_REGISTRY[version];
+
+        if (!key) {
+            console.error(`Unknown key version: ${version}`);
+            return null;
+        }
+    } else if (parts.length === 3) {
+        // Legacy format: iv:authTag:data (assume v1 key)
+        [ivHex, authTagHex, contentHex] = parts;
+        version = 'v1';
+        key = KEY_REGISTRY.v1;
+
+        if (!key) {
+            console.error("Missing v1 key for legacy data");
+            return null;
+        }
+    } else {
+        // Invalid format
+        console.error(`Invalid encrypted data format: expected 3 or 4 parts, got ${parts.length}`);
         return null;
     }
-
-    const [ivHex, authTagHex, contentHex] = parts;
 
     try {
         const decipher = crypto.createDecipheriv(
             ALGORITHM,
-            KEY,
+            key,
             Buffer.from(ivHex, 'hex')
         );
 
@@ -76,7 +113,7 @@ export function decrypt(encryptedText) {
 
         return decrypted;
     } catch (e) {
-        console.error("Decryption failed", e.message);
+        console.error(`Decryption failed for version ${version}:`, e.message);
         return null; // Tampered or wrong key
     }
 }

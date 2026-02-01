@@ -1,6 +1,6 @@
 
 import jwt from 'jsonwebtoken';
-import prisma from '../_utils/prisma.js';
+import prisma from './prisma.js';
 import crypto from 'crypto';
 import { checkRateLimit as checkRateLimitUtil } from '../_utils/rateLimit.js';
 

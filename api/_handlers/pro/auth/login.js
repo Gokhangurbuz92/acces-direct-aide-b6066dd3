@@ -1,7 +1,7 @@
 
 import bcrypt from 'bcryptjs';
 import { signProToken, checkRateLimit, logProAudit } from '../../../lib/pro-auth.js';
-import prisma from '../../../_utils/prisma.js';
+import prisma from '../../../lib/prisma.js';
 
 export default async function handler(req, res) {
     if (req.method !== 'POST') {

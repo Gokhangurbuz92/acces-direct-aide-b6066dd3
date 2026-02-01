@@ -1,6 +1,4 @@
-import { PrismaClient } from '@prisma/client';
-
-const prisma = new PrismaClient();
+import prisma from '../api/lib/prisma.js';
 
 const categories = [
   { slug: 'logement', label: 'Logement' },

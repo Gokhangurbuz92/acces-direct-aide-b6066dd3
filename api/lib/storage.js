@@ -2,60 +2,156 @@
 import fs from 'fs';
 import path from 'path';
 import crypto from 'crypto';
+import { S3Client, PutObjectCommand, GetObjectCommand, DeleteObjectCommand } from '@aws-sdk/client-s3';
 
-// Minimal implementation details for MVP:
-// In PROD (if STORAGE_BUCKET is set), we would use @aws-sdk/client-s3 or Supabase Storage.
-// For MVP/Verification without cloud creds, we use strict local storage with encryption simulation.
+// Storage implementation with Cloudflare R2 support
+// Fallback to /tmp filesystem when R2 credentials are not configured
 
-// On Vercel (or any read-only FS), only /tmp is writable.
-// Note: /tmp is ephemeral and tied to the execution context. Files will disappear.
-// For a persistent MVP on Vercel, you essentially can't use filesystem for persistence unless using /tmp for short-lived ops.
-// Since this is a "mock" storage, using /tmp is the only minimal fix that doesn't require S3 setup.
+const USE_R2 = !!(
+    process.env.R2_ACCESS_KEY_ID &&
+    process.env.R2_SECRET_ACCESS_KEY &&
+    process.env.R2_BUCKET_NAME &&
+    process.env.R2_ENDPOINT
+);
+
+let s3Client = null;
+
+if (USE_R2) {
+    try {
+        s3Client = new S3Client({
+            region: 'auto',
+            endpoint: process.env.R2_ENDPOINT,
+            credentials: {
+                accessKeyId: process.env.R2_ACCESS_KEY_ID,
+                secretAccessKey: process.env.R2_SECRET_ACCESS_KEY,
+            },
+        });
+        console.log('[Storage] ✅ Cloudflare R2 client initialized');
+    } catch (e) {
+        console.error('[Storage] ❌ Failed to initialize R2 client:', e);
+        // Will fall back to filesystem
+    }
+}
+
+// Fallback: /tmp filesystem storage (ephemeral on Vercel)
 const STORAGE_ROOT = path.join('/tmp', 'uploads_mock');
 
-try {
-    if (!fs.existsSync(STORAGE_ROOT)) {
-        fs.mkdirSync(STORAGE_ROOT, { recursive: true });
+if (!USE_R2 || !s3Client) {
+    console.warn('[Storage] ⚠️ Using /tmp filesystem storage (ephemeral - files will be lost on cold starts)');
+    try {
+        if (!fs.existsSync(STORAGE_ROOT)) {
+            fs.mkdirSync(STORAGE_ROOT, { recursive: true });
+        }
+    } catch (e) {
+        console.error('[Storage] ❌ Failed to initialize /tmp storage:', e);
     }
-} catch (e) {
-    console.error("Storage init failed (likely read-only FS even in /tmp?):", e);
-    // Fallback? or just let it crash later if used?
-    // We suppress crash on INIT, but upload() will fail if mkdir failed.
 }
 
 export const storage = {
     /**
      * Uploads buffer to storage.
-     * In real S3 app, we stream encrypted.
-     * Here we just write to disk.
+     * Uses R2 if configured, falls back to /tmp filesystem.
+     * Buffer should be ALREADY encrypted by the upload handler.
      * Returns: storageKey
      */
     async upload(buffer, mime) {
-        // We assume buffer is ALREADY encrypted by the upload handler?
-        // Or we encrypt here?
-        // Plan said: "Encrypt file blobs at rest (either client-side... or server-side before storage)"
-        // Let's assume the API handler encrypts the stream/buffer BEFORE calling this.
-        // So this just writes the BLOB.
-
         const key = `${Date.now()}-${crypto.randomBytes(8).toString('hex')}`;
-        const filePath = path.join(STORAGE_ROOT, key);
 
-        await fs.promises.writeFile(filePath, buffer);
-        console.log(`[Storage Mock] Written ${buffer.length} bytes to ${key} (${mime})`);
-        return key;
+        if (USE_R2 && s3Client) {
+            try {
+                await s3Client.send(new PutObjectCommand({
+                    Bucket: process.env.R2_BUCKET_NAME,
+                    Key: key,
+                    Body: buffer,
+                    ContentType: mime,
+                }));
+                console.log(`[Storage R2] ✅ Uploaded ${buffer.length} bytes to ${key} (${mime})`);
+                return key;
+            } catch (e) {
+                console.error(`[Storage R2] ❌ Upload failed for ${key}:`, e);
+                throw new Error('Storage upload failed');
+            }
+        } else {
+            // Fallback: filesystem
+            try {
+                const filePath = path.join(STORAGE_ROOT, key);
+                await fs.promises.writeFile(filePath, buffer);
+                console.log(`[Storage FS] ⚠️ Written ${buffer.length} bytes to ${key} (${mime}) - ephemeral storage`);
+                return key;
+            } catch (e) {
+                console.error(`[Storage FS] ❌ Write failed for ${key}:`, e);
+                throw new Error('Storage upload failed');
+            }
+        }
     },
 
     async download(key) {
-        const filePath = path.join(STORAGE_ROOT, key);
-        if (!fs.existsSync(filePath)) throw new Error("File not found");
-        return fs.promises.readFile(filePath);
+        if (USE_R2 && s3Client) {
+            try {
+                const response = await s3Client.send(new GetObjectCommand({
+                    Bucket: process.env.R2_BUCKET_NAME,
+                    Key: key,
+                }));
+
+                // Convert stream to buffer
+                const chunks = [];
+                for await (const chunk of response.Body) {
+                    chunks.push(chunk);
+                }
+                const buffer = Buffer.concat(chunks);
+
+                console.log(`[Storage R2] ✅ Downloaded ${buffer.length} bytes from ${key}`);
+                return buffer;
+            } catch (e) {
+                if (e.name === 'NoSuchKey' || e.$metadata?.httpStatusCode === 404) {
+                    console.error(`[Storage R2] ❌ File not found: ${key}`);
+                    throw new Error('File not found');
+                }
+                console.error(`[Storage R2] ❌ Download failed for ${key}:`, e);
+                throw new Error('Storage download failed');
+            }
+        } else {
+            // Fallback: filesystem
+            try {
+                const filePath = path.join(STORAGE_ROOT, key);
+                if (!fs.existsSync(filePath)) {
+                    console.error(`[Storage FS] ❌ File not found: ${key}`);
+                    throw new Error('File not found');
+                }
+                const buffer = await fs.promises.readFile(filePath);
+                console.log(`[Storage FS] ✅ Read ${buffer.length} bytes from ${key}`);
+                return buffer;
+            } catch (e) {
+                if (e.message === 'File not found') throw e;
+                console.error(`[Storage FS] ❌ Read failed for ${key}:`, e);
+                throw new Error('Storage download failed');
+            }
+        }
     },
 
     async delete(key) {
-        const filePath = path.join(STORAGE_ROOT, key);
-        if (fs.existsSync(filePath)) {
-            await fs.promises.unlink(filePath);
-            console.log(`[Storage Mock] Deleted ${key}`);
+        if (USE_R2 && s3Client) {
+            try {
+                await s3Client.send(new DeleteObjectCommand({
+                    Bucket: process.env.R2_BUCKET_NAME,
+                    Key: key,
+                }));
+                console.log(`[Storage R2] ✅ Deleted ${key}`);
+            } catch (e) {
+                // Don't throw on delete failures - log and continue
+                console.error(`[Storage R2] ⚠️ Delete failed for ${key}:`, e);
+            }
+        } else {
+            // Fallback: filesystem
+            try {
+                const filePath = path.join(STORAGE_ROOT, key);
+                if (fs.existsSync(filePath)) {
+                    await fs.promises.unlink(filePath);
+                    console.log(`[Storage FS] ✅ Deleted ${key}`);
+                }
+            } catch (e) {
+                console.error(`[Storage FS] ⚠️ Delete failed for ${key}:`, e);
+            }
         }
     }
 };

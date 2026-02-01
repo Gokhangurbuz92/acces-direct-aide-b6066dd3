@@ -1,9 +1,7 @@
-import { PrismaClient } from '@prisma/client';
+import prisma from '../../_utils/prisma.js';
 import { checkRateLimit } from '../_utils/rateLimit.js';
 import { encrypt, hash } from '../../lib/crypto.js';
 import crypto from 'crypto';
-
-const prisma = new PrismaClient();
 
 export default async function handler(req, res) {
     if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });

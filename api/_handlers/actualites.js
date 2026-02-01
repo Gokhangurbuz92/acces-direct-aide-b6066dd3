@@ -1,8 +1,6 @@
-import { PrismaClient } from '@prisma/client';
+import prisma from '../_utils/prisma.js';
 import { verifyAdmin } from '../_utils/auth.js';
 import { createEntity, updateEntity, deleteEntity } from '../_utils/crud.js';
-
-const prisma = new PrismaClient();
 
 async function handler(req, res) {
     const { id, slug, limit, sort, statut } = req.query;

@@ -1,9 +1,7 @@
 
-import { PrismaClient } from '@prisma/client';
+import prisma from '../../_utils/prisma.js';
 import { verifyProToken, ROLE, logProAudit } from '../../lib/pro-auth.js';
 import slugify from '@sindresorhus/slugify';
-
-const prisma = new PrismaClient();
 
 export default async function handler(req, res) {
     const authHeader = req.headers.authorization;

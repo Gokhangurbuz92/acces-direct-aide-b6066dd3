@@ -1,6 +1,4 @@
-import { PrismaClient } from '@prisma/client';
-
-const prisma = new PrismaClient();
+import prisma from '../_utils/prisma.js';
 
 export default async function handler(req, res) {
     let dbStatus = 'disconnected';

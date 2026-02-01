@@ -2,20 +2,34 @@ import { next } from '@vercel/edge';
 
 export default function middleware(request) {
   const host = request.headers.get('host') || '';
-  const domain = host.split(':')[0];
+  const domain = host.split(':')[0]; // Remove port if present
 
-  // Production domains
-  const isProduction = domain === 'accesdirectaide.fr' || domain === 'www.accesdirectaide.fr';
+  // --- PRODUCTION DOMAIN ENFORCEMENT ---
+  // Only apply canonical redirect in production environments
+  const isProductionDomain =
+    domain === 'accesdirectaide.fr' ||
+    domain === 'www.accesdirectaide.fr';
 
-  if (!isProduction) {
-    return next({
-      headers: {
-        'X-Robots-Tag': 'noindex, nofollow',
-      },
-    });
+  if (isProductionDomain) {
+    // Redirect apex to www (canonical)
+    if (domain === 'accesdirectaide.fr') {
+      const canonicalUrl = new URL(request.url);
+      canonicalUrl.host = 'www.accesdirectaide.fr';
+
+      return Response.redirect(canonicalUrl.toString(), 308);
+    }
+
+    // www domain: allow through (production = indexable)
+    return next();
   }
 
-  return next();
+  // --- NON-PRODUCTION (PREVIEW / STAGING) ---
+  // Apply noindex to prevent search engine indexing
+  return next({
+    headers: {
+      'X-Robots-Tag': 'noindex, nofollow',
+    },
+  });
 }
 
 export const config = {

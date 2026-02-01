@@ -10,8 +10,9 @@ const envToken = process.env.KV_REST_API_TOKEN || process.env.UPSTASH_REDIS_REST
 
 const hasHttpKv = !!(envUrl && envToken);
 const BACKEND_NAME = hasHttpKv ? "KV_REST_API" : "MEMORY";
+const IS_PRODUCTION = process.env.VERCEL_ENV === 'production';
 
-console.log(`[RateLimit] Init: Backend=${BACKEND_NAME}`);
+console.log(`[RateLimit] Init: Backend=${BACKEND_NAME} Env=${process.env.VERCEL_ENV}`);
 
 // 2. Initialize Clients
 let redisClient = null; // Module-level singleton
@@ -101,7 +102,24 @@ async function checkRateLimitKV(action, identifier) {
         return { allowed: true };
 
     } catch (e) {
-        console.error(`[RateLimit] KV REST Error (Switching to Memory):`, e);
+        console.error(`[RateLimit] KV REST Error:`, e);
+
+        // P0.4: FAIL-CLOSED in PRODUCTION
+        if (IS_PRODUCTION) {
+            console.error(`[RateLimit] CRITICAL: Fail-Closed triggered in Production. Blocking request.`);
+            return {
+                allowed: false,
+                error: {
+                    error: "Service indisponible",
+                    message: "Une vérification de sécurité a échoué. Veuillez réessayer.",
+                    code: "RATE_LIMIT_ERROR"
+                },
+                status: 503
+            };
+        }
+
+        // Allow fallback in Dev/Preview
+        console.warn(`[RateLimit] Falling back to Memory Store (Non-Production)`);
         return checkRateLimitInMemory(action, identifier);
     }
 }
@@ -130,6 +148,21 @@ export async function checkRateLimit(action, identifier) {
     if (hasHttpKv) {
         return checkRateLimitKV(action, identifier);
     } else {
+        // P0.4: If KV is missing entirely in PRODUCTION -> Block
+        if (IS_PRODUCTION) {
+            console.error(`[RateLimit] CRITICAL: KV Credentials missing in Production. Fail-Closed.`);
+            return {
+                allowed: false,
+                error: {
+                    error: "Service indisponible",
+                    message: "Configuration serveur incomplète.",
+                    code: "RATE_LIMIT_CONFIG_ERROR"
+                },
+                status: 503
+            };
+        }
+
+        // Fallback for Dev/Preview without credentials
         return checkRateLimitInMemory(action, identifier);
     }
 }

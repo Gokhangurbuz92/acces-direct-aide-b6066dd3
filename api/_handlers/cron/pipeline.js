@@ -1,6 +1,6 @@
 /* global process */
 import { isCronAuthorized } from '../../_utils/cronAuth.js';
-import { PrismaClient } from '@prisma/client';
+import prisma from '../../_utils/prisma.js';
 import Parser from 'rss-parser';
 import crypto from 'crypto';
 import fs from 'fs';
@@ -10,7 +10,6 @@ import { ensureSlug } from '../../lib/slug.js';
 import ingestStructures, { runIngestStructures } from './ingest-structures.js';
 import ingestAids, { runIngestAids } from './ingest-aids.js';
 
-const prisma = new PrismaClient();
 const parser = new Parser();
 
 // Helper: Slugify

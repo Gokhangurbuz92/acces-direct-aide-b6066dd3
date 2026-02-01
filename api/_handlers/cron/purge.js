@@ -1,10 +1,8 @@
 
-import { PrismaClient } from '@prisma/client';
+import prisma from '../../_utils/prisma.js';
 import { subMinutes, subDays } from 'date-fns';
 import { storage } from '../../lib/storage.js';
 import { logger } from '../../lib/logger.js';
-
-const prisma = new PrismaClient();
 
 export default async function handler(req, res) {
     // Cron security: Verify signature or strict IP/Header if deployed.
@@ -66,7 +64,6 @@ export default async function handler(req, res) {
             }
         }
 
-
         // 3. Purge Messages (> 60 days) and Attachments (> 30 days)
         // Attachments first (cleanup storage)
         const storageLimit = subDays(now, 30);
@@ -107,7 +104,6 @@ export default async function handler(req, res) {
         const expiredUpdates = await prisma.updateLog.deleteMany({
             where: { ran_at: { lt: retentionDate } }
         });
-
 
         const stats = {
             expiredLocks: expiredLocks.count,

@@ -1,11 +1,9 @@
 
-import { PrismaClient } from '@prisma/client';
+import prisma from '../../../_utils/prisma.js';
 import crypto from 'crypto';
 import { hash } from '../../../lib/crypto.js';
 
 import { checkRateLimit } from '../../../lib/pro-auth.js';
-
-const prisma = new PrismaClient();
 
 export default async function handler(req, res) {
     if (req.method !== 'POST') {

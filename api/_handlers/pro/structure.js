@@ -1,8 +1,6 @@
 
-import { PrismaClient } from '@prisma/client';
+import prisma from '../../_utils/prisma.js';
 import { verifyProToken, ROLE, logProAudit } from '../../lib/pro-auth.js';
-
-const prisma = new PrismaClient();
 
 export default async function handler(req, res) {
     if (req.method !== 'PUT') {

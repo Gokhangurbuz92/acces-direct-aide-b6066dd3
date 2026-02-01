@@ -1,9 +1,7 @@
-import { PrismaClient } from '@prisma/client';
+import prisma from '../../_utils/prisma.js';
 import Busboy from 'busboy';
 import { parse } from 'csv-parse/sync';
 import { verifyAdmin } from '../../_utils/auth.js';
-
-const prisma = new PrismaClient();
 
 export const config = {
   api: {

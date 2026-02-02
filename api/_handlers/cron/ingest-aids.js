@@ -1,6 +1,10 @@
 import { isCronAuthorized } from '../../_utils/cronAuth.js';
 import prisma from '../../_utils/prisma.js';
 import crypto from 'crypto';
+import { logger } from '../../lib/logger.js';
+import * as Sentry from '@sentry/node';
+import { GrandEstConnector } from '../../lib/ingestion/GrandEstConnector.js';
+import { AgefiphConnector } from '../../lib/ingestion/AgefiphConnector.js';
 
 function slugify(text) {
     if (!text) return '';
@@ -15,18 +19,10 @@ function slugify(text) {
         .replace(/-+$/, '');
 }
 
-/**
- * Pure ingestion logic for Aids
- * @param {Object} params
- * @param {number} params.limit
- * @param {string} params.runId
- * @returns {Promise<Object>} stats
- */
-export async function runIngestAids({ limit, runId }) {
-    const SOURCE_URL = "https://raw.githubusercontent.com/Gokhangurbuz92/data-sources/main/aids-france.json";
-    console.log(`INGEST_AIDS_ENTER url=${SOURCE_URL}`);
-
+export async function runIngestAids({ limit, runId, wipe = false }) {
     if (!runId) runId = crypto.randomUUID();
+
+    logger.info('INGEST_AIDS_START', { runId, wipe, limit });
 
     const stats = {
         fetched: 0,
@@ -36,116 +32,149 @@ export async function runIngestAids({ limit, runId }) {
         skippedExisting: 0,
         errors: [],
         durationByStage: {
-            fetchMs: 0,
+            crawlMs: 0,
             processingMs: 0
         }
     };
 
     const startTotal = Date.now();
 
-    // Fetch external data (fallback to local if unreachable - though here we only have fetch)
-    let externalAids = [];
-    try {
-        const startFetch = Date.now();
-        // console.log(`[AIDS] Fetching ${SOURCE_URL}`);
-
-        const response = await fetch(SOURCE_URL);
-        const fetchDuration = Date.now() - startFetch;
-        stats.durationByStage.fetchMs = fetchDuration;
-
-        // console.log(`[AIDS] Fetch Status: ${response.status} CT: ${response.headers.get('content-type')}`);
-
-        if (response.ok) {
-            let data;
-            try {
-                data = await response.json();
-                // console.log(`[AIDS] Data Keys: ${Array.isArray(data) ? '[Array]' : (data ? Object.keys(data).join(',') : 'null')}`);
-            } catch (jsonErr) {
-                const msg = `[AIDS] JSON Parse Error: ${jsonErr.message}`;
-                console.error(msg);
-                stats.errors.push(msg);
-                data = [];
-            }
-
-            // Anti Silent Failure: Handle Array vs Object
-            if (Array.isArray(data)) {
-                externalAids = data;
-            } else if (data && Array.isArray(data.items)) {
-                externalAids = data.items;
-            } else if (data && Array.isArray(data.aides)) {
-                externalAids = data.aides;
-            } else {
-                externalAids = [];
-                // if (data) console.warn("[AIDS] Unknown data structure (not array, no items/aides key)");
-            }
-
-            console.log(`INGEST_AIDS_FETCH_DONE status=${response.status} ct=${response.headers.get('content-type')} fetchMs=${fetchDuration} items=${externalAids.length}`);
-
-            if (externalAids.length === 0) {
-                const msg = `[AIDS] 0 items found. status=${response.status}`;
-                console.warn(msg);
-                stats.errors.push(msg);
-            }
-
-            stats.fetched = externalAids.length;
-        } else {
-            const body = await response.text();
-            const msg = `[AIDS] HTTP Error ${response.status} - ${body.substring(0, 100)}`;
-            console.error(msg);
-            stats.errors.push(msg);
-        }
-    } catch (e) {
-        console.error("[AIDS] External source unreachable", e);
-        stats.errors.push(`Fetch failed: ${e.message}`);
-    }
-
-    // Limit support
-    if (limit && limit > 0) {
-        externalAids = externalAids.slice(0, limit);
-    }
-
-    const startProcess = Date.now();
-    // Process items
-    for (const item of externalAids) {
-        stats.processed++;
+    // Wipe if requested
+    if (wipe) {
         try {
-            const hash = crypto.createHash('md5').update(JSON.stringify(item)).digest('hex');
-            const tit = item.title || "Sans titre";
-            const slug = slugify(tit);
-
-            const existing = await prisma.aide.findUnique({ where: { slug } });
-
-            if (existing) {
-                await prisma.aide.update({
-                    where: { slug },
-                    data: {
-                        titre: tit,
-                        summary_falc: item.summary,
-                        providerName: item.provider,
-                        statut: 'publie',
-                        published_at: new Date()
-                    }
-                });
-                stats.updated++;
-            } else {
-                await prisma.aide.create({
-                    data: {
-                        titre: tit,
-                        slug,
-                        summary_falc: item.summary,
-                        providerName: item.provider,
-                        statut: 'publie',
-                        published_at: new Date()
-                    }
-                });
-                stats.created++;
-            }
-        } catch (procErr) {
-            console.error(`[AIDS] Process item error: ${procErr.message}`);
-            stats.errors.push(`Item error: ${procErr.message}`);
+            logger.warn('INGEST_AIDS_WIPE_START', { runId });
+            // Wipe ingested items (providerType = 'ingest' or providerName in known list)
+            // Or wipe all non-manual if we stick to that convention.
+            // Safe approach: delete where providerType = 'ingest'.
+            await prisma.aide.deleteMany({
+                where: {
+                    OR: [
+                        { providerType: 'ingest' },
+                        { providerType: null } // Assume nulls are also targets if we are wiping everything non-manual
+                    ]
+                }
+            });
+            logger.warn('INGEST_AIDS_WIPE_DONE', { runId });
+        } catch (e) {
+            logger.error('INGEST_AIDS_WIPE_ERROR', { runId, error: e });
+            stats.errors.push(`Wipe failed: ${e.message}`);
         }
     }
-    stats.durationByStage.processingMs = Date.now() - startProcess;
+
+    const connectors = [
+        new GrandEstConnector(),
+        new AgefiphConnector()
+    ];
+
+    for (const connector of connectors) {
+        logger.info(`CONNECTOR_START`, { runId, connector: connector.name });
+
+        try {
+            // 1. Crawl
+            const startCrawl = Date.now();
+            let urls = [];
+            try {
+                urls = await connector.getDetailUrls();
+            } catch (e) {
+                logger.error(`CONNECTOR_CRAWL_ERROR`, { runId, connector: connector.name, error: e });
+                stats.errors.push(`${connector.name} crawl error: ${e.message}`);
+                continue;
+            }
+            stats.durationByStage.crawlMs += (Date.now() - startCrawl);
+            logger.info(`CONNECTOR_CRAWL_DONE`, { runId, connector: connector.name, count: urls.length });
+
+            // Limit
+            if (limit && limit > 0) {
+                urls = urls.slice(0, limit);
+            }
+
+            // 2. Process
+            const startProcess = Date.now();
+            for (const url of urls) {
+                stats.processed++;
+                try {
+                    const html = await connector.fetch(url);
+                    const item = await connector.parse(html, url);
+
+                    if (!item.title) {
+                        stats.errors.push(`Skipped ${url}: No title`);
+                        continue;
+                    }
+
+                    const slug = slugify(`${connector.name}-${item.title}`);
+                    const contentHash = crypto.createHash('md5').update(JSON.stringify(item)).digest('hex');
+
+                    // Idempotency: Upsert by slug (or source_url)
+                    // We prioritize source_url for uniqueness if possible, but slug is the DB unique key.
+                    // Let's rely on slug.
+
+                    const existing = await prisma.aide.findFirst({
+                        where: {
+                            OR: [
+                                { slug },
+                                { source_url: item.source_url }
+                            ]
+                        }
+                    });
+
+                    const data = {
+                        titre: item.title,
+                        summary_falc: item.description,
+                        cest_quoi: item.content,
+                        providerName: connector.name,
+                        providerType: 'ingest', // Explicitly set type
+                        source_url: item.source_url,
+                        apply_url: item.apply_url,
+                        theme: item.theme,
+                        fetched_at: item.fetched_at,
+                        statut: 'publie',
+                        published_at: new Date(),
+                        content_hash: contentHash
+                    };
+
+                    if (existing) {
+                        if (existing.content_hash !== contentHash) {
+                             await prisma.aide.update({
+                                where: { id: existing.id },
+                                data: { ...data, updatedAt: new Date() }
+                            });
+                            stats.updated++;
+                        } else {
+                            stats.skippedExisting++;
+                        }
+                    } else {
+                        // Ensure slug uniqueness
+                        let finalSlug = slug;
+                        if (await prisma.aide.count({ where: { slug: finalSlug } }) > 0) {
+                            finalSlug = `${slug}-${crypto.randomBytes(2).toString('hex')}`;
+                        }
+
+                        await prisma.aide.create({
+                            data: {
+                                ...data,
+                                slug: finalSlug
+                            }
+                        });
+                        stats.created++;
+                    }
+
+                } catch (itemErr) {
+                    logger.error(`ITEM_PROCESS_ERROR`, { runId, url, error: itemErr });
+                    stats.errors.push(`${url}: ${itemErr.message}`);
+                }
+            }
+            stats.durationByStage.processingMs += (Date.now() - startProcess);
+
+        } catch (connErr) {
+             logger.error(`CONNECTOR_ERROR`, { runId, connector: connector.name, error: connErr });
+             stats.errors.push(`${connector.name} fatal: ${connErr.message}`);
+        }
+
+        logger.info(`CONNECTOR_END`, { runId, connector: connector.name });
+    }
+
+    const durationTotal = Date.now() - startTotal;
+    logger.info('INGEST_AIDS_END', { runId, stats, duration_ms: durationTotal });
 
     // Log the Run
     try {
@@ -156,10 +185,10 @@ export async function runIngestAids({ limit, runId }) {
                 items_new: stats.created,
                 items_total: stats.processed,
                 logs: stats.errors.length ? JSON.stringify(stats.errors) : null,
-                duration_ms: Date.now() - startTotal
+                duration_ms: durationTotal
             }
         });
-    } catch (e) { /* ignore log error */ }
+    } catch (e) { /* ignore */ }
 
     return stats;
 }
@@ -170,12 +199,15 @@ export default async function handler(req, res) {
     }
 
     const limit = req.query.limit ? parseInt(req.query.limit, 10) : undefined;
+    const wipe = req.query.wipe === 'true';
+    const runId = crypto.randomUUID();
 
     try {
-        const stats = await runIngestAids({ limit, runId: crypto.randomUUID() });
+        const stats = await runIngestAids({ limit, runId, wipe });
         return res.status(200).json(stats);
     } catch (error) {
-        console.error('Ingest Aids Handler Error:', error);
+        logger.error('Ingest Aids Handler Error', { runId, error });
+        Sentry.captureException(error, { extra: { runId } });
         return res.status(500).json({ error: error.message });
     }
 }

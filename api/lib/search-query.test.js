@@ -25,6 +25,7 @@ describe('search-query', () => {
     // Setup mock return
     mockPrisma.$queryRaw.mockResolvedValueOnce([{ id: '1', rank: 0.5 }]); // items
     mockPrisma.$queryRaw.mockResolvedValueOnce([{ total: 1 }]); // count
+    mockPrisma.$queryRaw.mockResolvedValueOnce([{ themes: {} }]); // facets
     mockPrisma.aide.findMany.mockResolvedValue([{ id: '1', title: 'Test' }]);
 
     const params = {
@@ -36,7 +37,7 @@ describe('search-query', () => {
 
     const result = await searchAides(mockPrisma, params);
 
-    expect(mockPrisma.$queryRaw).toHaveBeenCalledTimes(2);
+    expect(mockPrisma.$queryRaw).toHaveBeenCalledTimes(3);
 
     // Check SQL structure roughly (hard to check exact string with Prisma.sql objects)
     // But we can check if it didn't crash and called queryRaw.
@@ -47,6 +48,7 @@ describe('search-query', () => {
   it('searchAides builds correct SQL for simple list', async () => {
     mockPrisma.$queryRaw.mockResolvedValueOnce([{ id: '1' }]);
     mockPrisma.$queryRaw.mockResolvedValueOnce([{ total: 1 }]);
+    mockPrisma.$queryRaw.mockResolvedValueOnce([{}]); // facets
     mockPrisma.aide.findMany.mockResolvedValue([{ id: '1' }]);
 
     const params = { page: 1, pageSize: 20 };

@@ -146,7 +146,7 @@ export async function searchAides(prisma, params) {
     }).filter(Boolean);
   }
 
-  const rawFacets = facetsResult[0] || {};
+  const rawFacets = (facetsResult && facetsResult[0]) ? facetsResult[0] : {};
 
   return {
     items: enrichedItems,

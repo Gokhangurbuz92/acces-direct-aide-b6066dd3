@@ -42,6 +42,10 @@ import guides from './_handlers/guides.js';
 import tools from './_handlers/tools.js';
 import dispositifs from './_handlers/dispositifs/index.js';
 
+// --- Annuaire (New Architecture) ---
+import annuaireOrganisations from './_handlers/annuaire/organisations.js';
+import annuaireEtablissements from './_handlers/annuaire/etablissements.js';
+
 // --- Cron ---
 import cronPipeline from './_handlers/cron/pipeline.js';
 import cronIngestStructures from './_handlers/cron/ingest-structures.js';
@@ -100,6 +104,10 @@ export const routes = [
     { path: 'guides', match: 'prefix', handler: guides },
     { path: 'tools', match: 'prefix', handler: tools },
     { path: 'dispositifs', match: 'prefix', handler: dispositifs },
+
+    // --- Annuaire (New Architecture) ---
+    { path: 'annuaire/organisations', match: 'prefix', handler: annuaireOrganisations },
+    { path: 'annuaire/etablissements', match: 'prefix', handler: annuaireEtablissements },
 
     // --- Cron ---
     { path: 'cron/pipeline', match: 'exact', handler: cronPipeline },

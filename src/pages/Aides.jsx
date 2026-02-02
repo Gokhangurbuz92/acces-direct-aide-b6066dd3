@@ -20,7 +20,8 @@ export default function Aides() {
 
   // Parse filters from URL
   const query = searchParams.get('q') || '';
-  const theme = searchParams.get('theme') || searchParams.get('category') || (window.location.pathname.startsWith('/categories/') ? slug : '');
+  // Support 'theme', 'category' (legacy), and 'categorie' (fr)
+  const theme = searchParams.get('theme') || searchParams.get('category') || searchParams.get('categorie') || (window.location.pathname.startsWith('/categories/') ? slug : '');
   const situation = searchParams.get('situation') || (window.location.pathname.startsWith('/situations/') ? slug : '');
   const geo = searchParams.get('territoire') || searchParams.get('geo') || '';
   const audience = searchParams.get('public') || '';

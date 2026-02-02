@@ -60,9 +60,21 @@ model Aide {
   source_last_modified  DateTime?
   fetched_at            DateTime?
 
+  // Additional fields for complete data model
+  organisme             String?
+  territoire_niveau     String?
+  territoire_label      String?
+  montant               String?
+  avantage              String?
+  contacts              Json?
+  falc_steps            String?
+  source_domain         String?
+
   @@index([statut, published_at])
   @@index([categoryId, statut])
   @@index([statut])
+  @@index([theme])
+  @@index([organisme])
 }
 
 model AidCategory {

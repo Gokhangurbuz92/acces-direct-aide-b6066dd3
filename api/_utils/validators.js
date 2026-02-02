@@ -12,6 +12,7 @@ const baseSearchSchema = z.object({
 export const searchAidesSchema = baseSearchSchema.extend({
   theme: z.string().optional(),
   sousTheme: z.string().optional(),
+  sub_theme: z.string().optional(), // alias for sousTheme
   public: z.string().optional(), // audience alias
   territoire: z.string().optional(),
   organisme: z.string().optional(),
@@ -20,9 +21,19 @@ export const searchAidesSchema = baseSearchSchema.extend({
   sort: z.enum(['pertinence', 'date', 'alpha']).default('pertinence'),
   // Legacy/Compatibility
   category: z.string().optional(),
+  categorie: z.string().optional(), // French alias
   situation: z.string().optional(),
   geo: z.string().optional(),
   audience: z.string().optional(),
+}).transform((data) => {
+  // Normalize aliases
+  return {
+    ...data,
+    theme: data.theme || data.category || data.categorie,
+    sousTheme: data.sousTheme || data.sub_theme,
+    public: data.public || data.audience,
+    territoire: data.territoire || data.geo
+  };
 });
 
 export const searchDemarchesSchema = baseSearchSchema.extend({

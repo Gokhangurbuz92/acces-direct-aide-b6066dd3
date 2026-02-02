@@ -1,0 +1,282 @@
+{
+  "version": "1.0.0",
+  "categories": [
+    {
+      "slug": "logement",
+      "label": "Logement",
+      "description": "Aides pour le logement, hébergement, accès au logement",
+      "icon": "home",
+      "subThemes": [
+        "acces-logement",
+        "maintien-logement",
+        "adaptation-logement",
+        "hebergement-urgence"
+      ]
+    },
+    {
+      "slug": "sante",
+      "label": "Santé",
+      "description": "Aides pour la santé, soins, prévention",
+      "icon": "heart",
+      "subThemes": [
+        "acces-soins",
+        "complementaire-sante",
+        "prevention",
+        "sante-mentale"
+      ]
+    },
+    {
+      "slug": "handicap",
+      "label": "Handicap",
+      "description": "Aides spécifiques aux personnes en situation de handicap",
+      "icon": "accessibility",
+      "subThemes": [
+        "compensation-handicap",
+        "emploi-handicap",
+        "scolarite-handicap",
+        "vie-quotidienne"
+      ]
+    },
+    {
+      "slug": "emploi",
+      "label": "Emploi & Formation",
+      "description": "Aides pour l'emploi, la formation professionnelle, l'insertion",
+      "icon": "briefcase",
+      "subThemes": [
+        "recherche-emploi",
+        "formation-professionnelle",
+        "creation-entreprise",
+        "insertion-professionnelle"
+      ]
+    },
+    {
+      "slug": "famille",
+      "label": "Famille & Enfance",
+      "description": "Aides pour les familles, la petite enfance, la parentalité",
+      "icon": "users",
+      "subThemes": [
+        "petite-enfance",
+        "aide-parentale",
+        "scolarite",
+        "loisirs-enfants"
+      ]
+    },
+    {
+      "slug": "budget",
+      "label": "Budget & Finances",
+      "description": "Aides financières, gestion du budget, surendettement",
+      "icon": "wallet",
+      "subThemes": [
+        "aide-financiere",
+        "surendettement",
+        "energie",
+        "alimentation"
+      ]
+    },
+    {
+      "slug": "mobilite",
+      "label": "Mobilité & Transport",
+      "description": "Aides pour les déplacements, le transport, le permis de conduire",
+      "icon": "car",
+      "subThemes": [
+        "transport-quotidien",
+        "permis-conduire",
+        "vehicule-adapte",
+        "mobilite-internationale"
+      ]
+    },
+    {
+      "slug": "justice",
+      "label": "Justice & Droits",
+      "description": "Aide juridictionnelle, accès aux droits, médiation",
+      "icon": "scale",
+      "subThemes": [
+        "aide-juridictionnelle",
+        "acces-droits",
+        "mediation",
+        "victimes"
+      ]
+    },
+    {
+      "slug": "numerique",
+      "label": "Numérique & Inclusion",
+      "description": "Aide à l'inclusion numérique, équipement, formation",
+      "icon": "monitor",
+      "subThemes": [
+        "equipement-numerique",
+        "formation-numerique",
+        "acces-internet",
+        "demarches-ligne"
+      ]
+    },
+    {
+      "slug": "etrangers",
+      "label": "Nouveaux arrivants",
+      "description": "Aides pour les personnes étrangères, demandeurs d'asile, réfugiés",
+      "icon": "globe",
+      "subThemes": [
+        "integration",
+        "apprentissage-langue",
+        "regularisation",
+        "asile"
+      ]
+    },
+    {
+      "slug": "isolement",
+      "label": "Lien social & Isolement",
+      "description": "Aides contre l'isolement, lien social, vie associative",
+      "icon": "heart-handshake",
+      "subThemes": [
+        "lutte-isolement",
+        "vie-associative",
+        "benevolat",
+        "loisirs"
+      ]
+    },
+    {
+      "slug": "lgbtqia",
+      "label": "LGBTQIA+",
+      "description": "Aides et accompagnement pour les personnes LGBTQIA+",
+      "icon": "rainbow",
+      "subThemes": [
+        "accompagnement",
+        "sante-lgbtqia",
+        "discrimination",
+        "transition"
+      ]
+    },
+    {
+      "slug": "vieillissement",
+      "label": "Autonomie & Vieillissement",
+      "description": "Aides pour les personnes âgées, maintien à domicile, autonomie",
+      "icon": "user-check",
+      "subThemes": [
+        "maintien-domicile",
+        "hebergement-seniors",
+        "aide-quotidienne",
+        "prevention-perte-autonomie"
+      ]
+    }
+  ],
+  "publics": [
+    {
+      "slug": "handicap",
+      "label": "Personnes en situation de handicap"
+    },
+    {
+      "slug": "seniors",
+      "label": "Personnes âgées / Seniors"
+    },
+    {
+      "slug": "jeunes",
+      "label": "Jeunes (16-25 ans)"
+    },
+    {
+      "slug": "famille",
+      "label": "Familles"
+    },
+    {
+      "slug": "parents-isoles",
+      "label": "Parents isolés"
+    },
+    {
+      "slug": "demandeurs-emploi",
+      "label": "Demandeurs d'emploi"
+    },
+    {
+      "slug": "travailleurs",
+      "label": "Travailleurs / Salariés"
+    },
+    {
+      "slug": "etudiants",
+      "label": "Étudiants"
+    },
+    {
+      "slug": "etrangers",
+      "label": "Personnes étrangères"
+    },
+    {
+      "slug": "lgbtqia",
+      "label": "Personnes LGBTQIA+"
+    },
+    {
+      "slug": "precaires",
+      "label": "Personnes en situation de précarité"
+    },
+    {
+      "slug": "tous",
+      "label": "Tout public"
+    }
+  ],
+  "territoires": [
+    {
+      "code": "national",
+      "label": "France entière",
+      "niveau": "national"
+    },
+    {
+      "code": "grand-est",
+      "label": "Région Grand Est",
+      "niveau": "region"
+    },
+    {
+      "code": "67",
+      "label": "Bas-Rhin",
+      "niveau": "departement",
+      "region": "grand-est"
+    },
+    {
+      "code": "68",
+      "label": "Haut-Rhin",
+      "niveau": "departement",
+      "region": "grand-est"
+    }
+  ],
+  "organismes": [
+    {
+      "slug": "caf",
+      "label": "CAF - Caisse d'Allocations Familiales",
+      "type": "organisme-social"
+    },
+    {
+      "slug": "agefiph",
+      "label": "AGEFIPH - Association de Gestion du Fonds pour l'Insertion Professionnelle des Personnes Handicapées",
+      "type": "organisme-handicap"
+    },
+    {
+      "slug": "region-grand-est",
+      "label": "Région Grand Est",
+      "type": "collectivite"
+    },
+    {
+      "slug": "pole-emploi",
+      "label": "France Travail (Pôle Emploi)",
+      "type": "organisme-emploi"
+    },
+    {
+      "slug": "cpam",
+      "label": "CPAM - Caisse Primaire d'Assurance Maladie",
+      "type": "organisme-sante"
+    },
+    {
+      "slug": "msa",
+      "label": "MSA - Mutualité Sociale Agricole",
+      "type": "organisme-social"
+    },
+    {
+      "slug": "mdph",
+      "label": "MDPH - Maison Départementale des Personnes Handicapées",
+      "type": "organisme-handicap"
+    },
+    {
+      "slug": "conseil-departemental-67",
+      "label": "Conseil Départemental du Bas-Rhin",
+      "type": "collectivite"
+    },
+    {
+      "slug": "conseil-departemental-68",
+      "label": "Conseil Départemental du Haut-Rhin",
+      "type": "collectivite"
+    }
+  ]
+}

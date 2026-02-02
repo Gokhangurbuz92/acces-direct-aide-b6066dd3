@@ -18,13 +18,13 @@ export default function Aides() {
   // Local state for UI toggles
   const [isFilterOpen, setIsFilterOpen] = useState(false);
 
-  // Parse filters from URL
+  // Parse filters from URL with proper normalization
   const query = searchParams.get('q') || '';
-  // Support 'theme', 'category' (legacy), and 'categorie' (fr)
   const theme = searchParams.get('theme') || searchParams.get('category') || searchParams.get('categorie') || (window.location.pathname.startsWith('/categories/') ? slug : '');
+  const sousTheme = searchParams.get('sousTheme') || searchParams.get('sub_theme') || '';
   const situation = searchParams.get('situation') || (window.location.pathname.startsWith('/situations/') ? slug : '');
   const geo = searchParams.get('territoire') || searchParams.get('geo') || '';
-  const audience = searchParams.get('public') || '';
+  const audience = searchParams.get('public') || searchParams.get('audience') || '';
   const provider = searchParams.get('organisme') || '';
   const urgent = searchParams.get('urgent') || '';
   const page = searchParams.get('page') || '1';
@@ -36,11 +36,12 @@ export default function Aides() {
   });
 
   // Fetch Aides (Server-side)
-  const { data, isLoading } = useQuery({
-    queryKey: ['aides', { query, theme, situation, geo, audience, provider, urgent, page }],
+  const { data, isLoading, error } = useQuery({
+    queryKey: ['aides', { query, theme, sousTheme, situation, geo, audience, provider, urgent, page }],
     queryFn: () => client.entities.Aide.filter({
       q: query,
       theme,
+      sousTheme,
       situation,
       territoire: geo,
       public: audience,
@@ -49,6 +50,8 @@ export default function Aides() {
       page,
       pageSize: 12
     }),
+    retry: 1,
+    staleTime: 30000 // 30 seconds
   });
 
   // Tracking: Zero Results
@@ -86,9 +89,10 @@ export default function Aides() {
 
   const getTitle = () => {
     if (theme && taxonomy) {
-      const cat = taxonomy.categories.find(c => c.slug === theme);
+      const cat = taxonomy.categories?.find(c => c.slug === theme);
       if (cat) return `Aides - ${cat.label}`;
     }
+    if (query) return `Recherche : ${query}`;
     return 'Catalogue des aides';
   };
 

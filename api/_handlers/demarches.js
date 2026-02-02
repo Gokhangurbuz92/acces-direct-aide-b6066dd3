@@ -38,7 +38,7 @@ export default async function handler(req, res) {
         }
 
         // 2. Search / List
-        const { items, total } = await searchDemarches(prisma, params);
+        const { items, total, facets } = await searchDemarches(prisma, params);
 
         return res.status(200).json({
             items,
@@ -47,7 +47,8 @@ export default async function handler(req, res) {
                 page: params.page,
                 pageSize: params.pageSize,
                 totalPages: Math.ceil(total / params.pageSize)
-            }
+            },
+            facets
         });
 
     } catch (error) {

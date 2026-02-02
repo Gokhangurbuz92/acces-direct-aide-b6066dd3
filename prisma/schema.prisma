@@ -150,7 +150,7 @@ model Structure {
 model Demarche {
   id                    String          @id @default(uuid())
   titre                 String
-  categorie             String?
+  categorie             String?         // Legacy field - prefer categoryId
   description_courte    String?
   delai                 String?
   cout                  String?
@@ -159,7 +159,7 @@ model Demarche {
   documents_necessaires String[]
   etapes                Json?
   ou_faire              String?
-  lien_officiel         String?
+  lien_officiel         String?         // Legacy - prefer source_url + apply_url
   sources               Json?
   updatedAt             DateTime        @updatedAt
   statut                String          @default("brouillon")
@@ -171,19 +171,62 @@ model Demarche {
   slug                  String?         @unique
   summary_falc          String?
   audiences             String[]
-  departements          String[]
+  departements          String[]        // Legacy - prefer territoire_codes
   categoryId            String?
   category              AidCategory?    @relation("DemarcheToCategory", fields: [categoryId], references: [id])
   situations            LifeSituation[] @relation("DemarcheToSituation")
 
-  // Ingestion Fields
-  source_url_exact String?
-  territory_scope  String?
-  content_hash     String?
+  // Ingestion Fields (Phase 0)
+  source_url_exact      String?         @unique
+  territory_scope       String?
+  content_hash          String?
+
+  // P0 Required Fields (Traçabilité + Filtres)
+  source_url            String?         // REQUIRED: Page source officielle
+  apply_url             String?         // URL téléservice/portail (si différent de source)
+  source_domain         String?         // Domain extraction for filtering
+  fetched_at            DateTime?       // Date de collecte
+  source_last_modified  DateTime?       // Last-Modified header si dispo
+
+  // Organisme & Canal (Filtres P0)
+  organisme             String?         // ANTS, Ameli, CAF, Préfecture, Impôts, France Travail, etc.
+  canal                 String?         // en_ligne, guichet, courrier, telephone
+  location              String?         // Adresse/guichet si applicable
+
+  // Territoire (Filtres P0)
+  territoire_niveau     String?         // national, region, departement, commune
+  territoire_codes      String[]        // Codes territoire (ex: ["67", "68"] pour départements)
+  territoire_label      String?         // Label display (ex: "Grand Est", "France entière")
+
+  // Public cible (Filtres P1)
+  public                String[]        // handicap, seniors, jeunes, etrangers, famille, etc.
+
+  // Détails démarche (Contenu P0)
+  steps                 Json?           // Étapes structurées [{numero, titre, description, conseils}]
+  pieces_a_fournir      String[]        // Documents requis (distinct de documents_necessaires)
+  processing_time       String?         // Délai de traitement (distinct de delai)
+  cost                  String?         // Coût (si différent de cout)
+
+  // Formulaires & Contacts (P1)
+  forms                 Json?           // [{type: "cerfa", url, label}]
+  contacts              Json?           // [{type: "tel"|"email"|"site", value, label}]
+
+  // FALC Support (P1)
+  falc_summary          String?         // Résumé FALC
+  falc_steps            String?         // Étapes FALC (texte simplifié ou JSON)
+
+  // Sub-categorization (P2 - optionnel)
+  sous_categorie        String?
+  sous_situation        String?
 
   @@index([statut, published_at])
   @@index([categoryId, statut])
   @@index([statut])
+  @@index([organisme])
+  @@index([canal])
+  @@index([territoire_niveau])
+  @@index([fetched_at])
+  @@index([source_domain])
 }
 
 model Actualite {

@@ -1,18 +1,12 @@
-./.cursor
-./.cursor/rules
 ./.cursor/rules/snyk_rules.mdc
 ./.env.example
-./.github
 ./.github/CODEOWNERS
 ./.github/pull_request_template.md
-./.github/workflows
 ./.github/workflows/automerge.yml
 ./.github/workflows/ci.yml
 ./.github/workflows/healthcheck.yml
 ./.gitignore
 ./README.md
-./api
-./api/__dev
 ./api/__dev/create-test-appointment.js
 ./api/_handlers/actualites.js
 ./api/_handlers/admin/actions.js
@@ -32,7 +26,6 @@
 ./api/_handlers/booking/confirm.js
 ./api/_handlers/booking/create.js
 ./api/_handlers/categories.js
-./api/_handlers/cron
 ./api/_handlers/cron/gdpr-purge.js
 ./api/_handlers/cron/ingest-aids.js
 ./api/_handlers/cron/ingest-structures.js
@@ -99,7 +92,6 @@
 ./api/_utils/snapshot.js
 ./api/_utils/validators.js
 ./api/_utils/wrapper.js
-./api/cron
 ./api/cron/ingest-aids.js
 ./api/cron/ingest-structures.js
 ./api/index.js
@@ -130,6 +122,7 @@
 ./docs/02-target-map-from-blueprint.md
 ./docs/03-delta-plan.md
 ./docs/ACTION_PLAN.md
+./docs/ADMIN_GUIDE.md
 ./docs/API_CONTRACT.md
 ./docs/BRANDING.md
 ./docs/GDPR_REGISTER.md
@@ -153,7 +146,6 @@
 ./docs/VERCEL_MIGRATION_GUIDE.md
 ./docs/VERIFICATION_PROD.md
 ./docs/WALKTHROUGH_AIDES.md
-./docs/admin-guide.md
 ./docs/api-contract.md
 ./docs/audit-report.md
 ./docs/auth-rbac.md
@@ -165,7 +157,6 @@
 ./docs/news-ingestion.md
 ./docs/observability.md
 ./docs/release-1.md
-./docs/reports
 ./docs/reports/HOTFIX_PR_DESCRIPTION.md
 ./docs/reports/HOTFIX_SUMMARY.md
 ./docs/reports/PR_BRANDING_SUMMARY.md
@@ -239,8 +230,6 @@
 ./public/android-chrome-192x192.png
 ./public/android-chrome-512x512.png
 ./public/apple-touch-icon.png
-./public/assets
-./public/assets/branding
 ./public/assets/branding/logo-a-full.svg
 ./public/assets/branding/logo-a-icon.svg
 ./public/assets/branding/logo-a-tagline.svg
@@ -260,7 +249,6 @@
 ./public/assets/branding/logo-icon.png
 ./public/assets/branding/logo-icon.svg
 ./public/assets/branding/logo-white.svg
-./public/brand
 ./public/brand/logo-horizontal-tagline-transparent.png
 ./public/brand/logo-horizontal-tagline.png
 ./public/brand/logo-horizontal-transparent.png
@@ -327,7 +315,6 @@
 ./release/v1.0.0/proofs/06-seo-social/.gitkeep
 ./release/v1.0.0/proofs/07-perf/.gitkeep
 ./release/v1.0.0/proofs/07-release-gate/report.md
-./scripts
 ./scripts/backfill-slugs.js
 ./scripts/check-imports.js
 ./scripts/check_cp0_db.js
@@ -475,9 +462,7 @@
 ./src/components/ui/toggle.jsx
 ./src/components/ui/tooltip.jsx
 ./src/components/ui/use-toast.jsx
-./src/design
 ./src/design/tokens.json
-./src/hooks
 ./src/hooks/use-mobile.jsx
 ./src/index.css
 ./src/lib/queryClient.js
@@ -534,7 +519,6 @@
 ./src/pages/SuggestStructure.jsx
 ./src/pages/ToolDetail.jsx
 ./src/pages/Tools.jsx
-./src/pages/admin
 ./src/pages/admin/Health.jsx
 ./src/pages/admin/Inbox.jsx
 ./src/pages/admin/Runs.jsx
@@ -551,9 +535,7 @@
 ./src/pages/pro/Services.jsx
 ./src/pages/pro/Structure.jsx
 ./src/pages/pro/Team.jsx
-./src/styles
 ./src/styles/tokens.css
-./src/utils
 ./src/utils/analytics.js
 ./src/utils/index.js
 ./src/utils/schema.js
@@ -569,7 +551,6 @@
 ./tests/setup-env.js
 ./tests/sitemap.test.js
 ./tests/slug.test.js
-./tests/unit
 ./tests/unit/crypto.test.js
 ./tsconfig.typecheck.json
 ./vercel.ts

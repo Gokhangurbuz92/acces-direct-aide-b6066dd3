@@ -24,6 +24,10 @@ test.describe('Public Core Routes', () => {
         await page.getByLabel('Voir l\'aide Aide Test').click();
         await page.waitForURL(/\/aides\/.+/);
         await expect(page.getByRole('heading', { name: /Aide Test/i })).toBeVisible({ timeout: 10000 });
+
+        // Refresh check
+        await page.reload();
+        await expect(page.getByRole('heading', { name: /Aide Test/i })).toBeVisible({ timeout: 10000 });
     });
 
     test('Demarches list and detail navigation', async ({ page }) => {
@@ -32,6 +36,10 @@ test.describe('Public Core Routes', () => {
 
         await page.getByRole('link', { name: /Démarrer|Voir|Consulter/i }).first().click();
         await page.waitForURL(/\/demarches\/.+/);
+        await expect(page.getByRole('heading', { name: /Démarche Test/i })).toBeVisible();
+
+        // Refresh check
+        await page.reload();
         await expect(page.getByRole('heading', { name: /Démarche Test/i })).toBeVisible();
     });
 
@@ -42,6 +50,10 @@ test.describe('Public Core Routes', () => {
         await page.getByRole('link', { name: /Plus d.?infos|Voir|Consulter|Détails/i }).first().click();
         await page.waitForURL(/\/(annuaire|structures)\/.+/);
         await expect(page.getByRole('heading', { name: /Structure Test/i })).toBeVisible({ timeout: 10000 });
+
+        // Refresh check
+        await page.reload();
+        await expect(page.getByRole('heading', { name: /Structure Test/i })).toBeVisible({ timeout: 10000 });
     });
 
     test('Actualites list and detail navigation', async ({ page }) => {
@@ -50,6 +62,10 @@ test.describe('Public Core Routes', () => {
 
         await page.getByRole('link', { name: /Lire l'actualité Actualité Test/i }).first().click();
         await page.waitForURL(/\/actualites\/.+/);
+        await expect(page.getByRole('heading', { name: /Actualité Test/i })).toBeVisible({ timeout: 10000 });
+
+        // Refresh check
+        await page.reload();
         await expect(page.getByRole('heading', { name: /Actualité Test/i })).toBeVisible({ timeout: 10000 });
     });
 

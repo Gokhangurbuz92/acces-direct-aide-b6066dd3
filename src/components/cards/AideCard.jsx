@@ -53,7 +53,8 @@ export default function AideCard({ aide, compact = false }) {
     }).join(', ');
   };
 
-  const targetUrl = aide.slug ? `/aides/${aide.slug}` : `/aide/view?id=${aide.id}`;
+  // Fix: Handle null slug gracefully
+  const targetUrl = aide.slug ? `/aides/${aide.slug}` : `/aides/view?id=${aide.id}`;
 
   return (
     <Card className="group hover:shadow-lg transition-all duration-300 border-slate-200 hover:border-blue-300 bg-white relative" data-testid="aide-card">

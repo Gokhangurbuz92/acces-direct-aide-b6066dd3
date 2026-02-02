@@ -2,6 +2,7 @@ import { isCronAuthorized } from '../../_utils/cronAuth.js';
 import prisma from '../../_utils/prisma.js';
 import crypto from 'crypto';
 import { logger } from '../../lib/logger.js';
+import Sentry from '../../_utils/sentry.js';
 
 // Import connectors
 const GrandEstConnector = require('../../lib/ingestion/connectors/grandest.js');
@@ -119,6 +120,13 @@ async function upsertAide(aide, stableId) {
 export async function runIngestAids({ limit, runId, source = 'all' }) {
     if (!runId) runId = crypto.randomUUID();
 
+    Sentry.setTags({ runId, handler: 'ingest-aids', source });
+    Sentry.addBreadcrumb({
+        category: 'ingestion',
+        message: 'INGEST_AIDS_START',
+        level: 'info',
+        data: { runId, source, limit }
+    });
     logger.info('INGEST_AIDS_START', { runId, source, limit });
 
     const stats = {
@@ -140,20 +148,48 @@ export async function runIngestAids({ limit, runId, source = 'all' }) {
     const connectors = [];
     if (source === 'all' || source === 'grandest') {
         logger.info('INGEST_AIDS_CONNECTOR_ADD', { runId, connector: 'GrandEst' });
+        Sentry.addBreadcrumb({
+            category: 'ingestion',
+            message: 'INGEST_AIDS_CONNECTOR_ADD',
+            level: 'info',
+            data: { runId, connector: 'GrandEst' }
+        });
         connectors.push(new GrandEstConnector());
     }
     if (source === 'all' || source === 'agefiph') {
         logger.info('INGEST_AIDS_CONNECTOR_ADD', { runId, connector: 'AGEFIPH' });
+        Sentry.addBreadcrumb({
+            category: 'ingestion',
+            message: 'INGEST_AIDS_CONNECTOR_ADD',
+            level: 'info',
+            data: { runId, connector: 'AGEFIPH' }
+        });
         connectors.push(new AgefiphConnector());
     }
 
     if (connectors.length === 0) {
         logger.error('INGEST_AIDS_NO_CONNECTORS', { runId, source });
+        Sentry.addBreadcrumb({
+            category: 'ingestion',
+            message: 'INGEST_AIDS_NO_CONNECTORS',
+            level: 'error',
+            data: { runId, source }
+        });
+        Sentry.captureMessage('No connectors selected for ingestion', {
+            level: 'error',
+            tags: { runId, source }
+        });
         stats.errors.push('No connectors selected');
         return stats;
     }
 
     const startFetch = Date.now();
+    Sentry.addBreadcrumb({
+        category: 'ingestion',
+        message: 'INGEST_AIDS_FETCH_START',
+        level: 'info',
+        data: { runId, connectorCount: connectors.length }
+    });
     logger.info('INGEST_AIDS_FETCH_START', { runId, connectorCount: connectors.length });
 
     // Run connectors in parallel
@@ -177,6 +213,12 @@ export async function runIngestAids({ limit, runId, source = 'all' }) {
                 count: aides.length,
                 errors: connectorErrors.length
             });
+            Sentry.addBreadcrumb({
+                category: 'ingestion',
+                message: 'INGEST_AIDS_CONNECTOR_SUCCESS',
+                level: 'info',
+                data: { runId, connector: connectorName, count: aides.length, errors: connectorErrors.length }
+            });
             allAides.push(...aides);
             stats.errors.push(...connectorErrors.map(e => `${connectorName}:${e.rawItem?.url || 'unknown'}: ${e.error}`));
         } else {
@@ -185,11 +227,27 @@ export async function runIngestAids({ limit, runId, source = 'all' }) {
                 connector: connectorName,
                 error: result.reason?.message || result.reason
             });
+            Sentry.addBreadcrumb({
+                category: 'ingestion',
+                message: 'INGEST_AIDS_CONNECTOR_FAILED',
+                level: 'error',
+                data: { runId, connector: connectorName, error: result.reason?.message }
+            });
+            Sentry.captureException(result.reason, {
+                tags: { runId, connector: connectorName },
+                extra: { source }
+            });
             stats.errors.push(`${connectorName} failed: ${result.reason}`);
         }
     }
 
     stats.fetched = allAides.length;
+    Sentry.addBreadcrumb({
+        category: 'ingestion',
+        message: 'INGEST_AIDS_FETCH_DONE',
+        level: 'info',
+        data: { runId, fetched: stats.fetched, fetch_duration_ms: stats.durationByStage.fetchMs }
+    });
     logger.info('INGEST_AIDS_FETCH_DONE', {
         runId,
         fetched: stats.fetched,
@@ -204,6 +262,12 @@ export async function runIngestAids({ limit, runId, source = 'all' }) {
     }
 
     const startProcess = Date.now();
+    Sentry.addBreadcrumb({
+        category: 'ingestion',
+        message: 'INGEST_AIDS_PROCESS_START',
+        level: 'info',
+        data: { runId, count: aidesToProcess.length }
+    });
     logger.info('INGEST_AIDS_PROCESS_START', { runId, count: aidesToProcess.length });
 
     // Upsert aides
@@ -226,11 +290,33 @@ export async function runIngestAids({ limit, runId, source = 'all' }) {
                 error: procErr.message,
                 stack: procErr.stack
             });
+            Sentry.addBreadcrumb({
+                category: 'ingestion',
+                message: 'INGEST_AIDS_UPSERT_ERROR',
+                level: 'error',
+                data: { runId, slug: aide.slug, error: procErr.message }
+            });
+            Sentry.captureException(procErr, {
+                tags: { runId, slug: aide.slug },
+                extra: { source_url: aide.source_url }
+            });
             stats.errors.push(`Upsert ${aide.slug}: ${procErr.message}`);
         }
     }
 
     stats.durationByStage.processingMs = Date.now() - startProcess;
+    Sentry.addBreadcrumb({
+        category: 'ingestion',
+        message: 'INGEST_AIDS_PROCESS_DONE',
+        level: 'info',
+        data: {
+            runId,
+            processed: stats.processed,
+            created: stats.created,
+            updated: stats.updated,
+            process_duration_ms: stats.durationByStage.processingMs
+        }
+    });
     logger.info('INGEST_AIDS_PROCESS_DONE', {
         runId,
         processed: stats.processed,
@@ -256,17 +342,36 @@ export async function runIngestAids({ limit, runId, source = 'all' }) {
     }
 
     const totalDuration = Date.now() - startTotal;
+    const finalStats = {
+        fetched: stats.fetched,
+        processed: stats.processed,
+        created: stats.created,
+        updated: stats.updated,
+        errors: stats.errors.length
+    };
+    Sentry.addBreadcrumb({
+        category: 'ingestion',
+        message: 'INGEST_AIDS_DONE',
+        level: stats.errors.length > 0 ? 'warning' : 'info',
+        data: { runId, stats: finalStats, duration_ms: totalDuration }
+    });
     logger.info('INGEST_AIDS_DONE', {
         runId,
-        stats: {
-            fetched: stats.fetched,
-            processed: stats.processed,
-            created: stats.created,
-            updated: stats.updated,
-            errors: stats.errors.length
-        },
+        stats: finalStats,
         duration_ms: totalDuration
     });
+
+    // Report high error rate to Sentry
+    if (stats.errors.length > 0) {
+        const errorRate = stats.errors.length / (stats.processed || 1);
+        if (errorRate > 0.1) { // > 10% error rate
+            Sentry.captureMessage('High error rate during ingestion', {
+                level: 'warning',
+                tags: { runId, source },
+                extra: { stats: finalStats, errorRate, duration_ms: totalDuration }
+            });
+        }
+    }
 
     return stats;
 }

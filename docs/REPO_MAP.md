@@ -5,7 +5,7 @@ Il sert de référence pour comprendre la structure, les responsabilités et les
 
 Pour la liste exhaustive des fichiers, voir `docs/REPO_FILES.txt`.
 
-## 1. Racine & Configuration
+## 1. Racine/Config
 
 | Fichier / Dossier | Rôle | Dépendances | Owner | Risques Principaux |
 | ----------------- | ---- | ----------- | ----- | ------------------ |
@@ -17,7 +17,7 @@ Pour la liste exhaustive des fichiers, voir `docs/REPO_FILES.txt`.
 | `.gitignore` | Exclusions Git. | Git | All | Versionnage de secrets (`.env`) ou artifacts. |
 | `.env.example` | Modèle des variables d'environnement. | - | DevOps | Manque de variables critiques en prod. |
 
-## 2. Frontend (`src/`)
+## 2. Front src (`src/`)
 
 Single Page Application (SPA) React.
 
@@ -28,9 +28,9 @@ Single Page Application (SPA) React.
 | `src/api/` | Client API (appels backend). | Fetch / Axios | Frontend | Désynchronisation avec le contrat API. |
 | `src/hooks/` | Hooks React personnalisés. | React | Frontend | Boucles de rendu infinies. |
 | `src/lib/` | Utilitaires frontend. | - | Frontend | Duplication de logique. |
-| `src/utils/` | Fonctions partagées (mix JS/TS). | - | Frontend | Typage incohérent. |
+| `src/utils/` | Fonctions partagées (JS). | - | Frontend | Typage incohérent. |
 
-## 3. API Backend (`api/`)
+## 3. API (`api/`)
 
 Architecture Serverless (Vercel Functions) avec routeur monolithique.
 
@@ -42,7 +42,7 @@ Architecture Serverless (Vercel Functions) avec routeur monolithique.
 | `api/_utils/` | Auth, RateLimit, Crypto, Sentry. | Redis (KV) | Backend | **Faille de sécurité** (Auth bypass), Fuite mémoire. |
 | `api/lib/` | Services (Search, FALC, Storage). | - | Backend | Logique métier complexe non testée. |
 
-## 4. Base de Données (`prisma/`)
+## 4. Prisma (`prisma/`)
 
 ORM Prisma et PostgreSQL.
 
@@ -52,7 +52,7 @@ ORM Prisma et PostgreSQL.
 | `prisma/migrations/` | Historique des migrations. | - | Backend | Conflits de migration, Rollback impossible. |
 | `prisma/seed.js` | Script de seed. | - | Backend | Données de test périmées. |
 
-## 5. Scripts & Outillage (`scripts/`)
+## 5. Scripts (`scripts/`)
 
 Automatisation, Ingestion, Vérification.
 
@@ -60,7 +60,7 @@ Automatisation, Ingestion, Vérification.
 | ------- | ---- | ----------- | ----- | ------------------ |
 | `scripts/` | Ingestion, Maintenance, CI checks. | Node.js | DevOps | Scripts cassés en CI, Corruption données (ingest). |
 
-## 6. Documentation (`docs/`)
+## 6. Docs (`docs/`)
 
 Base de connaissance.
 
@@ -68,7 +68,7 @@ Base de connaissance.
 | ------- | ---- | ----------- | ----- | ------------------ |
 | `docs/` | Guides, Plans, Architecture. | - | All | Documentation obsolète vs Code. |
 
-## 7. Données (`data/`)
+## 7. Data (`data/`)
 
 Sources de données statiques.
 

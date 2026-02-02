@@ -1,7 +1,10 @@
 
 import { SourceConnector } from './SourceConnector.js';
 import crypto from 'crypto';
-import taxonomy from '../../data/taxonomy.json' with { type: "json" };
+import { createRequire } from 'module';
+
+const require = createRequire(import.meta.url);
+const taxonomy = require('../../data/taxonomy.json');
 
 export class AgefiphConnector extends SourceConnector {
     constructor() {
@@ -14,12 +17,10 @@ export class AgefiphConnector extends SourceConnector {
         const urls = new Set();
 
         // Regex to find links to aides
-        // Pattern: href="/aides-handicap/..." (excluding generic ones like depot-demande if possible, or filter later)
         const regex = /href=["'](\/aides-handicap\/[^"']+)["']/gi;
         let match;
         while ((match = regex.exec(html)) !== null) {
             const url = this.resolveUrl(match[1], listingUrl);
-            // Filter out obviously generic pages if needed
             if (!url.includes('depot-demande') && !url.includes('suivi-demande')) {
                 urls.add(url);
             }
@@ -57,8 +58,7 @@ export class AgefiphConnector extends SourceConnector {
             }
         }
 
-        let theme = 'travail-formation'; // Default for AGEFIPH (Handicap/Emploi)
-        // Refine with taxonomy
+        let theme = 'travail-formation'; // Default
         const lowerContent = (title + ' ' + content).toLowerCase();
         for (const cat of taxonomy) {
              if (cat.keywords.some(k => lowerContent.includes(k))) {

@@ -32,7 +32,7 @@ export async function runIngestAids({ limit, runId, wipe = false }) {
         skippedExisting: 0,
         errors: [],
         durationByStage: {
-            crawlMs: 0,
+            fetchMs: 0,
             processingMs: 0
         }
     };
@@ -70,7 +70,7 @@ export async function runIngestAids({ limit, runId, wipe = false }) {
         logger.info(`CONNECTOR_START`, { runId, connector: connector.name });
 
         try {
-            // 1. Crawl
+            // 1. Crawl (Fetch)
             const startCrawl = Date.now();
             let urls = [];
             try {
@@ -80,7 +80,7 @@ export async function runIngestAids({ limit, runId, wipe = false }) {
                 stats.errors.push(`${connector.name} crawl error: ${e.message}`);
                 continue;
             }
-            stats.durationByStage.crawlMs += (Date.now() - startCrawl);
+            stats.durationByStage.fetchMs += (Date.now() - startCrawl);
             logger.info(`CONNECTOR_CRAWL_DONE`, { runId, connector: connector.name, count: urls.length });
 
             // Limit

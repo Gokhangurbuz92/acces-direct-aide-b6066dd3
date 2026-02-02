@@ -1,4 +1,4 @@
-# Cartographie des Routes API
+# Routes API
 
 Ce document recense l'ensemble des routes définies dans `api/routes.js`.
 

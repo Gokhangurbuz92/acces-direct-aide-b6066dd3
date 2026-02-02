@@ -1,26 +1,18 @@
 #!/bin/bash
-# scripts/generate-repo-map.sh
-# Generates a list of files in docs/REPO_FILES.txt excluding artifacts
+# Generates a text file listing all files in the repository, excluding ignored/heavy folders.
 
+OUTPUT_FILE="docs/REPO_FILES.txt"
+
+echo "Generating repository map to $OUTPUT_FILE..."
+
+# Find all files, exclude specific directories
 find . \
-  \( \
-    -name 'node_modules' -o \
-    -name 'dist' -o \
-    -name '.git' -o \
-    -name '.vercel' -o \
-    -name 'coverage' -o \
-    -name 'test-results' -o \
-    -name 'venv' -o \
-    -name 'uploads_mock' \
-  \) -prune \
-  -o \
-  -not -name '.env' \
-  -not -name '.env.local' \
-  -not -name '.env.production' \
-  -not -name '.env.development' \
-  -not -name '.env.test' \
-  -not -name 'cookies*.txt' \
-  -not -name 'test-img*.jpg' \
-  -not -path '.' \
-  -print \
-  | sort > docs/REPO_FILES.txt
+  -type d \( -name "node_modules" -o -name "dist" -o -name ".git" -o -name ".vercel" -o -name "coverage" -o -name "test-results" -o -name "venv" -o -name "uploads_mock" -o -name ".cursor" \) -prune \
+  -o -type f \
+  ! -name ".env*" \
+  ! -name "*.log" \
+  ! -name "cookies*.txt" \
+  ! -name "test-img*.jpg" \
+  -print | sort > "$OUTPUT_FILE"
+
+echo "Done."

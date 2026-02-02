@@ -1,4 +1,4 @@
-import { defineConfig } from "vite";
+import { defineConfig, splitVendorChunkPlugin } from "vite";
 import react from "@vitejs/plugin-react";
 import { sentryVitePlugin } from "@sentry/vite-plugin";
 import path from "path";
@@ -6,6 +6,7 @@ import path from "path";
 export default defineConfig({
   plugins: [
     react(),
+    splitVendorChunkPlugin(),
     process.env.SENTRY_AUTH_TOKEN
       ? sentryVitePlugin({
         org: process.env.SENTRY_ORG,
@@ -44,68 +45,7 @@ export default defineConfig({
 
   build: {
     sourcemap: process.env.SENTRY_AUTH_TOKEN ? "hidden" : true,
-
-    rollupOptions: {
-      output: {
-        // Chunking "pro" : on isole les gros blocs stables
-        manualChunks(id) {
-          if (!id.includes("node_modules")) return;
-
-          // React core
-          if (
-            id.includes("/react/") ||
-            id.includes("/react-dom/") ||
-            id.includes("/scheduler/")
-          ) {
-            return "vendor-react";
-          }
-
-          // Router
-          if (id.includes("/react-router/") || id.includes("/react-router-dom/")) {
-            return "vendor-router";
-          }
-
-          // UI kits (Radix, etc.)
-          if (
-            id.includes("/@radix-ui/") ||
-            id.includes("/cmdk/") ||
-            id.includes("/class-variance-authority/") ||
-            id.includes("/tailwind-merge/") ||
-            id.includes("/lucide-react/")
-          ) {
-            return "vendor-ui";
-          }
-
-          // Date/time libs
-          if (id.includes("/date-fns/") || id.includes("/dayjs/") || id.includes("/luxon/")) {
-            return "vendor-dates";
-          }
-
-          // Validation
-          if (id.includes("/zod/")) {
-            return "vendor-zod";
-          }
-
-          // Observabilité
-          if (id.includes("/@sentry/")) {
-            return "vendor-sentry";
-          }
-
-          // Maps (si utilisé)
-          if (id.includes("/leaflet/") || id.includes("/mapbox/") || id.includes("/@mapbox/")) {
-            return "vendor-maps";
-          }
-
-          // Firebase (si utilisé)
-          if (id.includes("/firebase/")) {
-            return "vendor-firebase";
-          }
-
-          // Le reste (node_modules)
-          return "vendor";
-        },
-      },
-    },
+    // splitVendorChunkPlugin() handles chunking automatically without circular dependencies
   },
 
   test: {

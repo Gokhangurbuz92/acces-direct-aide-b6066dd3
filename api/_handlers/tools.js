@@ -1,8 +1,7 @@
 
-import { PrismaClient } from '@prisma/client';
+import prisma from '../_utils/prisma.js';
 import jwt from 'jsonwebtoken';
 
-const prisma = new PrismaClient();
 const ALLOWED_ADMIN_ROLES = ['admin', 'superadmin'];
 
 function isAdmin(req) {

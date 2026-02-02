@@ -1,10 +1,8 @@
 
-import { PrismaClient } from '@prisma/client';
+import prisma from '../_utils/prisma.js';
 import { hash, encrypt } from '../lib/crypto.js';
 import crypto from 'crypto';
 import bcrypt from 'bcryptjs';
-
-const prisma = new PrismaClient();
 
 export default async function handler(req, res) {
     const isDev = process.env.NODE_ENV === 'development' || process.env.VITE_DEV_LOGIN_ENABLED === 'true';

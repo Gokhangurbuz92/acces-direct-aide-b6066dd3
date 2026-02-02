@@ -1,9 +1,6 @@
-import { PrismaClient } from '@prisma/client';
+import prisma from '../_utils/prisma.js';
 import { getCanonicalBaseUrl, isIndexable } from '../_utils/seo.js';
 import crypto from 'crypto';
-
-
-const prisma = new PrismaClient();
 
 export default async function handler(req, res) {
     if (req.method !== 'GET' && req.method !== 'HEAD') {
@@ -92,13 +89,12 @@ ${urls.join('\n')}
         const etag = 'W/"' + crypto.createHash('md5').update(xml).digest('hex') + '"';
 
         if (req.headers['if-none-match'] === etag) {
-
             res.writeHead(304);
             res.end();
             return;
         }
 
-        res.writeHeader(200, {
+        res.writeHead(200, {
             'Content-Type': 'application/xml; charset=utf-8',
             'Cache-Control': 'public, s-maxage=3600, stale-while-revalidate=600',
             'X-Robots-Tag': indexable ? 'all' : 'noindex, nofollow',
@@ -119,7 +115,7 @@ ${urls.join('\n')}
   <url><loc>https://www.accesdirectaide.fr/</loc><priority>1.0</priority></url>
 </urlset>`;
 
-        res.writeHeader(200, {
+        res.writeHead(200, {
             'Content-Type': 'application/xml; charset=utf-8'
         });
         res.end(fallbackXml);

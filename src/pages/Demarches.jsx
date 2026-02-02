@@ -28,6 +28,10 @@ export default function Demarches() {
   const q = searchParams.get('q') || '';
   const category = searchParams.get('category') || '';
   const situation = searchParams.get('situation') || '';
+  const organisme = searchParams.get('organisme') || '';
+  const canal = searchParams.get('canal') || '';
+  const territoire = searchParams.get('territoire') || '';
+  const sort = searchParams.get('sort') || 'pertinence';
   const page = searchParams.get('page') || '1';
 
   // Fetch Taxonomy
@@ -37,12 +41,16 @@ export default function Demarches() {
   });
 
   // Fetch Demarches (Server-side)
-  const { data, isLoading } = useQuery({
-    queryKey: ['demarches', { q, category, situation, page }],
+  const { data, isLoading, isError, refetch } = useQuery({
+    queryKey: ['demarches', { q, category, situation, organisme, canal, territoire, sort, page }],
     queryFn: () => client.entities.Demarche.filter({
       q,
       category,
       situation,
+      organisme,
+      canal,
+      territoire_niveau: territoire,
+      sort,
       page,
       pageSize: 12
     }),
@@ -50,6 +58,7 @@ export default function Demarches() {
 
   const items = data?.items || [];
   const pagination = data?.pagination || {};
+  const facets = data?.facets || { categories: [], situations: [], organismes: [], canaux: [], territoires: [] };
 
   const handleParamChange = (key, value) => {
     const newParams = new URLSearchParams(searchParams);
@@ -151,14 +160,14 @@ export default function Demarches() {
                   >
                     Toutes les catégories
                   </button>
-                  {taxonomy?.categories.map((cat) => (
+                  {facets.categories.map((cat) => (
                     <button
-                      key={cat.slug}
-                      onClick={() => handleParamChange('category', cat.slug)}
-                      className={`w-full text-left px-3 py-2 rounded-md transition-colors text-sm flex justify-between items-center ${category === cat.slug ? 'bg-blue-50 text-blue-700 font-medium' : 'text-slate-600 hover:bg-slate-100'}`}
+                      key={cat.key}
+                      onClick={() => handleParamChange('category', cat.key)}
+                      className={`w-full text-left px-3 py-2 rounded-md transition-colors text-sm flex justify-between items-center ${category === cat.key ? 'bg-blue-50 text-blue-700 font-medium' : 'text-slate-600 hover:bg-slate-100'}`}
                     >
                       <span>{cat.label}</span>
-                      <span className="text-xs text-slate-400">{cat.demarchesCount}</span>
+                      <span className="text-xs text-slate-400">{cat.count}</span>
                     </button>
                   ))}
                 </div>
@@ -173,34 +182,90 @@ export default function Demarches() {
                   >
                     Toutes les situations
                   </button>
-                  {taxonomy?.situations.map((sit) => (
+                  {facets.situations.map((sit) => (
                     <button
-                      key={sit.slug}
-                      onClick={() => handleParamChange('situation', sit.slug)}
-                      className={`w-full text-left px-3 py-2 rounded-md transition-colors text-sm flex justify-between items-center ${situation === sit.slug ? 'bg-blue-50 text-blue-700 font-medium' : 'text-slate-600 hover:bg-slate-100'}`}
+                      key={sit.key}
+                      onClick={() => handleParamChange('situation', sit.key)}
+                      className={`w-full text-left px-3 py-2 rounded-md transition-colors text-sm flex justify-between items-center ${situation === sit.key ? 'bg-blue-50 text-blue-700 font-medium' : 'text-slate-600 hover:bg-slate-100'}`}
                     >
                       <span>{sit.label}</span>
-                      <span className="text-xs text-slate-400">{sit.demarchesCount}</span>
+                      <span className="text-xs text-slate-400">{sit.count}</span>
                     </button>
                   ))}
                 </div>
               </div>
+
+              {facets.organismes.length > 0 && (
+                <div>
+                  <h3 className="text-sm font-semibold text-slate-900 uppercase tracking-wider mb-4">Organismes</h3>
+                  <div className="space-y-1">
+                    <button
+                      onClick={() => handleParamChange('organisme', '')}
+                      className={`w-full text-left px-3 py-2 rounded-md transition-colors text-sm ${!organisme ? 'bg-blue-50 text-blue-700 font-medium' : 'text-slate-600 hover:bg-slate-100'}`}
+                    >
+                      Tous les organismes
+                    </button>
+                    {facets.organismes.map((org) => (
+                      <button
+                        key={org.key}
+                        onClick={() => handleParamChange('organisme', org.key)}
+                        className={`w-full text-left px-3 py-2 rounded-md transition-colors text-sm flex justify-between items-center ${organisme === org.key ? 'bg-blue-50 text-blue-700 font-medium' : 'text-slate-600 hover:bg-slate-100'}`}
+                      >
+                        <span>{org.label}</span>
+                        <span className="text-xs text-slate-400">{org.count}</span>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {facets.canaux.length > 0 && (
+                <div>
+                  <h3 className="text-sm font-semibold text-slate-900 uppercase tracking-wider mb-4">Canal</h3>
+                  <div className="space-y-1">
+                    <button
+                      onClick={() => handleParamChange('canal', '')}
+                      className={`w-full text-left px-3 py-2 rounded-md transition-colors text-sm ${!canal ? 'bg-blue-50 text-blue-700 font-medium' : 'text-slate-600 hover:bg-slate-100'}`}
+                    >
+                      Tous les canaux
+                    </button>
+                    {facets.canaux.map((c) => (
+                      <button
+                        key={c.key}
+                        onClick={() => handleParamChange('canal', c.key)}
+                        className={`w-full text-left px-3 py-2 rounded-md transition-colors text-sm flex justify-between items-center ${canal === c.key ? 'bg-blue-50 text-blue-700 font-medium' : 'text-slate-600 hover:bg-slate-100'}`}
+                      >
+                        <span>{c.label === 'en_ligne' ? 'En ligne' : c.label === 'guichet' ? 'Guichet' : c.label === 'courrier' ? 'Courrier' : c.label === 'telephone' ? 'Téléphone' : c.label}</span>
+                        <span className="text-xs text-slate-400">{c.count}</span>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
           </aside>
 
           {/* Main Content */}
           <main className="flex-1">
-            {(category || situation || q) && (
+            {(category || situation || q || organisme || canal || territoire) && (
               <div className="flex flex-wrap items-center gap-2 mb-6">
-                <span className="text-sm text-slate-500 mr-2">Filtres :</span>
+                <span className="text-sm text-slate-500 mr-2">Filtres actifs :</span>
                 {category && <Badge variant="secondary" className="pl-3 pr-2 py-1">Cat : {category} <X className="h-3 w-3 ml-2 cursor-pointer" onClick={() => handleParamChange('category', '')} /></Badge>}
                 {situation && <Badge variant="secondary" className="pl-3 pr-2 py-1">Sit : {situation} <X className="h-3 w-3 ml-2 cursor-pointer" onClick={() => handleParamChange('situation', '')} /></Badge>}
+                {organisme && <Badge variant="secondary" className="pl-3 pr-2 py-1">Org : {organisme} <X className="h-3 w-3 ml-2 cursor-pointer" onClick={() => handleParamChange('organisme', '')} /></Badge>}
+                {canal && <Badge variant="secondary" className="pl-3 pr-2 py-1">Canal : {canal} <X className="h-3 w-3 ml-2 cursor-pointer" onClick={() => handleParamChange('canal', '')} /></Badge>}
+                {territoire && <Badge variant="secondary" className="pl-3 pr-2 py-1">Territoire : {territoire} <X className="h-3 w-3 ml-2 cursor-pointer" onClick={() => handleParamChange('territoire', '')} /></Badge>}
                 {q && <Badge variant="secondary" className="pl-3 pr-2 py-1">"{q}" <X className="h-3 w-3 ml-2 cursor-pointer" onClick={() => handleParamChange('q', '')} /></Badge>}
                 <Button variant="ghost" size="sm" onClick={clearFilters} className="text-xs text-blue-600">Tout effacer</Button>
               </div>
             )}
 
-            {isLoading ? (
+            {isError ? (
+              <div className="flex flex-col items-center justify-center py-20">
+                <div className="text-red-600 mb-4">Une erreur est survenue lors du chargement.</div>
+                <Button onClick={() => refetch()} variant="outline">Réessayer</Button>
+              </div>
+            ) : isLoading ? (
               <div className="flex flex-col items-center justify-center py-20">
                 <Loader2 className="h-10 w-10 animate-spin text-blue-600 mb-4" />
                 <p className="text-slate-500">Chargement des démarches...</p>

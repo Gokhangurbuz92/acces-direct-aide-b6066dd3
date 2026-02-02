@@ -248,29 +248,81 @@ export default function DemarcheDetail() {
               </Card>
             )}
 
-            {/* Sources */}
-            {demarche.sources?.length > 0 && (
-              <Card className="bg-slate-50">
-                <CardContent className="p-6">
-                  <h2 className="text-lg font-bold text-slate-900 mb-3">Sources</h2>
-                  <ul className="space-y-2">
-                    {demarche.sources.map((source, idx) => (
-                      <li key={idx}>
+            {/* Traçabilité & Sources */}
+            <Card className="bg-slate-50">
+              <CardContent className="p-6">
+                <h2 className="text-lg font-bold text-slate-900 mb-4">Source officielle & Traçabilité</h2>
+                <div className="space-y-3">
+                  {demarche.source_url && (
+                    <div className="flex items-start gap-3">
+                      <ExternalLink className="h-5 w-5 text-blue-600 flex-shrink-0 mt-0.5" />
+                      <div>
+                        <div className="text-sm font-semibold text-slate-700">Page source officielle</div>
                         <a
-                          href={source.url}
+                          href={demarche.source_url}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="text-blue-600 hover:underline flex items-center gap-1"
+                          className="text-blue-600 hover:underline text-sm break-all"
                         >
-                          {source.nom}
-                          <ExternalLink className="h-3 w-3" />
+                          {demarche.source_url}
                         </a>
-                      </li>
-                    ))}
-                  </ul>
-                </CardContent>
-              </Card>
-            )}
+                      </div>
+                    </div>
+                  )}
+                  {demarche.fetched_at && (
+                    <div className="flex items-start gap-3">
+                      <Calendar className="h-5 w-5 text-slate-500 flex-shrink-0 mt-0.5" />
+                      <div>
+                        <div className="text-sm font-semibold text-slate-700">Dernière collecte</div>
+                        <div className="text-sm text-slate-600">
+                          {new Date(demarche.fetched_at).toLocaleDateString('fr-FR', { dateStyle: 'long' })}
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                  {demarche.source_last_modified && (
+                    <div className="flex items-start gap-3">
+                      <Clock className="h-5 w-5 text-slate-500 flex-shrink-0 mt-0.5" />
+                      <div>
+                        <div className="text-sm font-semibold text-slate-700">Dernière modification source</div>
+                        <div className="text-sm text-slate-600">
+                          {new Date(demarche.source_last_modified).toLocaleDateString('fr-FR', { dateStyle: 'long' })}
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                  {demarche.organisme && (
+                    <div className="flex items-start gap-3">
+                      <FileText className="h-5 w-5 text-slate-500 flex-shrink-0 mt-0.5" />
+                      <div>
+                        <div className="text-sm font-semibold text-slate-700">Organisme responsable</div>
+                        <div className="text-sm text-slate-600">{demarche.organisme}</div>
+                      </div>
+                    </div>
+                  )}
+                  {demarche.sources?.length > 0 && (
+                    <div className="mt-4 pt-4 border-t border-slate-200">
+                      <div className="text-sm font-semibold text-slate-700 mb-2">Sources complémentaires</div>
+                      <ul className="space-y-2">
+                        {demarche.sources.map((source, idx) => (
+                          <li key={idx}>
+                            <a
+                              href={source.url}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="text-blue-600 hover:underline flex items-center gap-1 text-sm"
+                            >
+                              {source.nom}
+                              <ExternalLink className="h-3 w-3" />
+                            </a>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
           </div>
 
           {/* Sidebar */}
@@ -278,10 +330,18 @@ export default function DemarcheDetail() {
             {/* Actions */}
             <Card>
               <CardContent className="p-6 space-y-3">
-                {demarche.lien_officiel && (
+                {(demarche.apply_url || demarche.lien_officiel) && (
                   <Button className="w-full" asChild>
-                    <a href={demarche.lien_officiel} target="_blank" rel="noopener noreferrer">
-                      Commencer la démarche
+                    <a href={demarche.apply_url || demarche.lien_officiel} target="_blank" rel="noopener noreferrer">
+                      Faire la démarche
+                      <ExternalLink className="ml-2 h-4 w-4" />
+                    </a>
+                  </Button>
+                )}
+                {demarche.source_url && (
+                  <Button variant="outline" className="w-full" asChild>
+                    <a href={demarche.source_url} target="_blank" rel="noopener noreferrer">
+                      Consulter la source officielle
                       <ExternalLink className="ml-2 h-4 w-4" />
                     </a>
                   </Button>

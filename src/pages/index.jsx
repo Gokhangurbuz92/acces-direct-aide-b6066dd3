@@ -20,6 +20,8 @@ const DemarcheDetail = lazy(() => import("./DemarcheDetail.jsx"));
 const Demarches = lazy(() => import("./Demarches.jsx"));
 const DispositifDetail = lazy(() => import("./DispositifDetail.jsx"));
 const Dispositifs = lazy(() => import("./Dispositifs.jsx"));
+const Ressources = lazy(() => import("./Ressources.jsx"));
+const RessourceDetail = lazy(() => import("./RessourceDetail.jsx"));
 const Guides = lazy(() => import("./Guides.jsx"));
 const GuideDetail = lazy(() => import("./GuideDetail.jsx"));
 const Tools = lazy(() => import("./Tools.jsx"));
@@ -229,6 +231,10 @@ function PagesContent() {
                     <Route path="/dispositifs" element={<Dispositifs />} />
                     <Route path="/dispositifs/:slug" element={<DispositifDetail />} />
                     <Route path="/dispositifs/view" element={<DispositifDetail />} />
+
+                    <Route path="/ressources" element={<Ressources />} />
+                    <Route path="/ressources/:slug" element={<RessourceDetail />} />
+                    <Route path="/ressources/view" element={<RessourceDetail />} />
 
                     <Route path="/impact" element={<Impact />} />
                     <Route path="/notre-mission" element={<Mission />} />

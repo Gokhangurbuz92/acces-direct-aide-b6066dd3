@@ -23,6 +23,7 @@ import {
   Flag
 } from 'lucide-react';
 import { generateBreadcrumbSchema, generateAideSchema } from '@/utils/schema';
+import SourceTraceability from '@/components/SourceTraceability';
 
 const CATEGORIE_LABELS = {
   logement: 'Logement',
@@ -315,6 +316,15 @@ export default function AideDetail() {
 
           {/* Sidebar */}
           <div className="space-y-6">
+            {/* Source Traceability */}
+            <SourceTraceability 
+              source_url={aide.source_url}
+              retrieved_at={aide.retrieved_at}
+              last_checked_at={aide.last_checked_at}
+              source_last_modified={aide.source_last_modified}
+              fetched_at={aide.fetched_at}
+            />
+
             {/* Actions */}
             <Card>
               <CardContent className="p-6 space-y-3">

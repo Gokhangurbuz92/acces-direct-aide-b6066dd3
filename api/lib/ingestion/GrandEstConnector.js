@@ -1,7 +1,10 @@
 
 import { SourceConnector } from './SourceConnector.js';
 import crypto from 'crypto';
-import taxonomy from '../../data/taxonomy.json' with { type: "json" };
+import { createRequire } from 'module';
+
+const require = createRequire(import.meta.url);
+const taxonomy = require('../../data/taxonomy.json');
 
 export class GrandEstConnector extends SourceConnector {
     constructor() {
@@ -14,8 +17,6 @@ export class GrandEstConnector extends SourceConnector {
         const urls = new Set();
 
         // Regex to find links to aides/calls for projects
-        // Pattern: href=".../vos-aides-regionales/..." or ".../appel-a-projet/..."
-        // Supports relative and absolute URLs
         const regex = /href=["']((?:https?:\/\/www\.grandest\.fr)?\/+(?:vos-aides-regionales|appel-a-projet)\/[^"']+)["']/gi;
         let match;
         while ((match = regex.exec(html)) !== null) {
@@ -36,8 +37,6 @@ export class GrandEstConnector extends SourceConnector {
         const title = titleMatch ? this.cleanText(titleMatch[1]) : 'Sans titre';
 
         // Extract content (naive)
-        // Look for main content area often identified by specific classes or just body text
-        // For Grand Est, let's assume standard WP structure
         let content = '';
         const bodyMatch = html.match(/<body[^>]*>([\s\S]*?)<\/body>/i);
         if (bodyMatch) {
@@ -45,7 +44,6 @@ export class GrandEstConnector extends SourceConnector {
         }
 
         // Apply URL detection
-        // Look for links containing keywords
         let applyUrl = null;
         const linkRegex = /<a[^>]+href=["']([^"']+)["'][^>]*>([\s\S]*?)<\/a>/gi;
         let match;

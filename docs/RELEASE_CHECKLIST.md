@@ -1,24 +1,31 @@
-# Checklist de Release
+# Release Checklist
 
-Avant de merger ou déployer en production, vérifier les points suivants.
+Ce document définit les étapes obligatoires avant tout merge ou déploiement en production.
 
-## Automatique (CI)
-- [ ] Build passe (`npm run build`).
-- [ ] Tests Unitaires passent (`npm run test`).
-- [ ] Tests E2E passent (`npm run test:e2e`).
-- [ ] Linting OK.
+## 1. Pré-Merge (CI/CD Automatique)
 
-## Manuel (Review)
-- [ ] **Migrations DB** : Si changement de schéma, la migration a-t-elle été appliquée/testée ?
-- [ ] **Variables d'Env** : Les nouvelles variables nécessaires sont-elles ajoutées dans Vercel ?
-- [ ] **Performance** : Pas de nouvelles requêtes N+1 évidentes ?
-- [ ] **Sécurité** :
-  - Pas de secrets commités ?
-  - Les nouvelles routes sont-elles protégées (Auth/RateLimit) ?
-- [ ] **Accessibilité** : Les nouveaux composants UI ont-ils les attributs ARIA ?
+Ces vérifications sont effectuées par le workflow GitHub Actions (`.github/workflows/ci.yml`).
+Si une étape échoue, le merge est interdit.
 
-## Post-Déploiement (Smoke Test)
-- [ ] Vérifier la page d'accueil.
-- [ ] Vérifier une page de détail (Aide ou Structure).
-- [ ] Tenter une recherche.
-- [ ] Vérifier les logs Vercel pour les 5 premières minutes.
+- [ ] **Linting** : `npm run lint` doit passer sans erreur.
+- [ ] **Build** : `npm run build` doit réussir.
+- [ ] **Tests Unitaires** : `npm run test` doit passer.
+- [ ] **Tests E2E** : Les tests critiques (`booking.spec.js`, `public-core.spec.js`) doivent passer.
+
+## 2. Vérifications Manuelles (Code Review)
+
+- [ ] **Routes & Navigation** :
+    - Vérifier qu'aucune nouvelle route n'est "orpheline".
+    - Vérifier la cohérence des URLs (kebab-case).
+- **API & Sécurité** :
+    - Vérifier que les nouveaux endpoints sont documentés dans `docs/ROUTES_API.md`.
+    - Vérifier les permissions (Admin/Pro Guards).
+- **Hygiène** :
+    - Pas de `console.log` de debug oubliés.
+    - Pas de fichiers temporaires committés.
+
+## 3. Post-Déploiement (Production)
+
+- [ ] **Smoke Test** : Naviguer sur les pages principales (Accueil, Aides, Annuaire).
+- [ ] **Parcours Critique** : Tenter une recherche et vérifier l'affichage d'une fiche.
+- [ ] **Monitoring** : Vérifier l'absence de pics d'erreurs sur Sentry/Vercel.

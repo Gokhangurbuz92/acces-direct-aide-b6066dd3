@@ -185,7 +185,7 @@ function PagesContent() {
                     <Route path="/adminsources" element={<AdminGuard><AdminSources /></AdminGuard>} />
                     <Route path="/adminsync" element={<AdminGuard><AdminSync /></AdminGuard>} />
                     <Route path="/admintestsync" element={<AdminGuard><AdminTestSync /></AdminGuard>} />
-                    <Route path="/appointmentrequest" element={<AppointmentRequest />} />
+                    <Route path="/appointments/request" element={<AppointmentRequest />} />
                     <Route path="/adminappointments" element={<AdminGuard><AdminAppointments /></AdminGuard>} />
                     <Route path="/adminstructures" element={<AdminGuard><AdminStructures /></AdminGuard>} />
                     <Route path="/admindemarches" element={<AdminGuard><AdminDemarches /></AdminGuard>} />

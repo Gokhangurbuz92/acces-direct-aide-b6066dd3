@@ -1,6 +1,6 @@
 
-import { PrismaClient } from '@prisma/client';
-const prisma = new PrismaClient();
+import prisma from '../api/_utils/prisma.js';
+
 
 const demarches = [
     // ÉTRANGERS / PRÉFECTURE (10)

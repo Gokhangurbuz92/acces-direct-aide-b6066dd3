@@ -75,6 +75,9 @@ const ProAppointmentDetail = lazy(() => import("./pro/AppointmentDetail.jsx"));
 const SentryTest = lazy(() => import("@/components/SentryTest.jsx"));
 const SentryTestPage = lazy(() => import("./SentryTestPage.jsx"));
 
+// Styleguide
+const StyleguideBranding = lazy(() => import("./StyleguideBranding.jsx"));
+
 // Map for _getCurrentPage logic (keeping structure for logic compatibility)
 const PAGES = {
     AdminLogin, APropos, Accessibilite, Actualites, ActualiteDetail,
@@ -214,7 +217,7 @@ function PagesContent() {
                     )}
 
                     <Route path="/demarches" element={<Demarches />} />
-                    <Route path="/home" element={<Home />} />
+                    <Route path="/home" element={<Navigate to="/" replace />} />
                     <Route path="/mentions-legales" element={<MentionsLegales />} />
                     <Route path="/sourcesmethode" element={<SourcesMethode />} />
                     <Route path="/sentry-test" element={<SentryTest />} />
@@ -235,6 +238,9 @@ function PagesContent() {
                     <Route path="/partenaires" element={<Partners />} />
                     <Route path="/proposer-une-structure" element={<SuggestStructure />} />
                     <Route path="/dossier-subventions" element={<SubventionDossier />} />
+
+                    {/* Styleguide */}
+                    <Route path="/styleguide/branding" element={<StyleguideBranding />} />
 
                     <Route path="/AideDetail" element={<Navigate to="/aidedetail" replace />} />
                     <Route path="/StructureDetail" element={<Navigate to="/annuaire" replace />} />

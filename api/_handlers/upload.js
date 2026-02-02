@@ -3,10 +3,8 @@
 import busboy from 'busboy';
 import { encryptBuffer, encrypt, hash } from '../lib/crypto.js';
 import { storage } from '../lib/storage.js';
-import { PrismaClient } from '@prisma/client';
+import prisma from '../_utils/prisma.js';
 import { verifyProToken } from '../lib/pro-auth.js';
-
-const prisma = new PrismaClient();
 
 export const config = {
     api: {

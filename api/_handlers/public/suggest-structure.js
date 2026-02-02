@@ -1,8 +1,6 @@
 
-import { PrismaClient } from '@prisma/client';
+import prisma from '../../_utils/prisma.js';
 import crypto from 'crypto';
-
-const prisma = new PrismaClient();
 
 // In-memory rate limiter (for demo/MVP, usually Redis/KV)
 const RATE_LIMIT_WINDOW = 60 * 60 * 1000; // 1 hour

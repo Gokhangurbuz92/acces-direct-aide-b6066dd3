@@ -1,65 +1,76 @@
-# Cartographie des Routes API
+# Routes API
 
-Ce document liste les endpoints de l'API Serverless définis dans `api/routes.js`.
+Documentation des endpoints API définis dans `api/routes.js` et gérés via le routeur monolithique `api/index.js`.
 
-## Core Data (Publique)
+## Vue d'ensemble
 
-| Method | Path | Handler | Auth | Description |
-|---|---|---|---|---|
-| GET | `/api/aides` | `_handlers/aides.js` | None | Liste et recherche des aides |
-| GET | `/api/structures` | `_handlers/structures.js` | None | Liste et recherche des structures |
-| GET | `/api/demarches` | `_handlers/demarches.js` | None | Liste et recherche des démarches |
-| GET | `/api/actualites` | `_handlers/actualites.js` | None | Liste des actualités |
-| GET | `/api/guides` | `_handlers/guides.js` | None | Guides et bonnes pratiques |
-| GET | `/api/tools` | `_handlers/tools.js` | None | Outils numériques |
-| GET | `/api/dispositifs` | `_handlers/dispositifs/index.js` | None | Dispositifs (ex: RSA, APL) |
-| GET | `/api/taxonomy` | `_handlers/taxonomy.js` | None | Référentiel (catégories, publics...) |
-| GET | `/api/public/stats` | `_handlers/public/stats.js` | None | Statistiques d'usage |
-| POST | `/api/public/suggest-structure` | `_handlers/public/suggest-structure.js` | None | Suggestion d'ajout de structure |
+- **Base URL**: `/api`
+- **Format Réponse**: JSON `{ data, meta, error }` (Voir `docs/API_CONTRACT.md`)
+- **Authentification**: Bearer Token (JWT) pour Admin/Pro.
 
-## Espace Rendez-vous (Booking)
+## 1. Routes Publiques (Core)
 
-| Method | Path | Handler | Auth | Description |
-|---|---|---|---|---|
-| POST | `/api/appointments` | `_handlers/public/appointments/create.js` | None | Création d'un RDV |
-| POST | `/api/appointments/cancel` | `_handlers/public/appointments/cancel.js` | Token | Annulation d'un RDV |
-| GET | `/api/public/availability` | `_handlers/public/availability.js` | None | Créneaux disponibles (public) |
+| Path | Handler | Méthodes | Description |
+| ---- | ------- | -------- | ----------- |
+| `/aides/*` | `_handlers/aides.js` | GET | Liste ou détail d'une aide (par slug/id). |
+| `/demarches/*` | `_handlers/demarches.js` | GET | Liste ou détail d'une démarche. |
+| `/structures/*` | `_handlers/structures.js` | GET | Annuaire structures. |
+| `/actualites/*` | `_handlers/actualites.js` | GET | Actualités. |
+| `/guides/*` | `_handlers/guides.js` | GET | Guides. |
+| `/tools/*` | `_handlers/tools.js` | GET | Outils. |
+| `/dispositifs/*` | `_handlers/dispositifs/index.js` | GET | Dispositifs. |
+| `/taxonomy` | `_handlers/taxonomy.js` | GET | Catégories, Tags, Publics. |
 
-## Espace Pro
+## 2. Publiques (Fonctionnel)
 
-| Method | Path | Handler | Auth | Description |
-|---|---|---|---|---|
-| POST | `/api/pro/auth/login` | `_handlers/pro/auth/login.js` | None | Connexion Pro (JWT) |
-| POST | `/api/pro/auth/register` | `_handlers/pro/auth/register.js` | None | Inscription Pro |
-| POST | `/api/pro/auth/forgot-password` | `_handlers/pro/auth/forgot-password.js` | None | Demande reset mot de passe |
-| POST | `/api/pro/auth/reset-password` | `_handlers/pro/auth/reset-password.js` | None | Nouveau mot de passe |
-| GET | `/api/pro/me` | `_handlers/pro/me.js` | Bearer | Profil Pro connecté |
-| GET/POST | `/api/pro/messages` | `_handlers/pro/messages.js` | Bearer | Messagerie Pro |
-| GET | `/api/pro/appointments` | `_handlers/pro/appointments/list.js` | Bearer | Liste des RDV |
-| POST | `/api/pro/appointments/cancel` | `_handlers/pro/appointments/cancel.js` | Bearer | Annulation RDV (Côté Pro) |
-| GET/POST | `/api/pro/availability` | `_handlers/pro/availability.js` | Bearer | Gestion des disponibilités |
-| GET | `/api/pro/team` | `_handlers/pro/team.js` | Bearer | Membres de l'équipe (si structure) |
-| GET | `/api/pro/services` | `_handlers/pro/services.js` | Bearer | Services proposés |
+| Path | Handler | Méthodes | Description |
+| ---- | ------- | -------- | ----------- |
+| `/health` | `_handlers/health.js` | GET | Healthcheck. |
+| `/robots.txt` | `_handlers/robots.js` | GET | SEO Robots. |
+| `/sitemap.xml` | `_handlers/sitemap.js` | GET | SEO Sitemap. |
+| `/upload` | `_handlers/upload.js` | POST | Upload fichier (Memory/Mock). |
+| `/download` | `_handlers/download.js` | GET | Téléchargement fichier. |
+| `/public/stats` | `_handlers/public/stats.js` | GET | Statistiques publiques. |
+| `/public/availability` | `_handlers/public/availability.js` | GET | Disponibilité créneaux RDV. |
+| `/public/messages` | `_handlers/public/messages.js` | POST | Envoi message (contact/benef). |
+| `/public/suggest-structure` | `_handlers/public/suggest-structure.js` | POST | Suggestion structure. |
+| `/appointments` | `_handlers/public/appointments/create.js` | POST | **Création RDV**. |
+| `/appointments/cancel` | `_handlers/public/appointments/cancel.js` | POST | Annulation RDV (Token). |
 
-## Admin
+## 3. Espace Pro (`/pro`)
 
-| Method | Path | Handler | Auth | Description |
-|---|---|---|---|---|
-| POST | `/api/auth/login` | `_handlers/auth/login.js` | None | Connexion Admin |
-| GET | `/api/auth/me` | `_handlers/auth/me.js` | Session | Profil Admin |
-| GET | `/api/admin/inbox` | `_handlers/admin/inbox.js` | Admin | Boîte de réception globale |
-| POST | `/api/admin/actions` | `_handlers/admin/actions.js` | Admin | Actions (ex: valider structure) |
-| GET | `/api/admin/runs` | `_handlers/admin/runs.js` | Admin | Logs d'exécution Cron |
-| GET | `/api/admin/privacy/export` | `_handlers/admin/privacy/export.js` | Admin | Export RGPD |
-| POST | `/api/admin/privacy/delete` | `_handlers/admin/privacy/delete.js` | Admin | Suppression RGPD |
+Nécessite généralement un token Pro.
 
-## Système / Cron
+| Path | Handler | Description |
+| ---- | ------- | ----------- |
+| `/pro/auth/login` | `_handlers/pro/auth/login.js` | Connexion Pro. |
+| `/pro/auth/register` | `_handlers/pro/auth/register.js` | Inscription Pro. |
+| `/pro/me` | `_handlers/pro/me.js` | Profil courant. |
+| `/pro/messages` | `_handlers/pro/messages.js` | Messagerie Pro. |
+| `/pro/appointments` | `_handlers/pro/appointments/list.js` | Liste RDV structure. |
+| `/pro/appointments/cancel` | `_handlers/pro/appointments/cancel.js` | Annulation côté Pro. |
+| `/pro/availability` | `_handlers/pro/availability.js` | Gestion disponibilités. |
 
-| Method | Path | Handler | Auth | Description |
-|---|---|---|---|---|
-| GET | `/api/health` | `_handlers/health.js` | None | Healthcheck |
-| GET | `/api/cron/pipeline` | `_handlers/cron/pipeline.js` | Cron Secret | Pipeline principal (Sync) |
-| GET | `/api/cron/ingest-structures` | `_handlers/cron/ingest-structures.js` | Cron Secret | Ingestion structures |
-| GET | `/api/cron/purge` | `_handlers/cron/purge.js` | Cron Secret | Purge (Logs, RGPD) |
-| GET | `/api/robots.txt` | `_handlers/robots.js` | None | SEO Robots |
-| GET | `/api/sitemap.xml` | `_handlers/sitemap.js` | None | SEO Sitemap |
+## 4. Admin (`/admin`)
+
+Nécessite authentification Admin (Cookie/Token).
+
+| Path | Handler | Description |
+| ---- | ------- | ----------- |
+| `/auth/login` | `_handlers/auth/login.js` | Connexion Admin. |
+| `/auth/me` | `_handlers/auth/me.js` | Session Admin. |
+| `/admin/inbox` | `_handlers/admin/inbox.js` | Gestion messages entrants. |
+| `/admin/actions` | `_handlers/admin/actions.js` | Actions manuelles. |
+| `/admin/runs` | `_handlers/admin/runs.js` | Logs Cron/Jobs. |
+| `/admin/partnerships` | `_handlers/admin/partnerships.js` | Gestion partenaires. |
+| `/admin/privacy/export` | `_handlers/admin/privacy/export.js` | Export RGPD. |
+| `/admin/privacy/delete` | `_handlers/admin/privacy/delete.js` | Suppression RGPD. |
+
+## 5. Cron / Système
+
+| Path | Handler | Description |
+| ---- | ------- | ----------- |
+| `/cron/pipeline` | `_handlers/cron/pipeline.js` | Orchestrateur sync. |
+| `/cron/ingest-structures` | `_handlers/cron/ingest-structures.js` | Import structures. |
+| `/cron/ingest-aids` | `_handlers/cron/ingest-aids.js` | Import aides. |
+| `/cron/purge` | `_handlers/cron/purge.js` | Nettoyage données. |

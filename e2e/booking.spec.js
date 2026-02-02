@@ -27,7 +27,7 @@ test('Public Booking Flow', async ({ page }) => {
 
 
   // Use correct route from pages/index.jsx
-  await page.goto('/appointmentrequest?structure_id=dummy-123');
+  await page.goto('/appointments/request?structure_id=dummy-123');
 
   // Check title
   await expect(page.getByText('Choisir un créneau')).toBeVisible();

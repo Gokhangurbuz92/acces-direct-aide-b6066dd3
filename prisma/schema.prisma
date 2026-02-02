@@ -53,6 +53,13 @@ model Aide {
   territory_scope  String?
   content_hash     String?
 
+  // New Standard Fields (Lot 9a)
+  theme                 String?
+  sub_theme             String?
+  apply_url             String?
+  source_last_modified  DateTime?
+  fetched_at            DateTime?
+
   @@index([statut, published_at])
   @@index([categoryId, statut])
   @@index([statut])

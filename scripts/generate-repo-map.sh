@@ -1,26 +1,18 @@
 #!/bin/bash
-# scripts/generate-repo-map.sh
-# Generates a map of the repository files, excluding ignored directories.
+# Generates a text file listing all files in the repository, excluding ignored/heavy folders.
 
 OUTPUT_FILE="docs/REPO_FILES.txt"
 
 echo "Generating repository map to $OUTPUT_FILE..."
 
-# Find all files, excluding .git, node_modules, etc.
-# Using -maxdepth 5 to prevent too much noise if deep, but prompt says "exporte une arborescence (find)".
-# Excludes: node_modules, dist, .git, .vercel, coverage, test-results, venv, .env*
-
+# Find all files, exclude specific directories
 find . \
-    -path "./.git" -prune -o \
-    -path "./node_modules" -prune -o \
-    -path "./dist" -prune -o \
-    -path "./.vercel" -prune -o \
-    -path "./coverage" -prune -o \
-    -path "./test-results" -prune -o \
-    -path "./playwright-report" -prune -o \
-    -path "./venv" -prune -o \
-    -path "./uploads_mock" -prune -o \
-    -name ".DS_Store" -prune -o \
-    -type f \( ! -name ".env*" -o -name ".env.example" \) -print | sort > "$OUTPUT_FILE"
+  -type d \( -name "node_modules" -o -name "dist" -o -name ".git" -o -name ".vercel" -o -name "coverage" -o -name "test-results" -o -name "venv" -o -name "uploads_mock" -o -name ".cursor" \) -prune \
+  -o -type f \
+  ! -name ".env*" \
+  ! -name "*.log" \
+  ! -name "cookies*.txt" \
+  ! -name "test-img*.jpg" \
+  -print | sort > "$OUTPUT_FILE"
 
 echo "Done."

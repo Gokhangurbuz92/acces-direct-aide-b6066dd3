@@ -1,11 +1,11 @@
-import React, { useState } from 'react';
-import { Link } from 'react-router-dom';
-import { client } from '@/api/client';
+import React, { useState, useEffect } from 'react';
+import { Link, useSearchParams } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { Button } from "@/components/ui/button";
 import SEO from '@/components/SEO';
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
 import {
   Calendar,
   ExternalLink,
@@ -15,22 +15,23 @@ import {
   Star,
   Loader2,
   Newspaper,
-  ArrowRight
+  ArrowRight,
+  Search,
+  Sparkles
 } from 'lucide-react';
 import NewsFallback from '@/components/news/NewsFallback';
+import { TOPICS_MAP, getAllTopics, getTopicsForTabs } from '../../../taxonomy/actualites.topics.js';
 
-const CATEGORIES = {
-  logement: 'Logement',
-  sante: 'Santé',
-  handicap: 'Handicap',
-  emploi: 'Emploi',
-  famille: 'Famille',
-  budget: 'Budget',
-  mobilite: 'Mobilité',
-  justice: 'Justice',
-  numerique: 'Numérique',
-  etrangers: 'Nouveaux arrivants',
-  general: 'Général',
+const IMPACT_ICONS = {
+  alerte: AlertTriangle,
+  important: Star,
+  info: Info,
+};
+
+const IMPACT_COLORS = {
+  alerte: 'bg-red-100 text-red-800 border-red-300',
+  important: 'bg-amber-100 text-amber-800 border-amber-300',
+  info: 'bg-blue-100 text-blue-800 border-blue-300',
 };
 
 const TYPE_ICONS = {

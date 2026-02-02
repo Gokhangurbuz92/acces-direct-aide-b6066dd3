@@ -1,0 +1,79 @@
+[
+  {
+    "id": "service-public-particuliers",
+    "name": "Service-Public.fr - Particuliers",
+    "domain": "service-public.fr",
+    "feed_url": "https://www.service-public.gouv.fr/abonnements/rss/actu-actualites-particuliers.rss",
+    "source_type": "official",
+    "trust_level": 90,
+    "enabled": true,
+    "topics_hint": ["general", "famille", "logement", "emploi"]
+  },
+  {
+    "id": "service-public-pro",
+    "name": "Service-Public.fr - Professionnels",
+    "domain": "service-public.fr",
+    "feed_url": "https://www.service-public.gouv.fr/abonnements/rss/actu-actu-pro.rss",
+    "source_type": "official",
+    "trust_level": 90,
+    "enabled": true,
+    "topics_hint": ["emploi"]
+  },
+  {
+    "id": "grand-est-actualites",
+    "name": "Région Grand Est",
+    "domain": "grandest.fr",
+    "url_pattern": "https://www.grandest.fr/actualites/",
+    "source_type": "official",
+    "trust_level": 85,
+    "enabled": true,
+    "topics_hint": ["general", "logement", "formation", "mobilite"],
+    "territory_level": "region",
+    "territory_code": "GE"
+  },
+  {
+    "id": "agefiph",
+    "name": "AGEFIPH",
+    "domain": "agefiph.fr",
+    "url_pattern": "https://www.agefiph.fr/actualites",
+    "feed_url": "https://www.agefiph.fr/rss.xml",
+    "source_type": "institution",
+    "trust_level": 90,
+    "enabled": true,
+    "topics_hint": ["handicap", "emploi"],
+    "audience_hint": ["handicap"]
+  },
+  {
+    "id": "france-travail",
+    "name": "France Travail",
+    "domain": "francetravail.fr",
+    "url_pattern": "https://www.francetravail.fr/accueil/actualites.html",
+    "source_type": "official",
+    "trust_level": 95,
+    "enabled": true,
+    "topics_hint": ["emploi", "formation"],
+    "audience_hint": ["chomeurs"]
+  },
+  {
+    "id": "caf",
+    "name": "CAF",
+    "domain": "caf.fr",
+    "url_pattern": "https://www.caf.fr/allocataires/actualites",
+    "source_type": "official",
+    "trust_level": 95,
+    "enabled": true,
+    "topics_hint": ["famille", "logement", "budget"],
+    "audience_hint": ["famille", "precaires"]
+  },
+  {
+    "id": "ameli",
+    "name": "Ameli - Assurance Maladie",
+    "domain": "ameli.fr",
+    "feed_url": "https://www.ameli.fr/rss/fil-rss-actualites.xml",
+    "source_type": "official",
+    "trust_level": 95,
+    "enabled": true,
+    "topics_hint": ["sante"],
+    "audience_hint": []
+  }
+]

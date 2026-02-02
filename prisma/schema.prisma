@@ -188,42 +188,80 @@ model Demarche {
 
 model Actualite {
   id                 String    @id @default(uuid())
+  slug               String?   @unique
   titre              String
+  excerpt            String?
   contenu            String?
+  content_markdown   String?
+  falc_summary       String?
+  change_summary     String?
+  next_steps         String?
+
+  // Topics (multi-topics support)
+  topics             String[]  @default([])
+  topic_primary      String?
+  tags               String[]  @default([])
+
+  // Impact & Audience
+  impact             String    @default("info")
+  audience           String[]  @default([])
+
+  // Territory
+  territory_level    String?
+  territory_codes    String[]  @default([])
+  territoire         String?   @default("FRANCE")
+  departements       String[]  @default([])
+
+  // Source tracking (exact URLs + metadata)
+  source_name        String?
+  source_domain      String?
+  source_type        String    @default("official")
+  reliability_score  Int       @default(50)
+  source_url         String?
+  canonical_url      String?   @unique
+  source_published_at DateTime?
+  source_last_modified DateTime?
+
+  // Ingestion tracking
+  fetched_at         DateTime?
+  first_seen_at      DateTime  @default(now())
+  source_id          String?
+  ingest_batch       String?
+  raw_data_hash      String?   @unique
+  raw_payload_json   Json?
+  dedupe_hash        String?
+
+  // Dates
   date_publication   DateTime  @default(now())
+  published_at       DateTime?
+  updatedAt          DateTime  @updatedAt
+
+  // Status & Quality
+  statut             String    @default("brouillon")
+  status             String    @default("brouillon")
+  updatedBy          String?
+  commentaire_statut String?
+  quality_score      Int       @default(0)
+  falc_status        String    @default("pending")
+  auto_publish       Boolean   @default(false)
+
+  // Related entities
+  related_aide_slugs     String[] @default([])
+  related_demarche_slugs String[] @default([])
+
+  // Legacy fields (kept for migration compatibility)
   image_url          String?
   lien_url           String?
   source             String?
-  updatedAt          DateTime  @updatedAt
-  statut             String    @default("brouillon")
-  updatedBy          String?
-  commentaire_statut String?
-  published_at       DateTime?
-  canonical_url      String?   @unique
   category           String?   @default("actualite")
-  dedupe_hash        String?
-  fetched_at         DateTime?
   guid               String?
-  key_points_falc    String[]
-  slug               String?   @unique
-  source_id          String?
-  source_name        String?
+  key_points_falc    String[]  @default([])
   summary_falc       String?
-  territoire         String?   @default("FRANCE")
-  auto_publish       Boolean   @default(false)
   categorie          String?   @default("general")
-  departements       String[]
   est_important      Boolean   @default(false)
-  falc_status        String    @default("pending")
-  ingest_batch       String?
-  quality_score      Int       @default(0)
-  raw_data_hash      String?   @unique
-  raw_payload_json   Json?
-  resume             String?
   score_fiabilite    Int       @default(0)
   source_nom         String?
-  source_url         String?
-  tags               String[]
+  resume             String?
   type_actu          String?   @default("info")
   url                String?
 
@@ -231,6 +269,11 @@ model Actualite {
   @@index([source_id])
   @@index([raw_data_hash])
   @@index([statut, date_publication])
+  @@index([statut, source_published_at])
+  @@index([fetched_at])
+  @@index([first_seen_at])
+  @@index([impact, statut])
+  @@index([topic_primary, statut])
 }
 
 model ImportLog {

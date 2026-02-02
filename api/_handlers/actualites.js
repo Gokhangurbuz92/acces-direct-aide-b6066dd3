@@ -1,6 +1,6 @@
 import prisma from '../_utils/prisma.js';
 import { verifyAdmin } from '../_utils/auth.js';
-import { createEntity, updateEntity, deleteEntity } from '../_utils/crud.js';
+import { handleAdminCreate, handleAdminUpdate, handleAdminDelete } from '../_utils/crud.js';
 import { logger } from '../lib/logger.js'; // Ensure logger is imported
 
 async function handler(req, res) {
@@ -16,9 +16,9 @@ async function handler(req, res) {
 
     try {
         // CRUD operations
-        if (req.method === 'POST') return createEntity(req, res, prisma.actualite);
-        if (req.method === 'PUT') return updateEntity(req, res, prisma.actualite, 'Actualite');
-        if (req.method === 'DELETE') return deleteEntity(req, res, prisma.actualite);
+        if (req.method === 'POST') return handleAdminCreate(req, res, prisma.actualite);
+        if (req.method === 'PUT') return handleAdminUpdate(req, res, prisma.actualite, id);
+        if (req.method === 'DELETE') return handleAdminDelete(req, res, prisma.actualite, id);
 
         // READ (GET / HEAD)
         if (req.method === 'GET' || req.method === 'HEAD') {

@@ -53,9 +53,25 @@ model Aide {
   territory_scope  String?
   content_hash     String?
 
+  // DOD Required Fields
+  theme                 String?
+  sous_theme            String?
+  organisme             String?
+  territoire_niveau     String?
+  territoire_codes      String[]
+  apply_url             String?
+  source_domain         String?
+  fetched_at            DateTime?
+  source_last_modified  DateTime?
+  falc_steps            String?
+
   @@index([statut, published_at])
   @@index([categoryId, statut])
   @@index([statut])
+  @@index([theme])
+  @@index([organisme])
+  @@index([est_urgent])
+  @@index([fetched_at])
 }
 
 model AidCategory {

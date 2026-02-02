@@ -2,49 +2,101 @@ import { Prisma } from '@prisma/client';
 
 /**
  * Builds and executes a search query for Aides.
+ * DOD Compliant: supports theme, sousTheme, public, territoire, organisme, urgent, statut, sort
  */
 export async function searchAides(prisma, params) {
-  const { q, category, situation, geo, audience, providerType, page, pageSize } = params;
+  const {
+    q,
+    // Legacy filters (backward compatibility)
+    category,
+    situation,
+    geo,
+    audience,
+    providerType,
+    // DOD filters
+    theme,
+    sousTheme,
+    public: publicFilter,
+    territoire,
+    territoireCode,
+    organisme,
+    urgent,
+    statut = 'publie',
+    sort = 'pertinence',
+    page,
+    pageSize
+  } = params;
+
   const LIMIT = pageSize;
   const OFFSET = (page - 1) * LIMIT;
 
-  const conditions = [Prisma.sql`statut = 'publie'`];
+  const conditions = [Prisma.sql`statut = ${statut}`];
 
   // 1. Full Text Search
   if (q) {
-    // We use unaccent(q) to match the unaccented vector.
-    // We rely on the unaccent extension being present.
-    // We use websearch_to_tsquery for better user experience (handling quotes etc)
-    // or plainto_tsquery if websearch is too strict. Current code used plainto_tsquery.
+    // Use plainto_tsquery with unaccent for French language support
     conditions.push(Prisma.sql`"search_vector" @@ plainto_tsquery('french', unaccent(${q}))`);
   }
 
-  // 2. Filters
-  if (category) {
+  // 2. Filters - DOD Required
+
+  // Theme filter (new DOD field)
+  if (theme) {
+    conditions.push(Prisma.sql`"theme" = ${theme}`);
+  }
+  // Fallback to legacy category if theme not specified
+  else if (category) {
     conditions.push(Prisma.sql`("categoryId" = ${category} OR EXISTS (SELECT 1 FROM "AidCategory" c WHERE c.id = "Aide"."categoryId" AND c.slug = ${category}))`);
   }
 
+  // Sous-thème filter
+  if (sousTheme) {
+    conditions.push(Prisma.sql`"sous_theme" = ${sousTheme}`);
+  }
+
+  // Public filter (audiences)
+  if (publicFilter) {
+    conditions.push(Prisma.sql`${publicFilter} = ANY("audiences")`);
+  }
+  // Fallback to legacy audience
+  else if (audience) {
+    conditions.push(Prisma.sql`${audience} = ANY("audiences")`);
+  }
+
+  // Territoire filter
+  if (territoireCode) {
+    conditions.push(Prisma.sql`${territoireCode} = ANY("territoire_codes")`);
+  }
+  // Fallback to legacy geo
+  else if (geo) {
+    conditions.push(Prisma.sql`${geo} = ANY("territoires")`);
+  }
+
+  if (territoire) {
+    conditions.push(Prisma.sql`"territoire_niveau" = ${territoire}`);
+  }
+
+  // Organisme filter
+  if (organisme) {
+    conditions.push(Prisma.sql`"organisme" = ${organisme}`);
+  }
+  // Fallback to legacy providerType
+  else if (providerType) {
+    conditions.push(Prisma.sql`"providerType" = ${providerType}`);
+  }
+
+  // Urgence filter
+  if (urgent !== undefined) {
+    conditions.push(Prisma.sql`"est_urgent" = ${urgent}`);
+  }
+
+  // Situation filter (many-to-many)
   if (situation) {
-    // Many-to-Many relation via _AideToLifeSituation
-    // "A" is Aide.id, "B" is LifeSituation.id
     conditions.push(Prisma.sql`EXISTS (
       SELECT 1 FROM "_AideToLifeSituation" j
       JOIN "LifeSituation" s ON s.id = j."B"
       WHERE j."A" = "Aide".id AND s.slug = ${situation}
     )`);
-  }
-
-  if (geo) {
-    // Postgres Array check: val = ANY(array)
-    conditions.push(Prisma.sql`${geo} = ANY("territoires")`);
-  }
-
-  if (audience) {
-    conditions.push(Prisma.sql`${audience} = ANY("audiences")`);
-  }
-
-  if (providerType) {
-    conditions.push(Prisma.sql`"providerType" = ${providerType}`);
   }
 
   const whereClause = conditions.length > 0
@@ -55,10 +107,15 @@ export async function searchAides(prisma, params) {
   let orderBy;
   let selectRank = Prisma.empty;
 
-  if (q) {
+  if (sort === 'pertinence' && q) {
     selectRank = Prisma.sql`, ts_rank_cd("search_vector", plainto_tsquery('french', unaccent(${q}))) as rank`;
     orderBy = Prisma.sql`ORDER BY rank DESC, published_at DESC`;
+  } else if (sort === '-created_date') {
+    orderBy = Prisma.sql`ORDER BY published_at DESC, id ASC`;
+  } else if (sort === 'title') {
+    orderBy = Prisma.sql`ORDER BY titre ASC, id ASC`;
   } else {
+    // Default: most recent first
     orderBy = Prisma.sql`ORDER BY published_at DESC, id ASC`;
   }
 

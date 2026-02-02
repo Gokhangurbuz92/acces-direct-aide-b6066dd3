@@ -9,11 +9,23 @@ const baseSearchSchema = z.object({
 });
 
 export const searchAidesSchema = baseSearchSchema.extend({
+  // Legacy filters (keep for backward compatibility)
   category: z.string().optional(),
   situation: z.string().optional(),
   geo: z.string().optional(),
   audience: z.string().optional(),
   providerType: z.string().optional(),
+
+  // DOD Required filters
+  theme: z.string().optional(),
+  sousTheme: z.string().optional(),
+  public: z.string().optional(), // handicap, seniors, jeunes, famille, etc.
+  territoire: z.string().optional(), // national, region, departement, commune
+  territoireCode: z.string().optional(), // 67, 68, FR-GES, etc.
+  organisme: z.string().optional(), // CAF, AGEFIPH, Région, etc.
+  urgent: z.coerce.boolean().optional(),
+  statut: z.string().default('publie'),
+  sort: z.enum(['pertinence', '-created_date', 'title']).default('pertinence'),
 });
 
 export const searchDemarchesSchema = baseSearchSchema.extend({

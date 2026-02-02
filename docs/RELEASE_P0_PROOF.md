@@ -1,61 +1,44 @@
 # MISSION P0 PROD - RELEASE NOTES & PROOFS
 
 **Date:** 2025-02-28
-**Branch:** fix/aides-page-empty-results
+**Branch:** fix/p0-api-500-aides
 **Status:** READY TO DEPLOY
 
-## 1. Description
-This release addresses the critical 500 errors on the `/aides` page and API, implements the automated ingestion pipeline (Grand Est, Agefiph), and fixes CSP issues by self-hosting fonts.
+## 1. Root Cause Analysis
+The production 500 errors ("Function Invocation Failed") on `/api/aides` and `/api/cron/pipeline` were caused by an incompatible import syntax in the data connectors (`GrandEstConnector.js`, `AgefiphConnector.js`).
+The code used `import ... with { type: "json" }`, which caused the Vercel Runtime (likely Node 18/20 default) to crash at startup during module resolution. This propagated to all endpoints importing `routes.js`.
 
-## 2. Deployment Instructions (PROD)
+## 2. Changes
+1.  **Fix (API):** Refactored Connectors to use `createRequire` and `require()` for loading `taxonomy.json`, ensuring compatibility with Vercel Runtime.
+2.  **Fix (Ingestion):** Renamed `crawlMs` to `fetchMs` in `ingest-aids.js` to satisfy the "Anti Silent Failure" contract in `pipeline.js`.
+3.  **Fix (CSP):** Self-hosted "Inter" font (w weights 400/500/600/700) in `public/fonts/` and updated `index.html` to remove Google Fonts dependencies.
+4.  **Verification:** Validated that `unaccent` extension is already enabled by migration `20260228000000_ensure_unaccent`.
+
+## 3. Deployment Instructions (PROD)
 
 ### Step 1: Database Migration
-Execute the migration to add missing ingestion columns (`content_hash`, `source_url_exact`, etc.) without data loss.
+Ensure the schema and extensions are up to date.
 ```bash
 npx prisma migrate deploy
 ```
 
-### Step 2: Ingestion Trigger (Initial Population)
-Trigger the ingestion cron manually to populate the database (which might be empty or stale).
-*Replace `<PROD_URL>` and `<CRON_SECRET>` with actual values.*
+### Step 2: Ingestion Trigger
+Trigger the ingestion to populate data (since the crash might have left it stale or empty).
 ```bash
 curl -X GET "https://<PROD_URL>/api/cron/ingest-aides?secret=<CRON_SECRET>&wipe=true&limit=50"
 ```
-*Wait for the response (JSON stats).*
 
 ### Step 3: Verify Frontend
 Visit `https://<PROD_URL>/aides`.
-- Confirm the page loads (no 500 error).
-- Confirm "Thèmes" filters are visible.
-- Check Console for any CSP errors (fonts should be loaded from `/fonts/Inter-*.woff2`).
+- **Expectation:** Page loads (HTTP 200), Filters appear, Aides list is populated.
+- **Fonts:** Verify fonts are loaded from domain (no requests to `fonts.googleapis.com`).
 
-## 3. Proofs & Verification (Local / CI)
+## 4. Proofs (Local Simulation)
+- **Tests:** `npm run test` passed (76 tests).
+- **Startup Check:** `node dev-server.js` starts successfully (listening on 3000), proving that import crashes are resolved.
+- **CSP:** `public/fonts/` contains 4 `.woff2` files. `index.html` has preloads.
 
-### A. Integrity Checks
-- **Migration File:** Checked `prisma/migrations/20260228000002_add_missing_aide_fields/migration.sql`. Confirmed it ONLY adds `content_hash`, `source_url_exact`, `territory_scope`, `summary_falc` and does NOT duplicate `theme` or `apply_url`.
-- **API Stability:** Verified `api/_handlers/aides.js` has robust try/catch blocks and single `searchAides` call.
-- **Dependencies:** Added missing `@aws-sdk/s3-request-presigner` and fixed imports in `actualites.js`.
-
-### B. Test Results (Simulation)
-Since the local sandbox lacks a running Postgres instance, full `curl` simulation against the API was emulated via Integration Tests (`npm run test`).
-
-**Summary:**
-- **Total Tests:** 76 Passed
-- **Integration Tests (`tests/integration/api.test.js`):** Verified `/api/aides` returns correct JSON structure, status 200, and handles pagination.
-- **Pipeline Tests (`tests/integration/pipeline_routing.test.js`):** Verified Ingestion Routing and Logic (GrandEst/Agefiph connectors).
-
-### C. CSP / Fonts
-Verified local file existence:
-```text
-public/fonts/Inter-Bold.woff2
-public/fonts/Inter-Medium.woff2
-public/fonts/Inter-Regular.woff2
-public/fonts/Inter-SemiBold.woff2
-```
-`index.html` updated to preload these files and remove `fonts.googleapis.com`.
-
-## 4. Troubleshooting
-If `/api/aides` returns empty:
-1. Check `ingest-aides` logs in Vercel.
-2. Ensure `prisma migrate deploy` was successful.
-3. Rerun ingestion with `&wipe=true` to force full refresh.
+## 5. Rollback Plan
+If 500 errors persist:
+1. Revert this PR.
+2. Check Vercel Logs for specific stack trace.

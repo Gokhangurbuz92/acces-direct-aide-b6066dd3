@@ -20,12 +20,15 @@ export default function Aides() {
 
   // Parse filters from URL
   const query = searchParams.get('q') || '';
-  const category = searchParams.get('category') || (window.location.pathname.startsWith('/categories/') ? slug : '');
+  const theme = searchParams.get('theme') || searchParams.get('category') || (window.location.pathname.startsWith('/categories/') ? slug : '');
   const situation = searchParams.get('situation') || (window.location.pathname.startsWith('/situations/') ? slug : '');
-  const geo = searchParams.get('geo') || '';
+  const geo = searchParams.get('territoire') || searchParams.get('geo') || '';
+  const audience = searchParams.get('public') || '';
+  const provider = searchParams.get('organisme') || '';
+  const urgent = searchParams.get('urgent') || '';
   const page = searchParams.get('page') || '1';
 
-  // Fetch Taxonomy for filters
+  // Fetch Taxonomy for filters (Static base)
   const { data: taxonomy } = useQuery({
     queryKey: ['taxonomy'],
     queryFn: () => client.taxonomy.get(),
@@ -33,12 +36,15 @@ export default function Aides() {
 
   // Fetch Aides (Server-side)
   const { data, isLoading } = useQuery({
-    queryKey: ['aides', { query, category, situation, geo, page }],
+    queryKey: ['aides', { query, theme, situation, geo, audience, provider, urgent, page }],
     queryFn: () => client.entities.Aide.filter({
       q: query,
-      category,
+      theme,
       situation,
-      geo,
+      territoire: geo,
+      public: audience,
+      organisme: provider,
+      urgent,
       page,
       pageSize: 12
     }),
@@ -49,15 +55,16 @@ export default function Aides() {
     if (!isLoading && data && data.items && data.items.length === 0) {
       trackBusinessEvent('SEARCH_ZERO_RESULTS', {
         query,
-        category,
+        theme,
         situation,
         geo
       });
     }
-  }, [isLoading, data, query, category, situation, geo]);
+  }, [isLoading, data, query, theme, situation, geo]);
 
   const aides = data?.items || [];
   const pagination = data?.pagination || {};
+  const facets = data?.facets || {};
 
   const handleFilterChange = (key, value) => {
     const newParams = new URLSearchParams(searchParams);
@@ -77,30 +84,18 @@ export default function Aides() {
   };
 
   const getTitle = () => {
-    if (category && taxonomy) {
-      const cat = taxonomy.categories.find(c => c.slug === category);
+    if (theme && taxonomy) {
+      const cat = taxonomy.categories.find(c => c.slug === theme);
       if (cat) return `Aides - ${cat.label}`;
-    }
-    if (situation && taxonomy) {
-      const sit = taxonomy.situations.find(s => s.slug === situation);
-      if (sit) return `Aides pour : ${sit.label}`;
     }
     return 'Catalogue des aides';
   };
 
   const getDescription = () => {
-    if (category && taxonomy) {
-      const cat = taxonomy.categories.find(c => c.slug === category);
-      if (cat) return `Découvrez toutes les aides sociales et dispositifs pour la catégorie ${cat.label}.`;
-    }
-    if (situation && taxonomy) {
-      const sit = taxonomy.situations.find(s => s.slug === situation);
-      if (sit) return `Toutes les aides disponibles si vous êtes dans la situation : ${sit.label}.`;
-    }
     return 'Parcourez le catalogue complet des aides sociales et dispositifs d\'accompagnement disponibles.';
   };
 
-  const currentPath = category ? `/categories/${category}` : (situation ? `/situations/${situation}` : '/aides');
+  const currentPath = theme ? `/categories/${theme}` : '/aides';
 
   return (
     <div className="min-h-screen bg-slate-50">
@@ -147,62 +142,53 @@ export default function Aides() {
             </div>
 
             <div className="space-y-8">
-              {/* Category Filter */}
+              {/* Thèmes (Facets or Taxonomy) */}
               <div>
-                <h3 className="text-sm font-semibold text-slate-900 uppercase tracking-wider mb-4">Catégories</h3>
-                <div className="space-y-2">
-                  <button
-                    onClick={() => handleFilterChange('category', '')}
-                    className={`w-full text-left px-3 py-2 rounded-md transition-colors ${!category ? 'bg-blue-50 text-blue-700 font-medium' : 'text-slate-600 hover:bg-slate-100'}`}
-                  >
-                    Toutes les catégories
-                  </button>
-                  {taxonomy?.categories.map((cat) => (
-                    <button
-                      key={cat.slug}
-                      onClick={() => handleFilterChange('category', cat.slug)}
-                      className={`w-full text-left px-3 py-2 rounded-md transition-colors flex justify-between items-center ${category === cat.slug ? 'bg-blue-50 text-blue-700 font-medium' : 'text-slate-600 hover:bg-slate-100'}`}
-                    >
-                      <span>{cat.label}</span>
-                      <span className="text-xs text-slate-400">{cat.count}</span>
-                    </button>
+                <h3 className="text-sm font-semibold text-slate-900 uppercase tracking-wider mb-4">Thèmes</h3>
+                <div className="space-y-1">
+                  <button onClick={() => handleFilterChange('theme', '')} className={`w-full text-left text-sm px-2 py-1.5 rounded ${!theme ? 'bg-slate-100 font-medium' : 'hover:bg-slate-50'}`}>Tous</button>
+                  {(Object.keys(facets.themes || {}).length > 0 ? Object.entries(facets.themes || {}) : (taxonomy?.categories || []).map(c => [c.slug, c.count])).map(([slug, count]) => (
+                     <button
+                       key={slug}
+                       onClick={() => handleFilterChange('theme', slug)}
+                       className={`w-full text-left text-sm px-2 py-1.5 rounded flex justify-between ${theme === slug ? 'bg-blue-50 text-blue-700 font-medium' : 'hover:bg-slate-50 text-slate-600'}`}
+                     >
+                       <span className="truncate">{slug}</span> {/* TODO: Map slug to Label using taxonomy */}
+                       <span className="text-xs text-slate-400 ml-2">{count}</span>
+                     </button>
                   ))}
                 </div>
               </div>
 
-              {/* Situation Filter */}
-              <div>
-                <h3 className="text-sm font-semibold text-slate-900 uppercase tracking-wider mb-4">Situations</h3>
-                <div className="space-y-2">
-                  <button
-                    onClick={() => handleFilterChange('situation', '')}
-                    className={`w-full text-left px-3 py-2 rounded-md transition-colors ${!situation ? 'bg-blue-50 text-blue-700 font-medium' : 'text-slate-600 hover:bg-slate-100'}`}
-                  >
-                    Toutes les situations
-                  </button>
-                  {taxonomy?.situations.map((sit) => (
-                    <button
-                      key={sit.slug}
-                      onClick={() => handleFilterChange('situation', sit.slug)}
-                      className={`w-full text-left px-3 py-2 rounded-md transition-colors flex justify-between items-center ${situation === sit.slug ? 'bg-blue-50 text-blue-700 font-medium' : 'text-slate-600 hover:bg-slate-100'}`}
-                    >
-                      <span>{sit.label}</span>
-                      <span className="text-xs text-slate-400">{sit.count}</span>
-                    </button>
-                  ))}
+              {/* Territoires */}
+              {facets.territoires && Object.keys(facets.territoires).length > 0 && (
+                <div>
+                   <h3 className="text-sm font-semibold text-slate-900 uppercase tracking-wider mb-4">Territoires</h3>
+                   <div className="space-y-1">
+                      {Object.entries(facets.territoires).map(([t, count]) => (
+                        <button
+                          key={t}
+                          onClick={() => handleFilterChange('territoire', t)}
+                          className={`w-full text-left text-sm px-2 py-1.5 rounded flex justify-between ${geo === t ? 'bg-blue-50 text-blue-700 font-medium' : 'hover:bg-slate-50 text-slate-600'}`}
+                        >
+                          <span className="truncate">{t}</span>
+                          <span className="text-xs text-slate-400 ml-2">{count}</span>
+                        </button>
+                      ))}
+                   </div>
                 </div>
-              </div>
+              )}
             </div>
           </aside>
 
           {/* Main Content */}
           <main className="flex-1">
             {/* Active Filters Bar */}
-            {(category || situation || query) && (
+            {(theme || geo || query) && (
               <div className="flex flex-wrap items-center gap-2 mb-6">
                 <span className="text-sm text-slate-500 mr-2">Filtres actifs :</span>
-                {category && <Badge variant="secondary" className="pl-3 pr-2 py-1">Catégorie : {category} <X className="h-3 w-3 ml-2 cursor-pointer" onClick={() => handleFilterChange('category', '')} /></Badge>}
-                {situation && <Badge variant="secondary" className="pl-3 pr-2 py-1">Situation : {situation} <X className="h-3 w-3 ml-2 cursor-pointer" onClick={() => handleFilterChange('situation', '')} /></Badge>}
+                {theme && <Badge variant="secondary" className="pl-3 pr-2 py-1">Thème : {theme} <X className="h-3 w-3 ml-2 cursor-pointer" onClick={() => handleFilterChange('theme', '')} /></Badge>}
+                {geo && <Badge variant="secondary" className="pl-3 pr-2 py-1">Territoire : {geo} <X className="h-3 w-3 ml-2 cursor-pointer" onClick={() => handleFilterChange('territoire', '')} /></Badge>}
                 {query && <Badge variant="secondary" className="pl-3 pr-2 py-1">Recherche : {query} <X className="h-3 w-3 ml-2 cursor-pointer" onClick={() => handleFilterChange('q', '')} /></Badge>}
                 <Button variant="ghost" size="sm" onClick={clearFilters} className="text-xs text-blue-600">Tout effacer</Button>
               </div>

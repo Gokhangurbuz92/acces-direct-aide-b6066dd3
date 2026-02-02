@@ -1,0 +1,85 @@
+[
+  {
+    "slug": "papiers-citoyennete",
+    "label": "Papiers - Citoyenneté",
+    "keywords": ["identité", "état civil", "passeport", "carte d'identité", "élections", "recensement"],
+    "sub_themes": []
+  },
+  {
+    "slug": "famille",
+    "label": "Famille",
+    "keywords": ["enfant", "mariage", "couple", "naissance", "adoption", "scolarité", "décès", "succession"],
+    "sub_themes": [
+        {"slug": "aides-financieres", "label": "Allocations et aides financières"},
+        {"slug": "enfance", "label": "Enfance et scolarité"}
+    ]
+  },
+  {
+    "slug": "social-sante",
+    "label": "Social - Santé",
+    "keywords": ["sécurité sociale", "carte vitale", "handicap", "rsa", "prime d'activité", "aah", "apa", "invalidité", "arrêt maladie"],
+    "sub_themes": [
+        {"slug": "handicap", "label": "Handicap"},
+        {"slug": "sante", "label": "Santé et couverture maladie"},
+        {"slug": "aides-sociales", "label": "Aides sociales et précarité"},
+        {"slug": "personnes-agees", "label": "Personnes âgées"}
+    ]
+  },
+  {
+    "slug": "travail-formation",
+    "label": "Travail - Formation",
+    "keywords": ["chômage", "emploi", "formation", "retraite", "contrat de travail", "licenciement", "démission", "stage", "apprentissage"],
+    "sub_themes": [
+        {"slug": "emploi", "label": "Recherche d'emploi"},
+        {"slug": "formation", "label": "Formation professionnelle"}
+    ]
+  },
+  {
+    "slug": "logement",
+    "label": "Logement",
+    "keywords": ["apl", "demande de logement social", "location", "achat", "travaux", "déménagement", "hébergement"],
+    "sub_themes": [
+        {"slug": "aides-logement", "label": "Aides au logement (APL, ALF, ALS)"},
+        {"slug": "travaux", "label": "Aides aux travaux et rénovation"}
+    ]
+  },
+  {
+    "slug": "transports",
+    "label": "Transports",
+    "keywords": ["carte grise", "permis de conduire", "contrôle technique", "transports en commun", "mobilité"],
+    "sub_themes": [
+        {"slug": "permis", "label": "Permis de conduire"},
+        {"slug": "carte-grise", "label": "Immatriculation (Carte grise)"}
+    ]
+  },
+  {
+    "slug": "argent",
+    "label": "Argent - Impôts - Consommation",
+    "keywords": ["impôts", "banque", "crédit", "surendettement", "épargne", "consommation"],
+    "sub_themes": []
+  },
+  {
+    "slug": "justice",
+    "label": "Justice",
+    "keywords": ["casier judiciaire", "plainte", "victime", "avocat", "aide juridictionnelle"],
+    "sub_themes": []
+  },
+  {
+    "slug": "etranger",
+    "label": "Étranger",
+    "keywords": ["titre de séjour", "visa", "asile", "naturalisation", "regroupement familial"],
+    "sub_themes": []
+  },
+  {
+    "slug": "loisirs",
+    "label": "Loisirs - Sport - Culture",
+    "keywords": ["sport", "chasse", "pêche", "voyage", "association"],
+    "sub_themes": []
+  },
+  {
+    "slug": "entreprises",
+    "label": "Entreprises",
+    "keywords": ["création", "impôt société", "auto-entrepreneur", "kbis", "micro-entreprise"],
+    "sub_themes": []
+  }
+]

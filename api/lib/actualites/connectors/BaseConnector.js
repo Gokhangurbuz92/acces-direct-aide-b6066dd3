@@ -6,6 +6,7 @@
 
 import { normalizeUrl, extractDomain, generateStableId } from '../url-utils.js';
 import { classifyTopics, classifyImpact, calculateReliabilityScore, classifyAudience } from '../classification.js';
+import { enrichArticle } from '../ai-enrichment.js';
 
 export class BaseConnector {
   /**
@@ -62,9 +63,10 @@ export class BaseConnector {
    * Map normalized item to DB format with classification
    *
    * @param {Object} normalized
+   * @param {Object} aiEnrichments - AI-generated enrichments (optional)
    * @returns {Object} - Ready for DB upsert
    */
-  map(normalized) {
+  map(normalized, aiEnrichments = {}) {
     // Normalize URLs
     const canonical_url = normalizeUrl(normalized.source_url || '');
     const source_domain = extractDomain(normalized.source_url || '');
@@ -116,17 +118,17 @@ export class BaseConnector {
       excerpt: normalized.excerpt,
       contenu: normalized.content,
       content_markdown: normalized.content_markdown,
-      falc_summary: normalized.falc_summary,
-      change_summary: normalized.change_summary,
-      next_steps: normalized.next_steps,
+      falc_summary: aiEnrichments.falc_summary || normalized.falc_summary,
+      change_summary: aiEnrichments.change_summary || normalized.change_summary,
+      next_steps: aiEnrichments.next_steps || normalized.next_steps,
 
-      // Topics
-      topics: topicsClassification.topics,
-      topic_primary: topicsClassification.topic_primary,
+      // Topics (AI-enhanced if available)
+      topics: aiEnrichments.topics || topicsClassification.topics,
+      topic_primary: aiEnrichments.topic_primary || topicsClassification.topic_primary,
       tags: normalized.tags || [],
 
-      // Impact & Audience
-      impact,
+      // Impact & Audience (AI-enhanced if available)
+      impact: aiEnrichments.impact || impact,
       audience,
 
       // Territory
@@ -173,13 +175,14 @@ export class BaseConnector {
   }
 
   /**
-   * Full pipeline: discover → parse → map
+   * Full pipeline: discover → parse → map (with optional AI enrichment)
    *
    * @param {Object} options
    * @param {number} options.limit
+   * @param {boolean} options.useAI - Enable AI enrichment (default: true if BLACKBOX_API_KEY set)
    * @returns {Promise<Array<Object>>} - Items ready for DB upsert
    */
-  async run({ limit }) {
+  async run({ limit, useAI = !!process.env.BLACKBOX_API_KEY }) {
     const rawItems = await this.discover({ limit });
     const mapped = [];
 
@@ -187,7 +190,24 @@ export class BaseConnector {
       try {
         const enriched = await this.fetchItem(rawItem);
         const normalized = await this.parse(enriched);
-        const dbReady = this.map(normalized);
+
+        // AI enrichment (optional)
+        let aiEnrichments = {};
+        if (useAI && process.env.BLACKBOX_API_KEY) {
+          try {
+            aiEnrichments = await enrichArticle({
+              title: normalized.title,
+              excerpt: normalized.excerpt,
+              content: normalized.content,
+              topics: normalized.topics || [],
+              impact: normalized.impact || 'info'
+            });
+          } catch (aiError) {
+            console.warn(`[${this.name}] AI enrichment failed, continuing without it:`, aiError.message);
+          }
+        }
+
+        const dbReady = this.map(normalized, aiEnrichments);
         mapped.push(dbReady);
       } catch (error) {
         console.error(`[${this.name}] Error processing item:`, error);

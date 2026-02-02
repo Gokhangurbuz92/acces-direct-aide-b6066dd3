@@ -70,6 +70,7 @@ async function handler(req, res) {
             level: 'info'
         });
 
+        // Ensure ONLY ONE declaration of items/total
         const { items, total, facets } = await searchAides(prisma, params);
 
         logger.info('SEARCH_AIDES_SUCCESS', {

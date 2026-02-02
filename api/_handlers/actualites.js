@@ -1,10 +1,18 @@
 import prisma from '../_utils/prisma.js';
 import { verifyAdmin } from '../_utils/auth.js';
 import { createEntity, updateEntity, deleteEntity } from '../_utils/crud.js';
+import { logger } from '../lib/logger.js'; // Ensure logger is imported
 
 async function handler(req, res) {
     const { id, slug, limit, sort, statut } = req.query;
-    const isAdmin = verifyAdmin(req);
+    let isAdmin = false;
+    try {
+        isAdmin = verifyAdmin(req);
+    } catch (e) {
+        // verifyAdmin might throw if secret is missing or something
+        // Treat as non-admin
+        isAdmin = false;
+    }
 
     try {
         // CRUD operations
@@ -59,7 +67,7 @@ async function handler(req, res) {
                 const items = await prisma.actualite.findMany(queryOptions);
                 return res.status(200).json(items);
             } catch (dbError) {
-                console.error("Actualites DB Error (Recovered):", dbError);
+                logger.error("Actualites DB Error (Recovered):", dbError);
                 // Fallback to safe empty state to prevent 500
                 return res.status(200).json([]);
             }
@@ -67,7 +75,7 @@ async function handler(req, res) {
 
         return res.status(405).json({ error: "Method not allowed" });
     } catch (error) {
-        console.error('Actualites handler error:', error);
+        logger.error('Actualites handler error:', error);
         return res.status(500).json({ error: 'Internal server error' });
     }
 }

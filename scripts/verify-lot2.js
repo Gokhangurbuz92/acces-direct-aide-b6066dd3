@@ -45,9 +45,9 @@ async function runTests() {
     // Let's assume the previous script worked but maybe mixed inputs. 
 
     // I will use a direct DB create here to ensure test state.
-    const { default: prisma } = await import('../api/_utils/prisma.js');
+    const { PrismaClient } = await import('@prisma/client');
     const bcrypt = await import('bcryptjs');
-    // const prisma = new PrismaClient();
+    const prisma = new PrismaClient();
 
     const email = 'security-test@test.com';
     const password = 'TestPassword123!';

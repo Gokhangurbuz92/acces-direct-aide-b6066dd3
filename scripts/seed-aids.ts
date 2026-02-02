@@ -1,8 +1,8 @@
-import prisma from '../api/_utils/prisma.js';
+import { PrismaClient } from '@prisma/client';
 import fs from 'fs';
 import path from 'path';
 
-
+const prisma = new PrismaClient();
 
 function slugify(text: string) {
     return text

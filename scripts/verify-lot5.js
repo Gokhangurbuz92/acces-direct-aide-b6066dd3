@@ -1,9 +1,9 @@
 
-import prisma from '../api/_utils/prisma.js';
+import { PrismaClient } from '@prisma/client';
 import crypto from 'crypto';
 import { encrypt, decrypt, hash } from '../api/lib/crypto.js';
 
-
+const prisma = new PrismaClient();
 const API_URL = 'http://localhost:3000/api';
 
 // MOCK ENVS if not set (for local script execution without explicit env vars)

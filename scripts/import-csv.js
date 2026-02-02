@@ -1,9 +1,9 @@
-import prisma from '../api/_utils/prisma.js';
+import { PrismaClient } from '@prisma/client';
 import fs from 'fs';
 import path from 'path';
 import slugify from '@sindresorhus/slugify';
 
-
+const prisma = new PrismaClient();
 
 async function importCsv(type, filePath) {
     console.log(`📂 Importing ${type} from ${filePath}...`);

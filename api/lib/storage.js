@@ -1,7 +1,5 @@
 import { S3Client, PutObjectCommand, GetObjectCommand, DeleteObjectCommand } from '@aws-sdk/client-s3';
-import { getSignedUrl } from '@aws-sdk/s3-request-presigner'; // Optional if we need signed URLs, but demand was upload/download logic.
 import crypto from 'crypto';
-import path from 'path';
 
 // STRICT CONFIGURATION
 const CONFIG = {

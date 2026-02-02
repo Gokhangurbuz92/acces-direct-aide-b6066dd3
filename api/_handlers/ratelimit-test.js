@@ -16,7 +16,7 @@ export default async function handler(req, res) {
         return res.status(200).json({
             status: 'ok',
             message: 'Request allowed.',
-            backend_hint: process.env.KV_REST_API_URL || process.env.STORAGE_REST_API_URL ? 'KV_REST_API' : 'MEMORY'
+            backend_hint: process.env.KV_REST_API_URL || process.env.UPSTASH_REDIS_REST_URL ? 'KV_REST_API' : 'MEMORY'
         });
     } catch (error) {
         console.error("Rate Limit Test Error:", error);

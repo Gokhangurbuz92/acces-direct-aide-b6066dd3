@@ -1,8 +1,8 @@
 
-import prisma from '../api/_utils/prisma.js';
+import { PrismaClient } from '@prisma/client';
 import bcrypt from 'bcryptjs';
 
-
+const prisma = new PrismaClient();
 const API_URL = 'http://localhost:3000/api';
 
 async function main() {

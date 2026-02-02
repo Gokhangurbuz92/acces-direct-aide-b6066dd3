@@ -1,8 +1,8 @@
 
-import prisma from '../api/_utils/prisma.js';
+import { PrismaClient } from '@prisma/client';
 import bcrypt from 'bcryptjs';
 
-
+const prisma = new PrismaClient();
 
 async function main() {
     const isDev = process.env.NODE_ENV === 'development';

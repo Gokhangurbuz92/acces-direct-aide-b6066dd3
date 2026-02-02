@@ -10,9 +10,9 @@ import demarchesHandler from '../api/demarches.js';
 import structuresHandler from '../api/structures.js';
 import sitemapHandler from '../api/sitemap.js';
 import robotsHandler from '../api/robots.js';
-import prisma from '../api/_utils/prisma.js';
+import { PrismaClient } from '@prisma/client';
 
-
+const prisma = new PrismaClient();
 
 // Mock Req/Res
 const mockRes = () => {

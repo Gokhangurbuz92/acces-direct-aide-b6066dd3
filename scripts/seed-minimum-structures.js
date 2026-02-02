@@ -1,6 +1,6 @@
 
-import prisma from '../api/_utils/prisma.js';
-
+import { PrismaClient } from '@prisma/client';
+const prisma = new PrismaClient();
 
 const structures = [
     // STRASBOURG & CUS (67)

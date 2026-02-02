@@ -1,7 +1,7 @@
 
-import prisma from '../api/_utils/prisma.js';
+import { PrismaClient } from '@prisma/client';
 
-
+const prisma = new PrismaClient();
 
 async function main() {
     console.log("Enabling 'unaccent' extension...");

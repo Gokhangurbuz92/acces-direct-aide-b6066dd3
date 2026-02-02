@@ -1,7 +1,7 @@
 
-import prisma from '../api/_utils/prisma.js';
+import { PrismaClient } from '@prisma/client';
 
-
+const prisma = new PrismaClient();
 
 async function seed() {
     console.log("🌱 Seeding Test Data...");

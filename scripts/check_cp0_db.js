@@ -1,12 +1,12 @@
 
-import prisma from '../api/_utils/prisma.js';
+import { PrismaClient } from '@prisma/client';
 import dotenv from 'dotenv';
 import fs from 'fs';
 import path from 'path';
 
 dotenv.config();
 
-
+const prisma = new PrismaClient();
 
 async function main() {
     try {

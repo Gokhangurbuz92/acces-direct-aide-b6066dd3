@@ -1,54 +1,53 @@
 # Contrat d'Interface API
 
-## Format de Réponse Standard
+Toutes les réponses de l'API (`/api/*`) suivent un format JSON standardisé.
 
-Toutes les réponses de l'API suivent (autant que possible) le format standard JSON suivant :
+## Format de Réponse
+
+### Succès (200 OK)
 
 ```json
 {
-  "data": { ... },       // Données demandées (objet ou tableau)
-  "meta": {              // Métadonnées (pagination, version, etc.)
+  "data": {
+    // Objet ou tableau de résultats
+    "id": "123",
+    "nom": "Exemple"
+  },
+  "meta": {
+    // Métadonnées optionnelles (pagination, version)
     "pagination": {
       "total": 100,
       "page": 1,
-      "pageSize": 20
+      "limit": 20
     }
   },
-  "error": null          // Présent uniquement en cas d'erreur
+  "error": null
 }
 ```
 
-## Gestion des Erreurs
-
-En cas d'erreur, le code HTTP indique le type d'erreur, et le corps JSON contient les détails :
+### Erreur (4xx, 5xx)
 
 ```json
 {
   "data": null,
+  "meta": null,
   "error": {
-    "code": "VALIDATION_ERROR",
-    "message": "Le champ email est invalide.",
-    "details": { "email": "Format incorrect" }
+    "code": "RESOURCE_NOT_FOUND",
+    "message": "La ressource demandée n'existe pas.",
+    "details": null // Optionnel: détails de validation
   }
 }
 ```
 
-### Codes HTTP Communs
+## Codes HTTP Standards
 
-- `200 OK`: Succès.
-- `400 Bad Request`: Erreur de validation ou paramètres manquants.
-- `401 Unauthorized`: Token manquant ou invalide.
-- `403 Forbidden`: Droits insuffisants (ex: accès Admin requis).
-- `404 Not Found`: Ressource introuvable.
-- `429 Too Many Requests`: Rate limit dépassé.
-- `500 Internal Server Error`: Erreur inattendue côté serveur.
-
-## Pagination
-
-Les endpoints de liste acceptent généralement les paramètres `page` (défaut: 1) et `limit` (défaut: 10).
-Les informations de pagination sont renvoyées dans `meta.pagination`.
-
-## Authentification
-
-L'API utilise des en-têtes Authorization Bearer pour les routes protégées :
-`Authorization: Bearer <token>`
+- **200 OK** : Succès.
+- **201 Created** : Ressource créée.
+- **204 No Content** : Succès sans contenu (ex: suppression).
+- **400 Bad Request** : Erreur de validation ou format invalide.
+- **401 Unauthorized** : Token manquant ou invalide.
+- **403 Forbidden** : Droits insuffisants (ex: Pro essayant d'accéder à Admin).
+- **404 Not Found** : Ressource introuvable.
+- **409 Conflict** : Conflit d'état (ex: double réservation).
+- **429 Too Many Requests** : Rate limit dépassé.
+- **500 Internal Server Error** : Bug serveur non géré.

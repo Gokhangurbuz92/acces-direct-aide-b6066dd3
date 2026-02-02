@@ -1,6 +1,7 @@
 import { isCronAuthorized } from '../../_utils/cronAuth.js';
 import prisma from '../../_utils/prisma.js';
 import crypto from 'crypto';
+import { logger } from '../../lib/logger.js';
 
 // Import connectors
 const GrandEstConnector = require('../../lib/ingestion/connectors/grandest.js');
@@ -116,9 +117,9 @@ async function upsertAide(aide, stableId) {
  * @returns {Promise<Object>} stats
  */
 export async function runIngestAids({ limit, runId, source = 'all' }) {
-    console.log(`INGEST_AIDS_ENTER source=${source} limit=${limit}`);
-
     if (!runId) runId = crypto.randomUUID();
+
+    logger.info('INGEST_AIDS_START', { runId, source, limit });
 
     const stats = {
         fetched: 0,
@@ -138,18 +139,22 @@ export async function runIngestAids({ limit, runId, source = 'all' }) {
     // Initialize connectors
     const connectors = [];
     if (source === 'all' || source === 'grandest') {
+        logger.info('INGEST_AIDS_CONNECTOR_ADD', { runId, connector: 'GrandEst' });
         connectors.push(new GrandEstConnector());
     }
     if (source === 'all' || source === 'agefiph') {
+        logger.info('INGEST_AIDS_CONNECTOR_ADD', { runId, connector: 'AGEFIPH' });
         connectors.push(new AgefiphConnector());
     }
 
     if (connectors.length === 0) {
+        logger.error('INGEST_AIDS_NO_CONNECTORS', { runId, source });
         stats.errors.push('No connectors selected');
         return stats;
     }
 
     const startFetch = Date.now();
+    logger.info('INGEST_AIDS_FETCH_START', { runId, connectorCount: connectors.length });
 
     // Run connectors in parallel
     const ingestionResults = await Promise.allSettled(
@@ -160,41 +165,79 @@ export async function runIngestAids({ limit, runId, source = 'all' }) {
 
     // Aggregate results
     const allAides = [];
-    for (const result of ingestionResults) {
+    for (let i = 0; i < ingestionResults.length; i++) {
+        const result = ingestionResults[i];
+        const connectorName = connectors[i].constructor.name;
+
         if (result.status === 'fulfilled') {
             const { aides, errors: connectorErrors } = result.value;
+            logger.info('INGEST_AIDS_CONNECTOR_SUCCESS', {
+                runId,
+                connector: connectorName,
+                count: aides.length,
+                errors: connectorErrors.length
+            });
             allAides.push(...aides);
-            stats.errors.push(...connectorErrors.map(e => `${e.rawItem?.url || 'unknown'}: ${e.error}`));
+            stats.errors.push(...connectorErrors.map(e => `${connectorName}:${e.rawItem?.url || 'unknown'}: ${e.error}`));
         } else {
-            stats.errors.push(`Connector failed: ${result.reason}`);
+            logger.error('INGEST_AIDS_CONNECTOR_FAILED', {
+                runId,
+                connector: connectorName,
+                error: result.reason?.message || result.reason
+            });
+            stats.errors.push(`${connectorName} failed: ${result.reason}`);
         }
     }
 
     stats.fetched = allAides.length;
-    console.log(`INGEST_AIDS_FETCH_DONE items=${allAides.length}`);
+    logger.info('INGEST_AIDS_FETCH_DONE', {
+        runId,
+        fetched: stats.fetched,
+        fetch_duration_ms: stats.durationByStage.fetchMs
+    });
 
     // Limit support
     let aidesToProcess = allAides;
     if (limit && limit > 0) {
         aidesToProcess = allAides.slice(0, limit);
+        logger.info('INGEST_AIDS_LIMIT_APPLIED', { runId, limit, total: allAides.length });
     }
 
     const startProcess = Date.now();
+    logger.info('INGEST_AIDS_PROCESS_START', { runId, count: aidesToProcess.length });
 
     // Upsert aides
     for (const aide of aidesToProcess) {
         stats.processed++;
         try {
             const result = await upsertAide(aide, aide._stableId);
-            if (result.created) stats.created++;
-            if (result.updated) stats.updated++;
+            if (result.created) {
+                stats.created++;
+                logger.info('INGEST_AIDS_CREATED', { runId, slug: aide.slug, source_url: aide.source_url });
+            }
+            if (result.updated) {
+                stats.updated++;
+                logger.info('INGEST_AIDS_UPDATED', { runId, slug: aide.slug, source_url: aide.source_url });
+            }
         } catch (procErr) {
-            console.error(`[AIDS] Upsert error (${aide.slug}):`, procErr.message);
+            logger.error('INGEST_AIDS_UPSERT_ERROR', {
+                runId,
+                slug: aide.slug,
+                error: procErr.message,
+                stack: procErr.stack
+            });
             stats.errors.push(`Upsert ${aide.slug}: ${procErr.message}`);
         }
     }
 
     stats.durationByStage.processingMs = Date.now() - startProcess;
+    logger.info('INGEST_AIDS_PROCESS_DONE', {
+        runId,
+        processed: stats.processed,
+        created: stats.created,
+        updated: stats.updated,
+        process_duration_ms: stats.durationByStage.processingMs
+    });
 
     // Log the Run
     try {
@@ -209,10 +252,21 @@ export async function runIngestAids({ limit, runId, source = 'all' }) {
             }
         });
     } catch (e) {
-        console.warn('[AIDS] Failed to log import:', e.message);
+        logger.warn('INGEST_AIDS_LOG_FAILED', { runId, error: e.message });
     }
 
-    console.log(`INGEST_AIDS_DONE created=${stats.created} updated=${stats.updated} errors=${stats.errors.length}`);
+    const totalDuration = Date.now() - startTotal;
+    logger.info('INGEST_AIDS_DONE', {
+        runId,
+        stats: {
+            fetched: stats.fetched,
+            processed: stats.processed,
+            created: stats.created,
+            updated: stats.updated,
+            errors: stats.errors.length
+        },
+        duration_ms: totalDuration
+    });
 
     return stats;
 }

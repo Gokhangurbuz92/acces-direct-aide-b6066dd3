@@ -9,8 +9,25 @@ on:
 jobs:
   validate:
     runs-on: ubuntu-latest
+    
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: test
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+    
     env:
-      DATABASE_URL: "postgresql://user:pass@localhost:5432/db" # Dummy for build/prisma generate
+      DATABASE_URL: "postgresql://postgres:postgres@localhost:5432/test?schema=public"
+      DIRECT_URL: "postgresql://postgres:postgres@localhost:5432/test?schema=public"
       ADA_ENCRYPTION_KEY: "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef" # 64-char hex = 32 bytes
       JWT_SECRET: "dummy_jwt_secret"
       VITE_API_URL: "http://localhost:3000"
@@ -26,6 +43,11 @@ jobs:
 
       - name: Install Dependencies
         run: npm ci
+
+      - name: Setup Database
+        run: |
+          npx prisma generate
+          npx prisma db push --force-reset --skip-generate
 
       - name: Lint
         run: npm run lint

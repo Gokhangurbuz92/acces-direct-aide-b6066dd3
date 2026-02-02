@@ -86,6 +86,85 @@ model AidSource {
   aides         Aide[]
 }
 
+// ============================================================================
+// ANNUAIRE: Organization → Establishment → Service (3-level hierarchy)
+// ============================================================================
+
+model Organization {
+  id                   String          @id @default(uuid())
+  slug                 String          @unique
+  orgKey               String          @unique // Stable key: SIREN, domain+canonical_name, or source_id
+  name                 String
+  acronyms             String[]
+  category             String? // institution/association/collectivite/entreprise_solidaire
+  domains              String[] // emploi/handicap/logement/sante/acces_droits
+  publics              String[] // handicap/seniors/jeunes/famille/etrangers
+  description          String?
+  website_url          String?
+  contact_email        String?
+  contact_phone        String?
+  address_city         String?
+  address_postal_code  String?
+  territory_level      String? // national/regional/departmental/local
+  territory_codes      String[] // e.g., ["67", "68"] or ["GRAND_EST"]
+  source_url           String // OBLIGATOIRE: URL exact de la source officielle
+  fetched_at           DateTime        @default(now())
+  source_last_modified DateTime?
+  status               String          @default("brouillon") // brouillon/publie/archive
+  created_at           DateTime        @default(now())
+  updated_at           DateTime        @updatedAt
+
+  establishments       Establishment[]
+
+  @@index([orgKey])
+  @@index([category])
+  @@index([status])
+  @@index([territory_level])
+  @@index([name])
+}
+
+model Establishment {
+  id                   String       @id @default(uuid())
+  slug                 String       @unique
+  organizationId       String
+  siteKey              String       @unique // Stable key: FINESS/SIRET/source_id+hash
+  name                 String
+  type                 String? // agence_ft/esat/ime/mas/fam/sessad/antenne/siege
+  services             String[]
+  address_line1        String?
+  city                 String?
+  postal_code          String?
+  department_code      String?
+  region               String?
+  geo_lat              Float?
+  geo_lng              Float?
+  phone                String?
+  email                String?
+  opening_hours        Json? // Structured hours (e.g., {mon: "9-17", ...})
+  accessibility        String[] // pmr/lsf/braille/facile_lire
+  appointment_url      String? // URL prise RDV en ligne
+  source_url           String // OBLIGATOIRE: URL exact de la page établissement
+  fetched_at           DateTime     @default(now())
+  source_last_modified DateTime?
+  status               String       @default("brouillon")
+  created_at           DateTime     @default(now())
+  updated_at           DateTime     @updatedAt
+
+  organization         Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@index([organizationId])
+  @@index([siteKey])
+  @@index([type])
+  @@index([department_code])
+  @@index([city])
+  @@index([postal_code])
+  @@index([status])
+}
+
+// ============================================================================
+// LEGACY: Structure (kept for backward compatibility, will be deprecated)
+// ============================================================================
+
 model Structure {
   id                 String         @id @default(uuid())
   nom                String

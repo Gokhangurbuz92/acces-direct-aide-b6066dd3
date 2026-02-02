@@ -24,6 +24,7 @@ import {
   Lightbulb
 } from 'lucide-react';
 import { generateBreadcrumbSchema, generateDemarcheSchema } from '@/utils/schema';
+import SourceTraceability from '@/components/SourceTraceability';
 
 const CATEGORIE_LABELS = {
   logement: 'Logement',
@@ -275,6 +276,14 @@ export default function DemarcheDetail() {
 
           {/* Sidebar */}
           <div className="space-y-6">
+            {/* Source Traceability */}
+            <SourceTraceability 
+              source_url={demarche.source_url || demarche.source_url_exact}
+              retrieved_at={demarche.retrieved_at}
+              last_checked_at={demarche.last_checked_at}
+              source_last_modified={demarche.source_last_modified}
+            />
+
             {/* Actions */}
             <Card>
               <CardContent className="p-6 space-y-3">

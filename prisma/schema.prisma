@@ -59,6 +59,10 @@ model Aide {
   apply_url             String?
   source_last_modified  DateTime?
   fetched_at            DateTime?
+  
+  // Traceability Fields (P1)
+  retrieved_at          DateTime?
+  last_checked_at       DateTime?
 
   @@index([statut, published_at])
   @@index([categoryId, statut])
@@ -138,6 +142,11 @@ model Structure {
   source_url_exact   String?
   territory_scope    String?
   content_hash       String?
+  
+  // Traceability Fields (P1)
+  retrieved_at          DateTime?
+  last_checked_at       DateTime?
+  source_last_modified  DateTime?
 
   appointments       Appointment[]
   availabilities     Availability[]
@@ -187,6 +196,13 @@ model Demarche {
   source_url_exact String?
   territory_scope  String?
   content_hash     String?
+
+  
+  // Traceability Fields (P1)
+  source_url            String?
+  retrieved_at          DateTime?
+  last_checked_at       DateTime?
+  source_last_modified  DateTime?
 
   @@index([statut, published_at])
   @@index([categoryId, statut])
@@ -538,6 +554,12 @@ model Dispositif {
   source_url_exact String?
   territory_scope  String?
   content_hash     String?
+  
+  // Traceability Fields (P1)
+  source_url            String?
+  retrieved_at          DateTime?
+  last_checked_at       DateTime?
+  source_last_modified  DateTime?
 
   @@index([statut, published_at])
 }
@@ -568,4 +590,9 @@ model ResourceAccessibility {
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
   status          String   @default("draft")
+  
+  // Traceability Fields (P1)
+  retrieved_at          DateTime?
+  last_checked_at       DateTime?
+  source_last_modified  DateTime?
 }

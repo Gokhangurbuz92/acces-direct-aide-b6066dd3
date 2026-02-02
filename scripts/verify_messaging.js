@@ -1,10 +1,10 @@
 
-import { PrismaClient } from '@prisma/client';
+import prisma from '../api/_utils/prisma.js';
 import { generateAttachmentToken, encrypt, encryptBuffer, hash } from '../api/lib/crypto.js';
 import { storage } from '../api/lib/storage.js';
 import downloadHandler from '../api/_handlers/download.js';
 
-const prisma = new PrismaClient();
+
 
 async function mockRequestResponse(handler, req) {
     let responseData = null;

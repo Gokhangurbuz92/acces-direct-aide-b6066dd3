@@ -6,8 +6,11 @@ import { checkRateLimit as checkRateLimitUtil } from '../_utils/rateLimit.js';
 
 const JWT_SECRET = process.env.JWT_SECRET;
 
-if (!JWT_SECRET) {
-    throw new Error("JWT_SECRET is missing");
+// Lazy validation - only enforce when JWT functions are actually called
+function ensureJwtSecret() {
+    if (!JWT_SECRET) {
+        throw new Error("JWT_SECRET is missing");
+    }
 }
 
 export const ROLE = {
@@ -20,6 +23,7 @@ export const ROLE = {
  * Sign a JWT token for a Pro user
  */
 export function signProToken(user) {
+    ensureJwtSecret();
     return jwt.sign(
         {
             userId: user.id,
@@ -40,6 +44,7 @@ export function signProToken(user) {
  * Hardened: Enforce HS256 to prevent algorithm confusion attacks
  */
 export function verifyProToken(token) {
+    ensureJwtSecret();
     try {
         return jwt.verify(token, JWT_SECRET, {
             algorithms: ['HS256']

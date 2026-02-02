@@ -13,8 +13,12 @@ const KEY_HEX = process.env.ADA_ENCRYPTION_KEY;
 
 const KEY = KEY_HEX ? Buffer.from(KEY_HEX, 'hex') : null;
 
-if (!KEY || KEY.length !== 32) {
-    throw new Error("⛔ FATAL: ADA_ENCRYPTION_KEY (64 hex chars = 32 bytes) is REQUIRED.");
+// Only enforce in production or when crypto features are actually used
+// This allows non-crypto routes to function even without the key
+function ensureKey() {
+    if (!KEY || KEY.length !== 32) {
+        throw new Error("⛔ FATAL: ADA_ENCRYPTION_KEY (64 hex chars = 32 bytes) is REQUIRED.");
+    }
 }
 
 
@@ -32,7 +36,7 @@ if (!KEY || KEY.length !== 32) {
  */
 export function encrypt(text) {
     if (!text) return null;
-    if (!KEY) throw new Error("Missing ADA_KEY");
+    ensureKey();
 
     const iv = crypto.randomBytes(IV_LENGTH);
     const cipher = crypto.createCipheriv(ALGORITHM, KEY, iv);
@@ -54,7 +58,7 @@ export function encrypt(text) {
  */
 export function decrypt(encryptedText) {
     if (!encryptedText) return null;
-    if (!KEY) throw new Error("Missing ADA_KEY");
+    ensureKey();
 
     const parts = encryptedText.split(':');
 
@@ -106,7 +110,7 @@ export const hashContact = hash;
  * Returns: Buffer [IV(16) + AuthTag(16) + EncryptedData]
  */
 export function encryptBuffer(buffer) {
-    if (!KEY) throw new Error("Missing ADA_KEY");
+    ensureKey();
 
     const iv = crypto.randomBytes(IV_LENGTH);
     const cipher = crypto.createCipheriv(ALGORITHM, KEY, iv);
@@ -122,7 +126,7 @@ export function encryptBuffer(buffer) {
  * Returns: Buffer (Decrypted)
  */
 export function decryptBuffer(encryptedBuffer) {
-    if (!KEY) throw new Error("Missing ADA_KEY");
+    ensureKey();
 
     if (encryptedBuffer.length < IV_LENGTH + AUTH_TAG_LENGTH) return null;
 
@@ -147,7 +151,7 @@ export function decryptBuffer(encryptedBuffer) {
  * Token: base64(json(payload)).base64(hmac)
  */
 export function generateAttachmentToken(attachmentId, expiresInSeconds = 3600) {
-    if (!KEY) throw new Error("Missing ADA_KEY");
+    ensureKey();
 
     const payload = {
         id: attachmentId,
@@ -169,7 +173,7 @@ export function generateAttachmentToken(attachmentId, expiresInSeconds = 3600) {
  */
 export function verifyAttachmentToken(token) {
     if (!token) return null;
-    if (!KEY) throw new Error("Missing ADA_KEY");
+    ensureKey();
 
     const [payloadStr, signature] = token.split('.');
     if (!payloadStr || !signature) return null;

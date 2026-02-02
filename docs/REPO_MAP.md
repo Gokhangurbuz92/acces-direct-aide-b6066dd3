@@ -1,86 +1,75 @@
-# Carte du Répertoire (Repository Map)
+# Cartographie du Dépôt (Official Repository Map)
 
-Ce document décrit l'organisation du code source du projet **AccesDirectAide**.
-Il sert de référence pour comprendre la structure, les responsabilités et les risques associés à chaque dossier.
+## 1. Racine / Configuration
+**Dossier :** `/`
+- **Rôle :** Configuration globale du projet, dépendances, règles de build et de déploiement.
+- **Fichiers clés :**
+  - `package.json` : Dépendances et scripts NPM.
+  - `vite.config.js` : Configuration du build Front (Vite).
+  - `vercel.json` : Configuration du déploiement Vercel (rewrites, crons, headers).
+  - `.env.example` : Template des variables d'environnement.
+  - `eslint.config.js` : Règles de linting.
+- **Owner :** DevOps / Tech Lead.
+- **Risques :** Une mauvaise configuration ici casse le build ou le déploiement (ex: variables manquantes).
 
-Pour la liste exhaustive des fichiers, voir `docs/REPO_FILES.txt`.
+## 2. Front App (SPA)
+**Dossier :** `src/`
+- **Rôle :** Application React (SPA) côté client.
+- **Sous-dossiers :**
+  - `pages/` : Composants pages (vues).
+  - `components/` : Composants UI réutilisables.
+  - `api/` : Client API (fetch wrappers).
+  - `hooks/` : Hooks React personnalisés.
+  - `utils/` : Utilitaires front-end.
+- **Owner :** Front-end Developer.
+- **Risques :** Routes orphelines, erreurs de rendu, appels API incorrects.
 
-## 1. Racine/Config
+## 3. API (Serverless)
+**Dossier :** `api/`
+- **Rôle :** Backend serverless (Vercel Functions).
+- **Structure :**
+  - `index.js` : Point d'entrée unique (monolithic entrypoint).
+  - `routes.js` : Mapping centralisé des routes vers les handlers.
+  - `_handlers/` : Logique métier par domaine (aides, demarches, booking...).
+  - `_utils/` : Fonctions transverses (auth, rateLimit, crypto).
+  - `lib/` : Bibliothèques métier (ex: falc-summarizer).
+- **Owner :** Back-end Developer.
+- **Risques :** Shadowing de routes, failles de sécurité (auth bypass), timeouts.
 
-| Fichier / Dossier | Rôle | Dépendances | Owner | Risques Principaux |
-| ----------------- | ---- | ----------- | ----- | ------------------ |
-| `README.md` | Point d'entrée, documentation générale. | - | Tech Lead | Obsolescence. |
-| `package.json` | Définition des dépendances et scripts NPM. | NPM | Tech Lead | Upgrade bloquant, failles sécu. |
-| `vite.config.js` | Configuration du bundler Vite (Frontend). | Vite | Frontend | Build cassé, performances. |
-| `vercel.json` | Configuration Vercel (rewrites, crons, headers). | Vercel | DevOps | Routage incorrect (404/500), Cron échecs. |
-| `eslint.config.js` | Configuration du linter ESLint. | ESLint | All | "Bruit" excessif, règles ignorées. |
-| `.gitignore` | Exclusions Git. | Git | All | Versionnage de secrets (`.env`) ou artifacts. |
-| `.env.example` | Modèle des variables d'environnement. | - | DevOps | Manque de variables critiques en prod. |
+## 4. Prisma (Base de données)
+**Dossier :** `prisma/`
+- **Rôle :** ORM, Schéma de base de données et Migrations.
+- **Fichiers clés :**
+  - `schema.prisma` : Définition des modèles de données.
+  - `migrations/` : Historique des changements de schéma SQL.
+  - `seed.js` : Script de peuplement initial.
+- **Owner :** Database Engineer / Back-end.
+- **Risques :** Perte de données, migrations destructives, désynchronisation code/DB.
 
-## 2. Front src (`src/`)
+## 5. Scripts (Ops & CI)
+**Dossier :** `scripts/`
+- **Rôle :** Scripts d'automatisation, vérification, ingestion de données et maintenance.
+- **Types de scripts :**
+  - `verify-*.js` : Tests de santé et vérifications post-déploiement.
+  - `seed-*.js` : Scripts d'import de données.
+  - `generate-*.js` : Génération d'artefacts (build-info, repo-map).
+- **Owner :** Ops / DevOps.
+- **Risques :** Scripts obsolètes, corruption de données en prod si mal utilisés.
 
-Single Page Application (SPA) React.
+## 6. Documentation
+**Dossier :** `docs/`
+- **Rôle :** Documentation technique, fonctionnelle et opérationnelle.
+- **Fichiers clés :** `REPO_MAP.md`, `ROUTES_API.md`, `ROUTES_FRONT.md`, `RUNBOOK.md`.
+- **Owner :** Tout le monde.
 
-| Dossier | Rôle | Dépendances | Owner | Risques Principaux |
-| ------- | ---- | ----------- | ----- | ------------------ |
-| `src/pages/` | Composants de pages et Router (`index.jsx`). | React Router | Frontend | Routes orphelines, Navigation cassée. |
-| `src/components/` | Composants UI et Business réutilisables. | shadcn/ui | Frontend | Régression visuelle, Props drilling. |
-| `src/api/` | Client API (appels backend). | Fetch / Axios | Frontend | Désynchronisation avec le contrat API. |
-| `src/hooks/` | Hooks React personnalisés. | React | Frontend | Boucles de rendu infinies. |
-| `src/lib/` | Utilitaires frontend. | - | Frontend | Duplication de logique. |
-| `src/utils/` | Fonctions partagées (JS). | - | Frontend | Typage incohérent. |
-
-## 3. API (`api/`)
-
-Architecture Serverless (Vercel Functions) avec routeur monolithique.
-
-| Dossier | Rôle | Dépendances | Owner | Risques Principaux |
-| ------- | ---- | ----------- | ----- | ------------------ |
-| `api/index.js` | Point d'entrée serverless. | Vercel | Backend | Timeout, Cold start. |
-| `api/routes.js` | Routeur central. | - | Backend | **Shadowing** de routes, Ordre incorrect. |
-| `api/_handlers/` | Logique métier (Endpoints). | Prisma, Libs | Backend | Erreurs 500, Validation manquante. |
-| `api/_utils/` | Auth, RateLimit, Crypto, Sentry. | Redis (KV) | Backend | **Faille de sécurité** (Auth bypass), Fuite mémoire. |
-| `api/lib/` | Services (Search, FALC, Storage). | - | Backend | Logique métier complexe non testée. |
-
-## 4. Prisma (`prisma/`)
-
-ORM Prisma et PostgreSQL.
-
-| Dossier | Rôle | Dépendances | Owner | Risques Principaux |
-| ------- | ---- | ----------- | ----- | ------------------ |
-| `prisma/schema.prisma` | Modèle de données. | Postgres | Backend | Migrations destructives, Incohérence données. |
-| `prisma/migrations/` | Historique des migrations. | - | Backend | Conflits de migration, Rollback impossible. |
-| `prisma/seed.js` | Script de seed. | - | Backend | Données de test périmées. |
-
-## 5. Scripts (`scripts/`)
-
-Automatisation, Ingestion, Vérification.
-
-| Dossier | Rôle | Dépendances | Owner | Risques Principaux |
-| ------- | ---- | ----------- | ----- | ------------------ |
-| `scripts/` | Ingestion, Maintenance, CI checks. | Node.js | DevOps | Scripts cassés en CI, Corruption données (ingest). |
-
-## 6. Docs (`docs/`)
-
-Base de connaissance.
-
-| Dossier | Rôle | Dépendances | Owner | Risques Principaux |
-| ------- | ---- | ----------- | ----- | ------------------ |
-| `docs/` | Guides, Plans, Architecture. | - | All | Documentation obsolète vs Code. |
-
-## 7. Data (`data/`)
-
-Sources de données statiques.
-
-| Dossier | Rôle | Dépendances | Owner | Risques Principaux |
-| ------- | ---- | ----------- | ----- | ------------------ |
-| `data/` | CSV/JSON pour seed/ingest. | - | Data | Format invalide bloquant l'ingest. |
+## 7. Data
+**Dossier :** `data/`
+- **Rôle :** Données statiques brutes (CSV, JSON) pour les seeds ou les tests.
+- **Owner :** Product Manager / Data.
 
 ## 8. Tests
-
-Assurance qualité.
-
-| Dossier | Rôle | Dépendances | Owner | Risques Principaux |
-| ------- | ---- | ----------- | ----- | ------------------ |
-| `e2e/` | Tests End-to-End (Playwright). | Playwright | QA | Tests "Flaky", Maintenance coûteuse. |
-| `tests/` | Tests unitaires et intégration API. | Vitest | Backend | Faux positifs, Couverture insuffisante. |
+**Dossiers :** `tests/` (Unit/Integration), `e2e/` (End-to-End)
+- **Rôle :** Assurance qualité.
+- **Outils :** Vitest (Unit), Playwright (E2E).
+- **Owner :** QA / Dev.
+- **Risques :** Tests instables (flaky) bloquant la CI.

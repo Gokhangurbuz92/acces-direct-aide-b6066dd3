@@ -553,6 +553,5 @@
 ./tests/slug.test.js
 ./tests/unit/crypto.test.js
 ./tsconfig.typecheck.json
-./vercel.json
-./verify_seo.py
+./vercel.ts
 ./vite.config.js

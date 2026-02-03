@@ -4,6 +4,7 @@ import SEO from '@/components/SEO';
 import NotFound from "./NotFound";
 import { createPageUrl } from '@/utils';
 import { useQuery } from '@tanstack/react-query';
+import { generateBreadcrumbSchema, generateDispositifSchema } from '@/utils/schema';
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
@@ -55,12 +56,24 @@ export default function DispositifDetail() {
     return <NotFound />;
   }
 
+  const breadcrumbs = [
+    { name: 'Accueil', url: '/' },
+    { name: 'Dispositifs', url: '/dispositifs' },
+    { name: dispositif.titre, url: `/dispositifs/${dispositif.slug}` }
+  ];
+
+  const schema = [
+    generateBreadcrumbSchema(breadcrumbs),
+    generateDispositifSchema(dispositif)
+  ].filter(Boolean);
+
   return (
     <div className="min-h-screen bg-slate-50">
       <SEO
         title={dispositif.titre}
         description={dispositif.description_falc}
-        url={window.location.href}
+        path={`/dispositifs/${dispositif.slug}`}
+        schema={schema}
       />
 
       {/* Breadcrumbs */}

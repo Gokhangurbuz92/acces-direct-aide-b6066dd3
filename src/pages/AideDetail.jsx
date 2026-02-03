@@ -24,6 +24,7 @@ import {
 } from 'lucide-react';
 import { generateBreadcrumbSchema, generateAideSchema } from '@/utils/schema';
 import SourceTraceability from '@/components/SourceTraceability';
+import FalcSummary from '@/components/FalcSummary';
 
 const CATEGORIE_LABELS = {
   logement: 'Logement',
@@ -198,6 +199,9 @@ export default function AideDetail() {
                 <p className="text-slate-700 leading-relaxed">{aide.cest_quoi}</p>
               </CardContent>
             </Card>
+
+            {/* FALC Summary */}
+            <FalcSummary text={aide?.summary_falc} />
 
             {/* Pour qui ? */}
             <Card>

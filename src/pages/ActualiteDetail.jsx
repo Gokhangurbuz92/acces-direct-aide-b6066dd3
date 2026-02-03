@@ -6,6 +6,7 @@ import { useQuery } from '@tanstack/react-query';
 import SEO from '@/components/SEO';
 import { generateActualiteSchema, generateBreadcrumbSchema } from '@/utils/schema';
 import SourceTraceability from '@/components/SourceTraceability';
+import FalcSummary from '@/components/FalcSummary';
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
@@ -182,6 +183,9 @@ export default function ActualiteDetail() {
             </div>
           </CardContent>
         </Card>
+
+        {/* FALC Summary */}
+        <FalcSummary text={actu?.summary_falc} />
 
         {/* Traçabilité de la source */}
         <SourceTraceability

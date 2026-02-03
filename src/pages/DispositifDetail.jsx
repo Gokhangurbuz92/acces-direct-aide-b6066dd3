@@ -18,6 +18,7 @@ import {
   Flag
 } from 'lucide-react';
 import SourceTraceability from '@/components/SourceTraceability';
+import FalcSummary from '@/components/FalcSummary';
 
 export default function DispositifDetail() {
   const { slug } = useParams();
@@ -134,11 +135,14 @@ export default function DispositifDetail() {
 
         <div className="grid lg:grid-cols-3 gap-6">
             <div className="lg:col-span-2 space-y-6">
+                {/* FALC Summary */}
+                <FalcSummary text={dispositif?.description_falc || dispositif?.summary_falc} />
+
                 <Card>
                     <CardContent className="p-6">
                         <h2 className="text-lg font-bold text-slate-900 mb-3">Description</h2>
                         <div className="prose prose-slate max-w-none text-slate-700 whitespace-pre-wrap">
-                            {dispositif.description_falc || dispositif.summary_falc || "Aucune description disponible."}
+                            {dispositif.description || "Aucune description disponible."}
                         </div>
                     </CardContent>
                 </Card>

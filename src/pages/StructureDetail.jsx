@@ -23,6 +23,7 @@ import {
 } from 'lucide-react';
 import { generateBreadcrumbSchema, generateStructureSchema } from '@/utils/schema';
 import SourceTraceability from '@/components/SourceTraceability';
+import FalcSummary from '@/components/FalcSummary';
 
 const TYPE_LABELS = {
   association: 'Association',
@@ -143,6 +144,9 @@ export default function StructureDetail() {
                 )}
               </CardContent>
             </Card>
+
+            {/* FALC Summary */}
+            <FalcSummary text={structure?.resume_falc || structure?.summary_falc || structure?.description_falc} />
 
             {/* Coordonnées */}
             <Card>

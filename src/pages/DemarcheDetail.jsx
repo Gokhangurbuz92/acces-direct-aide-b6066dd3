@@ -25,6 +25,7 @@ import {
 } from 'lucide-react';
 import { generateBreadcrumbSchema, generateDemarcheSchema } from '@/utils/schema';
 import SourceTraceability from '@/components/SourceTraceability';
+import FalcSummary from '@/components/FalcSummary';
 
 const CATEGORIE_LABELS = {
   logement: 'Logement',
@@ -160,6 +161,9 @@ export default function DemarcheDetail() {
         <div className="grid lg:grid-cols-3 gap-6">
           {/* Contenu principal */}
           <div className="lg:col-span-2 space-y-6">
+            {/* FALC Summary */}
+            <FalcSummary text={demarche?.summary_falc || demarche?.description_falc || demarche?.resume_falc} />
+
             {/* Pour qui */}
             {demarche.pour_qui && (
               <Card>

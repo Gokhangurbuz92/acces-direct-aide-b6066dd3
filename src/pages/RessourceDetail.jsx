@@ -6,6 +6,7 @@ import { createPageUrl } from '@/utils';
 import { useQuery } from '@tanstack/react-query';
 import { generateBreadcrumbSchema, generateRessourceSchema } from '@/utils/schema';
 import SourceTraceability from '@/components/SourceTraceability';
+import FalcSummary from '@/components/FalcSummary';
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
@@ -115,6 +116,9 @@ export default function RessourceDetail() {
                 {ressource.title}
             </h1>
         </div>
+
+        {/* FALC Summary */}
+        <FalcSummary text={ressource?.resume_falc || ressource?.summary_falc || ressource?.description_falc} />
 
         {/* Content */}
         {ressource.content && (

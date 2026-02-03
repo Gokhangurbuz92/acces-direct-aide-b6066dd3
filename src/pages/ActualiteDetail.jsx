@@ -5,6 +5,7 @@ import { client } from '@/api/client';
 import { useQuery } from '@tanstack/react-query';
 import SEO from '@/components/SEO';
 import { generateActualiteSchema, generateBreadcrumbSchema } from '@/utils/schema';
+import SourceTraceability from '@/components/SourceTraceability';
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
@@ -179,24 +180,16 @@ export default function ActualiteDetail() {
             <div className="prose prose-slate max-w-none text-slate-700 leading-relaxed whitespace-pre-line">
               {actu.contenu}
             </div>
-
-            {actu.source_url && (
-              <div className="mt-8 pt-6 border-t border-slate-100">
-                <Button asChild variant="outline">
-                  <a
-                    href={actu.source_url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="flex items-center gap-2"
-                  >
-                    Lire la source originale
-                    <ExternalLink className="h-4 w-4" />
-                  </a>
-                </Button>
-              </div>
-            )}
           </CardContent>
         </Card>
+
+        {/* Traçabilité de la source */}
+        <SourceTraceability
+          source_url={actu.source_url}
+          retrieved_at={actu.retrieved_at || actu.fetched_at}
+          last_checked_at={actu.last_checked_at}
+          source_last_modified={actu.source_last_modified}
+        />
       </div>
     </div>
   );

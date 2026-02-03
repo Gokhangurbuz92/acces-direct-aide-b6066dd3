@@ -103,3 +103,41 @@ export function generateActualiteSchema(actu) {
         }
     };
 }
+
+export function generateDispositifSchema(dispositif) {
+    if (!dispositif) return null;
+    return {
+        "@context": "https://schema.org",
+        "@type": "Article",
+        "headline": dispositif.nom || dispositif.title,
+        "description": dispositif.description?.substring(0, 150),
+        "dateModified": dispositif.updatedAt,
+        "mainEntityOfPage": {
+            "@type": "WebPage",
+            "@id": `${BASE_URL}/dispositifs/${dispositif.slug}`
+        },
+        "author": {
+            "@type": "Organization",
+            "name": "Accès Direct Aide"
+        }
+    };
+}
+
+export function generateRessourceSchema(ressource) {
+    if (!ressource) return null;
+    return {
+        "@context": "https://schema.org",
+        "@type": "Article",
+        "headline": ressource.title,
+        "description": ressource.content?.substring(0, 150),
+        "dateModified": ressource.updatedAt,
+        "mainEntityOfPage": {
+            "@type": "WebPage",
+            "@id": `${BASE_URL}/ressources/${ressource.slug}`
+        },
+        "author": {
+            "@type": "Organization",
+            "name": "Accès Direct Aide"
+        }
+    };
+}

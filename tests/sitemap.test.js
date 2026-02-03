@@ -11,6 +11,8 @@ vi.mock('@prisma/client', () => {
                 aide: { findMany: mockFindMany },
                 demarche: { findMany: mockFindMany },
                 structure: { findMany: mockFindMany },
+                dispositif: { findMany: mockFindMany },
+                resourceAccessibility: { findMany: mockFindMany },
                 guide: { findMany: mockFindMany },
                 toolboxItem: { findMany: mockFindMany },
                 actualite: { findMany: mockFindMany }
@@ -49,12 +51,24 @@ describe('Sitemap Handler', () => {
         const aides = [{ slug: 'aide-1', updatedAt: date }];
         const demarches = [{ slug: 'demarche-1', updatedAt: date }];
         const structures = [{ slug: 'structure-1', updatedAt: date }];
+        const dispositifs = [{ slug: 'dispositif-1', updatedAt: date }];
+        const ressources = [{ slug: 'ressource-1', updatedAt: date }];
 
-        // Order of calls in handler: aide, demarche, structure, guide, tools, actu
+        // Order of calls in handler:
+        // 1. aide
+        // 2. demarche
+        // 3. structure
+        // 4. dispositif
+        // 5. resourceAccessibility
+        // 6. guide
+        // 7. toolboxItem
+        // 8. actualite
         mockFindMany
             .mockResolvedValueOnce(aides)      // aides
             .mockResolvedValueOnce(demarches)  // demarches
             .mockResolvedValueOnce(structures) // structures
+            .mockResolvedValueOnce(dispositifs)// dispositifs
+            .mockResolvedValueOnce(ressources) // resourceAccessibility
             .mockResolvedValueOnce([])         // guides
             .mockResolvedValueOnce([])         // tools
             .mockResolvedValueOnce([]);        // actus
@@ -70,5 +84,7 @@ describe('Sitemap Handler', () => {
         expect(xml).toContain('<loc>https://www.accesdirectaide.fr/aides/aide-1</loc>'); // Plural (Verified Fix)
         expect(xml).toContain('<loc>https://www.accesdirectaide.fr/demarches/demarche-1</loc>'); // Plural (Verified Fix)
         expect(xml).toContain('<loc>https://www.accesdirectaide.fr/structures/structure-1</loc>'); // Plural (Verified Fix)
+        expect(xml).toContain('<loc>https://www.accesdirectaide.fr/dispositifs/dispositif-1</loc>');
+        expect(xml).toContain('<loc>https://www.accesdirectaide.fr/ressources/ressource-1</loc>');
     });
 });

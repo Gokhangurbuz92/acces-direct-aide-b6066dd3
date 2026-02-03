@@ -3,11 +3,14 @@ import prisma from '../../_utils/prisma.js';
 import { subMinutes, subDays } from 'date-fns';
 import { storage } from '../../lib/storage.js';
 import { logger } from '../../lib/logger.js';
+import { isCronAuthorized } from '../../_utils/cronAuth.js';
 
 export default async function handler(req, res) {
-    // Cron security: Verify signature or strict IP/Header if deployed.
-    // Vercel Cron uses authorization header.
-    // For MVP/Verification, open or simple check.
+    // Cron security check
+    if (!isCronAuthorized(req)) {
+        logger.warn('Unauthorized purge attempt');
+        return res.status(401).json({ error: 'Unauthorized' });
+    }
 
     try {
         const now = new Date();

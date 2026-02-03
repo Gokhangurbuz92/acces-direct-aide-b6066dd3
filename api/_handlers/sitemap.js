@@ -18,10 +18,12 @@ export default async function handler(req, res) {
 
         // Fetch published content
 
-        const [aides, demarches, structures, guides, tools, actualites] = await Promise.all([
+        const [aides, demarches, structures, dispositifs, ressources, guides, tools, actualites] = await Promise.all([
             prisma.aide.findMany({ where: { statut: 'publie' }, select: { slug: true, updatedAt: true } }),
             prisma.demarche.findMany({ where: { statut: 'publie' }, select: { slug: true, updatedAt: true } }),
             prisma.structure.findMany({ where: { statut: 'publie' }, select: { slug: true, updatedAt: true } }),
+            prisma.dispositif.findMany({ where: { statut: 'publie' }, select: { slug: true, updatedAt: true } }),
+            prisma.resourceAccessibility.findMany({ where: { status: 'published' }, select: { slug: true, updatedAt: true } }),
             prisma.guide.findMany({ where: { statut: 'publie' }, select: { slug: true, updatedAt: true } }),
             prisma.toolboxItem.findMany({ where: { statut: 'publie' }, select: { slug: true, updatedAt: true } }),
             prisma.actualite.findMany({ where: { statut: 'publie' }, select: { slug: true, updatedAt: true } })
@@ -33,6 +35,8 @@ export default async function handler(req, res) {
             { loc: '/aides', priority: '0.9' },
             { loc: '/demarches', priority: '0.9' },
             { loc: '/annuaire', priority: '0.9' },
+            { loc: '/dispositifs', priority: '0.9' },
+            { loc: '/ressources', priority: '0.9' },
             { loc: '/bonnes-pratiques', priority: '0.8' },
             { loc: '/outils', priority: '0.8' },
             { loc: '/actualites', priority: '0.7' },
@@ -66,6 +70,14 @@ export default async function handler(req, res) {
 
         structures.filter(s => s.slug).forEach(s => {
             urls.push(`  <url><loc>${BASE_URL}/structures/${s.slug}</loc><lastmod>${s.updatedAt.toISOString().split('T')[0]}</lastmod><priority>0.6</priority></url>`);
+        });
+
+        dispositifs.filter(d => d.slug).forEach(d => {
+            urls.push(`  <url><loc>${BASE_URL}/dispositifs/${d.slug}</loc><lastmod>${d.updatedAt.toISOString().split('T')[0]}</lastmod><priority>0.6</priority></url>`);
+        });
+
+        ressources.filter(r => r.slug).forEach(r => {
+            urls.push(`  <url><loc>${BASE_URL}/ressources/${r.slug}</loc><lastmod>${r.updatedAt.toISOString().split('T')[0]}</lastmod><priority>0.6</priority></url>`);
         });
 
         guides.filter(g => g.slug).forEach(g => {

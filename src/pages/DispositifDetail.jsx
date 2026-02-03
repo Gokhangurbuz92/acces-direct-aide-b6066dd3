@@ -16,6 +16,7 @@ import {
   Banknote,
   Flag
 } from 'lucide-react';
+import SourceTraceability from '@/components/SourceTraceability';
 
 export default function DispositifDetail() {
   const { slug } = useParams();
@@ -156,6 +157,14 @@ export default function DispositifDetail() {
 
             {/* Sidebar */}
             <div className="space-y-6">
+                {/* Source Traceability */}
+                <SourceTraceability 
+                  source_url={dispositif.source_url || dispositif.source_url_exact}
+                  retrieved_at={dispositif.retrieved_at}
+                  last_checked_at={dispositif.last_checked_at}
+                  source_last_modified={dispositif.source_last_modified}
+                />
+
                 <Card>
                     <CardContent className="p-6 space-y-3">
                         <Link to={createPageUrl('Contact') + `?page=${encodeURIComponent(window.location.href)}&sujet=signalement_erreur`}>

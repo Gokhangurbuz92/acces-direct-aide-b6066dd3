@@ -1,21 +1,59 @@
-import { describe, it, expect, beforeAll } from 'vitest';
+import { describe, it, expect, beforeAll, vi, beforeEach } from 'vitest';
+
+// 1. Define Hoisted Mocks
+const { mockFindFirst, mockFindMany, mockCount } = vi.hoisted(() => {
+    return {
+        mockFindFirst: vi.fn(),
+        mockFindMany: vi.fn(),
+        mockCount: vi.fn()
+    };
+});
+
+// 2. Mock Prisma
+vi.mock('../../api/_utils/prisma.js', () => {
+    return {
+        default: {
+            resourceAccessibility: {
+                findFirst: mockFindFirst,
+                findMany: mockFindMany,
+                count: mockCount
+            }
+        }
+    };
+});
+
+// 3. Mock Rate Limit
+vi.mock('../../api/_utils/rateLimit.js', () => {
+    return {
+        checkRateLimit: vi.fn().mockResolvedValue({ allowed: true }),
+        getClientIp: vi.fn().mockReturnValue('127.0.0.1')
+    };
+});
+
 import handler from '../../api/_handlers/ressources.js';
 
 describe('Ressources API Handler', () => {
     let mockReq;
     let mockRes;
 
-    beforeAll(() => {
+    beforeEach(() => {
+        vi.clearAllMocks();
+
+        // Setup default mock returns
+        mockFindMany.mockResolvedValue([]);
+        mockCount.mockResolvedValue(0);
+        mockFindFirst.mockResolvedValue(null);
+
         // Mock response object
         mockRes = {
-            status: function(code) {
+            status: vi.fn(function(code) {
                 this.statusCode = code;
                 return this;
-            },
-            json: function(data) {
+            }),
+            json: vi.fn(function(data) {
                 this.body = data;
                 return this;
-            },
+            }),
             statusCode: 200,
             body: null
         };
@@ -52,16 +90,17 @@ describe('Ressources API Handler', () => {
             headers: {}
         };
 
+        // Mock data
+        mockFindMany.mockResolvedValue([{ id: 'res-1', slug: 'res-1' }]);
+        mockCount.mockResolvedValue(1);
+
         await handler(mockReq, mockRes);
         
-        // Should return 200 or 429 (rate limit)
-        expect([200, 429]).toContain(mockRes.statusCode);
-        
-        if (mockRes.statusCode === 200) {
-            expect(mockRes.body).toHaveProperty('items');
-            expect(mockRes.body).toHaveProperty('pagination');
-            expect(Array.isArray(mockRes.body.items)).toBe(true);
-        }
+        // Should return 200
+        expect(mockRes.statusCode).toBe(200);
+        expect(mockRes.body).toHaveProperty('items');
+        expect(mockRes.body.items).toHaveLength(1);
+        expect(mockRes.body.pagination.total).toBe(1);
     });
 
     it('should handle single item requests by slug', async () => {
@@ -71,10 +110,26 @@ describe('Ressources API Handler', () => {
             headers: {}
         };
 
+        // Mock Found
+        mockFindFirst.mockResolvedValue({ id: 'res-1', slug: 'test-ressource', status: 'published' });
+
         await handler(mockReq, mockRes);
         
-        // Should return 200, 404, or 429
-        expect([200, 404, 429]).toContain(mockRes.statusCode);
+        expect(mockRes.statusCode).toBe(200);
+        expect(mockRes.body.slug).toBe('test-ressource');
+    });
+
+    it('should return 404 for unknown slug', async () => {
+        mockReq = {
+            method: 'GET',
+            query: { slug: 'unknown' },
+            headers: {}
+        };
+
+        mockFindFirst.mockResolvedValue(null);
+
+        await handler(mockReq, mockRes);
+        expect(mockRes.statusCode).toBe(404);
     });
 
     it('should handle HEAD requests', async () => {
@@ -87,6 +142,6 @@ describe('Ressources API Handler', () => {
         await handler(mockReq, mockRes);
         
         // Should not error on HEAD
-        expect([200, 429]).toContain(mockRes.statusCode);
+        expect(mockRes.statusCode).toBe(200);
     });
 });

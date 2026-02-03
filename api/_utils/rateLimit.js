@@ -39,6 +39,7 @@ const CONFIG = {
     // Search & Taxonomy
     SEARCH_AIDES: { limit: 30, window: 60 },      // 30 per min
     SEARCH_STRUCTURES: { limit: 30, window: 60 }, // 30 per min
+    SEARCH_RESSOURCES: { limit: 60, window: 60 }, // 60 per min
     TAXONOMY: { limit: 60, window: 60 }           // 60 per min
 };
 

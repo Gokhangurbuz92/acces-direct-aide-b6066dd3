@@ -1,4 +1,3 @@
-./.cursor/rules/snyk_rules.mdc
 ./.env.example
 ./.github/CODEOWNERS
 ./.github/pull_request_template.md
@@ -6,6 +5,8 @@
 ./.github/workflows/ci.yml
 ./.github/workflows/healthcheck.yml
 ./.gitignore
+./IMPLEMENTATION_SUMMARY.md
+./PR_DESCRIPTION.md
 ./README.md
 ./api/__dev/create-test-appointment.js
 ./api/_handlers/actualites.js
@@ -13,6 +14,7 @@
 ./api/_handlers/admin/export.js
 ./api/_handlers/admin/import.js
 ./api/_handlers/admin/inbox.js
+./api/_handlers/admin/link-checks.js
 ./api/_handlers/admin/partnerships.js
 ./api/_handlers/admin/privacy/delete.js
 ./api/_handlers/admin/privacy/export.js
@@ -29,6 +31,7 @@
 ./api/_handlers/cron/gdpr-purge.js
 ./api/_handlers/cron/ingest-aids.js
 ./api/_handlers/cron/ingest-structures.js
+./api/_handlers/cron/link-check.js
 ./api/_handlers/cron/pipeline.js
 ./api/_handlers/cron/pipeline.regression.test.js
 ./api/_handlers/cron/pipeline.test.js
@@ -67,6 +70,7 @@
 ./api/_handlers/public/stats.js
 ./api/_handlers/public/suggest-structure.js
 ./api/_handlers/ratelimit-test.js
+./api/_handlers/ressources.js
 ./api/_handlers/robots.js
 ./api/_handlers/sentry-test.js
 ./api/_handlers/sitemap.js
@@ -76,7 +80,6 @@
 ./api/_handlers/upload.js
 ./api/_handlers/version.js
 ./api/_utils/auth.js
-./api/_utils/build-info.js
 ./api/_utils/cache.js
 ./api/_utils/cachePolicy.js
 ./api/_utils/cronAuth.js
@@ -94,9 +97,13 @@
 ./api/_utils/wrapper.js
 ./api/cron/ingest-aids.js
 ./api/cron/ingest-structures.js
+./api/data/taxonomy.json
 ./api/index.js
 ./api/lib/crypto.js
 ./api/lib/falc-summarizer.js
+./api/lib/ingestion/AgefiphConnector.js
+./api/lib/ingestion/GrandEstConnector.js
+./api/lib/ingestion/SourceConnector.js
 ./api/lib/logger.js
 ./api/lib/pro-auth.js
 ./api/lib/search-query.js
@@ -135,6 +142,7 @@
 ./docs/PROD_HEALTH.md
 ./docs/RELEASE_CHECKLIST.md
 ./docs/RELEASE_GATE.md
+./docs/RELEASE_P0_PROOF.md
 ./docs/RELEASE_PROCESS.md
 ./docs/REPO_FILES.txt
 ./docs/REPO_MAP.md
@@ -170,6 +178,7 @@
 ./e2e/_mocks/publicApiMocks.js
 ./e2e/a11y.spec.js
 ./e2e/admin-smoke.spec.js
+./e2e/aides-flow.spec.js
 ./e2e/booking.spec.js
 ./e2e/cp1_debug_mock.spec.ts
 ./e2e/cp1_navigation.spec.ts
@@ -184,6 +193,7 @@
 ./e2e/cp4_legacy_redirects.spec.ts
 ./e2e/cp5_prod_smoke.spec.ts
 ./e2e/public-core.spec.js
+./e2e/ressources-navigation.spec.js
 ./e2e/search.spec.js
 ./e2e/seo.spec.js
 ./e2e/smoke-home.spec.js
@@ -199,6 +209,7 @@
 ./package.json
 ./playwright.config.js
 ./postcss.config.js
+./prisma/migrations/20250202120000_add_aides_fields_and_unaccent/migration.sql
 ./prisma/migrations/20260117183014_init/migration.sql
 ./prisma/migrations/20260118023835_init_base44_schema/migration.sql
 ./prisma/migrations/20260118024431_add_statut_and_admin_user/migration.sql
@@ -215,8 +226,10 @@
 ./prisma/migrations/20260122220620_add_performance_indexes/migration.sql
 ./prisma/migrations/20260125100000_catchup_actualite_schema/migration.sql
 ./prisma/migrations/20260125181117_phase1_ingestion/migration.sql
+./prisma/migrations/20260202_add_traceability_fields/migration.sql
 ./prisma/migrations/20260228000000_ensure_unaccent/migration.sql
 ./prisma/migrations/20260228000001_add_fts_indexes/migration.sql
+./prisma/migrations/20260228000002_add_missing_aide_fields/migration.sql
 ./prisma/migrations/migration_lock.toml
 ./prisma/schema.prisma
 ./prisma/seed.js
@@ -260,6 +273,10 @@
 ./public/favicon-16x16.png
 ./public/favicon-32x32.png
 ./public/favicon.ico
+./public/fonts/Inter-Bold.woff2
+./public/fonts/Inter-Medium.woff2
+./public/fonts/Inter-Regular.woff2
+./public/fonts/Inter-SemiBold.woff2
 ./public/manifest.json
 ./public/og-image.png
 ./release/v1.0.0/RELEASE_CHECKLIST.md
@@ -316,6 +333,7 @@
 ./release/v1.0.0/proofs/07-perf/.gitkeep
 ./release/v1.0.0/proofs/07-release-gate/report.md
 ./scripts/backfill-slugs.js
+./scripts/backup_aides.js
 ./scripts/check-imports.js
 ./scripts/check_cp0_db.js
 ./scripts/check_cp1_slugs.js
@@ -399,6 +417,7 @@
 ./src/components/RequireAuth.jsx
 ./src/components/SEO.jsx
 ./src/components/SentryTest.jsx
+./src/components/SourceTraceability.jsx
 ./src/components/UserNotRegisteredError.jsx
 ./src/components/admin/EntityHistory.jsx
 ./src/components/cards/AideCard.jsx
@@ -509,6 +528,8 @@
 ./src/pages/Mission.jsx
 ./src/pages/NotFound.jsx
 ./src/pages/Partners.jsx
+./src/pages/RessourceDetail.jsx
+./src/pages/Ressources.jsx
 ./src/pages/Security.jsx
 ./src/pages/SentryTestPage.jsx
 ./src/pages/Sources.jsx
@@ -542,16 +563,21 @@
 ./tailwind.config.js
 ./tests/auth_crossing.test.js
 ./tests/integration/actualites.test.js
+./tests/integration/aides_v2.test.js
 ./tests/integration/api.test.js
 ./tests/integration/api_head.test.js
 ./tests/integration/api_slug.test.js
 ./tests/integration/pipeline_routing.test.js
 ./tests/integration/rateLimit.test.js
+./tests/integration/ressources.test.js
 ./tests/integration/url_consistency.test.js
 ./tests/setup-env.js
 ./tests/sitemap.test.js
 ./tests/slug.test.js
 ./tests/unit/crypto.test.js
+./tests/unit/ingestion.test.js
+./tests/unit/pipeline.test.js
+./tests/unit/taxonomy.test.js
 ./tsconfig.typecheck.json
-./vercel.ts
+./vercel.json
 ./vite.config.js

@@ -1,43 +1,56 @@
-
 import { describe, test, expect, vi } from 'vitest';
 import sitemapHandler from '../../api/_handlers/sitemap.js';
-import { PrismaClient } from '@prisma/client';
+
+// Hoist mock methods so they can be referenced inside the mock factory
+const { mockFindMany } = vi.hoisted(() => {
+    return { mockFindMany: vi.fn() };
+});
 
 // Mock Prisma
 vi.mock('@prisma/client', () => {
-    const mPrisma = {
-        aide: { findMany: vi.fn() },
-        demarche: { findMany: vi.fn() },
-        structure: { findMany: vi.fn() },
-        guide: { findMany: vi.fn() },
-        toolboxItem: { findMany: vi.fn() },
-        actualite: { findMany: vi.fn() },
-        $disconnect: vi.fn()
-    };
     return {
-        PrismaClient: vi.fn(function () { return mPrisma; })
+        PrismaClient: vi.fn().mockImplementation(function () {
+            return {
+                aide: { findMany: mockFindMany },
+                demarche: { findMany: mockFindMany },
+                structure: { findMany: mockFindMany },
+                dispositif: { findMany: mockFindMany },
+                resourceAccessibility: { findMany: mockFindMany },
+                guide: { findMany: mockFindMany },
+                toolboxItem: { findMany: mockFindMany },
+                actualite: { findMany: mockFindMany },
+                $disconnect: vi.fn()
+            };
+        })
     };
 });
-
-const prisma = new PrismaClient();
 
 describe('URL Canonical Consistency', () => {
 
     test('Sitemap should generate PLURAL /aides/:slug URLs', async () => {
-        // Mock Data
+        // Reset mocks
+        vi.clearAllMocks();
+        mockFindMany.mockResolvedValue([]);
+
+        // Mock Data for the first call (aides)
         const mockAides = [{ slug: 'test-aide-slug', updatedAt: new Date() }];
-        prisma.aide.findMany.mockResolvedValue(mockAides);
-        prisma.demarche.findMany.mockResolvedValue([]);
-        prisma.structure.findMany.mockResolvedValue([]);
-        prisma.guide.findMany.mockResolvedValue([]);
-        prisma.toolboxItem.findMany.mockResolvedValue([]);
-        prisma.actualite.findMany.mockResolvedValue([]);
+
+        // Mock sequence of calls: aide, demarche, structure, dispositif, ressource, guide, tool, actu
+        mockFindMany
+            .mockResolvedValueOnce(mockAides) // aides
+            .mockResolvedValueOnce([])        // demarches
+            .mockResolvedValueOnce([])        // structures
+            .mockResolvedValueOnce([])        // dispositifs
+            .mockResolvedValueOnce([])        // ressources
+            .mockResolvedValueOnce([])        // guides
+            .mockResolvedValueOnce([])        // tools
+            .mockResolvedValueOnce([]);       // actus
 
         // Mock Response
         const res = {
             writeHeader: vi.fn(),
-            end: vi.fn(),
-            writeHead: vi.fn()
+            writeHead: vi.fn(),
+            end: vi.fn()
         };
         const req = {
             method: 'GET',
@@ -47,6 +60,7 @@ describe('URL Canonical Consistency', () => {
         await sitemapHandler(req, res);
 
         // Verify output contains PLURAL /aides/
+        expect(res.end).toHaveBeenCalled();
         const output = res.end.mock.calls[0][0];
         expect(output).toContain('<loc>https://www.accesdirectaide.fr/aides/test-aide-slug</loc>');
         expect(output).not.toContain('<loc>https://www.accesdirectaide.fr/aide/test-aide-slug</loc>'); // Ensure NO singular

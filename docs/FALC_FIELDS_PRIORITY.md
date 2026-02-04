@@ -1,175 +1,179 @@
 # FALC Fields Priority Documentation
 
-**FALC** = Facile à Lire et à Comprendre (Easy to Read and Understand)
-
 ## Overview
 
-This document defines the priority order for FALC fields across different entity types in the AccesDirectAide platform. The `FalcSummary` component uses these priorities to display simplified content when available.
+FALC (Facile à Lire et à Comprendre) is a simplified language standard designed to make content accessible to people with reading difficulties. This document defines the field priority for FALC content across different entity types in the AccesDirectAide platform.
+
+## Component
+
+**Location:** `src/components/FalcSummary.jsx`
+
+**Behavior:**
+- Displays FALC content in a visually distinct card with a "FALC" badge
+- Renders nothing (null) if no FALC content is available
+- Preserves whitespace and line breaks for readability
+- Accessible with `aria-label`
 
 ## Field Priority by Entity Type
 
-### 1. Aides (Financial Aid)
-**Component**: `AideDetail.jsx`
+### 1. Aide (Aid/Benefit)
 
-**Priority**:
-1. `summary_falc` (primary FALC summary)
+**Page:** `src/pages/AideDetail.jsx`
 
-**Rationale**: Aides have a dedicated FALC summary field that is specifically written for accessibility.
-
-### 2. Démarches (Administrative Procedures)
-**Component**: `DemarcheDetail.jsx`
-
-**Priority**:
-1. `summary_falc` (primary FALC summary)
-2. `description_falc` (FALC description)
-3. `resume_falc` (FALC resume)
-
-**Rationale**: Démarches may have multiple FALC fields depending on data source. Priority ensures the most concise summary is shown first.
-
-### 3. Structures (Organizations)
-**Component**: `StructureDetail.jsx`
-
-**Priority**:
-1. `resume_falc` (FALC resume)
-2. `summary_falc` (FALC summary)
-3. `description_falc` (FALC description)
-
-**Rationale**: Structures typically have a resume field as primary, with fallbacks for different data sources.
-
-### 4. Dispositifs (Programs/Schemes)
-**Component**: `DispositifDetail.jsx`
-
-**Priority**:
-1. `description_falc` (FALC description)
-2. `summary_falc` (FALC summary)
-
-**Rationale**: Dispositifs primarily use description_falc as their main FALC field.
-
-### 5. Ressources (Resources)
-**Component**: `RessourceDetail.jsx`
-
-**Priority**:
-1. `resume_falc` (FALC resume)
-2. `summary_falc` (FALC summary)
-3. `description_falc` (FALC description)
-
-**Rationale**: Similar to Structures, Ressources use resume as primary field.
-
-### 6. Actualités (News)
-**Component**: `ActualiteDetail.jsx`
-
-**Priority**:
-1. `summary_falc` (FALC summary)
-
-**Rationale**: News items have a single dedicated FALC summary field.
-
-## Implementation
-
-### FalcSummary Component
-
-The `FalcSummary` component (`src/components/FalcSummary.jsx`) handles FALC content display:
-
-```jsx
-<FalcSummary text={aide?.summary_falc} />
+**Priority:**
+```javascript
+aide?.summary_falc
 ```
 
-**Behavior**:
-- If `text` is empty, null, or undefined → renders nothing (silent fallback)
-- If `text` has content → displays FALC badge + formatted text
-- Preserves whitespace and line breaks
-- Accessible with `aria-label`
+**Rationale:** Aides have a dedicated `summary_falc` field that provides a simplified summary of the benefit.
 
-### Usage Pattern
+---
 
-```jsx
-// In detail pages
-import FalcSummary from "@/components/FalcSummary";
+### 2. Démarche (Administrative Procedure)
 
-// With single field
-<FalcSummary text={aide?.summary_falc} />
+**Page:** `src/pages/DemarcheDetail.jsx`
 
-// With fallback chain (using || operator)
-<FalcSummary text={demarche?.summary_falc || demarche?.description_falc || demarche?.resume_falc} />
+**Priority:**
+```javascript
+demarche?.summary_falc || demarche?.description_falc || demarche?.resume_falc
 ```
+
+**Rationale:**
+1. `summary_falc` - Primary FALC field (preferred)
+2. `description_falc` - Alternative FALC description
+3. `resume_falc` - Fallback FALC summary
+
+---
+
+### 3. Structure (Organization)
+
+**Page:** `src/pages/StructureDetail.jsx`
+
+**Priority:**
+```javascript
+structure?.resume_falc || structure?.summary_falc || structure?.description_falc
+```
+
+**Rationale:**
+1. `resume_falc` - Primary FALC summary for structures
+2. `summary_falc` - Alternative FALC summary
+3. `description_falc` - Fallback FALC description
+
+---
+
+### 4. Dispositif (Program/Scheme)
+
+**Page:** `src/pages/DispositifDetail.jsx`
+
+**Priority:**
+```javascript
+dispositif?.description_falc || dispositif?.summary_falc
+```
+
+**Rationale:**
+1. `description_falc` - Primary FALC description for programs
+2. `summary_falc` - Fallback FALC summary
+
+---
+
+### 5. Ressource (Resource)
+
+**Page:** `src/pages/RessourceDetail.jsx`
+
+**Priority:**
+```javascript
+ressource?.resume_falc || ressource?.summary_falc || ressource?.description_falc
+```
+
+**Rationale:**
+1. `resume_falc` - Primary FALC summary for resources
+2. `summary_falc` - Alternative FALC summary
+3. `description_falc` - Fallback FALC description
+
+---
+
+### 6. Actualité (News/Update)
+
+**Page:** `src/pages/ActualiteDetail.jsx`
+
+**Priority:**
+```javascript
+actu?.summary_falc
+```
+
+**Rationale:** Actualités have a dedicated `summary_falc` field for simplified news summaries.
+
+---
 
 ## Data Quality Guidelines
 
 ### Content Requirements
 
-FALC content should follow these principles:
-1. **Simple language**: Avoid jargon and complex terms
-2. **Short sentences**: Maximum 15-20 words per sentence
-3. **Clear structure**: One idea per paragraph
-4. **Active voice**: Prefer active over passive voice
-5. **Concrete examples**: Use real-world examples when possible
+1. **Length:** FALC content should be concise (100-300 words)
+2. **Language:** Use simple, everyday words
+3. **Sentences:** Keep sentences short (max 15-20 words)
+4. **Structure:** Use clear paragraphs with line breaks
+5. **Avoid:** Jargon, acronyms (unless explained), complex grammar
 
-### Field Naming Conventions
+### Validation Rules
 
-- `summary_falc`: Short summary (1-3 sentences)
-- `description_falc`: Detailed description (multiple paragraphs)
-- `resume_falc`: Brief resume (similar to summary)
+1. **Non-empty:** FALC fields should not be empty strings or whitespace-only
+2. **Trimming:** Component automatically trims whitespace
+3. **Null handling:** Component gracefully handles null/undefined values
+4. **Type safety:** Component expects string values
 
-### Validation
+### Testing
 
-FALC fields should be:
-- **Non-empty**: At least one FALC field should have content
-- **Trimmed**: No leading/trailing whitespace
-- **Formatted**: Proper line breaks and paragraphs
-- **Accessible**: Screen reader friendly
+**Test file:** `tests/unit/falcsummary.test.js`
 
-## Testing
+**Coverage:**
+- ✅ Renders nothing when text is empty
+- ✅ Renders nothing when text is null/undefined
+- ✅ Renders content when text is provided
+- ✅ Trims whitespace correctly
+- ✅ Preserves line breaks
+- ✅ Handles multiline content
+- ✅ Displays FALC badge
+- ✅ Uses custom title when provided
+- ✅ Applies custom className
 
-### Unit Tests
+## Integration Checklist
 
-Location: `tests/unit/falcsummary.test.js`
+When adding FALC support to a new entity type:
 
-Tests cover:
-- Empty text handling (renders nothing)
-- Content rendering (displays badge + text)
-- Whitespace trimming
-- Null/undefined handling
-- Multiline text formatting
-
-### Integration Tests
-
-Verify FALC content appears on all 6 detail pages:
-1. AideDetail
-2. DemarcheDetail
-3. StructureDetail
-4. DispositifDetail
-5. RessourceDetail
-6. ActualiteDetail
+- [ ] Identify the primary FALC field name
+- [ ] Define fallback fields (if applicable)
+- [ ] Import `FalcSummary` component
+- [ ] Add component to detail page with correct field priority
+- [ ] Update this documentation
+- [ ] Add integration test
+- [ ] Verify rendering with real data
 
 ## Maintenance
 
-### Adding New Entity Types
+### Adding New FALC Fields
 
-When adding a new entity type with FALC support:
+1. Update database schema to include new FALC field
+2. Update API response to include the field
+3. Update field priority in the relevant detail page
+4. Update this documentation
+5. Add test coverage
 
-1. **Identify FALC fields** in the data model
-2. **Define priority order** based on content quality
-3. **Update this documentation**
-4. **Add to FalcSummary usage** in the detail page
-5. **Add tests** for the new entity type
+### Deprecating FALC Fields
 
-### Updating Field Priority
-
-If field priority needs to change:
-
-1. **Update detail page component** with new fallback chain
-2. **Update this documentation**
-3. **Add migration notes** if data structure changes
-4. **Test thoroughly** to ensure no regressions
+1. Update field priority to remove deprecated field
+2. Add migration plan for existing data
+3. Update this documentation
+4. Maintain backward compatibility for 1-2 releases
 
 ## References
 
-- **FALC Guidelines**: https://www.inclusion-europe.eu/easy-to-read/
-- **Component**: `src/components/FalcSummary.jsx`
-- **Tests**: `tests/unit/falcsummary.test.js`
-- **Integration**: Phase 3 FALC implementation (PR #91)
+- **FALC Standard:** [Inclusion Europe - Easy to Read Guidelines](https://www.inclusion-europe.eu/easy-to-read/)
+- **Component:** `src/components/FalcSummary.jsx`
+- **Tests:** `tests/unit/falcsummary.test.js`
+- **Integration:** All `*Detail.jsx` pages in `src/pages/`
 
-## Changelog
+---
 
-- **2026-02-04**: Initial documentation created
-- **2026-02-04**: Added priority definitions for all 6 entity types
-- **2026-02-04**: Added implementation guidelines and testing requirements
+**Last Updated:** 2026-02-04  
+**Maintained by:** Tech Lead Fullstack

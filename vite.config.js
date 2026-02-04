@@ -47,12 +47,34 @@ export default defineConfig({
     rollupOptions: {
       output: {
         manualChunks: (id) => {
-          // React core (react, react-dom, react-router)
-          if (id.includes('node_modules/react') || 
-              id.includes('node_modules/react-dom') || 
-              id.includes('node_modules/react-router') ||
-              id.includes('node_modules/scheduler')) {
+          // Sentry (check first to avoid conflicts)
+          if (id.includes('node_modules/@sentry')) {
+            return 'sentry-vendor';
+          }
+          
+          // React core (react, react-dom, scheduler) - must be before react-router
+          if (id.includes('node_modules/react/') || 
+              id.includes('node_modules/react-dom/') || 
+              id.includes('node_modules/scheduler/')) {
             return 'react-vendor';
+          }
+          
+          // React Router (separate from react core to avoid circular deps)
+          if (id.includes('node_modules/react-router') ||
+              id.includes('node_modules/@remix-run/router')) {
+            return 'react-router-vendor';
+          }
+          
+          // React ecosystem (react-query, react-helmet, react-hook-form, etc.)
+          if (id.includes('node_modules/@tanstack/react-query') ||
+              id.includes('node_modules/@tanstack/query-core') ||
+              id.includes('node_modules/react-helmet-async') ||
+              id.includes('node_modules/react-hook-form') ||
+              id.includes('node_modules/@hookform') ||
+              id.includes('node_modules/react-day-picker') ||
+              id.includes('node_modules/react-markdown') ||
+              id.includes('node_modules/react-resizable-panels')) {
+            return 'react-ecosystem';
           }
           
           // UI libraries (radix-ui, lucide, framer-motion, etc.)
@@ -62,7 +84,10 @@ export default defineConfig({
               id.includes('node_modules/cmdk') ||
               id.includes('node_modules/vaul') ||
               id.includes('node_modules/sonner') ||
-              id.includes('node_modules/embla-carousel')) {
+              id.includes('node_modules/embla-carousel') ||
+              id.includes('node_modules/@floating-ui') ||
+              id.includes('node_modules/aria-hidden') ||
+              id.includes('node_modules/react-remove-scroll')) {
             return 'ui-vendor';
           }
           
@@ -76,29 +101,13 @@ export default defineConfig({
             return 'utils-vendor';
           }
           
-          // React ecosystem (react-query, react-helmet, react-hook-form, etc.)
-          if (id.includes('node_modules/@tanstack/react-query') ||
-              id.includes('node_modules/react-helmet-async') ||
-              id.includes('node_modules/react-hook-form') ||
-              id.includes('node_modules/@hookform') ||
-              id.includes('node_modules/react-day-picker') ||
-              id.includes('node_modules/react-markdown') ||
-              id.includes('node_modules/react-resizable-panels')) {
-            return 'react-ecosystem';
-          }
-          
           // Charts and visualization
           if (id.includes('node_modules/recharts')) {
             return 'charts-vendor';
           }
           
-          // Sentry
-          if (id.includes('node_modules/@sentry')) {
-            return 'sentry-vendor';
-          }
-          
-          // Other node_modules
-          if (id.includes('node_modules')) {
+          // Other node_modules (catch-all for remaining dependencies)
+          if (id.includes('node_modules/')) {
             return 'vendor';
           }
         },

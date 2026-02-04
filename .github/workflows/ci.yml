@@ -30,8 +30,8 @@ jobs:
       - name: Lint
         run: npm run lint
 
-      - name: Typecheck (if applicable)
-        run: npm run typecheck || true
+      - name: Typecheck
+        run: npm run typecheck
 
       - name: Build
         run: npm run build

@@ -1,8 +1,6 @@
-import { PrismaClient } from '@prisma/client';
+import prisma from '../../_utils/prisma.js';
 import { checkRateLimit } from '../_utils/rateLimit.js';
 import { hash } from '../../lib/crypto.js';
-
-const prisma = new PrismaClient();
 
 export default async function handler(req, res) {
     const identifier = req.headers['x-forwarded-for'] || '127.0.0.1';

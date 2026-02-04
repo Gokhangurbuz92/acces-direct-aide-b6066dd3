@@ -20,6 +20,8 @@ const DemarcheDetail = lazy(() => import("./DemarcheDetail.jsx"));
 const Demarches = lazy(() => import("./Demarches.jsx"));
 const DispositifDetail = lazy(() => import("./DispositifDetail.jsx"));
 const Dispositifs = lazy(() => import("./Dispositifs.jsx"));
+const Ressources = lazy(() => import("./Ressources.jsx"));
+const RessourceDetail = lazy(() => import("./RessourceDetail.jsx"));
 const Guides = lazy(() => import("./Guides.jsx"));
 const GuideDetail = lazy(() => import("./GuideDetail.jsx"));
 const Tools = lazy(() => import("./Tools.jsx"));
@@ -74,6 +76,9 @@ const ProAppointmentDetail = lazy(() => import("./pro/AppointmentDetail.jsx"));
 // Sentry
 const SentryTest = lazy(() => import("@/components/SentryTest.jsx"));
 const SentryTestPage = lazy(() => import("./SentryTestPage.jsx"));
+
+// Styleguide
+const StyleguideBranding = lazy(() => import("./StyleguideBranding.jsx"));
 
 // Map for _getCurrentPage logic (keeping structure for logic compatibility)
 const PAGES = {
@@ -182,7 +187,7 @@ function PagesContent() {
                     <Route path="/adminsources" element={<AdminGuard><AdminSources /></AdminGuard>} />
                     <Route path="/adminsync" element={<AdminGuard><AdminSync /></AdminGuard>} />
                     <Route path="/admintestsync" element={<AdminGuard><AdminTestSync /></AdminGuard>} />
-                    <Route path="/appointmentrequest" element={<AppointmentRequest />} />
+                    <Route path="/appointments/request" element={<AppointmentRequest />} />
                     <Route path="/adminappointments" element={<AdminGuard><AdminAppointments /></AdminGuard>} />
                     <Route path="/adminstructures" element={<AdminGuard><AdminStructures /></AdminGuard>} />
                     <Route path="/admindemarches" element={<AdminGuard><AdminDemarches /></AdminGuard>} />
@@ -214,7 +219,7 @@ function PagesContent() {
                     )}
 
                     <Route path="/demarches" element={<Demarches />} />
-                    <Route path="/home" element={<Home />} />
+                    <Route path="/home" element={<Navigate to="/" replace />} />
                     <Route path="/mentions-legales" element={<MentionsLegales />} />
                     <Route path="/sourcesmethode" element={<SourcesMethode />} />
                     <Route path="/sentry-test" element={<SentryTest />} />
@@ -227,6 +232,10 @@ function PagesContent() {
                     <Route path="/dispositifs/:slug" element={<DispositifDetail />} />
                     <Route path="/dispositifs/view" element={<DispositifDetail />} />
 
+                    <Route path="/ressources" element={<Ressources />} />
+                    <Route path="/ressources/:slug" element={<RessourceDetail />} />
+                    <Route path="/ressources/view" element={<RessourceDetail />} />
+
                     <Route path="/impact" element={<Impact />} />
                     <Route path="/notre-mission" element={<Mission />} />
                     <Route path="/notre-methode" element={<Method />} />
@@ -235,6 +244,9 @@ function PagesContent() {
                     <Route path="/partenaires" element={<Partners />} />
                     <Route path="/proposer-une-structure" element={<SuggestStructure />} />
                     <Route path="/dossier-subventions" element={<SubventionDossier />} />
+
+                    {/* Styleguide */}
+                    <Route path="/styleguide/branding" element={<StyleguideBranding />} />
 
                     <Route path="/AideDetail" element={<Navigate to="/aidedetail" replace />} />
                     <Route path="/StructureDetail" element={<Navigate to="/annuaire" replace />} />

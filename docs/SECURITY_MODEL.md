@@ -1,43 +1,28 @@
 # Modèle de Sécurité
 
-## Authentification
+## 1. Authentification
 
-### Admin
-- Authentification par session (ou token selon implémentation).
-- Accessible uniquement via `/admin/*`.
-- Protection par Guard `RequireAuth` ou `AdminRoute`.
+- **Admin** : Basée sur un secret partagé ou token (stocké en cookie `access_token` ou header `Authorization`). Géré par `api/_utils/auth.js`.
+- **Pro** : Basée sur JWT (JSON Web Token).
+  - Login : `/api/pro/auth/login` retourne un JWT.
+  - Usage : Header `Authorization: Bearer <token>`.
+  - Expiration : Configurée dans `api/_utils/crypto.js`.
+- **Public** : Accès anonyme pour la consultation (Aides, Démarches).
 
-### Professionnels
-- Authentification par JWT (JSON Web Token).
-- Durée de validité : 8 heures.
-- Routes : `/api/pro/*`.
-- Stockage : `sessionStorage` (pour éviter la persistance longue durée sur postes partagés).
+## 2. Contrôle d'Accès (RBAC)
 
-### Bénéficiaires (Messagerie / RDV)
-- Authentification par Token temporaire (Magic Link).
-- Hashé (SHA-256) avant stockage en base.
-- Utilisé pour annuler un RDV ou accéder à une conversation sécurisée.
+- **Guards** : Les routes sensibles sont protégées par des "Guards".
+  - Frontend : `AdminGuard` redirige vers `/admin/login` si non authentifié.
+  - Backend : Middleware `requireAdmin` ou `requirePro` vérifie le token avant d'exécuter le handler.
 
-## RBAC (Role-Based Access Control)
+## 3. Protection des Données
 
-Les rôles sont définis (implicitement ou explicitement) :
-- `PUBLIC`: Accès lecture seule aux Aides/Structures.
-- `PRO`: Accès à ses propres données (RDV, Structure).
-- `STRUCTURE_ADMIN`: Gestion de l'équipe de la structure.
-- `SUPERADMIN`: Accès global (Back-office).
+- **Secrets** : Les clés (DATABASE_URL, ADA_ENCRYPTION_KEY, JWT_SECRET) sont injectées via variables d'environnement.
+- **Encryption** : Les données sensibles (tokens d'invitation, certains champs persos) peuvent être chiffrées au repos via `ADA_ENCRYPTION_KEY`.
+- **Sanitization** : Les entrées utilisateurs doivent être validées (Zod ou manuel) pour éviter les injections.
 
-## Rate Limiting
+## 4. Rate Limiting
 
-- Implémenté via `@vercel/kv` (ou Map en mémoire pour dev).
-- Limites strictes sur :
-  - Login (`LOGIN_PRO`, `LOGIN_ADMIN`).
-  - Envoi de messages (`SEND_MESSAGE`).
-  - Création de RDV (`CREATE_APPOINTMENT`).
-- Headers standard renvoyés : `X-RateLimit-Limit`, `X-RateLimit-Remaining`.
-
-## Protection des Données
-
-- **PII (Personal Identifiable Information)** : Minimisation de la collecte.
-- **Logs** : Les emails et téléphones sont masqués dans les logs applicatifs (`api/lib/logger.js`).
-- **Base de données** : Hébergée sur Neon (Postgres), accès sécurisé.
-- **Chiffrement** : `ADA_ENCRYPTION_KEY` (32 bytes) utilisée pour chiffrer les données sensibles au repos si nécessaire.
+- Implémenté via `@upstash/ratelimit` et Redis (Vercel KV).
+- Limite les abus sur les endpoints publics (ex: login, envoi de messages).
+- Configuration dans `api/_utils/rateLimit.js`.

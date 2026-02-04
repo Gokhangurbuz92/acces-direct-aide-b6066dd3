@@ -103,7 +103,8 @@ describe('API Integration Tests', () => {
       // Setup Mock
       mPrisma.$queryRaw
         .mockResolvedValueOnce([{ id: '1', rank: 1 }]) // items
-        .mockResolvedValueOnce([{ total: 1 }]);        // count
+        .mockResolvedValueOnce([{ total: 1 }])         // count
+        .mockResolvedValueOnce([{ themes: {}, organismes: {}, publics: {}, territoires: {} }]); // facets
       mPrisma.aide.findMany.mockResolvedValue([{ id: '1', title: 'Test' }]);
       mPrisma.aide.count.mockResolvedValue(1);
 

@@ -1,19 +1,29 @@
 #!/bin/bash
-# Generates a text file listing all files in the repository, excluding ignored/heavy folders.
+
+# Generates a map of the repository files, excluding ignored/build artifacts.
+# Usage: ./scripts/generate-repo-map.sh
 
 OUTPUT_FILE="docs/REPO_FILES.txt"
 
 echo "Generating repository map to $OUTPUT_FILE..."
 
-# Find all files, exclude specific directories
-# Logic for .env: exclude .env* UNLESS it is .env.example
+# Find all files
+# Exclude: .git, node_modules, dist, .vercel, coverage, test-results, venv, .env*, reports, .DS_Store
 find . \
-  -type d \( -name "node_modules" -o -name "dist" -o -name ".git" -o -name ".vercel" -o -name "coverage" -o -name "test-results" -o -name "venv" -o -name "uploads_mock" -o -name ".cursor" \) -prune \
+  -type d \( -name ".git" -o -name "node_modules" -o -name "dist" -o -name ".vercel" -o -name "coverage" -o -name "test-results" -o -name "venv" -o -name "uploads_mock" \) -prune \
   -o -type f \
-  \( ! -name ".env*" -o -name ".env.example" \) \
+  ! -name ".env*" \
+  ! -name ".DS_Store" \
   ! -name "*.log" \
-  ! -name "cookies*.txt" \
-  ! -name "test-img*.jpg" \
+  ! -path "./docs/reports/*" \
   -print | sort > "$OUTPUT_FILE"
 
-echo "Done."
+# Explicitly add .env.example if it exists (since we excluded .env*)
+if [ -f ".env.example" ]; then
+  if ! grep -q "^\./\.env\.example$" "$OUTPUT_FILE"; then
+    echo "./.env.example" >> "$OUTPUT_FILE"
+    sort -o "$OUTPUT_FILE" "$OUTPUT_FILE"
+  fi
+fi
+
+echo "Repository map generated."

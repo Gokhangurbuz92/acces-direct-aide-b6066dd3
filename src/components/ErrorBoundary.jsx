@@ -1,0 +1,153 @@
+import React from 'react';
+import * as Sentry from '@sentry/react';
+import { AlertTriangle, RefreshCw, Home } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent } from '@/components/ui/card';
+
+/**
+ * ErrorBoundary Fallback Component
+ * 
+ * User-friendly error display with recovery options.
+ * Does not expose technical details to end users.
+ */
+function ErrorFallback({ error, resetError }) {
+  const isDevelopment = import.meta.env.DEV;
+
+  return (
+    <div className="min-h-screen bg-slate-50 flex items-center justify-center p-4">
+      <Card className="max-w-2xl w-full">
+        <CardContent className="p-8">
+          <div className="flex flex-col items-center text-center">
+            {/* Icon */}
+            <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mb-6">
+              <AlertTriangle className="w-8 h-8 text-red-600" />
+            </div>
+
+            {/* Title */}
+            <h1 className="text-2xl font-bold text-slate-900 mb-3">
+              Une erreur est survenue
+            </h1>
+
+            {/* Description */}
+            <p className="text-slate-600 mb-6 max-w-md">
+              Nous sommes désolés, une erreur inattendue s'est produite. 
+              Notre équipe a été automatiquement notifiée et travaille à résoudre le problème.
+            </p>
+
+            {/* Development-only error details */}
+            {isDevelopment && error && (
+              <div className="w-full mb-6 p-4 bg-slate-100 rounded-lg text-left">
+                <p className="text-xs font-mono text-slate-700 mb-2">
+                  <strong>Erreur (dev only):</strong>
+                </p>
+                <p className="text-xs font-mono text-red-600 break-all">
+                  {error.message}
+                </p>
+                {error.stack && (
+                  <details className="mt-2">
+                    <summary className="text-xs text-slate-600 cursor-pointer hover:text-slate-900">
+                      Stack trace
+                    </summary>
+                    <pre className="text-xs text-slate-600 mt-2 overflow-auto max-h-40">
+                      {error.stack}
+                    </pre>
+                  </details>
+                )}
+              </div>
+            )}
+
+            {/* Actions */}
+            <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
+              <Button
+                onClick={resetError}
+                className="flex items-center gap-2"
+              >
+                <RefreshCw className="w-4 h-4" />
+                Réessayer
+              </Button>
+              <Button
+                variant="outline"
+                onClick={() => window.location.href = '/'}
+                className="flex items-center gap-2"
+              >
+                <Home className="w-4 h-4" />
+                Retour à l'accueil
+              </Button>
+            </div>
+
+            {/* Support info */}
+            <p className="text-sm text-slate-500 mt-6">
+              Si le problème persiste, contactez-nous à{' '}
+              <a 
+                href="mailto:support@accesdirectaide.fr" 
+                className="text-blue-600 hover:underline"
+              >
+                support@accesdirectaide.fr
+              </a>
+            </p>
+          </div>
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
+
+/**
+ * ErrorBoundary Component
+ * 
+ * Wraps the application to catch React errors and display a fallback UI.
+ * Integrates with Sentry for error tracking.
+ * 
+ * Usage:
+ * <ErrorBoundary>
+ *   <App />
+ * </ErrorBoundary>
+ */
+class ErrorBoundary extends React.Component {
+  constructor(props) {
+    super(props);
+    this.state = { hasError: false, error: null };
+  }
+
+  static getDerivedStateFromError(error) {
+    // Update state so the next render will show the fallback UI
+    return { hasError: true, error };
+  }
+
+  componentDidCatch(error, errorInfo) {
+    // Log error to Sentry
+    if (typeof Sentry !== 'undefined' && Sentry.captureException) {
+      Sentry.captureException(error, {
+        contexts: {
+          react: {
+            componentStack: errorInfo.componentStack,
+          },
+        },
+      });
+    }
+
+    // Log to console in development
+    if (import.meta.env.DEV) {
+      console.error('ErrorBoundary caught an error:', error, errorInfo);
+    }
+  }
+
+  resetError = () => {
+    this.setState({ hasError: false, error: null });
+  };
+
+  render() {
+    if (this.state.hasError) {
+      return (
+        <ErrorFallback 
+          error={this.state.error} 
+          resetError={this.resetError}
+        />
+      );
+    }
+
+    return this.props.children;
+  }
+}
+
+export default ErrorBoundary;

@@ -1,123 +1,127 @@
 /**
  * Query State Management Utilities
  * 
- * Provides utilities for managing URL query parameters in list pages.
- * Ensures type safety, whitelisting, and consistent behavior across pages.
+ * Provides consistent URL query parameter handling across list pages.
+ * Ensures type safety, whitelisting, and proper URL encoding.
  */
 
 /**
- * Parse query parameters from URLSearchParams
+ * Parse query parameters with type conversion and validation
  * @param {URLSearchParams} searchParams - URL search parameters
- * @param {Object} schema - Schema defining allowed parameters and their types
- * @returns {Object} Parsed parameters
+ * @param {Object} schema - Parameter schema with types and defaults
+ * @returns {Object} Parsed and validated parameters
  */
 export function parseQueryParams(searchParams, schema = {}) {
-  const params = {};
-  
+  const result = {};
+
   for (const [key, config] of Object.entries(schema)) {
     const value = searchParams.get(key);
     
-    if (!value) {
-      params[key] = config.default ?? '';
+    if (value === null || value === '') {
+      result[key] = config.default;
       continue;
     }
-    
-    // Type conversion
+
     switch (config.type) {
       case 'number':
         const num = parseInt(value, 10);
-        params[key] = isNaN(num) ? config.default ?? 1 : num;
+        result[key] = isNaN(num) ? config.default : num;
         break;
+      
       case 'boolean':
-        params[key] = value === 'true' || value === '1';
+        result[key] = value === 'true' || value === '1';
         break;
+      
       case 'string':
       default:
-        params[key] = value;
+        result[key] = value;
         break;
     }
   }
-  
-  return params;
+
+  return result;
 }
 
 /**
- * Update query parameters in URL
- * @param {URLSearchParams} searchParams - Current search parameters
- * @param {Function} setSearchParams - Function to update search parameters
- * @param {string} key - Parameter key to update
- * @param {any} value - New value (empty string or falsy to remove)
- * @param {Object} options - Options
- * @param {boolean} options.resetPage - Whether to reset page to 1 (default: true)
+ * Stringify query parameters, removing empty values
+ * @param {Object} params - Parameters to stringify
+ * @param {Object} schema - Parameter schema (optional, for validation)
+ * @returns {URLSearchParams} URL search parameters
  */
-export function updateQueryParam(searchParams, setSearchParams, key, value, options = {}) {
-  const { resetPage = true } = options;
+export function stringifyQueryParams(params, schema = {}) {
+  const searchParams = new URLSearchParams();
+
+  for (const [key, value] of Object.entries(params)) {
+    // Skip if value is empty, null, undefined, or default
+    if (value === null || value === undefined || value === '') {
+      continue;
+    }
+
+    // Skip if value equals default (if schema provided)
+    if (schema[key] && value === schema[key].default) {
+      continue;
+    }
+
+    // Convert to string and add
+    searchParams.set(key, String(value));
+  }
+
+  return searchParams;
+}
+
+/**
+ * Update a single query parameter
+ * @param {URLSearchParams} searchParams - Current search parameters
+ * @param {string} key - Parameter key to update
+ * @param {any} value - New value (null/undefined/empty string to remove)
+ * @param {Object} options - Options
+ * @param {boolean} options.resetPage - Reset page to 1 when changing filters
+ * @returns {URLSearchParams} Updated search parameters
+ */
+export function updateQueryParam(searchParams, key, value, options = {}) {
   const newParams = new URLSearchParams(searchParams);
-  
-  if (value === '' || value === null || value === undefined) {
+
+  if (value === null || value === undefined || value === '') {
     newParams.delete(key);
   } else {
     newParams.set(key, String(value));
   }
-  
+
   // Reset page to 1 when changing filters (unless updating page itself)
-  if (resetPage && key !== 'page') {
+  if (options.resetPage && key !== 'page') {
     newParams.set('page', '1');
   }
-  
-  setSearchParams(newParams);
+
+  return newParams;
 }
 
 /**
  * Clear all query parameters
- * @param {Function} setSearchParams - Function to update search parameters
- * @param {Array<string>} keep - Parameters to keep (e.g., ['slug'])
+ * @param {Array<string>} keep - Parameters to keep (optional)
+ * @returns {URLSearchParams} Empty or filtered search parameters
  */
-export function clearQueryParams(setSearchParams, keep = []) {
-  if (keep.length === 0) {
-    setSearchParams({});
-  } else {
-    const newParams = new URLSearchParams();
+export function clearQueryParams(keep = []) {
+  const searchParams = new URLSearchParams();
+  
+  // If keep list provided, preserve those parameters
+  if (keep.length > 0) {
+    const current = new URLSearchParams(window.location.search);
     keep.forEach(key => {
-      const value = new URLSearchParams(window.location.search).get(key);
-      if (value) newParams.set(key, value);
+      const value = current.get(key);
+      if (value) {
+        searchParams.set(key, value);
+      }
     });
-    setSearchParams(newParams);
   }
-}
 
-/**
- * Get active filters from query parameters
- * @param {Object} params - Parsed query parameters
- * @param {Array<string>} exclude - Keys to exclude (e.g., ['page', 'pageSize'])
- * @returns {Object} Active filters
- */
-export function getActiveFilters(params, exclude = ['page', 'pageSize']) {
-  const active = {};
-  
-  for (const [key, value] of Object.entries(params)) {
-    if (exclude.includes(key)) continue;
-    if (value === '' || value === null || value === undefined) continue;
-    active[key] = value;
-  }
-  
-  return active;
-}
-
-/**
- * Check if any filters are active
- * @param {Object} params - Parsed query parameters
- * @param {Array<string>} exclude - Keys to exclude
- * @returns {boolean} True if any filters are active
- */
-export function hasActiveFilters(params, exclude = ['page', 'pageSize']) {
-  return Object.keys(getActiveFilters(params, exclude)).length > 0;
+  return searchParams;
 }
 
 /**
  * Common query parameter schemas for list pages
  */
 export const SCHEMAS = {
+  // Aides list page
   aides: {
     q: { type: 'string', default: '' },
     theme: { type: 'string', default: '' },
@@ -128,20 +132,90 @@ export const SCHEMAS = {
     urgent: { type: 'string', default: '' },
     page: { type: 'number', default: 1 },
   },
+
+  // Demarches list page
   demarches: {
     q: { type: 'string', default: '' },
     category: { type: 'string', default: '' },
     situation: { type: 'string', default: '' },
     page: { type: 'number', default: 1 },
   },
+
+  // Annuaire list page
+  annuaire: {
+    q: { type: 'string', default: '' },
+    type: { type: 'string', default: '' },
+    city: { type: 'string', default: '' },
+    page: { type: 'number', default: 1 },
+  },
+
+  // Actualites list page
+  actualites: {
+    categorie: { type: 'string', default: '' },
+    page: { type: 'number', default: 1 },
+  },
+
+  // Structures list page (Annuaire)
   structures: {
     q: { type: 'string', default: '' },
     type: { type: 'string', default: '' },
     city: { type: 'string', default: '' },
     page: { type: 'number', default: 1 },
   },
-  actualites: {
-    categorie: { type: 'string', default: '' },
-    page: { type: 'number', default: 1 },
-  },
 };
+
+/**
+ * Get active filters (non-empty, non-default values)
+ * @param {Object} params - Current parameters
+ * @param {Array<string>} exclude - Keys to exclude (e.g., ['page', 'pageSize'])
+ * @returns {Object} Active filters only
+ */
+export function getActiveFilters(params, exclude = []) {
+  const active = {};
+
+  for (const [key, value] of Object.entries(params)) {
+    // Skip excluded keys
+    if (exclude.includes(key)) {
+      continue;
+    }
+
+    // Skip empty values
+    if (value === null || value === undefined || value === '') {
+      continue;
+    }
+
+    active[key] = value;
+  }
+
+  return active;
+}
+
+/**
+ * Check if any filters are active
+ * @param {Object} params - Current parameters
+ * @param {Array<string>} exclude - Keys to exclude (e.g., ['page'])
+ * @returns {boolean} True if any filters are active
+ */
+export function hasActiveFilters(params, exclude = []) {
+  const active = getActiveFilters(params, exclude);
+  return Object.keys(active).length > 0;
+}
+
+/**
+ * React hook for managing query state (optional, for future use)
+ * Usage: const [filters, setFilter, clearFilters] = useQueryState(schema);
+ */
+export function useQueryState(searchParams, setSearchParams, schema) {
+  const filters = parseQueryParams(searchParams, schema);
+
+  const setFilter = (key, value) => {
+    const newParams = updateQueryParam(searchParams, key, value, { resetPage: true });
+    setSearchParams(newParams);
+  };
+
+  const clearFilters = () => {
+    setSearchParams(clearQueryParams());
+  };
+
+  return [filters, setFilter, clearFilters];
+}

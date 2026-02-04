@@ -23,10 +23,11 @@ export function parseQueryParams(searchParams, schema = {}) {
     }
 
     switch (config.type) {
-      case 'number':
+      case 'number': {
         const num = parseInt(value, 10);
         result[key] = isNaN(num) ? config.default : num;
         break;
+      }
       
       case 'boolean':
         result[key] = value === 'true' || value === '1';

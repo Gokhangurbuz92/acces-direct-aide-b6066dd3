@@ -1,6 +1,4 @@
-import { PrismaClient } from '@prisma/client';
-
-const prisma = new PrismaClient();
+import prisma from './prisma.js';
 
 /**
  * Creates a version snapshot of an entity before update.

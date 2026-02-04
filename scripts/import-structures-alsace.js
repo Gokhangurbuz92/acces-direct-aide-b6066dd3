@@ -1,5 +1,5 @@
 
-import { PrismaClient } from '@prisma/client'
+import prisma from '../api/_utils/prisma.js';
 import fs from 'fs'
 import path from 'path'
 import { fileURLToPath } from 'url'
@@ -8,7 +8,7 @@ import slugify from '@sindresorhus/slugify'
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
 
-const prisma = new PrismaClient()
+
 
 async function main() {
     const jsonPath = path.join(__dirname, '../data/structures-alsace.json')

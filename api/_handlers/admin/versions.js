@@ -1,8 +1,6 @@
-import { PrismaClient } from '@prisma/client';
+import prisma from '../../_utils/prisma.js';
 import { getAuthenticatedUser } from '../_utils/auth.js';
 import { restoreVersion } from '../_utils/snapshot.js';
-
-const prisma = new PrismaClient();
 
 export default async function handler(req, res) {
     const user = await getAuthenticatedUser(req);

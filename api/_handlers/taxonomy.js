@@ -1,7 +1,6 @@
-import { PrismaClient } from '@prisma/client';
+import prisma from '../_utils/prisma.js';
 import { checkRateLimit, getClientIp } from '../_utils/rateLimit.js';
-
-const prisma = new PrismaClient();
+import { logger } from '../lib/logger.js'; // Ensure logger is imported
 
 export default async function handler(req, res) {
     if (req.method !== 'GET') {
@@ -59,7 +58,7 @@ export default async function handler(req, res) {
             }))
         });
     } catch (error) {
-        console.error('Taxonomy API Error:', error);
+        logger.error('Taxonomy API Error:', error); // Use logger
         return res.status(500).json({ error: 'Internal Server Error' });
     }
 }

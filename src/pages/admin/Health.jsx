@@ -1,4 +1,4 @@
-/* eslint-disable react/prop-types */
+
 import { useEffect, useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -72,7 +72,7 @@ export default function AdminHealth() {
                     subValue={health.commitSha?.substring(0, 7)}
                     icon={<GitCommit />}
                 />
-                 <StatusCard
+                <StatusCard
                     title="Last Check"
                     value={format(new Date(health.timestamp), 'HH:mm:ss')}
                     subValue={format(new Date(health.timestamp), 'dd MMM yyyy', { locale: fr })}
@@ -80,7 +80,7 @@ export default function AdminHealth() {
                 />
             </div>
 
-             <Card>
+            <Card>
                 <CardHeader>
                     <CardTitle>Raw Data</CardTitle>
                 </CardHeader>

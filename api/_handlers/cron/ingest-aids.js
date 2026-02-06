@@ -78,6 +78,18 @@ export async function runIngestAids({ limit, runId, wipe = false }) {
             } catch (e) {
                 logger.error(`CONNECTOR_CRAWL_ERROR`, { runId, connector: connector.name, error: e });
                 stats.errors.push(`${connector.name} crawl error: ${e.message}`);
+                
+                // Enhanced Sentry context for connector crawl errors
+                Sentry.captureException(e, {
+                    tags: {
+                        connector: connector.name,
+                        runId: runId,
+                        stage: 'crawl'
+                    },
+                    extra: {
+                        connectorName: connector.name
+                    }
+                });
                 continue;
             }
             stats.durationByStage.fetchMs += (Date.now() - startCrawl);
@@ -101,7 +113,18 @@ export async function runIngestAids({ limit, runId, wipe = false }) {
                         continue;
                     }
 
-                    const slug = slugify(`${connector.name}-${item.title}`);
+                    // Data normalization: trim all text fields
+                    const normalizedItem = {
+                        title: item.title?.trim() || '',
+                        description: item.description?.trim() || '',
+                        content: item.content?.trim() || '',
+                        source_url: item.source_url?.trim() || '',
+                        apply_url: item.apply_url?.trim() || '',
+                        theme: item.theme?.trim() || '',
+                        fetched_at: item.fetched_at || new Date()
+                    };
+
+                    const slug = slugify(`${connector.name}-${normalizedItem.title}`);
                     const contentHash = crypto.createHash('md5').update(JSON.stringify(item)).digest('hex');
 
                     // Idempotency: Upsert by slug (or source_url)
@@ -118,15 +141,18 @@ export async function runIngestAids({ limit, runId, wipe = false }) {
                     });
 
                     const data = {
-                        titre: item.title,
-                        summary_falc: item.description,
-                        cest_quoi: item.content,
+                        titre: normalizedItem.title,
+                        summary_falc: normalizedItem.description,
+                        cest_quoi: normalizedItem.content,
                         providerName: connector.name,
                         providerType: 'ingest', // Explicitly set type
-                        source_url: item.source_url,
-                        apply_url: item.apply_url,
-                        theme: item.theme,
-                        fetched_at: item.fetched_at,
+                        source_url: normalizedItem.source_url,
+                        source_url_exact: normalizedItem.source_url, // Exact URL for traceability
+                        apply_url: normalizedItem.apply_url,
+                        theme: normalizedItem.theme,
+                        fetched_at: normalizedItem.fetched_at,
+                        retrieved_at: normalizedItem.fetched_at, // Original fetch timestamp
+                        last_checked_at: new Date(), // Current check timestamp
                         statut: 'publie',
                         published_at: new Date(),
                         content_hash: contentHash
@@ -161,6 +187,19 @@ export async function runIngestAids({ limit, runId, wipe = false }) {
                 } catch (itemErr) {
                     logger.error(`ITEM_PROCESS_ERROR`, { runId, url, error: itemErr });
                     stats.errors.push(`${url}: ${itemErr.message}`);
+                    
+                    // Enhanced Sentry context for item-level errors
+                    Sentry.captureException(itemErr, {
+                        tags: {
+                            connector: connector.name,
+                            runId: runId,
+                            stage: 'item_processing'
+                        },
+                        extra: {
+                            url: url,
+                            itemTitle: item?.title || 'unknown'
+                        }
+                    });
                 }
             }
             stats.durationByStage.processingMs += (Date.now() - startProcess);
@@ -168,6 +207,19 @@ export async function runIngestAids({ limit, runId, wipe = false }) {
         } catch (connErr) {
              logger.error(`CONNECTOR_ERROR`, { runId, connector: connector.name, error: connErr });
              stats.errors.push(`${connector.name} fatal: ${connErr.message}`);
+             
+             // Enhanced Sentry context for fatal connector errors
+             Sentry.captureException(connErr, {
+                 tags: {
+                     connector: connector.name,
+                     runId: runId,
+                     stage: 'connector_fatal'
+                 },
+                 extra: {
+                     connectorName: connector.name,
+                     stats: stats
+                 }
+             });
         }
 
         logger.info(`CONNECTOR_END`, { runId, connector: connector.name });

@@ -25,6 +25,8 @@ import {
 import { generateBreadcrumbSchema, generateAideSchema } from '@/utils/schema';
 import SourceTraceability from '@/components/SourceTraceability';
 import FalcSummary from '@/components/FalcSummary';
+import FalcToggle from '@/components/FalcToggle';
+import FalcContent from '@/components/FalcContent';
 
 const CATEGORIE_LABELS = {
   logement: 'Logement',
@@ -57,6 +59,20 @@ export default function AideDetail() {
   const aide = Array.isArray(queryData)
     ? queryData[0]
     : (queryData?.items ? queryData?.items[0] : queryData);
+
+  // FALC mode state management
+  const [falcMode, setFalcMode] = React.useState(() => {
+    const saved = localStorage.getItem('falc-mode-aide');
+    return saved === 'true';
+  });
+
+  const handleFalcToggle = () => {
+    const newMode = !falcMode;
+    setFalcMode(newMode);
+    localStorage.setItem('falc-mode-aide', String(newMode));
+  };
+
+  const hasFalc = aide?.falcSummary != null;
 
   // Canonical Redirect: If accessed via ID but slug exists, redirect to slug URL
   useEffect(() => {
@@ -189,19 +205,31 @@ export default function AideDetail() {
           </div>
         </div>
 
+        {/* FALC Toggle */}
+        <FalcToggle 
+          enabled={hasFalc}
+          active={falcMode && hasFalc}
+          onToggle={handleFalcToggle}
+        />
+
         <div className="grid lg:grid-cols-3 gap-6">
           {/* Contenu principal */}
           <div className="lg:col-span-2 space-y-6">
-            {/* C'est quoi ? */}
-            <Card>
-              <CardContent className="p-6">
-                <h2 className="text-lg font-bold text-slate-900 mb-3">C'est quoi ?</h2>
-                <p className="text-slate-700 leading-relaxed">{aide.cest_quoi}</p>
-              </CardContent>
-            </Card>
+            {/* Conditional rendering: FALC mode or normal mode */}
+            {falcMode && hasFalc ? (
+              <FalcContent falcData={aide.falcSummary} />
+            ) : (
+              <>
+                {/* C'est quoi ? */}
+                <Card>
+                  <CardContent className="p-6">
+                    <h2 className="text-lg font-bold text-slate-900 mb-3">C'est quoi ?</h2>
+                    <p className="text-slate-700 leading-relaxed">{aide.cest_quoi}</p>
+                  </CardContent>
+                </Card>
 
-            {/* FALC Summary */}
-            <FalcSummary text={aide?.summary_falc} />
+                {/* FALC Summary */}
+                <FalcSummary text={aide?.summary_falc} />
 
             {/* Pour qui ? */}
             <Card>
@@ -315,6 +343,8 @@ export default function AideDetail() {
                   </ul>
                 </CardContent>
               </Card>
+            )}
+              </>
             )}
           </div>
 

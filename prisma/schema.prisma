@@ -596,3 +596,25 @@ model ResourceAccessibility {
   last_checked_at       DateTime?
   source_last_modified  DateTime?
 }
+
+model FalcSummary {
+  id                String   @id @default(uuid())
+  entity_type       String   // "aide", "demarche", "structure", "dispositif", "actualite"
+  entity_id         String   // UUID of the related entity
+  
+  // FALC Content
+  titre_falc        String?
+  resume_falc       String?  // Simple summary in easy-to-read language
+  etapes_falc       String?  // JSON array of simple steps
+  points_cles       String?  // JSON array of key points
+  
+  // Metadata
+  version           Int      @default(1)
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+  source_retrieved_at DateTime?
+  
+  @@unique([entity_type, entity_id])
+  @@index([entity_type])
+  @@index([entity_id])
+}

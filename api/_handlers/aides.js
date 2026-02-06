@@ -58,6 +58,20 @@ async function handler(req, res) {
                 return res.status(404).json({ error: "Aide non trouvée" });
             }
 
+            // Fetch FALC summary if available
+            const falcSummary = await prisma.falcSummary.findUnique({
+                where: {
+                    entity_type_entity_id: {
+                        entity_type: 'aide',
+                        entity_id: aide.id
+                    }
+                }
+            }).catch(() => null); // Graceful fallback if table doesn't exist yet
+
+            if (falcSummary) {
+                aide.falcSummary = falcSummary;
+            }
+
             logger.info('SEARCH_AIDES_SINGLE_SUCCESS', { requestId, duration_ms: Date.now() - start });
             return res.status(200).json(aide);
         }

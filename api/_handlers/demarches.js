@@ -34,6 +34,21 @@ export default async function handler(req, res) {
             if (!isAdmin && demarche.statut !== 'publie') {
                 return res.status(404).json({ error: "Démarche non trouvée" });
             }
+
+            // Fetch FALC summary if available
+            const falcSummary = await prisma.falcSummary.findUnique({
+                where: {
+                    entity_type_entity_id: {
+                        entity_type: 'demarche',
+                        entity_id: demarche.id
+                    }
+                }
+            }).catch(() => null);
+
+            if (falcSummary) {
+                demarche.falcSummary = falcSummary;
+            }
+
             return res.status(200).json(demarche);
         }
 

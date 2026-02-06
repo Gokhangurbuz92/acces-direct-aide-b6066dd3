@@ -61,6 +61,7 @@ Le projet est une architecture Monorepo "Serverless" hébergée sur Vercel.
 ### Scripts (Ops & Maintenance)
 **Chemin**: `scripts/`
 - **Rôle**: Scripts de maintenance, verification, seed, et ingestion manuelle.
+- **Fichiers clés**: `generate-repo-map.sh` (génère l'inventaire).
 - **Dépendances**: Node.js, Shell, Python (parfois)
 - **Owner**: DevOps / Ops
 - **Risques Principaux**:
@@ -70,7 +71,10 @@ Le projet est une architecture Monorepo "Serverless" hébergée sur Vercel.
 ### Docs (Documentation)
 **Chemin**: `docs/`
 - **Rôle**: Documentation projet, guides d'exploitation, rapports d'exécution.
-- **Fichiers clés**: `REPO_MAP.md`, `API_CONTRACT.md` (à venir), `RUNBOOK.md` (à venir).
+- **Fichiers clés**:
+  - `REPO_MAP.md` (Cartographie fonctionnelle)
+  - `REPO_FILES.txt` (Inventaire technique exhaustif)
+  - `API_CONTRACT.md`, `RUNBOOK.md`
 - **Owner**: Tous
 - **Risques Principaux**: Documentation obsolète induisant en erreur.
 

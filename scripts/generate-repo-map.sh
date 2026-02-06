@@ -1,9 +1,31 @@
 #!/bin/bash
-# Generate a repository file map excluding noise
+set -e
 
-find . -maxdepth 5 \
-  \( -name '.git' -o -name '.vercel' -o -name 'node_modules' -o -name 'dist' -o -name 'coverage' -o -name 'test-results' -o -name 'venv' -o -name '__pycache__' -o -name 'proofs' \) -prune \
-  -o -type f \( ! -name '.env' ! -name '.env.local' ! -name '.DS_Store' \) -print | \
-  grep -vE '/\.env\.(?!example$)[^/]*$' | sort > docs/REPO_FILES.txt
+# Generate REPO_FILES.txt excluding artifacts and secrets
 
-echo "Repository map generated at docs/REPO_FILES.txt"
+# 1. Find all files, pruning ignored directories
+find . -type d \( \
+    -name ".git" \
+    -o -name "node_modules" \
+    -o -name "dist" \
+    -o -name ".vercel" \
+    -o -name "coverage" \
+    -o -name "test-results" \
+    -o -name "venv" \
+    -o -name "uploads_mock" \
+\) -prune -o \
+-type f -print | \
+grep -vE "/\.DS_Store$" | \
+grep -vE "REPO_FILES.tmp$" | \
+grep -vE "^\./\.env" > docs/REPO_FILES.tmp
+
+# 2. Append .env.example if it exists (since we excluded all .env*)
+if [ -f .env.example ]; then
+    echo "./.env.example" >> docs/REPO_FILES.tmp
+fi
+
+# 3. Sort and save
+sort -u docs/REPO_FILES.tmp > docs/REPO_FILES.txt
+rm docs/REPO_FILES.tmp
+
+echo "Repo map generated in docs/REPO_FILES.txt"

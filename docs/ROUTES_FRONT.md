@@ -61,6 +61,7 @@ Routes préfixées par `/admin`.
 | Route | Page Component | API attendue | Notes |
 |---|---|---|---|
 | `/admin/login` | `AdminLogin.jsx` | `auth/login.js` | Login Admin |
+| `/admin/health` | `admin/Health.jsx` | `health.js` | Dashboard Santé |
 | `/admin/aides` | `AdminAides.jsx` | `aides.js` | CRUD Aides |
 | `/admin/aides/:id` | `AdminAideEdit.jsx` | `aides.js` | Edit Aide |
 | `/admin/demarches` | `AdminDemarches.jsx` | `demarches.js` | CRUD Démarches |

@@ -17,7 +17,15 @@ export const searchAidesSchema = baseSearchSchema.extend({
   organisme: z.string().optional(),
   urgent: z.enum(['true', 'false']).optional(),
   statut: z.string().default('publie'),
-  sort: z.enum(['pertinence', 'date', 'alpha']).default('pertinence'),
+  // Strict whitelist for sort to prevent SQL injection
+  // Accepts: pertinence, date, alpha, created_date, -created_date, published_at, -published_at, date_publication, -date_publication
+  sort: z.enum([
+    'pertinence', 'date', 'alpha',
+    'created_date', '-created_date',
+    'published_at', '-published_at',
+    'date_publication', '-date_publication',
+    'titre', '-titre'
+  ]).default('pertinence'),
   // Legacy/Compatibility
   category: z.string().optional(),
   situation: z.string().optional(),

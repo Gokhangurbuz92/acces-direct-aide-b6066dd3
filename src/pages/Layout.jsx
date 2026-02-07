@@ -1,6 +1,7 @@
 
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
+import Logo from '@/components/Brand/Logo';
 import { createPageUrl } from '@/utils';
 import {
   Menu,
@@ -194,22 +195,28 @@ export default function Layout({ children, currentPageName }) {
       </a>
 
       {/* Header */}
-      <header className="bg-white border-b border-slate-200 sticky top-0 z-40">
+      <header className="bg-surface border-b border-border sticky top-0 z-40 shadow-sm">
         <div className="max-w-7xl mx-auto px-4 sm:px-6">
           <div className="flex items-center justify-between h-16">
             {/* Logo */}
-            <Link
-              to={createPageUrl('Home')}
-              className="flex items-center gap-2"
-              aria-label="AccesDirectAide - Accueil"
-            >
-              <div className="w-10 h-10 rounded-xl bg-blue-600 flex items-center justify-center">
-                <HandHeart className="h-6 w-6 text-white" />
-              </div>
-              <span className="text-xl font-bold text-slate-900 hidden sm:block">
-                AccesDirectAide
-              </span>
-            </Link>
+            <div className="flex items-center">
+              {/* Mobile: Logo Icon Only */}
+              <Link
+                to={createPageUrl('Home')}
+                className="sm:hidden inline-flex items-center gap-2 rounded-full px-2.5 py-1.5 transition-colors hover:bg-slate-50/80 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-600 focus-visible:ring-offset-2"
+                aria-label="AccesDirectAide - Accueil"
+              >
+                <Logo variant="icon" size={40} />
+              </Link>
+              {/* Desktop: Logo Full */}
+              <Link
+                to={createPageUrl('Home')}
+                className="hidden sm:inline-flex items-center gap-2 rounded-full px-2.5 py-1.5 transition-colors hover:bg-slate-50/80 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-600 focus-visible:ring-offset-2"
+                aria-label="AccesDirectAide - Accueil"
+              >
+                <Logo variant="full" size={40} />
+              </Link>
+            </div>
 
             {/* Navigation desktop */}
             <nav className="hidden lg:flex items-center gap-1" role="navigation" aria-label="Navigation principale">
@@ -217,25 +224,32 @@ export default function Layout({ children, currentPageName }) {
                 <div key={item.page} className="relative group">
                   {item.submenu ? (
                     <>
-                      <button
-                        className={`flex items-center gap-1 px-3 py-2 rounded-lg text-sm font-medium transition-colors
+                      <Link
+                        to={createPageUrl(item.page)}
+                        className={`flex items-center gap-1 px-3 py-2 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-primary focus-visible:ring-offset-2 rounded-lg relative
                           ${currentPageName === item.page
-                            ? 'text-blue-700 bg-blue-50'
-                            : 'text-slate-700 hover:text-blue-700 hover:bg-slate-100'
+                            ? 'text-brand-primary after:absolute after:bottom-0 after:left-3 after:right-3 after:h-0.5 after:bg-brand-primary'
+                            : 'text-text-body hover:text-brand-primary hover:bg-brand-highlight/10'
                           }`}
-                        aria-expanded="false"
-                        aria-haspopup="true"
+                        aria-haspopup="menu"
+                        aria-controls={`nav-${item.page.toLowerCase()}-menu`}
                       >
                         {item.label}
                         <ChevronDown className="h-4 w-4" />
-                      </button>
-                      <div className="absolute left-0 top-full pt-2 hidden group-hover:block">
-                        <div className="bg-white rounded-xl shadow-lg border border-slate-200 py-2 min-w-[180px]">
+                      </Link>
+                      <div
+                        id={`nav-${item.page.toLowerCase()}-menu`}
+                        className="absolute left-0 top-full pt-2 hidden group-hover:block group-focus-within:block"
+                        role="menu"
+                        aria-label={`Sous-menu ${item.label}`}
+                      >
+                        <div className="bg-surface rounded-xl shadow-lg border border-border py-2 min-w-[180px]">
                           {item.submenu.map((sub, idx) => (
                             <Link
                               key={idx}
                               to={createPageUrl(sub.page) + (sub.params ? `?${sub.params}` : '')}
-                              className="block px-4 py-2 text-sm text-slate-700 hover:bg-slate-100 hover:text-blue-700"
+                              className="block px-4 py-2 text-sm text-text-body hover:bg-brand-highlight/10 hover:text-brand-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-primary focus-visible:ring-inset"
+                              role="menuitem"
                             >
                               {sub.label}
                             </Link>
@@ -246,10 +260,10 @@ export default function Layout({ children, currentPageName }) {
                   ) : (
                     <Link
                       to={createPageUrl(item.page)}
-                      className={`flex items-center gap-1 px-3 py-2 rounded-lg text-sm font-medium transition-colors
+                      className={`flex items-center gap-1 px-3 py-2 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-primary focus-visible:ring-offset-2 rounded-lg relative
                         ${currentPageName === item.page
-                          ? 'text-blue-700 bg-blue-50'
-                          : 'text-slate-700 hover:text-blue-700 hover:bg-slate-100'
+                          ? 'text-brand-primary after:absolute after:bottom-0 after:left-3 after:right-3 after:h-0.5 after:bg-brand-primary'
+                          : 'text-text-body hover:text-brand-primary hover:bg-brand-highlight/10'
                         }`}
                     >
                       {item.label}
@@ -280,7 +294,7 @@ export default function Layout({ children, currentPageName }) {
 
         {/* Menu mobile */}
         {mobileMenuOpen && (
-          <div className="lg:hidden border-t border-slate-200 bg-white">
+          <div className="lg:hidden border-t border-border bg-surface">
             <nav className="max-w-7xl mx-auto px-4 py-4 space-y-1" role="navigation" aria-label="Navigation mobile">
               {filteredNavItems.map((item) => (
                 <div key={item.page}>
@@ -288,7 +302,9 @@ export default function Layout({ children, currentPageName }) {
                     <>
                       <button
                         onClick={() => setOpenSubmenu(openSubmenu === item.page ? null : item.page)}
-                        className="w-full flex items-center justify-between px-4 py-3 rounded-lg text-slate-700 hover:bg-slate-100"
+                        className="w-full flex items-center justify-between px-4 py-3 rounded-lg text-text-body hover:bg-brand-highlight/10 hover:text-brand-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-primary focus-visible:ring-inset"
+                        aria-expanded={openSubmenu === item.page}
+                        aria-controls={`mobile-submenu-${item.page}`}
                       >
                         <span className="flex items-center gap-3">
                           <item.icon className="h-5 w-5" />
@@ -296,25 +312,26 @@ export default function Layout({ children, currentPageName }) {
                         </span>
                         <ChevronDown className={`h-4 w-4 transition-transform ${openSubmenu === item.page ? 'rotate-180' : ''}`} />
                       </button>
-                      {openSubmenu === item.page && (
-                        <div className="pl-12 space-y-1">
-                          {item.submenu.map((sub, idx) => (
-                            <Link
-                              key={idx}
-                              to={createPageUrl(sub.page) + (sub.params ? `?${sub.params}` : '')}
-                              className="block px-4 py-2 text-sm text-slate-600 hover:text-blue-700"
-                              onClick={() => setMobileMenuOpen(false)}
-                            >
-                              {sub.label}
-                            </Link>
-                          ))}
-                        </div>
-                      )}
+                      <div
+                        id={`mobile-submenu-${item.page}`}
+                        className={`pl-12 space-y-1 ${openSubmenu === item.page ? '' : 'hidden'}`}
+                      >
+                        {item.submenu.map((sub, idx) => (
+                          <Link
+                            key={idx}
+                            to={createPageUrl(sub.page) + (sub.params ? `?${sub.params}` : '')}
+                            className="block px-4 py-2 text-sm text-text-muted hover:text-brand-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-primary focus-visible:ring-inset"
+                            onClick={() => setMobileMenuOpen(false)}
+                          >
+                            {sub.label}
+                          </Link>
+                        ))}
+                      </div>
                     </>
                   ) : (
                     <Link
                       to={createPageUrl(item.page)}
-                      className="flex items-center gap-3 px-4 py-3 rounded-lg text-slate-700 hover:bg-slate-100"
+                      className="flex items-center gap-3 px-4 py-3 rounded-lg text-text-body hover:bg-brand-highlight/10 hover:text-brand-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-primary focus-visible:ring-inset"
                       onClick={() => setMobileMenuOpen(false)}
                     >
                       <item.icon className="h-5 w-5" />
@@ -334,22 +351,19 @@ export default function Layout({ children, currentPageName }) {
       </main>
 
       {/* Footer */}
-      <footer className="bg-slate-900 text-white" role="contentinfo">
+      <footer className="bg-brand-primary text-white" role="contentinfo">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 py-12">
           <div className="grid md:grid-cols-4 gap-8">
             {/* Logo et description */}
             <div className="md:col-span-2">
-              <div className="flex items-center gap-2 mb-4">
-                <div className="w-10 h-10 rounded-xl bg-blue-600 flex items-center justify-center">
-                  <HandHeart className="h-6 w-6 text-white" />
-                </div>
-                <span className="text-xl font-bold">AccesDirectAide</span>
+              <div className="mb-6">
+                <Logo variant="full" tone="white" size={48} />
               </div>
-              <p className="text-slate-400 text-sm mb-4">
+              <p className="text-white/80 text-sm mb-4">
                 Un site non lucratif pour vous aider à trouver les aides,
-                les démarches et les structures d'accompagnement près de chez vous.
+                les démarches et les structures d&apos;accompagnement près de chez vous.
               </p>
-              <p className="text-slate-400 text-sm">
+              <p className="text-white/80 text-sm">
                 Toutes les informations sont vérifiées et sourcées.
                 Zéro fake news, zéro approximation.
               </p>
@@ -363,7 +377,7 @@ export default function Layout({ children, currentPageName }) {
                   <li key={link.label + idx}>
                     <Link
                       to={link.href || createPageUrl(link.page)}
-                      className="text-slate-400 hover:text-white text-sm transition-colors"
+                      className="text-white/70 hover:text-white text-sm transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-highlight focus-visible:ring-offset-2 focus-visible:ring-offset-brand-primary rounded"
                     >
                       {link.label}
                     </Link>
@@ -380,7 +394,7 @@ export default function Layout({ children, currentPageName }) {
                   <li key={link.label + idx}>
                     <Link
                       to={link.href || createPageUrl(link.page)}
-                      className="text-slate-400 hover:text-white text-sm transition-colors"
+                      className="text-white/70 hover:text-white text-sm transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-highlight focus-visible:ring-offset-2 focus-visible:ring-offset-brand-primary rounded"
                     >
                       {link.label}
                     </Link>
@@ -390,7 +404,7 @@ export default function Layout({ children, currentPageName }) {
             </div>
           </div>
 
-          <div className="border-t border-slate-800 mt-8 pt-8 text-center text-sm text-slate-500">
+          <div className="border-t border-white/20 mt-8 pt-8 text-center text-sm text-white/60">
             <p>© {new Date().getFullYear()} AccesDirectAide. Site non lucratif.</p>
             <p className="mt-2">
               Territoire couvert : Alsace (Bas-Rhin, Haut-Rhin) et aides nationales.

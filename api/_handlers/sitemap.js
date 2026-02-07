@@ -1,10 +1,6 @@
-/* eslint-disable no-undef */
-import { PrismaClient } from '@prisma/client';
+import prisma from '../_utils/prisma.js';
 import { getCanonicalBaseUrl, isIndexable } from '../_utils/seo.js';
 import crypto from 'crypto';
-
-
-const prisma = new PrismaClient();
 
 export default async function handler(req, res) {
     if (req.method !== 'GET' && req.method !== 'HEAD') {
@@ -22,10 +18,12 @@ export default async function handler(req, res) {
 
         // Fetch published content
 
-        const [aides, demarches, structures, guides, tools, actualites] = await Promise.all([
+        const [aides, demarches, structures, dispositifs, ressources, guides, tools, actualites] = await Promise.all([
             prisma.aide.findMany({ where: { statut: 'publie' }, select: { slug: true, updatedAt: true } }),
             prisma.demarche.findMany({ where: { statut: 'publie' }, select: { slug: true, updatedAt: true } }),
             prisma.structure.findMany({ where: { statut: 'publie' }, select: { slug: true, updatedAt: true } }),
+            prisma.dispositif.findMany({ where: { statut: 'publie' }, select: { slug: true, updatedAt: true } }),
+            prisma.resourceAccessibility.findMany({ where: { status: 'published' }, select: { slug: true, updatedAt: true } }),
             prisma.guide.findMany({ where: { statut: 'publie' }, select: { slug: true, updatedAt: true } }),
             prisma.toolboxItem.findMany({ where: { statut: 'publie' }, select: { slug: true, updatedAt: true } }),
             prisma.actualite.findMany({ where: { statut: 'publie' }, select: { slug: true, updatedAt: true } })
@@ -37,6 +35,8 @@ export default async function handler(req, res) {
             { loc: '/aides', priority: '0.9' },
             { loc: '/demarches', priority: '0.9' },
             { loc: '/annuaire', priority: '0.9' },
+            { loc: '/dispositifs', priority: '0.9' },
+            { loc: '/ressources', priority: '0.9' },
             { loc: '/bonnes-pratiques', priority: '0.8' },
             { loc: '/outils', priority: '0.8' },
             { loc: '/actualites', priority: '0.7' },
@@ -61,15 +61,23 @@ export default async function handler(req, res) {
 
         // Add dynamic content
         aides.filter(a => a.slug).forEach(a => {
-            urls.push(`  <url><loc>${BASE_URL}/aide/${a.slug}</loc><lastmod>${a.updatedAt.toISOString().split('T')[0]}</lastmod><priority>0.7</priority></url>`);
+            urls.push(`  <url><loc>${BASE_URL}/aides/${a.slug}</loc><lastmod>${a.updatedAt.toISOString().split('T')[0]}</lastmod><priority>0.7</priority></url>`);
         });
 
         demarches.filter(d => d.slug).forEach(d => {
-            urls.push(`  <url><loc>${BASE_URL}/demarche/${d.slug}</loc><lastmod>${d.updatedAt.toISOString().split('T')[0]}</lastmod><priority>0.7</priority></url>`);
+            urls.push(`  <url><loc>${BASE_URL}/demarches/${d.slug}</loc><lastmod>${d.updatedAt.toISOString().split('T')[0]}</lastmod><priority>0.7</priority></url>`);
         });
 
         structures.filter(s => s.slug).forEach(s => {
-            urls.push(`  <url><loc>${BASE_URL}/structure/${s.slug}</loc><lastmod>${s.updatedAt.toISOString().split('T')[0]}</lastmod><priority>0.6</priority></url>`);
+            urls.push(`  <url><loc>${BASE_URL}/structures/${s.slug}</loc><lastmod>${s.updatedAt.toISOString().split('T')[0]}</lastmod><priority>0.6</priority></url>`);
+        });
+
+        dispositifs.filter(d => d.slug).forEach(d => {
+            urls.push(`  <url><loc>${BASE_URL}/dispositifs/${d.slug}</loc><lastmod>${d.updatedAt.toISOString().split('T')[0]}</lastmod><priority>0.6</priority></url>`);
+        });
+
+        ressources.filter(r => r.slug).forEach(r => {
+            urls.push(`  <url><loc>${BASE_URL}/ressources/${r.slug}</loc><lastmod>${r.updatedAt.toISOString().split('T')[0]}</lastmod><priority>0.6</priority></url>`);
         });
 
         guides.filter(g => g.slug).forEach(g => {
@@ -93,13 +101,12 @@ ${urls.join('\n')}
         const etag = 'W/"' + crypto.createHash('md5').update(xml).digest('hex') + '"';
 
         if (req.headers['if-none-match'] === etag) {
-
             res.writeHead(304);
             res.end();
             return;
         }
 
-        res.writeHeader(200, {
+        res.writeHead(200, {
             'Content-Type': 'application/xml; charset=utf-8',
             'Cache-Control': 'public, s-maxage=3600, stale-while-revalidate=600',
             'X-Robots-Tag': indexable ? 'all' : 'noindex, nofollow',
@@ -120,10 +127,9 @@ ${urls.join('\n')}
   <url><loc>https://www.accesdirectaide.fr/</loc><priority>1.0</priority></url>
 </urlset>`;
 
-        res.writeHeader(200, {
+        res.writeHead(200, {
             'Content-Type': 'application/xml; charset=utf-8'
         });
         res.end(fallbackXml);
     }
 }
-

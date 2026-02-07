@@ -1,9 +1,9 @@
 
-import { PrismaClient } from '@prisma/client';
+import prisma from '../api/_utils/prisma.js';
 import bcrypt from 'bcryptjs';
 import inquirer from 'inquirer';
 
-const prisma = new PrismaClient();
+
 
 async function main() {
     console.log("🔒 Creation d'un compte Administrateur sécurisé");

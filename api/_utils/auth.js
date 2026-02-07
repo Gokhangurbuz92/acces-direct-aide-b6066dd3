@@ -1,26 +1,30 @@
-export const verifyAdmin = (req) => {
-    // 1. Check for Authorization header
-    const authHeader = req.headers['authorization'] || req.headers['Authorization'];
-    if (!authHeader) return false;
 
-    // 2. Extract token
-    // Format: "Bearer <token>"
-    const token = authHeader.split(' ')[1];
-    if (!token) return false;
+import crypto from 'crypto';
 
-    // 3. Validate against Environment Variable
-    // If ADMIN_TOKEN is not set in env, we fail closed (secure by default)
+export function verifyAdmin(req) {
     if (!process.env.ADMIN_TOKEN) {
-        console.error("CRITICAL: ADMIN_TOKEN is not defined in environment variables.");
+        console.error("FATAL: ADMIN_TOKEN is not set.");
         return false;
     }
 
-    return token === process.env.ADMIN_TOKEN;
+    // 1. Check for Authorization header
+    const authHeader = req.headers['authorization'] || req.headers['Authorization'];
+    if (!authHeader || !authHeader.startsWith('Bearer ')) return false;
+
+    const token = authHeader.split(' ')[1];
+
+    // Constant-time comparison to prevent timing attacks
+    const tokenBuffer = Buffer.from(token);
+    const adminTokenBuffer = Buffer.from(process.env.ADMIN_TOKEN);
+
+    if (tokenBuffer.length !== adminTokenBuffer.length) return false;
+
+    return crypto.timingSafeEqual(tokenBuffer, adminTokenBuffer);
 };
 
-export const getAuthenticatedUser = async (req) => {
+export async function getAuthenticatedUser(req) {
     if (verifyAdmin(req)) {
-        return { email: 'admin@system', role: 'admin' };
+        return { email: 'admin@accesdirectaide.fr', role: 'admin' };
     }
     return null;
-};
+}

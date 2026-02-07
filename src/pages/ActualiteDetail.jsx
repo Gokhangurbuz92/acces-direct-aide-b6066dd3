@@ -1,9 +1,12 @@
 import React from 'react';
-import { Link, useParams, useSearchParams } from 'react-router-dom';
+import { Link, useParams, useSearchParams, useNavigate } from 'react-router-dom';
 import { createPageUrl } from '@/utils';
 import { client } from '@/api/client';
 import { useQuery } from '@tanstack/react-query';
 import SEO from '@/components/SEO';
+import { generateActualiteSchema, generateBreadcrumbSchema } from '@/utils/schema';
+import SourceTraceability from '@/components/SourceTraceability';
+import FalcSummary from '@/components/FalcSummary';
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
@@ -50,14 +53,26 @@ const CATEGORIES = {
 export default function ActualiteDetail() {
   const { slug } = useParams();
   const [searchParams] = useSearchParams();
+  const navigate = useNavigate();
   const id = searchParams.get('id');
   const identifier = slug || id;
 
-  const { data: actu, isLoading } = useQuery({
+  const { data: queryData, isLoading } = useQuery({
     queryKey: ['actualite', identifier],
     queryFn: () => client.entities.Actualite.filter(slug ? { slug } : { id }),
     enabled: !!identifier
   });
+
+  const actu = Array.isArray(queryData)
+    ? queryData[0]
+    : (queryData?.items ? queryData?.items[0] : queryData);
+
+  // Canonical Redirect: If accessed via ID but slug exists, redirect to slug URL
+  React.useEffect(() => {
+    if (actu && !slug && actu.slug) {
+      navigate(`/actualites/${actu.slug}`, { replace: true });
+    }
+  }, [actu, slug, navigate]);
 
   if (isLoading) {
     return (
@@ -82,12 +97,24 @@ export default function ActualiteDetail() {
 
   const TypeIcon = TYPE_ICONS[actu.type_actu] || Info;
 
+  const breadcrumbs = [
+    { name: 'Accueil', url: '/' },
+    { name: 'Actualités', url: '/actualites' },
+    { name: actu.titre, url: `/actualites/${actu.slug}` }
+  ];
+
+  const schema = [
+    generateBreadcrumbSchema(breadcrumbs),
+    generateActualiteSchema(actu)
+  ].filter(Boolean);
+
   return (
     <div className="min-h-screen bg-slate-50">
       <SEO
         title={actu.titre}
         description={actu.summary_falc || actu.contenu?.substring(0, 150)}
-        url={window.location.href}
+        path={`/actualites/${actu.slug}`}
+        schema={schema}
       />
 
       {/* Fil d'Ariane */}
@@ -154,24 +181,19 @@ export default function ActualiteDetail() {
             <div className="prose prose-slate max-w-none text-slate-700 leading-relaxed whitespace-pre-line">
               {actu.contenu}
             </div>
-
-            {actu.source_url && (
-              <div className="mt-8 pt-6 border-t border-slate-100">
-                <Button asChild variant="outline">
-                  <a
-                    href={actu.source_url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="flex items-center gap-2"
-                  >
-                    Lire la source originale
-                    <ExternalLink className="h-4 w-4" />
-                  </a>
-                </Button>
-              </div>
-            )}
           </CardContent>
         </Card>
+
+        {/* FALC Summary */}
+        <FalcSummary text={actu?.summary_falc} />
+
+        {/* Traçabilité de la source */}
+        <SourceTraceability
+          source_url={actu.source_url}
+          retrieved_at={actu.retrieved_at || actu.fetched_at}
+          last_checked_at={actu.last_checked_at}
+          source_last_modified={actu.source_last_modified}
+        />
       </div>
     </div>
   );

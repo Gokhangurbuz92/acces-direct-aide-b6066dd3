@@ -1,9 +1,7 @@
 
-import { PrismaClient } from '@prisma/client';
+import prisma from '../../../_utils/prisma.js';
 import { verifyProToken, ROLE } from '../../../lib/pro-auth.js';
 import { decrypt, hash } from '../../../lib/crypto.js';
-
-const prisma = new PrismaClient();
 
 export default async function handler(req, res) {
     if (req.method !== 'GET') {

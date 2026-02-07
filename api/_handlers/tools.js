@@ -1,12 +1,11 @@
 
-import { PrismaClient } from '@prisma/client';
+import prisma from '../_utils/prisma.js';
 import jwt from 'jsonwebtoken';
 
-const prisma = new PrismaClient();
 const ALLOWED_ADMIN_ROLES = ['admin', 'superadmin'];
 
 function isAdmin(req) {
-    if (process.env.VITE_DEV_LOGIN_ENABLED === 'true') return true;
+    if (process.env.NODE_ENV !== 'production' && process.env.VITE_DEV_LOGIN_ENABLED === 'true') return true;
     const authHeader = req.headers.authorization;
     if (!authHeader || !authHeader.startsWith('Bearer ')) return false;
     try {

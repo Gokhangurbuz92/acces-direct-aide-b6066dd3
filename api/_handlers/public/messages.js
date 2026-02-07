@@ -1,8 +1,6 @@
 
-import { PrismaClient } from '@prisma/client';
+import prisma from '../../_utils/prisma.js';
 import { hash, encrypt, decrypt, generateAttachmentToken } from '../../lib/crypto.js';
-
-const prisma = new PrismaClient();
 
 export default async function handler(req, res) {
     try {

@@ -1,96 +1,83 @@
-import { PrismaClient } from '@prisma/client';
-import { getAuthenticatedUser } from '../_utils/auth.js';
-import { createSnapshot } from '../_utils/snapshot.js';
+import prisma from '../_utils/prisma.js';
+import { verifyAdmin } from '../_utils/auth.js';
+import { handleAdminCreate, handleAdminUpdate, handleAdminDelete } from '../_utils/crud.js';
+import { logger } from '../lib/logger.js'; // Ensure logger is imported
 
-const prisma = new PrismaClient();
-
-export default async function handler(req, res) {
+async function handler(req, res) {
     const { id, slug, limit, sort, statut } = req.query;
+    let isAdmin = false;
+    try {
+        isAdmin = verifyAdmin(req);
+    } catch (e) {
+        // verifyAdmin might throw if secret is missing or something
+        // Treat as non-admin
+        isAdmin = false;
+    }
 
     try {
-        // --- READ (GET) ---
-        if (req.method === 'GET') {
-            const user = await getAuthenticatedUser(req);
-            const isAuth = !!user;
+        // CRUD operations
+        if (req.method === 'POST') return handleAdminCreate(req, res, prisma.actualite);
+        if (req.method === 'PUT') return handleAdminUpdate(req, res, prisma.actualite, id);
+        if (req.method === 'DELETE') return handleAdminDelete(req, res, prisma.actualite, id);
 
-            if (id || slug) {
-                const item = await prisma.actualite.findFirst({
-                    where: id ? { id: String(id) } : { slug: String(slug) }
-                });
-                if (!isAuth && item && item.statut !== 'publie') {
-                    return res.status(404).json({ error: "Not found" });
+        // READ (GET / HEAD)
+        if (req.method === 'GET' || req.method === 'HEAD') {
+            try {
+                // Single item by ID or slug
+                if (id || slug) {
+                    const item = await prisma.actualite.findFirst({
+                        where: id ? { id: String(id) } : { slug: String(slug) }
+                    });
+
+                    if (!item) {
+                        return res.status(404).json({ error: "Not found" });
+                    }
+
+                    // Enforce visibility for non-admin
+                    if (!isAdmin && item.statut !== 'publie') {
+                        return res.status(404).json({ error: "Not found" });
+                    }
+
+                    return res.status(200).json(item);
                 }
-                // Return single object if found, consistent with other detail endpoints
-                // BUT: existing code returned [item]. StructureDetail expects single object.
-                // Actualites.jsx (list) expects array.
-                // If this is details, we should probably return single object.
-                // However, the previous code `return res.status(200).json(item ? [item] : []);` suggests the frontend might expect an array for detail too?
-                // Let's check Actualites.jsx. It doesn't fetch details.
-                // I will create ActualiteDetail.jsx which will likely expect an object.
-                // So I will return the object directly.
-                if (!item) return res.status(404).json({ error: "Not found" });
-                return res.status(200).json(item);
-            }
 
-            const where = {};
-            if (isAuth) {
-                if (statut) where.statut = statut;
-            } else {
-                where.statut = 'publie';
-            }
+                // List items
+                const where = {};
+                if (isAdmin) {
+                    if (statut) where.statut = statut;
+                } else {
+                    where.statut = 'publie';
+                }
 
-            const queryOptions = {
-                where,
-                take: limit ? parseInt(limit) : undefined,
-            };
-
-            if (sort) {
-                const desc = sort.startsWith('-');
-                const field = desc ? sort.substring(1) : sort;
-                queryOptions.orderBy = {
-                    [field]: desc ? 'desc' : 'asc'
+                const queryOptions = {
+                    where,
+                    take: limit ? parseInt(limit) : undefined,
                 };
+
+                if (sort) {
+                    const desc = sort.startsWith('-');
+                    const field = desc ? sort.substring(1) : sort;
+                    queryOptions.orderBy = {
+                        [field]: desc ? 'desc' : 'asc'
+                    };
+                } else {
+                    queryOptions.orderBy = { date_publication: 'desc' };
+                }
+
+                const items = await prisma.actualite.findMany(queryOptions);
+                return res.status(200).json(items);
+            } catch (dbError) {
+                logger.error("Actualites DB Error (Recovered):", dbError);
+                // Fallback to safe empty state to prevent 500
+                return res.status(200).json([]);
             }
-
-            const items = await prisma.actualite.findMany(queryOptions);
-            return res.status(200).json(items);
-        }
-
-        // --- WRITE ---
-        const user = await getAuthenticatedUser(req);
-        if (!user) return res.status(401).json({ error: "Unauthorized" });
-
-        if (req.method === 'POST') {
-            const data = req.body;
-            delete data.id;
-            const newItem = await prisma.actualite.create({ data });
-            return res.status(201).json(newItem);
-        }
-
-        if (req.method === 'PUT') {
-            if (!id) return res.status(400).json({ error: "Missing ID" });
-
-            // Snapshot before update
-            await createSnapshot('Actualite', id, user.email);
-
-            const data = req.body;
-            const updated = await prisma.actualite.update({
-                where: { id: String(id) },
-                data
-            });
-            return res.status(200).json(updated);
-        }
-
-        if (req.method === 'DELETE') {
-            if (!id) return res.status(400).json({ error: "Missing ID" });
-            await prisma.actualite.delete({ where: { id: String(id) } });
-            return res.status(200).json({ success: true });
         }
 
         return res.status(405).json({ error: "Method not allowed" });
-
     } catch (error) {
-        console.error(error);
-        return res.status(500).json({ error: 'Server Error' });
+        logger.error('Actualites handler error:', error);
+        return res.status(500).json({ error: 'Internal server error' });
     }
 }
+
+export default handler;

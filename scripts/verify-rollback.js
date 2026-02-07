@@ -1,6 +1,6 @@
-import { PrismaClient } from '@prisma/client';
+import prisma from '../api/_utils/prisma.js';
 
-const prisma = new PrismaClient();
+
 
 async function verifyRollback() {
     console.log('🚀 Starting Rollback Verification...');

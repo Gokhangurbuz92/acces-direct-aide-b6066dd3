@@ -15,7 +15,8 @@ export default function SEO({
     description,
     path = '',
     image = DEFAULT_IMAGE,
-    noindex = false
+    noindex = false,
+    schema = null
 }) {
     const fullTitle = title ? `${title} - ${SITE_NAME}` : SITE_NAME;
 
@@ -24,30 +25,48 @@ export default function SEO({
     const cleanPath = path.split('?')[0];
     // 2. Ensure leading slash if path is provided and doesn't have it
     const normalizedPath = cleanPath && !cleanPath.startsWith('/') ? `/${cleanPath}` : cleanPath;
-    // 3. Construct URL
-    const canonicalUrl = `${BASE_URL}${normalizedPath}`;
+
+    // P0.6: Canonical is emitted ONLY in production and must equal PUBLIC_BASE_URL
+    const isProduction = import.meta.env.VITE_VERCEL_ENV === 'production';
+    const canonicalBase = isProduction ? 'https://www.accesdirectaide.fr' : null;
+    const canonicalUrl = canonicalBase ? `${canonicalBase}${normalizedPath}` : null;
 
     // Image URL logic
     const imageUrl = image.startsWith('http')
         ? image
         : `${BASE_URL}${image.startsWith('/') ? image : '/' + image}`;
 
+    // Determine robots
+    // P0.6: In non-prod: keep noindex (already standard behavior if we force !indexable logic or manual override)
+    // If not production, force noindex if not already set?
+    // The current logic typically uses `noIndex` prop. 
+    // Let's ensure we default to noIndex if not prod, unless checking props.
+    // However, user said "keep noindex in preview/dev". 
+    // Usually handled by passing noIndex={true} or relying on environment.
+
+    // Simplest logic adhering to request:
+    // If canonical is null, don't render it.
+
     return (
         <Helmet>
             {/* Basic */}
-            <title>{fullTitle}</title>
+            <title>{title ? `${title} | Accès Direct Aide` : 'Accès Direct Aide'}</title>
             <meta name="description" content={description} />
-            <link rel="canonical" href={canonicalUrl} />
+
+            {/* Canonical ONLY in production */}
+            {canonicalUrl && <link rel="canonical" href={canonicalUrl} />}
 
             {/* Robots */}
-            {noindex && <meta name="robots" content="noindex, nofollow" />}
+            {(noindex || !isProduction) && <meta name="robots" content="noindex, nofollow" />}
+
+            {/* Open Graph */}
 
             {/* OpenGraph */}
             <meta property="og:type" content="website" />
             <meta property="og:site_name" content={SITE_NAME} />
             <meta property="og:title" content={fullTitle} />
             <meta property="og:description" content={description} />
-            <meta property="og:url" content={canonicalUrl} />
+            {canonicalUrl && <meta property="og:url" content={canonicalUrl} />}
             <meta property="og:image" content={imageUrl} />
             <meta property="og:locale" content="fr_FR" />
 
@@ -56,6 +75,13 @@ export default function SEO({
             <meta name="twitter:title" content={fullTitle} />
             <meta name="twitter:description" content={description} />
             <meta name="twitter:image" content={imageUrl} />
+
+            {/* Schema.org */}
+            {schema && (
+                <script type="application/ld+json">
+                    {JSON.stringify(schema)}
+                </script>
+            )}
         </Helmet>
     );
 }
@@ -65,5 +91,9 @@ SEO.propTypes = {
     description: PropTypes.string.isRequired,
     path: PropTypes.string,
     image: PropTypes.string,
-    noindex: PropTypes.bool
+    noindex: PropTypes.bool,
+    schema: PropTypes.oneOfType([
+        PropTypes.object,
+        PropTypes.array
+    ])
 };

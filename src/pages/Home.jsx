@@ -1,6 +1,7 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import SEO from '@/components/SEO';
+import Logo from '@/components/Brand/Logo';
 import { createPageUrl } from '@/utils';
 import { client } from '@/api/client';
 import { useQuery } from '@tanstack/react-query';
@@ -13,7 +14,6 @@ import { Skeleton } from "@/components/ui/skeleton";
 import {
   ArrowRight,
   Shield,
-  Clock,
   Heart,
   AlertTriangle,
   CheckCircle2
@@ -52,8 +52,41 @@ export default function Home() {
         path="/"
       />
       {/* Hero Section */}
-      <section className="bg-gradient-to-br from-blue-600 via-blue-700 to-indigo-800 text-white py-16 md:py-24">
-        <div className="max-w-5xl mx-auto px-4 sm:px-6 text-center">
+      <section className="relative bg-gradient-to-br from-blue-600 via-blue-700 to-indigo-800 text-white py-16 md:py-24 overflow-hidden">
+        {/* Decorative Background - Institutional Premium */}
+        <div className="absolute inset-0 pointer-events-none overflow-hidden" aria-hidden="true">
+          {/* Mesh Gradient Overlay */}
+          <div 
+            className="absolute inset-0 opacity-50"
+            style={{
+              background: `
+                radial-gradient(circle at 20% 30%, rgba(255, 255, 255, 0.15) 0%, transparent 50%),
+                radial-gradient(circle at 80% 70%, rgba(96, 165, 250, 0.2) 0%, transparent 50%),
+                radial-gradient(circle at 50% 50%, rgba(147, 197, 253, 0.1) 0%, transparent 70%)
+              `,
+              filter: 'blur(40px)'
+            }}
+          />
+          
+          {/* Subtle Grid Pattern */}
+          <div 
+            className="absolute inset-0 opacity-10"
+            style={{
+              backgroundImage: `
+                linear-gradient(rgba(255, 255, 255, 0.1) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(255, 255, 255, 0.1) 1px, transparent 1px)
+              `,
+              backgroundSize: '64px 64px'
+            }}
+          />
+          
+          {/* Animated Blobs - Motion Safe Only */}
+          <div className="motion-safe:animate-[pulse_10s_ease-in-out_infinite] motion-reduce:animate-none absolute top-10 left-10 w-64 h-64 bg-white/10 rounded-full blur-3xl" />
+          <div className="motion-safe:animate-[pulse_12s_ease-in-out_infinite] motion-reduce:animate-none absolute bottom-20 right-20 w-80 h-80 bg-blue-300/10 rounded-full blur-3xl" />
+        </div>
+
+        {/* Content */}
+        <div className="relative z-10 max-w-5xl mx-auto px-4 sm:px-6 text-center">
           <h1 className="text-3xl md:text-5xl font-bold mb-6 leading-tight">
             Trouvez les aides et les services
             <br className="hidden md:block" />
@@ -170,7 +203,7 @@ export default function Home() {
                 Informations sûres
               </h3>
               <p className="text-slate-600">
-                Nos informations viennent de l'État.
+                Nos informations viennent de l&apos;État.
               </p>
             </div>
             <div className="text-center">
@@ -181,7 +214,7 @@ export default function Home() {
                 Site gratuit
               </h3>
               <p className="text-slate-600">
-                C'est gratuit. Il n'y a pas de publicité.
+                C&apos;est gratuit. Il n&apos;y a pas de publicité.
               </p>
             </div>
             <div className="text-center">
@@ -216,7 +249,7 @@ export default function Home() {
             </div>
             <div className="grid md:grid-cols-3 gap-6">
               {loadingActualites ? (
-                 Array(3).fill(0).map((_, i) => (
+                Array(3).fill(0).map((_, i) => (
                   <Skeleton key={i} className="h-48 w-full rounded-xl" />
                 ))
               ) : (
@@ -271,8 +304,8 @@ export default function Home() {
       <section className="py-8 bg-slate-100 border-t border-slate-200">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 text-center">
           <p className="text-sm text-slate-600">
-            ℹ️ Ce site informe et oriente. Il ne remplace pas l'administration ou un professionnel.
-            En cas de doute, contactez toujours l'organisme concerné.
+            ℹ️ Ce site informe et oriente. Il ne remplace pas l&apos;administration ou un professionnel.
+            En cas de doute, contactez toujours l&apos;organisme concerné.
           </p>
         </div>
       </section>

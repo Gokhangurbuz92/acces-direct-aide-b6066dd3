@@ -46,8 +46,8 @@ const DEPARTEMENTS = [
   { value: 'national', label: 'France entière' },
 ];
 
-export default function SearchBar({ onSearch, showFilters = true, compact = false }) {
-  const [query, setQuery] = useState('');
+export default function SearchBar({ onSearch, showFilters = true, compact = false, initialValue = '' }) {
+  const [query, setQuery] = useState(initialValue);
   const [filters, setFilters] = useState({
     departement: '',
     categorie: '',
@@ -89,8 +89,8 @@ export default function SearchBar({ onSearch, showFilters = true, compact = fals
               className={`pl-12 ${compact ? 'h-11' : 'h-14 text-lg'} bg-white border-slate-200 focus:border-blue-500 focus:ring-blue-500`}
             />
           </div>
-          <Button 
-            type="submit" 
+          <Button
+            type="submit"
             className={`${compact ? 'h-11 px-4' : 'h-14 px-8'} bg-blue-600 hover:bg-blue-700 text-white font-medium`}
           >
             <Search className="h-5 w-5 sm:mr-2" />
@@ -188,9 +188,9 @@ export default function SearchBar({ onSearch, showFilters = true, compact = fals
                       type="button"
                       variant={filters.situation === sit.value ? "default" : "outline"}
                       size="sm"
-                      onClick={() => setFilters(prev => ({ 
-                        ...prev, 
-                        situation: prev.situation === sit.value ? '' : sit.value 
+                      onClick={() => setFilters(prev => ({
+                        ...prev,
+                        situation: prev.situation === sit.value ? '' : sit.value
                       }))}
                       className="text-sm"
                     >

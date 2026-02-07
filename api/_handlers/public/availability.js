@@ -1,8 +1,6 @@
 
-import { PrismaClient } from '@prisma/client';
+import prisma from '../../_utils/prisma.js';
 import { addDays, format, startOfDay, endOfDay } from 'date-fns';
-
-const prisma = new PrismaClient();
 
 export default async function handler(req, res) {
     if (req.method !== 'GET') {

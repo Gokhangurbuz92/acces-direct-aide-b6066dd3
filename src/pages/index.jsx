@@ -44,6 +44,7 @@ const AppointmentRequest = lazy(() => import("./AppointmentRequest.jsx"));
 
 // Admin
 const AdminLogin = lazy(() => import("./AdminLogin.jsx"));
+const AdminHealth = lazy(() => import("./admin/Health.jsx"));
 const AdminInbox = lazy(() => import("./admin/Inbox.jsx"));
 const AdminRuns = lazy(() => import("./admin/Runs.jsx"));
 const AdminAideEdit = lazy(() => import("./AdminAideEdit.jsx"));
@@ -175,6 +176,7 @@ function PagesContent() {
                     <Route path="/actualites/:slug" element={<ActualiteDetail />} />
 
                     <Route path="/admin/login" element={<AdminLogin />} />
+                    <Route path="/admin/health" element={<AdminGuard><AdminHealth /></AdminGuard>} />
                     <Route path="/admin/inbox" element={<AdminGuard><AdminInbox /></AdminGuard>} />
                     <Route path="/admin/runs" element={<AdminGuard><AdminRuns /></AdminGuard>} />
                     <Route path="/admin/aides/:id" element={<AdminGuard><AdminAideEdit /></AdminGuard>} />

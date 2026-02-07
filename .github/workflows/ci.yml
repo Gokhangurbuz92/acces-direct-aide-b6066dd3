@@ -6,14 +6,36 @@ on:
   pull_request:
     branches: [ main ]
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   validate:
     runs-on: ubuntu-latest
+    
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_USER: testuser
+          POSTGRES_PASSWORD: testpass
+          POSTGRES_DB: testdb
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+    
     env:
-      DATABASE_URL: "postgresql://user:pass@localhost:5432/db" # Dummy for build/prisma generate
-      ADA_ENCRYPTION_KEY: "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef" # 64-char hex = 32 bytes
+      DATABASE_URL: "postgresql://testuser:testpass@localhost:5432/testdb"
+      POSTGRES_URL_NON_POOLING: "postgresql://testuser:testpass@localhost:5432/testdb"
+      ADA_ENCRYPTION_KEY: "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef"
       JWT_SECRET: "dummy_jwt_secret"
       VITE_API_URL: "http://localhost:3000"
+      VITE_BASE_URL: "https://www.accesdirectaide.fr"
 
     steps:
       - uses: actions/checkout@v4
@@ -36,17 +58,22 @@ jobs:
       - name: Build
         run: npm run build
 
+      - name: Setup Database
+        run: npx prisma db push --skip-generate
+
+      - name: Verify Handler Imports
+        run: node scripts/verify-handler-imports.js
+
       - name: Unit Tests
         run: npm run test
 
       - name: Install Playwright Browsers
         run: npx playwright install --with-deps
 
-      - name: Start Preview Server & Run E2E
-        # Starts the preview server in background and runs tests against it
-        run: |
-          npm run build
-          npm run preview -- --port 4173 &
-          npx playwright test e2e/booking.spec.js e2e/public-core.spec.js
+      - name: Build for E2E
+        run: npm run build
+
+      - name: E2E Tests
+        run: npm run test:e2e -- e2e/booking.spec.js e2e/public-core.spec.js
         env:
           CI: true

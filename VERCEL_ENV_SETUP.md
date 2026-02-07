@@ -41,8 +41,8 @@ Toutes les URLs ci-dessous ont été **corrigées** (espace supprimé).
 | **Upstash KV** | 5 | ✅ Fournies |
 | **Sentry** | 1 | ✅ Fournie |
 | **Site Config** | 1 | ⚠️ À vérifier |
-| **Admin** | 1 | ❌ Manquante (optionnelle) |
-| **TOTAL** | **15** | **14/15 OK** |
+| **Admin** | 2 | ✅ Fournies |
+| **TOTAL** | **16** | **16/16 OK** |
 
 ---
 
@@ -153,16 +153,16 @@ PUBLIC_BASE_URL="https://www.accesdirectaide.fr"
 ### 6️⃣ ADMIN & AUTOMATION
 
 ```bash
-# Token admin pour l'API (MANQUANT - à générer si nécessaire)
-# ADMIN_TOKEN="your-admin-token-for-api-auth"
+# Token admin pour l'API (pour les opérations d'administration)
+ADMIN_TOKEN="j5X6YGaJT/3hSz3va9mB/ovVzAJ+aODngYPssVYPqjeMO0wz+73uAsCE+QTPgwBD"
 
-# Secret pour bypass automation (MANQUANT - optionnel)
-# BYPASS_SECRET="optional-automation-bypass-secret"
+# Secret pour bypass automation (pour tests et automation)
+BYPASS_SECRET="d0a682492108bc66bcf32dcceb2320042a538b4906a2bf644cbd7c1a51870278"
 ```
 
-**Statut:** ❌ Non fournies  
-**Impact:** Fonctionnalités d'administration limitées  
-**Action:** Générer si nécessaire avec `openssl rand -hex 32`
+**Statut:** ✅ Fournies  
+**Environnements Vercel:** Production, Preview, Development  
+**Impact:** Permet les opérations d'administration et l'automation
 
 ---
 
@@ -196,6 +196,8 @@ Pour chaque variable ci-dessous, cliquez sur **Add New** et remplissez:
 | `UPSTASH_KV_KV_URL` | `rediss://default:Ae1WAAIncDFkNmE3NzVkN2MyMDc0NTg2OTE5ODE1ZTI2MWEzMzVhZHAxNjA3NTg@great-kite-60758.upstash.io:6379` | ✅ Production, ✅ Preview, ✅ Development |
 | `VITE_SENTRY_DSN` | `https://a1f0f2001361095c45e2cc24d5d38fc7@o4509125147361280.ingest.de.sentry.io/4509125158371408` | ✅ Production, ✅ Preview |
 | `PUBLIC_BASE_URL` | `https://www.accesdirectaide.fr` | ✅ Production, ✅ Preview |
+| `ADMIN_TOKEN` | `j5X6YGaJT/3hSz3va9mB/ovVzAJ+aODngYPssVYPqjeMO0wz+73uAsCE+QTPgwBD` | ✅ Production, ✅ Preview, ✅ Development |
+| `BYPASS_SECRET` | `d0a682492108bc66bcf32dcceb2320042a538b4906a2bf644cbd7c1a51870278` | ✅ Production, ✅ Preview, ✅ Development |
 
 ### Étape 3: Ajouter les variables Development (optionnel)
 

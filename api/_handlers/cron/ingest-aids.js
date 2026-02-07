@@ -196,8 +196,7 @@ export async function runIngestAids({ limit, runId, wipe = false }) {
                             stage: 'item_processing'
                         },
                         extra: {
-                            url: url,
-                            itemTitle: item?.title || 'unknown'
+                            url: url
                         }
                     });
                 }

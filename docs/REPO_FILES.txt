@@ -82,6 +82,7 @@
 ./api/_handlers/upload.js
 ./api/_handlers/version.js
 ./api/_utils/auth.js
+./api/_utils/build-info.js
 ./api/_utils/cache.js
 ./api/_utils/cachePolicy.js
 ./api/_utils/cronAuth.js

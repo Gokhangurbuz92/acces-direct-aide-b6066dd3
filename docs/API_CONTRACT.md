@@ -4,50 +4,59 @@ Toutes les réponses de l'API (`/api/*`) suivent un format JSON standardisé.
 
 ## Format de Réponse
 
-### Succès (200 OK)
+Chaque réponse API est un objet JSON avec la structure suivante :
 
 ```json
 {
-  "data": {
-    // Objet ou tableau de résultats
-    "id": "123",
-    "nom": "Exemple"
-  },
+  "data": <any | null>,
   "meta": {
-    // Métadonnées optionnelles (pagination, version)
-    "pagination": {
-      "total": 100,
-      "page": 1,
-      "limit": 20
-    }
+    "requestId": "req_123456",
+    "pagination": <PaginationObject | undefined>
   },
-  "error": null
+  "error": <ErrorObject | null>
 }
 ```
 
-### Erreur (4xx, 5xx)
+### Champs
+
+- **`data`** : Le résultat de l'opération. Peut être un objet, un tableau ou null. Présent en cas de succès.
+- **`meta`** : Métadonnées sur la requête.
+  - `requestId` : Identifiant unique de la requête (pour traçabilité/debug).
+  - `pagination` : (Optionnel) Détails de pagination pour les listes.
+- **`error`** : Détails de l'erreur. Présent uniquement si la requête a échoué.
+
+### Objet Pagination
+
+Si la réponse est une liste d'éléments, `meta.pagination` contiendra :
 
 ```json
 {
-  "data": null,
-  "meta": null,
-  "error": {
-    "code": "RESOURCE_NOT_FOUND",
-    "message": "La ressource demandée n'existe pas.",
-    "details": null // Optionnel: détails de validation
-  }
+  "page": 1,            // Numéro de page actuel
+  "pageSize": 20,       // Éléments par page
+  "total": 100,         // Nombre total d'éléments
+  "totalPages": 5       // Nombre total de pages
+}
+```
+
+### Objet Erreur
+
+```json
+{
+  "code": "RESOURCE_NOT_FOUND", // Code d'erreur machine
+  "message": "Ressource introuvable", // Message lisible pour l'humain
+  "details": null        // (Optionnel) Détails de validation
 }
 ```
 
 ## Codes HTTP Standards
 
 - **200 OK** : Succès.
-- **201 Created** : Ressource créée.
-- **204 No Content** : Succès sans contenu (ex: suppression).
+- **201 Created** : Création réussie.
+- **204 No Content** : Succès sans contenu.
 - **400 Bad Request** : Erreur de validation ou format invalide.
 - **401 Unauthorized** : Token manquant ou invalide.
-- **403 Forbidden** : Droits insuffisants (ex: Pro essayant d'accéder à Admin).
+- **403 Forbidden** : Droits insuffisants.
 - **404 Not Found** : Ressource introuvable.
-- **409 Conflict** : Conflit d'état (ex: double réservation).
+- **409 Conflict** : Conflit d'état.
 - **429 Too Many Requests** : Rate limit dépassé.
-- **500 Internal Server Error** : Bug serveur non géré.
+- **500 Internal Server Error** : Erreur serveur.

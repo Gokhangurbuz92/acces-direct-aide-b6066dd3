@@ -8,21 +8,6 @@ datasource db {
   directUrl = env("POSTGRES_URL_NON_POOLING")
 }
 
-model SourceDocument {
-  id           String   @id @default(uuid())
-  source_url   String?
-  fetched_at   DateTime @default(now())
-  content_hash String?
-  raw_content  String?
-  metadata     Json?
-
-  aides       Aide[]
-  structures  Structure[]
-  dispositifs Dispositif[]
-  demarches   Demarche[]
-}
-
-
 model Aide {
   id                    String          @id @default(uuid())
   slug                  String?         @unique
@@ -637,3 +622,16 @@ model ResourceAccessibility {
   source_last_modified  DateTime?
 }
 
+model SourceDocument {
+  id           String   @id @default(uuid())
+  source_url   String?
+  fetched_at   DateTime @default(now())
+  content_hash String?
+  raw_content  String?
+  metadata     Json?
+
+  aides       Aide[]
+  structures  Structure[]
+  dispositifs Dispositif[]
+  demarches   Demarche[]
+}

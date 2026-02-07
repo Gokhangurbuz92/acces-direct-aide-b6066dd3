@@ -64,6 +64,9 @@ model Aide {
   retrieved_at          DateTime?
   last_checked_at       DateTime?
 
+  source_document_id    String?
+  sourceDocument        SourceDocument? @relation(fields: [source_document_id], references: [id])
+
   @@index([statut, published_at])
   @@index([categoryId, statut])
   @@index([statut])
@@ -209,6 +212,9 @@ model Demarche {
   retrieved_at          DateTime?
   last_checked_at       DateTime?
   source_last_modified  DateTime?
+
+  source_document_id    String?
+  sourceDocument        SourceDocument? @relation(fields: [source_document_id], references: [id])
 
   @@index([statut, published_at])
   @@index([categoryId, statut])
@@ -614,4 +620,18 @@ model ResourceAccessibility {
   retrieved_at          DateTime?
   last_checked_at       DateTime?
   source_last_modified  DateTime?
+}
+
+model SourceDocument {
+  id           String   @id @default(uuid())
+  source_url   String?
+  fetched_at   DateTime @default(now())
+  content_hash String?
+  raw_content  String?
+  metadata     Json?
+
+  aides       Aide[]
+  structures  Structure[]
+  dispositifs Dispositif[]
+  demarches   Demarche[]
 }

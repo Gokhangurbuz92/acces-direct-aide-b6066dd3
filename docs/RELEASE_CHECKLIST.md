@@ -1,31 +1,31 @@
 # Release Checklist
 
-Ce document définit les étapes obligatoires avant tout merge ou déploiement en production.
+Ce document définit les étapes obligatoires avant toute mise en production (Release Gate).
 
-## 1. Pré-Merge (CI/CD Automatique)
+## 1. Validation Automatique (CI)
+Le workflow GitHub Actions doit être au vert (✅).
+- `lint`: Pas d'erreurs de syntaxe ou style.
+- `typecheck`: Pas d'erreurs TypeScript (si applicable).
+- `build`: Le build Vite et l'API se compilent.
+- `test`: Tests unitaires passants.
+- `e2e`: Tests Playwright critiques (`booking.spec.js`, `public-core.spec.js`) passants.
 
-Ces vérifications sont effectuées par le workflow GitHub Actions (`.github/workflows/ci.yml`).
-Si une étape échoue, le merge est interdit.
+## 2. Validation Manuelle (Review)
+- [ ] La PR a un titre clair ("feat:", "fix:", "chore:").
+- [ ] La description explique le "Pourquoi".
+- [ ] Les dépendances (`package.json`) sont minimales et justifiées.
+- [ ] Pas de secrets hardcodés (vérifier `.env.example`).
+- [ ] Pas de fichiers de debug oubliés (`console.log` abusifs, fichiers temporaires).
 
-- [ ] **Linting** : `npm run lint` doit passer sans erreur.
-- [ ] **Build** : `npm run build` doit réussir.
-- [ ] **Tests Unitaires** : `npm run test` doit passer.
-- [ ] **Tests E2E** : Les tests critiques (`booking.spec.js`, `public-core.spec.js`) doivent passer.
+## 3. Smoke Test (Pre-Prod / Preview)
+Sur l'environnement de Preview Vercel :
+- [ ] Page d'accueil charge sans erreur console.
+- [ ] Navigation vers `/aides`, `/demarches`, `/structures` fonctionne.
+- [ ] Une page de détail (ex: aide) s'affiche.
+- [ ] Le formulaire de contact ou RDV s'affiche.
 
-## 2. Vérifications Manuelles (Code Review)
-
-- [ ] **Routes & Navigation** :
-    - Vérifier qu'aucune nouvelle route n'est "orpheline".
-    - Vérifier la cohérence des URLs (kebab-case).
-- **API & Sécurité** :
-    - Vérifier que les nouveaux endpoints sont documentés dans `docs/ROUTES_API.md`.
-    - Vérifier les permissions (Admin/Pro Guards).
-- **Hygiène** :
-    - Pas de `console.log` de debug oubliés.
-    - Pas de fichiers temporaires committés.
-
-## 3. Post-Déploiement (Production)
-
-- [ ] **Smoke Test** : Naviguer sur les pages principales (Accueil, Aides, Annuaire).
-- [ ] **Parcours Critique** : Tenter une recherche et vérifier l'affichage d'une fiche.
-- [ ] **Monitoring** : Vérifier l'absence de pics d'erreurs sur Sentry/Vercel.
+## 4. Rollback Plan
+En cas de pépin critique :
+1. Identifier la version précédente (commit SHA).
+2. Via Vercel Dashboard : "Promote" l'ancien déploiement.
+3. Revert la PR sur GitHub (`git revert`).

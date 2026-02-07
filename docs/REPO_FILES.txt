@@ -237,6 +237,7 @@
 ./middleware.js
 ./package-lock.json
 ./package.json
+./playwright-report/index.html
 ./playwright.config.js
 ./postcss.config.js
 ./prisma/migrations/20250202120000_add_aides_fields_and_unaccent/migration.sql

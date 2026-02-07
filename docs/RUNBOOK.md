@@ -2,7 +2,7 @@
 
 Procédures de résolution d'incidents et maintenance courante.
 
-## 1. Incidents Critiques
+## 1. Incidents Critiques (P0)
 
 ### Erreur 500 sur l'API
 1. **Logs** : Vérifier les logs Vercel (Runtime Logs).
@@ -37,3 +37,18 @@ Si une clé (ex: `JWT_SECRET`) est compromise :
 ### Sauvegarde / Restore
 - **Base de données** : Géré par Neon (Point-in-time recovery).
 - **Contenu** : Les snapshots de contenu (Aides/Démarches) sont stockés dans la table `SourceSnapshot` ou `versions` (selon implémentation).
+
+## 3. Post-Mortem (Analyse après incident)
+
+Après résolution d'un incident majeur :
+1.  Créer un document "Post-Mortem".
+2.  Analyser la cause racine (5 Whys).
+3.  Créer des tâches (Action Items) pour éviter la récidive (ex: ajouter un test).
+
+## 4. Incidents Mineurs (P1: Degraded Performance)
+
+1.  **Acknowledge**: Mettre à jour la page de statut ou notifier.
+2.  **Fix Forward**:
+    -   Reproduire localement ou sur Staging.
+    -   Créer une PR avec le fix + test.
+    -   Merge & Deploy.

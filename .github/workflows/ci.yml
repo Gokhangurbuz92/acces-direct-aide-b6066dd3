@@ -6,6 +6,10 @@ on:
   pull_request:
     branches: [ main ]
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   validate:
     runs-on: ubuntu-latest
@@ -52,11 +56,14 @@ jobs:
       - name: Lint
         run: npm run lint
 
-      - name: Typecheck (if applicable)
-        run: npm run typecheck || true
+      - name: Typecheck
+        run: npm run typecheck
 
       - name: Build
         run: npm run build
+
+      - name: Verify Handler Imports
+        run: node scripts/verify-handler-imports.js
 
       - name: Unit Tests
         run: npm run test

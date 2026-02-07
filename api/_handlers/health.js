@@ -1,5 +1,5 @@
 import prisma from '../_utils/prisma.js';
-import logger from '../lib/logger.js';
+import { logger } from '../lib/logger.js';
 import { kv } from '@vercel/kv';
 
 export default async function handler(req, res) {

@@ -17,9 +17,9 @@ export function SourceProof({
 
   const content = (
     <div
-      className={`inline-flex items-center gap-2 font-mono text-xs uppercase tracking-[0.05em] text-muted ${className}`}
+      className={`inline-flex items-center gap-2 font-mono text-xs uppercase tracking-[0.05em] text-bt-muted ${className}`}
     >
-      <ShieldCheck className="h-4 w-4 text-accent" aria-hidden="true" />
+      <ShieldCheck className="h-4 w-4 text-bt-accent" aria-hidden="true" />
       <span>
         SOURCE : {publisher}
         {formattedDate && ` • VÉRIFIÉ LE ${formattedDate}`}
@@ -33,7 +33,7 @@ export function SourceProof({
         href={url}
         target="_blank"
         rel="noopener noreferrer"
-        className="focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 ring-offset-surface rounded-sm"
+        className="focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-bt-accent focus-visible:ring-offset-2 ring-offset-bt-surface rounded-sm"
       >
         {content}
       </a>

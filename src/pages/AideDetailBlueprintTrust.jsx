@@ -46,15 +46,15 @@ export default function AideDetailBlueprintTrust() {
       <div className="min-h-screen">
         <Header />
         
-        <main id="main-content" className="py-8 bg-background">
+        <main id="main-content" className="py-8 bg-bt-background">
           <div className="container mx-auto px-4">
             {/* Breadcrumb */}
-            <nav className="mb-6 text-sm text-muted" aria-label="Fil d'Ariane">
+            <nav className="mb-6 text-sm text-bt-muted" aria-label="Fil d'Ariane">
               <a href="/" className="hover:text-primary transition-colors">Accueil</a>
               <span className="mx-2">/</span>
               <a href="/aides" className="hover:text-primary transition-colors">Aides</a>
               <span className="mx-2">/</span>
-              <span className="text-ink">{aide.titre}</span>
+              <span className="text-bt-ink">{aide.titre}</span>
             </nav>
 
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
@@ -66,17 +66,17 @@ export default function AideDetailBlueprintTrust() {
                     <Badge>{aide.categorie}</Badge>
                     {aide.montant && <Badge>Montant : {aide.montant}</Badge>}
                   </div>
-                  <h1 className="font-heading font-extrabold text-3xl md:text-4xl text-ink mb-4">
+                  <h1 className="font-heading font-extrabold text-3xl md:text-4xl text-bt-ink mb-4">
                     {aide.titre}
                   </h1>
-                  <p className="text-lg text-muted">
+                  <p className="text-lg text-bt-muted">
                     {aide.description}
                   </p>
                 </div>
 
                 {/* Conditions */}
                 <Card className="p-6">
-                  <h2 className="font-heading font-bold text-xl text-ink mb-4 flex items-center gap-2">
+                  <h2 className="font-heading font-bold text-xl text-bt-ink mb-4 flex items-center gap-2">
                     <CheckCircle2 className="h-5 w-5 text-success" />
                     Conditions d'éligibilité
                   </h2>
@@ -84,7 +84,7 @@ export default function AideDetailBlueprintTrust() {
                     {aide.conditions.map((condition, index) => (
                       <li key={index} className="flex items-start gap-3">
                         <CheckCircle2 className="h-5 w-5 text-success mt-0.5 flex-shrink-0" />
-                        <span className="text-ink">{condition}</span>
+                        <span className="text-bt-ink">{condition}</span>
                       </li>
                     ))}
                   </ul>
@@ -92,11 +92,11 @@ export default function AideDetailBlueprintTrust() {
 
                 {/* Démarches */}
                 <Card className="p-6">
-                  <h2 className="font-heading font-bold text-xl text-ink mb-4 flex items-center gap-2">
+                  <h2 className="font-heading font-bold text-xl text-bt-ink mb-4 flex items-center gap-2">
                     <FileText className="h-5 w-5 text-primary" />
                     Comment faire la demande ?
                   </h2>
-                  <p className="text-muted mb-4">
+                  <p className="text-bt-muted mb-4">
                     Vous pouvez faire votre demande en ligne ou auprès de votre caisse de retraite.
                   </p>
                   <Button variant="solid">
@@ -105,7 +105,7 @@ export default function AideDetailBlueprintTrust() {
                 </Card>
 
                 {/* Source Proof - Mandatory */}
-                <div className="pt-6 border-t border-border">
+                <div className="pt-6 border-t border-bt-border">
                   <SourceProof
                     publisher={aide.source.publisher}
                     date={aide.source.date}
@@ -119,20 +119,20 @@ export default function AideDetailBlueprintTrust() {
                 <div className="sticky top-24 space-y-6">
                   {/* Eligibility Checklist */}
                   <Card className="p-6">
-                    <h3 className="font-heading font-bold text-lg text-ink mb-4">
+                    <h3 className="font-heading font-bold text-lg text-bt-ink mb-4">
                       Éligibilité & Pièces
                     </h3>
                     
                     <div className="space-y-4">
                       <div>
-                        <h4 className="font-medium text-sm text-muted uppercase tracking-wide mb-2">
+                        <h4 className="font-medium text-sm text-bt-muted uppercase tracking-wide mb-2">
                           Pièces à fournir
                         </h4>
                         <ul className="space-y-2">
                           {aide.pieces.map((piece, index) => (
                             <li key={index} className="flex items-start gap-2 text-sm">
-                              <FileText className="h-4 w-4 text-muted mt-0.5 flex-shrink-0" />
-                              <span className="text-ink">{piece}</span>
+                              <FileText className="h-4 w-4 text-bt-muted mt-0.5 flex-shrink-0" />
+                              <span className="text-bt-ink">{piece}</span>
                             </li>
                           ))}
                         </ul>
@@ -145,10 +145,10 @@ export default function AideDetailBlueprintTrust() {
                     <div className="flex items-start gap-3">
                       <AlertCircle className="h-5 w-5 text-warning flex-shrink-0 mt-0.5" />
                       <div>
-                        <h4 className="font-medium text-sm text-ink mb-1">
+                        <h4 className="font-medium text-sm text-bt-ink mb-1">
                           Besoin d'aide ?
                         </h4>
-                        <p className="text-sm text-muted">
+                        <p className="text-sm text-bt-muted">
                           Contactez une structure d'accompagnement près de chez vous.
                         </p>
                       </div>

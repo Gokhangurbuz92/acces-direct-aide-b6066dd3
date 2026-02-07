@@ -1,9 +1,9 @@
 import * as React from "react";
 
 const ButtonVariants = {
-  solid: "bg-primary text-white hover:bg-primaryHover",
-  outline: "border border-border bg-surface text-ink hover:bg-background",
-  ghost: "bg-transparent text-ink hover:bg-background",
+  solid: "bg-bt-primary text-white hover:bg-bt-primaryHover",
+  outline: "border border-bt-border bg-bt-surface text-bt-ink hover:bg-bt-background",
+  ghost: "bg-transparent text-bt-ink hover:bg-bt-background",
 };
 
 export const Button = React.forwardRef(
@@ -14,8 +14,8 @@ export const Button = React.forwardRef(
       "motion-reduce:transform-none motion-reduce:transition-none";
 
     const focus =
-      "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent " +
-      "focus-visible:ring-offset-2 ring-offset-surface";
+      "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-bt-accent " +
+      "focus-visible:ring-offset-2 ring-offset-bt-surface";
 
     return (
       <button

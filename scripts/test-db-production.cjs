@@ -5,11 +5,24 @@
  * 
  * Teste la connexion et compte le contenu publié
  * Endpoint: ep-summer-cloud-ag14ucwz (Production et Preview)
+ * 
+ * IMPORTANT: Ce script utilise les variables d'environnement
+ * Définir POSTGRES_URL_NON_POOLING avant d'exécuter
  */
 
 const { Client } = require('pg');
 
-const PROD_URL = 'postgresql://neondb_owner:npg_xXADTwi7o4RC@ep-summer-cloud-ag14ucwz.eu-central-1.aws.neon.tech/neondb?sslmode=require';
+// Utiliser la variable d'environnement au lieu de hardcoder les credentials
+const PROD_URL = process.env.POSTGRES_URL_NON_POOLING || process.env.DATABASE_URL_UNPOOLED;
+
+if (!PROD_URL) {
+  console.error('❌ ERREUR: Variable d\'environnement manquante');
+  console.error('   Définir POSTGRES_URL_NON_POOLING ou DATABASE_URL_UNPOOLED\n');
+  console.error('Exemple:');
+  console.error('   export POSTGRES_URL_NON_POOLING="postgresql://user:password@host/db"');
+  console.error('   node scripts/test-db-production.cjs\n');
+  process.exit(1);
+}
 
 async function testProductionDB() {
   console.log('╔════════════════════════════════════════════════════════════════╗');
@@ -23,7 +36,7 @@ async function testProductionDB() {
 
   try {
     console.log('🔌 Connexion à la base de données...');
-    console.log(`   Endpoint: ep-summer-cloud-ag14ucwz.eu-central-1.aws.neon.tech\n`);
+    console.log(`   Endpoint: [MASQUÉ POUR SÉCURITÉ]\n`);
     
     await client.connect();
     console.log('✅ Connexion réussie!\n');

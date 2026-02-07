@@ -5,11 +5,24 @@
  * 
  * Teste la connexion et compte le contenu publié
  * Endpoint: ep-crimson-night-ag7jy3cm (Development)
+ * 
+ * IMPORTANT: Ce script utilise les variables d'environnement
+ * Définir DATABASE_URL avant d'exécuter
  */
 
 const { Client } = require('pg');
 
-const DEV_URL = 'postgresql://neondb_owner:npg_xXADTwi7o4RC@ep-crimson-night-ag7jy3cm.eu-central-1.aws.neon.tech/neondb?sslmode=require';
+// Utiliser la variable d'environnement au lieu de hardcoder les credentials
+const DEV_URL = process.env.DATABASE_URL || process.env.POSTGRES_URL_NON_POOLING;
+
+if (!DEV_URL) {
+  console.error('❌ ERREUR: Variable d\'environnement manquante');
+  console.error('   Définir DATABASE_URL ou POSTGRES_URL_NON_POOLING\n');
+  console.error('Exemple:');
+  console.error('   export DATABASE_URL="postgresql://user:password@host/db"');
+  console.error('   node scripts/test-db-development.cjs\n');
+  process.exit(1);
+}
 
 async function testDevelopmentDB() {
   console.log('╔════════════════════════════════════════════════════════════════╗');
@@ -23,7 +36,7 @@ async function testDevelopmentDB() {
 
   try {
     console.log('🔌 Connexion à la base de données...');
-    console.log(`   Endpoint: ep-crimson-night-ag7jy3cm.eu-central-1.aws.neon.tech\n`);
+    console.log(`   Endpoint: [MASQUÉ POUR SÉCURITÉ]\n`);
     
     await client.connect();
     console.log('✅ Connexion réussie!\n');

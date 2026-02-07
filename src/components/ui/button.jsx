@@ -1,50 +1,30 @@
-import * as React from "react"
-import { Slot } from "@radix-ui/react-slot"
-import { cva } from "class-variance-authority";
+import * as React from "react";
 
-import { cn } from "@/lib/utils"
+const ButtonVariants = {
+  solid: "bg-bt-primary text-white hover:bg-bt-primaryHover",
+  outline: "border border-bt-border bg-bt-surface text-bt-ink hover:bg-bt-background",
+  ghost: "bg-transparent text-bt-ink hover:bg-bt-background",
+};
 
-const buttonVariants = cva(
-  "inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-primary focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0",
-  {
-    variants: {
-      variant: {
-        default:
-          "bg-brand-primary text-white shadow hover:bg-brand-primary/90",
-        destructive:
-          "bg-feedback-error text-white shadow-sm hover:bg-feedback-error/90",
-        outline:
-          "border-2 border-brand-primary bg-transparent text-brand-primary shadow-sm hover:bg-brand-primary hover:text-white",
-        secondary:
-          "border-2 border-brand-secondary bg-transparent text-brand-primary shadow-sm hover:bg-brand-secondary/10",
-        highlight:
-          "bg-brand-highlight text-text-body shadow-sm hover:bg-brand-highlight/90",
-        ghost: "hover:bg-brand-highlight/10 hover:text-brand-primary",
-        link: "text-brand-primary underline-offset-4 hover:underline",
-      },
-      size: {
-        default: "h-10 px-4 py-2",
-        sm: "h-8 rounded-md px-3 text-xs",
-        lg: "h-12 rounded-md px-8 text-base",
-        icon: "h-10 w-10",
-      },
-    },
-    defaultVariants: {
-      variant: "default",
-      size: "default",
-    },
+export const Button = React.forwardRef(
+  ({ className = "", variant = "solid", ...props }, ref) => {
+    const base =
+      "inline-flex items-center justify-center rounded-lg px-4 py-2 min-h-[44px] text-sm font-medium " +
+      "transition-colors duration-240 ease-apple disabled:opacity-50 disabled:pointer-events-none " +
+      "motion-reduce:transform-none motion-reduce:transition-none";
+
+    const focus =
+      "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-bt-accent " +
+      "focus-visible:ring-offset-2 ring-offset-bt-surface";
+
+    return (
+      <button
+        ref={ref}
+        className={`${base} ${focus} ${ButtonVariants[variant]} ${className}`}
+        {...props}
+      />
+    );
   }
-)
+);
 
-const Button = React.forwardRef(({ className, variant, size, asChild = false, ...props }, ref) => {
-  const Comp = asChild ? Slot : "button"
-  return (
-    (<Comp
-      className={cn(buttonVariants({ variant, size, className }))}
-      ref={ref}
-      {...props} />)
-  );
-})
-Button.displayName = "Button"
-
-export { Button, buttonVariants }
+Button.displayName = "Button";

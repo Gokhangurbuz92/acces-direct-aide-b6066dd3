@@ -34,9 +34,8 @@ module.exports = {
   			xl: 'var(--shadow-xl)',
   		},
   		colors: {
-  			// Blueprint Trust Design System
+  			// Blueprint Trust Design System - Primary tokens
   			ink: '#0B1220',
-  			muted: '#475569',
   			background: '#F7FAFF',
   			surface: '#FFFFFF',
   			border: '#E6EDF7',
@@ -46,30 +45,37 @@ module.exports = {
   			success: '#157F3D',
   			warning: '#B45309',
   			danger: '#B42318',
-  			// Brand colors (Design System)
+  			
+  			// Brand colors (Design System - CSS variables)
   			brand: {
   				primary: 'rgb(var(--color-brand-primary) / <alpha-value>)',
   				secondary: 'rgb(var(--color-brand-secondary) / <alpha-value>)',
   				highlight: 'rgb(var(--color-brand-highlight) / <alpha-value>)',
   				background: 'rgb(var(--color-brand-background) / <alpha-value>)',
   			},
+  			
   			// Text colors
   			text: {
   				body: 'rgb(var(--color-text-body) / <alpha-value>)',
   				muted: 'rgb(var(--color-text-muted) / <alpha-value>)',
   			},
+  			
+  			// Muted variant (for shadcn compatibility)
+  			muted: {
+  				DEFAULT: '#475569',
+  				foreground: 'rgb(var(--color-text-muted) / <alpha-value>)'
+  			},
+  			
   			// Feedback colors
   			feedback: {
   				success: 'rgb(var(--color-feedback-success) / <alpha-value>)',
   				error: 'rgb(var(--color-feedback-error) / <alpha-value>)',
   			},
-  			// Semantic colors
-  			surface: 'rgb(var(--color-surface) / <alpha-value>)',
-  			border: 'rgb(var(--color-border) / <alpha-value>)',
+  			
+  			// Border variants
   			'border-muted': 'rgb(var(--color-border-muted) / <alpha-value>)',
   			
   			// Legacy shadcn/ui colors (mapped to new tokens for compatibility)
-  			background: 'rgb(var(--color-brand-background) / <alpha-value>)',
   			foreground: 'rgb(var(--color-text-body) / <alpha-value>)',
   			card: {
   				DEFAULT: 'rgb(var(--color-surface) / <alpha-value>)',
@@ -79,20 +85,8 @@ module.exports = {
   				DEFAULT: 'rgb(var(--color-surface) / <alpha-value>)',
   				foreground: 'rgb(var(--color-text-body) / <alpha-value>)'
   			},
-  			primary: {
-  				DEFAULT: 'rgb(var(--color-brand-primary) / <alpha-value>)',
-  				foreground: 'rgb(var(--color-base-white) / <alpha-value>)'
-  			},
   			secondary: {
   				DEFAULT: 'rgb(var(--color-brand-secondary) / <alpha-value>)',
-  				foreground: 'rgb(var(--color-text-body) / <alpha-value>)'
-  			},
-  			muted: {
-  				DEFAULT: 'rgb(var(--color-border-muted) / <alpha-value>)',
-  				foreground: 'rgb(var(--color-text-muted) / <alpha-value>)'
-  			},
-  			accent: {
-  				DEFAULT: 'rgb(var(--color-brand-highlight) / <alpha-value>)',
   				foreground: 'rgb(var(--color-text-body) / <alpha-value>)'
   			},
   			destructive: {
@@ -118,12 +112,6 @@ module.exports = {
   				border: 'hsl(var(--sidebar-border))',
   				ring: 'hsl(var(--sidebar-ring))'
   			}
-  		},
-  		boxShadow: {
-  			sm: 'var(--shadow-sm)',
-  			md: 'var(--shadow-md)',
-  			lg: 'var(--shadow-lg)',
-  			xl: 'var(--shadow-xl)',
   		},
   		keyframes: {
   			'accordion-down': {

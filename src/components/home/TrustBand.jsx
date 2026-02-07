@@ -1,5 +1,5 @@
 import * as React from "react";
-import { Badge } from "@/components/ui/Badge";
+import { Badge } from "@/components/ui/badge";
 
 export function TrustBand() {
   const sources = ["CAF", "MSA", "France Travail", "CPAM", "Pôle Emploi"];

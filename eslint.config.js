@@ -101,4 +101,14 @@ export default [
       'react-refresh/only-export-components': 'off',
     },
   },
+
+  // --------------------------------------
+  // ✅ Context files: allow hooks + providers in same file
+  // --------------------------------------
+  {
+    files: ['src/contexts/**/*.{js,jsx,ts,tsx}'],
+    rules: {
+      'react-refresh/only-export-components': 'off',
+    },
+  },
 ]

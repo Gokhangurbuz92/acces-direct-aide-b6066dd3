@@ -13,7 +13,7 @@ const env = {
     DATABASE_URL: 'postgres://dummy:dummy@localhost:5432/dummy'
 };
 
-const child = spawn('node', ['-e', 'import("./api/routes.js").then(() => console.log("Routes loaded OK")).catch(e => { console.error(e); process.exit(1); })'], {
+const child = spawn('node', ['-e', 'import("./api/routes.js").then(() => { console.log("Routes loaded OK"); process.exit(0); }).catch(e => { console.error(e); process.exit(1); })'], {
     env,
     stdio: 'inherit'
 });

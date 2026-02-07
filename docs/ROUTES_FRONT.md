@@ -1,110 +1,97 @@
-# Routes Frontend
+# Cartographie des Routes Front-End
 
-Ce document recense l'ensemble des routes définies dans l'application Frontend (`src/pages/index.jsx`).
+Ce document recense l'ensemble des routes définies dans l'application (`src/pages/index.jsx`).
 
-## Légende
-- **Route**: Chemin URL (ex: `/aides/:slug`)
-- **Page**: Composant React principal
-- **Guard**: Protection d'accès (Public, AdminRoute, RequireAuth, etc.)
-- **API**: Endpoints API principaux appelés (estimé)
+## 1. Routes Publiques (Layout: `Layout.jsx`)
 
-## Routes Publiques
+| Route | Page Component | API attendue (Principale) | Notes |
+|---|---|---|---|
+| `/` | `Home.jsx` | `public/stats.js` (optionnel) | Accueil |
+| `/a-propos` | `APropos.jsx` | - | Statique |
+| `/accessibilite` | `Accessibilite.jsx` | - | Statique |
+| `/actualites` | `Actualites.jsx` | `actualites.js` | Liste des actualités |
+| `/actualites/:slug` | `ActualiteDetail.jsx` | `actualites.js` | Détail actualité |
+| `/aides` | `Aides.jsx` | `aides.js`, `taxonomy.js` | Liste des aides |
+| `/aides/:slug` | `AideDetail.jsx` | `aides.js` | Détail aide |
+| `/demarches` | `Demarches.jsx` | `demarches.js` | Liste démarches |
+| `/demarches/:slug` | `DemarcheDetail.jsx` | `demarches.js` | Détail démarche |
+| `/structures` | `Annuaire.jsx` | `structures.js` | Annuaire (Liste) |
+| `/structures/:slug` | `StructureDetail.jsx` | `structures.js` | Détail structure |
+| `/dispositifs` | `Dispositifs.jsx` | `dispositifs/index.js` | Liste dispositifs |
+| `/dispositifs/:slug` | `DispositifDetail.jsx` | `dispositifs/index.js` | Détail dispositif |
+| `/bonnes-pratiques` | `Guides.jsx` | `guides.js` | Liste guides |
+| `/bonnes-pratiques/:slug` | `GuideDetail.jsx` | `guides.js` | Détail guide |
+| `/outils` | `Tools.jsx` | `tools.js` | Liste outils |
+| `/outils/:slug` | `ToolDetail.jsx` | `tools.js` | Détail outil |
+| `/contact` | `Contact.jsx` | `public/messages.js` | Formulaire contact |
+| `/appointments/request` | `AppointmentRequest.jsx` | `booking/create.js`, `public/availability.js` | Prise de RDV |
+| `/proposer-une-structure` | `SuggestStructure.jsx` | `public/suggest-structure.js` | Suggestion |
+| `/mentions-legales` | `MentionsLegales.jsx` | - | Légal |
+| `/confidentialite` | `Confidentialite.jsx` | - | Légal |
+| `/cookies` | `Cookies.jsx` | - | Légal |
+| `/securite-et-rgpd` | `Security.jsx` | - | Sécurité |
+| `/notre-mission` | `Mission.jsx` | - | Statique |
+| `/notre-methode` | `Method.jsx` | - | Statique |
+| `/sources` | `Sources.jsx` | - | Statique |
+| `/impact` | `Impact.jsx` | - | Statique |
+| `/partenaires` | `Partners.jsx` | - | Statique |
+| `/dossier-subventions` | `SubventionDossier.jsx` | - | Statique |
+| `/r/:token/messages` | `BeneficiaryMessages.jsx` | `public/messages.js` | Messagerie bénéficiaire |
+| `/sentry-test` | `SentryTestPage.jsx` | `sentry-test.js` | Debug Sentry |
 
-| Route | Page Component | Guard | API Calls (Est.) |
-|-------|---------------|-------|------------------|
-| `/` | `Home` | Public | - |
-| `/home` | `Home` | Public | - |
-| `/aides` | `Aides` | Public | `GET /api/aides`, `/api/taxonomy` |
-| `/aides/:slug` | `AideDetail` | Public | `GET /api/aides` |
-| `/aidedetail`, `/aide/view` | `AideDetail` | Public | (Redirections/Alias) |
-| `/categories/:slug` | `Aides` | Public | `GET /api/aides` |
-| `/situations/:slug` | `Aides` | Public | `GET /api/aides` |
-| `/demarches` | `Demarches` | Public | `GET /api/demarches` |
-| `/demarches/:slug` | `DemarcheDetail` | Public | `GET /api/demarches` |
-| `/demarches/view` | `DemarcheDetail` | Public | (Alias) |
-| `/structures` | `Annuaire` | Public | `GET /api/structures` |
-| `/structures/:slug` | `StructureDetail` | Public | `GET /api/structures` |
-| `/structures/view` | `StructureDetail` | Public | (Alias) |
-| `/annuaire` | `Redirect -> /structures` | Public | - |
-| `/actualites` | `Actualites` | Public | `GET /api/actualites` |
-| `/actualites/:slug` | `ActualiteDetail` | Public | `GET /api/actualites` |
-| `/actualites/view` | `ActualiteDetail` | Public | (Alias) |
-| `/bonnes-pratiques` | `Guides` | Public | `GET /api/guides` |
-| `/bonnes-pratiques/:slug` | `GuideDetail` | Public | `GET /api/guides` |
-| `/outils` | `Tools` | Public | `GET /api/tools` |
-| `/outils/:slug` | `ToolDetail` | Public | `GET /api/tools` |
-| `/dispositifs` | `Dispositifs` | Public | `GET /api/dispositifs` |
-| `/accessibilite` | `Accessibilite` | Public | - |
-| `/apropos` | `APropos` | Public | - |
-| `/contact` | `Contact` | Public | `POST /api/public/messages` |
-| `/confidentialite` | `Confidentialite` | Public | - |
-| `/cookies` | `Cookies` | Public | - |
-| `/mentionslegales` | `MentionsLegales` | Public | - |
-| `/sources` | `Sources` | Public | - |
-| `/sourcesmethode` | `SourcesMethode` | Public | - |
-| `/impact` | `Impact` | Public | - |
-| `/notre-mission` | `Mission` | Public | - |
-| `/notre-methode` | `Method` | Public | - |
-| `/securite-et-rgpd` | `Security` | Public | - |
-| `/partenaires` | `Partners` | Public | - |
-| `/proposer-une-structure` | `SuggestStructure` | Public | `POST /api/public/suggest-structure` |
-| `/dossier-subventions` | `SubventionDossier` | Public | - |
-| `/appointmentrequest` | `AppointmentRequest` | Public | `GET /api/public/availability`, `POST /api/booking/create` |
-| `/r/:token/messages` | `BeneficiaryMessages` | Public (Token) | `GET/POST /api/public/messages` |
+## 2. Espace Pro (Layout: `ProLayout.jsx`)
+Routes préfixées par `/pro`.
 
-## Espace Pro (`/pro`)
+| Route | Page Component | Guard | API attendue |
+|---|---|---|---|
+| `/pro/login` | `pro/Login.jsx` | Public | `auth/login.js` |
+| `/pro/register` | `pro/Register.jsx` | Public | `pro/invite.js` |
+| `/pro/forgot-password` | `pro/ForgotPassword.jsx` | Public | `pro/auth/forgot-password.js` |
+| `/pro/reset-password` | `pro/ResetPassword.jsx` | Public | `pro/auth/reset-password.js` |
+| `/pro/dashboard` | `pro/Dashboard.jsx` | `RequireAuth` | `pro/me.js` |
+| `/pro/services` | `pro/Services.jsx` | `RequireAuth` | `pro/services.js` |
+| `/pro/team` | `pro/Team.jsx` | `RequireAuth` | `pro/team.js` |
+| `/pro/structure` | `pro/Structure.jsx` | `RequireAuth` | `pro/structure.js` |
+| `/pro/appointments` | `pro/Appointments.jsx` | `RequireAuth` | `pro/appointments/list.js` |
+| `/pro/appointments/:id` | `pro/AppointmentDetail.jsx` | `RequireAuth` | `pro/appointments/details.js` |
 
-Layout spécifique: `ProLayout`
+## 3. Administration (Layout: `Layout.jsx` + `AdminGuard`)
+Routes préfixées par `/admin`.
 
-| Route | Page Component | Guard | Notes |
-|-------|---------------|-------|-------|
-| `/pro` | `Navigate -> dashboard` | - | - |
-| `/pro/login` | `ProLogin` | Public | Auth Pro |
-| `/pro/register` | `ProRegister` | Public | Inscription |
-| `/pro/forgot-password` | `ProForgotPassword` | Public | Recupération |
-| `/pro/reset-password` | `ProResetPassword` | Public | Reset |
-| `/pro/dashboard` | `ProDashboard` | ProAuth | Dashboard |
-| `/pro/services` | `ProServices` | ProAuth | Gestion Services |
-| `/pro/team` | `ProTeam` | ProAuth | Gestion Équipe |
-| `/pro/structure` | `ProStructure` | ProAuth | Gestion Structure |
-| `/pro/appointments` | `ProAppointments` | ProAuth | Liste RDV |
-| `/pro/appointments/:id` | `ProAppointmentDetail` | ProAuth | Détail RDV |
+| Route | Page Component | API attendue | Notes |
+|---|---|---|---|
+| `/admin/login` | `AdminLogin.jsx` | `auth/login.js` | Login Admin |
+| `/admin/health` | `admin/Health.jsx` | `health.js` | Dashboard Santé |
+| `/admin/aides` | `AdminAides.jsx` | `aides.js` | CRUD Aides |
+| `/admin/aides/:id` | `AdminAideEdit.jsx` | `aides.js` | Edit Aide |
+| `/admin/demarches` | `AdminDemarches.jsx` | `demarches.js` | CRUD Démarches |
+| `/admin/demarches/:id` | `AdminDemarcheEdit.jsx` | `demarches.js` | Edit Démarche |
+| `/admin/structures` | `AdminStructures.jsx` | `structures.js` | CRUD Structures |
+| `/admin/appointments` | `AdminAppointments.jsx` | `booking/pro` | RDV Admin |
+| `/admin/messages` | `AdminMessages.jsx` | `public/messages.js` | Messagerie Admin |
+| `/admin/sources` | `AdminSources.jsx` | `cron/ingest-rss.js` | Sources RSS |
+| `/admin/sync` | `AdminSync.jsx` | `cron/pipeline.js` | Sync Pipelines |
+| `/admin/sync/recent` | `AdminRecentSyncs.jsx` | `admin/runs.js` | Logs Sync |
+| `/admin/sync/test` | `AdminTestSync.jsx` | `admin/actions.js` | Test Sync |
+| `/admin/guides/sync` | `AdminGuideSync.jsx` | `guides.js` | Sync Guides |
+| `/admin/inbox` | `admin/Inbox.jsx` | `admin/inbox.js` | Inbox |
+| `/admin/runs` | `admin/Runs.jsx` | `admin/runs.js` | Cron Runs |
+| `/admin/review` | `AdminReview.jsx` | `admin` | Review |
 
-## Espace Admin (`/admin`)
+## 4. Redirections & Compatibilité
 
-| Route | Page Component | Guard | API Calls (Est.) |
-|-------|---------------|-------|------------------|
-| `/admin/login` | `AdminLogin` | Public | Auth Admin |
-| `/admin` | `Navigate -> /adminaides` | - | - |
-| `/adminaides` | `AdminAides` | AdminRoute | `GET /api/aides` (CRUD) |
-| `/adminaideedit` | `AdminAideEdit` | AdminRoute | `PUT /api/aides` |
-| `/admindemarches` | `AdminDemarches` | RequireAuth | `GET /api/demarches` |
-| `/admindemarcheedit` | `AdminDemarcheEdit` | RequireAuth | `PUT /api/demarches` |
-| `/adminstructures` | `AdminStructures` | RequireAuth | `GET /api/structures` |
-| `/adminappointments` | `AdminAppointments` | RequireAuth | `GET /api/admin/appointments` |
-| `/adminmessages` | `AdminMessages` | AdminRoute | `GET /api/admin/messages` |
-| `/admin/review` | `AdminReview` | AdminRoute | Review Queue |
-| `/admin/inbox` | `AdminInbox` | AdminRoute | Admin Inbox |
-| `/admin/runs` | `AdminRuns` | AdminRoute | Cron Logs |
-| `/adminsources` | `AdminSources` | AdminRoute / RequireAuth | RSS Config |
-| `/adminguidesync` | `AdminGuideSync` | AdminRoute | Sync Guides |
-| `/adminsync` | `AdminSync` | RequireAuth | Pipeline Status |
-| `/adminrecentsyncs` | `AdminRecentSyncs` | AdminRoute / RequireAuth | Sync Logs |
-| `/admintestsync` | `AdminTestSync` | RequireAuth | Test Pipeline |
+| Source | Cible |
+|---|---|
+| `/annuaire` | `/structures` |
+| `/admin` | `/admin/aides` |
+| `/aidedetail` | `/aidedetail` (Legacy?) |
+| `/StructureDetail` | `/annuaire` |
+| `/DemarcheDetail` | `/demarches` |
+| `/adminaides` | `/admin/aides` |
+| `/adminstructures` | `/admin/structures` |
+| `/adminappointments` | `/admin/appointments` |
+| `/admindemarches` | `/admin/demarches` |
 
-## Routes Techniques / Dev
-
-| Route | Page Component | Guard | Notes |
-|-------|---------------|-------|-------|
-| `/sentry-test` | `SentryTest` | Public | Debug Sentry |
-| `/__sentry_test` | `SentryTestPage` | Public | Debug (Vercel check) |
-| `/login/pro` | `LoginPro` | Dev (Cond.) | Legacy Login (si `VITE_DEV_LOGIN_ENABLED`) |
-| `*` | `NotFound` | Public | 404 Page |
-
-## Notes d'analyse
-- **Doublon Routes Admin**: Certaines routes comme `/adminsources` et `/adminrecentsyncs` sont définies deux fois avec des guards différents (`AdminRoute` vs `RequireAuth`). Le premier match gagne (React Router), donc `AdminRoute` est appliqué.
-- **Legacy**: `/login/pro` semble être une ancienne route de login conservée pour le dev, tandis que `/pro/login` est la nouvelle route officielle.
-- **Orphelins**: Le fichier `src/pages/Accessibility.jsx` n'est pas utilisé (la route `/accessibilite` pointe vers `Accessibilite.jsx`).
-
----
-*Généré automatiquement le: $(date +%Y-%m-%d)*
+## 5. Pages Orphelines détectées
+Aucune page orpheline détectée dans `src/pages/`.
+`SourcesMethode.jsx` est routé sur `/sourcesmethode`.

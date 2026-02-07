@@ -1,31 +1,31 @@
 #!/bin/bash
+set -e
 
-# Create docs directory if it doesn't exist
-mkdir -p docs
+# Generate REPO_FILES.txt excluding artifacts and secrets
 
-# Generate repo map
-# Excludes: node_modules, dist, .git, .vercel, coverage, test-results, venv, .env*, uploads_mock, cookies*
-find . -maxdepth 5 \
-  -not -path '*/.git/*' \
-  -not -path '*/.git' \
-  -not -path '*/.vercel/*' \
-  -not -path '*/.vercel' \
-  -not -path '*/node_modules/*' \
-  -not -path '*/node_modules' \
-  -not -path '*/dist/*' \
-  -not -path '*/dist' \
-  -not -path '*/coverage/*' \
-  -not -path '*/coverage' \
-  -not -path '*/test-results/*' \
-  -not -path '*/test-results' \
-  -not -path '*/venv/*' \
-  -not -path '*/venv' \
-  -not -path '*/__pycache__/*' \
-  -not -path '*/uploads_mock/*' \
-  -not -path '*/uploads_mock' \
-  -not -name '.env*' \
-  -not -name 'cookies*.txt' \
-  -not -name 'test-img*.jpg' \
-  | sort > docs/REPO_FILES.txt
+# 1. Find all files, pruning ignored directories
+find . -type d \( \
+    -name ".git" \
+    -o -name "node_modules" \
+    -o -name "dist" \
+    -o -name ".vercel" \
+    -o -name "coverage" \
+    -o -name "test-results" \
+    -o -name "venv" \
+    -o -name "uploads_mock" \
+\) -prune -o \
+-type f -print | \
+grep -vE "/\.DS_Store$" | \
+grep -vE "REPO_FILES.tmp$" | \
+grep -vE "^\./\.env" > docs/REPO_FILES.tmp
 
-echo "Repo map generated at docs/REPO_FILES.txt"
+# 2. Append .env.example if it exists (since we excluded all .env*)
+if [ -f .env.example ]; then
+    echo "./.env.example" >> docs/REPO_FILES.tmp
+fi
+
+# 3. Sort and save
+sort -u docs/REPO_FILES.tmp > docs/REPO_FILES.txt
+rm docs/REPO_FILES.tmp
+
+echo "Repo map generated in docs/REPO_FILES.txt"

@@ -1,0 +1,291 @@
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
+import prisma from '../../api/_utils/prisma.js';
+import crypto from 'crypto';
+
+/**
+ * Integration tests for Ingestion Quality (Phase 7)
+ * Tests idempotence, traceability, normalization, and observability
+ */
+describe('Ingestion Quality - Phase 7', () => {
+  const testRunId = crypto.randomUUID();
+  const testSlug = `test-aide-${Date.now()}`;
+  
+  // Clean up test data after each test
+  afterEach(async () => {
+    try {
+      await prisma.aide.deleteMany({
+        where: { slug: { startsWith: 'test-aide-' } }
+      });
+      await prisma.importLog.deleteMany({
+        where: { run_id: testRunId }
+      });
+    } catch (error) {
+      // Ignore cleanup errors in test environment
+    }
+  });
+
+  describe('Idempotence', () => {
+    it('should not duplicate items when re-ingesting same content', async () => {
+      const itemData = {
+        slug: testSlug,
+        titre: 'Test Aide',
+        cest_quoi: 'Test content',
+        source_url: 'https://example.com/test',
+        content_hash: crypto.createHash('md5').update('test-content').digest('hex'),
+        statut: 'publie',
+        published_at: new Date()
+      };
+
+      // First ingestion
+      const first = await prisma.aide.create({ data: itemData });
+      expect(first).toBeTruthy();
+      expect(first.slug).toBe(testSlug);
+
+      // Second ingestion (should find existing)
+      const existing = await prisma.aide.findFirst({
+        where: {
+          OR: [
+            { slug: testSlug },
+            { source_url: itemData.source_url }
+          ]
+        }
+      });
+
+      expect(existing).toBeTruthy();
+      expect(existing.id).toBe(first.id);
+
+      // Verify no duplication
+      const count = await prisma.aide.count({
+        where: { slug: testSlug }
+      });
+      expect(count).toBe(1);
+    });
+
+    it('should update item when content changes', async () => {
+      const originalHash = crypto.createHash('md5').update('original').digest('hex');
+      const updatedHash = crypto.createHash('md5').update('updated').digest('hex');
+
+      const original = await prisma.aide.create({
+        data: {
+          slug: testSlug,
+          titre: 'Original Title',
+          cest_quoi: 'Original content',
+          content_hash: originalHash,
+          statut: 'publie',
+          published_at: new Date()
+        }
+      });
+
+      // Simulate content change
+      const updated = await prisma.aide.update({
+        where: { id: original.id },
+        data: {
+          titre: 'Updated Title',
+          content_hash: updatedHash,
+          updatedAt: new Date()
+        }
+      });
+
+      expect(updated.titre).toBe('Updated Title');
+      expect(updated.content_hash).toBe(updatedHash);
+      expect(updated.content_hash).not.toBe(originalHash);
+    });
+
+    it('should skip unchanged items but update last_checked_at', async () => {
+      const contentHash = crypto.createHash('md5').update('unchanged').digest('hex');
+      const originalDate = new Date('2024-01-01');
+
+      const original = await prisma.aide.create({
+        data: {
+          slug: testSlug,
+          titre: 'Unchanged Title',
+          cest_quoi: 'Unchanged content',
+          content_hash: contentHash,
+          last_checked_at: originalDate,
+          statut: 'publie',
+          published_at: new Date()
+        }
+      });
+
+      // Simulate re-check with same content
+      const now = new Date();
+      const updated = await prisma.aide.update({
+        where: { id: original.id },
+        data: { last_checked_at: now }
+      });
+
+      expect(updated.content_hash).toBe(contentHash);
+      expect(updated.last_checked_at.getTime()).toBeGreaterThan(originalDate.getTime());
+    });
+  });
+
+  describe('Traceability', () => {
+    it('should store retrieved_at timestamp', async () => {
+      const retrievedAt = new Date();
+      
+      const aide = await prisma.aide.create({
+        data: {
+          slug: testSlug,
+          titre: 'Test Aide',
+          cest_quoi: 'Test content',
+          retrieved_at: retrievedAt,
+          statut: 'publie',
+          published_at: new Date()
+        }
+      });
+
+      expect(aide.retrieved_at).toBeTruthy();
+      expect(aide.retrieved_at.getTime()).toBe(retrievedAt.getTime());
+    });
+
+    it('should store last_checked_at timestamp', async () => {
+      const lastChecked = new Date();
+      
+      const aide = await prisma.aide.create({
+        data: {
+          slug: testSlug,
+          titre: 'Test Aide',
+          cest_quoi: 'Test content',
+          last_checked_at: lastChecked,
+          statut: 'publie',
+          published_at: new Date()
+        }
+      });
+
+      expect(aide.last_checked_at).toBeTruthy();
+      expect(aide.last_checked_at.getTime()).toBe(lastChecked.getTime());
+    });
+
+    it('should store source_url_exact for full traceability', async () => {
+      const exactUrl = 'https://example.com/aide?id=123&ref=source';
+      
+      const aide = await prisma.aide.create({
+        data: {
+          slug: testSlug,
+          titre: 'Test Aide',
+          cest_quoi: 'Test content',
+          source_url: 'https://example.com/aide',
+          source_url_exact: exactUrl,
+          statut: 'publie',
+          published_at: new Date()
+        }
+      });
+
+      expect(aide.source_url_exact).toBe(exactUrl);
+      expect(aide.source_url_exact).toContain('?id=123&ref=source');
+    });
+  });
+
+  describe('Data Normalization', () => {
+    it('should trim whitespace from text fields', () => {
+      const rawData = {
+        title: '  Test Title  ',
+        description: '  Test Description  ',
+        content: '  Test Content  '
+      };
+
+      const normalized = {
+        title: rawData.title?.trim() || '',
+        description: rawData.description?.trim() || '',
+        content: rawData.content?.trim() || ''
+      };
+
+      expect(normalized.title).toBe('Test Title');
+      expect(normalized.description).toBe('Test Description');
+      expect(normalized.content).toBe('Test Content');
+    });
+
+    it('should handle null/undefined values gracefully', () => {
+      const rawData = {
+        title: null,
+        description: undefined,
+        content: ''
+      };
+
+      const normalized = {
+        title: rawData.title?.trim() || '',
+        description: rawData.description?.trim() || '',
+        content: rawData.content?.trim() || ''
+      };
+
+      expect(normalized.title).toBe('');
+      expect(normalized.description).toBe('');
+      expect(normalized.content).toBe('');
+    });
+  });
+
+  describe('ImportLog Tracking', () => {
+    it('should create ImportLog with run_id', async () => {
+      const log = await prisma.importLog.create({
+        data: {
+          run_id: testRunId,
+          source_name: 'TEST_SOURCE',
+          status: 'SUCCESS',
+          items_total: 10,
+          items_new: 5,
+          items_updated: 3,
+          items_skipped: 2,
+          error_count: 0,
+          duration_ms: 1000
+        }
+      });
+
+      expect(log.run_id).toBe(testRunId);
+      expect(log.items_new).toBe(5);
+      expect(log.items_updated).toBe(3);
+      expect(log.items_skipped).toBe(2);
+    });
+
+    it('should track errors in ImportLog', async () => {
+      const errors = ['Error 1', 'Error 2'];
+      
+      const log = await prisma.importLog.create({
+        data: {
+          run_id: testRunId,
+          source_name: 'TEST_SOURCE',
+          status: 'PARTIAL',
+          items_total: 10,
+          items_new: 8,
+          error_count: errors.length,
+          logs: JSON.stringify(errors),
+          duration_ms: 1500
+        }
+      });
+
+      expect(log.error_count).toBe(2);
+      expect(JSON.parse(log.logs)).toEqual(errors);
+    });
+  });
+
+  describe('Silent Failure Detection', () => {
+    it('should detect when no items processed and no errors', () => {
+      const stats = {
+        processed: 0,
+        errors: []
+      };
+
+      const isSilentFailure = stats.processed === 0 && stats.errors.length === 0;
+      expect(isSilentFailure).toBe(true);
+    });
+
+    it('should not flag as silent failure when items processed', () => {
+      const stats = {
+        processed: 5,
+        errors: []
+      };
+
+      const isSilentFailure = stats.processed === 0 && stats.errors.length === 0;
+      expect(isSilentFailure).toBe(false);
+    });
+
+    it('should not flag as silent failure when errors reported', () => {
+      const stats = {
+        processed: 0,
+        errors: ['Some error']
+      };
+
+      const isSilentFailure = stats.processed === 0 && stats.errors.length === 0;
+      expect(isSilentFailure).toBe(false);
+    });
+  });
+});

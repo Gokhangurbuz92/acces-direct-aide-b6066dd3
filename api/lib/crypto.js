@@ -1,22 +1,22 @@
 
-/* eslint-env node */
+
 import crypto from 'crypto';
 
+// Encryption Algorithm
 // Encryption Algorithm
 const ALGORITHM = 'aes-256-gcm';
 const IV_LENGTH = 16; // AES block size
 const AUTH_TAG_LENGTH = 16;
-// Key Management
-// Key MUST be 32 bytes (64 hex class)
-const ENCRYPTION_KEY = process.env.ENCRYPTION_KEY
-    ? Buffer.from(process.env.ENCRYPTION_KEY, 'hex')
-    : null;
 
-if (!ENCRYPTION_KEY || ENCRYPTION_KEY.length !== 32) {
-    // Strict validation: Key must be present and 32 bytes.
-    // User requirement: "Validation stricte... Aucune clé fallback".
-    throw new Error("⛔ FATAL: ENCRYPTION_KEY environment variable (32 bytes hex) is REQUIRED. Server cannot start without it.");
+// Key Management
+const KEY_HEX = process.env.ADA_ENCRYPTION_KEY;
+
+const KEY = KEY_HEX ? Buffer.from(KEY_HEX, 'hex') : null;
+
+if (!KEY || KEY.length !== 32) {
+    throw new Error("⛔ FATAL: ADA_ENCRYPTION_KEY (64 hex chars = 32 bytes) is REQUIRED.");
 }
+
 
 // Rotation Strategy:
 // To rotate keys:
@@ -28,44 +28,53 @@ if (!ENCRYPTION_KEY || ENCRYPTION_KEY.length !== 32) {
 
 /**
  * Encrypts a text using AES-256-GCM
- * Returns: IV:AuthTag:EncryptedData (hex string)
+ * Format: v1:iv:tag:data
  */
 export function encrypt(text) {
     if (!text) return null;
-    if (!ENCRYPTION_KEY) throw new Error("Missing ENCRYPTION_KEY");
+    if (!KEY) throw new Error("Missing ADA_KEY");
 
     const iv = crypto.randomBytes(IV_LENGTH);
-    const cipher = crypto.createCipheriv(ALGORITHM, ENCRYPTION_KEY, iv);
+    const cipher = crypto.createCipheriv(ALGORITHM, KEY, iv);
 
     let encrypted = cipher.update(text, 'utf8', 'hex');
     encrypted += cipher.final('hex');
 
     const authTag = cipher.getAuthTag().toString('hex');
 
-    // Format: iv:authTag:encrypted
-    return `${iv.toString('hex')}:${authTag}:${encrypted}`;
+    // NEW v1 Format
+    return `v1:${iv.toString('hex')}:${authTag}:${encrypted}`;
 }
 
 /**
  * Decrypts a text using AES-256-GCM
+ * Supports: 
+ * - v1:iv:tag:data
+ * - Legacy: iv:tag:data
  */
 export function decrypt(encryptedText) {
     if (!encryptedText) return null;
-    if (!ENCRYPTION_KEY) throw new Error("Missing ENCRYPTION_KEY");
+    if (!KEY) throw new Error("Missing ADA_KEY");
 
     const parts = encryptedText.split(':');
-    if (parts.length !== 3) {
-        // Handle legacy or invalid data gracefully or throw?
-        // Return null to avoid crashing on bad data
-        return null;
-    }
 
-    const [ivHex, authTagHex, contentHex] = parts;
+    let ivHex, authTagHex, contentHex;
+
+    // Detect format
+    if (parts[0] === 'v1') {
+        // v1:iv:tag:data
+        if (parts.length !== 4) return null;
+        [, ivHex, authTagHex, contentHex] = parts;
+    } else {
+        // Legacy: iv:tag:data
+        if (parts.length !== 3) return null;
+        [ivHex, authTagHex, contentHex] = parts;
+    }
 
     try {
         const decipher = crypto.createDecipheriv(
             ALGORITHM,
-            ENCRYPTION_KEY,
+            KEY,
             Buffer.from(ivHex, 'hex')
         );
 
@@ -86,21 +95,21 @@ export function decrypt(encryptedText) {
  */
 export function hash(text) {
     if (!text) return null;
-    // We can use a salt if we want, but blind index usually needs deterministic hash for lookup.
-    // If strict privacy, maybe pepper? 'process.env.HASH_PEPPER'
-    // For Lot 5, standard SHA-256 of input should suffice unless specified.
     return crypto.createHash('sha256').update(text).digest('hex');
 }
+
+// Alias for compatibility
+export const hashContact = hash;
 
 /**
  * Encrypts a Buffer using AES-256-GCM
  * Returns: Buffer [IV(16) + AuthTag(16) + EncryptedData]
  */
 export function encryptBuffer(buffer) {
-    if (!ENCRYPTION_KEY) throw new Error("Missing ENCRYPTION_KEY");
+    if (!KEY) throw new Error("Missing ADA_KEY");
 
     const iv = crypto.randomBytes(IV_LENGTH);
-    const cipher = crypto.createCipheriv(ALGORITHM, ENCRYPTION_KEY, iv);
+    const cipher = crypto.createCipheriv(ALGORITHM, KEY, iv);
 
     const encrypted = Buffer.concat([cipher.update(buffer), cipher.final()]);
     const tag = cipher.getAuthTag();
@@ -113,7 +122,7 @@ export function encryptBuffer(buffer) {
  * Returns: Buffer (Decrypted)
  */
 export function decryptBuffer(encryptedBuffer) {
-    if (!ENCRYPTION_KEY) throw new Error("Missing ENCRYPTION_KEY");
+    if (!KEY) throw new Error("Missing ADA_KEY");
 
     if (encryptedBuffer.length < IV_LENGTH + AUTH_TAG_LENGTH) return null;
 
@@ -122,7 +131,7 @@ export function decryptBuffer(encryptedBuffer) {
     const text = encryptedBuffer.subarray(IV_LENGTH + AUTH_TAG_LENGTH);
 
     try {
-        const decipher = crypto.createDecipheriv(ALGORITHM, ENCRYPTION_KEY, iv);
+        const decipher = crypto.createDecipheriv(ALGORITHM, KEY, iv);
         decipher.setAuthTag(tag);
 
         return Buffer.concat([decipher.update(text), decipher.final()]);
@@ -138,7 +147,7 @@ export function decryptBuffer(encryptedBuffer) {
  * Token: base64(json(payload)).base64(hmac)
  */
 export function generateAttachmentToken(attachmentId, expiresInSeconds = 3600) {
-    if (!ENCRYPTION_KEY) throw new Error("Missing ENCRYPTION_KEY");
+    if (!KEY) throw new Error("Missing ADA_KEY");
 
     const payload = {
         id: attachmentId,
@@ -147,7 +156,7 @@ export function generateAttachmentToken(attachmentId, expiresInSeconds = 3600) {
 
     const payloadStr = Buffer.from(JSON.stringify(payload)).toString('base64url');
     const signature = crypto
-        .createHmac('sha256', ENCRYPTION_KEY)
+        .createHmac('sha256', KEY)
         .update(payloadStr)
         .digest('base64url');
 
@@ -160,13 +169,13 @@ export function generateAttachmentToken(attachmentId, expiresInSeconds = 3600) {
  */
 export function verifyAttachmentToken(token) {
     if (!token) return null;
-    if (!ENCRYPTION_KEY) throw new Error("Missing ENCRYPTION_KEY");
+    if (!KEY) throw new Error("Missing ADA_KEY");
 
     const [payloadStr, signature] = token.split('.');
     if (!payloadStr || !signature) return null;
 
     const expectedSignature = crypto
-        .createHmac('sha256', ENCRYPTION_KEY)
+        .createHmac('sha256', KEY)
         .update(payloadStr)
         .digest('base64url');
 

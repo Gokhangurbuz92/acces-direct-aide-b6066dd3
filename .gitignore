@@ -36,6 +36,7 @@ dist/sitemap.xml
 # Python / Virtualenv
 venv/
 __pycache__/
+*.pyc
 
 # Testing & Artifacts
 test-results/
@@ -51,3 +52,6 @@ api/_utils/build-info.js
 # lint outputs
 lint_output*.txt
 lint_final.txt
+
+# Generated build info
+.blackboxcli/

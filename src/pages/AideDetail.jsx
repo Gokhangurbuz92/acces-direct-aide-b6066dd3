@@ -1,5 +1,5 @@
-import React from 'react';
-import { Link, useParams } from 'react-router-dom';
+import React, { useEffect, useState } from 'react';
+import { Link, useParams, useNavigate } from 'react-router-dom';
 import { createPageUrl } from '@/utils';
 import { client } from '@/api/client';
 import { useQuery } from '@tanstack/react-query';
@@ -22,6 +22,11 @@ import {
   Loader2,
   Flag
 } from 'lucide-react';
+import { generateBreadcrumbSchema, generateAideSchema } from '@/utils/schema';
+import SourceTraceability from '@/components/SourceTraceability';
+import FalcSummary from '@/components/FalcSummary';
+import FalcToggle from '@/components/FalcToggle';
+import FalcContent from '@/components/FalcContent';
 
 const CATEGORIE_LABELS = {
   logement: 'Logement',
@@ -41,14 +46,30 @@ const CATEGORIE_LABELS = {
 
 export default function AideDetail() {
   const { slug } = useParams();
+  const navigate = useNavigate();
   const urlParams = new URLSearchParams(window.location.search);
   const aideId = urlParams.get('id');
 
-  const { data: aide, isLoading, error } = useQuery({
+  const { data: queryData, isLoading, error } = useQuery({
     queryKey: ['aide', slug || aideId],
     queryFn: () => client.entities.Aide.filter(slug ? { slug } : { id: aideId }),
     enabled: !!slug || !!aideId
   });
+
+  const aide = Array.isArray(queryData)
+    ? queryData[0]
+    : (queryData?.items ? queryData?.items[0] : queryData);
+
+  // FALC mode state
+  const [isFalcMode, setIsFalcMode] = useState(false);
+  const hasFalcContent = !!(aide?.summary_falc || aide?.conditions_falc || aide?.montant_falc);
+
+  // Canonical Redirect: If accessed via ID but slug exists, redirect to slug URL
+  useEffect(() => {
+    if (aide && !slug && aide.slug) {
+      navigate(`/aides/${aide.slug}`, { replace: true });
+    }
+  }, [aide, slug, navigate]);
 
   const { data: structuresData } = useQuery({
     queryKey: ['structures-aide', aide?.categorie],
@@ -58,7 +79,9 @@ export default function AideDetail() {
     enabled: !!aide?.categorie
   });
 
-  const structures = structuresData?.items || [];
+  const structures = Array.isArray(structuresData)
+    ? structuresData
+    : (structuresData?.items || []);
 
   const filteredStructures = structures.filter(s =>
     s.categories_aidees?.includes(aide?.categorie)
@@ -86,12 +109,24 @@ export default function AideDetail() {
     }).join(', ');
   };
 
+  const breadcrumbs = [
+    { name: 'Accueil', url: '/' },
+    { name: 'Aides', url: '/aides' },
+    { name: aide.titre, url: `/aides/${aide.slug}` }
+  ];
+
+  const schema = [
+    generateBreadcrumbSchema(breadcrumbs),
+    generateAideSchema(aide)
+  ].filter(Boolean);
+
   return (
     <div className="min-h-screen bg-slate-50">
       <SEO
         title={aide.titre}
         description={aide.summary_falc || aide.cest_quoi?.substring(0, 150)}
-        url={`https://www.accesdirectaide.fr/aide/${aide.slug}`}
+        path={`/aides/${aide.slug}`}
+        schema={schema}
       />
       {/* Fil d'Ariane */}
       <div className="bg-white border-b border-slate-200">
@@ -145,11 +180,11 @@ export default function AideDetail() {
               <MapPin className="h-4 w-4" />
               {getTerritoireLabel()}
             </span>
-            {aide.date_verification && (
-              <span className="flex items-center gap-1">
-                <Calendar className="h-4 w-4" />
-                Vérifié le {new Date(aide.date_verification).toLocaleDateString('fr-FR')}
-              </span>
+            {aide.fetched_at && (
+               <span className="flex items-center gap-1" title="Date de dernière mise à jour de la source">
+                  <Calendar className="h-4 w-4" />
+                  Mise à jour : {new Date(aide.source_last_modified || aide.fetched_at).toLocaleDateString('fr-FR')}
+               </span>
             )}
             {aide.delai_indicatif && (
               <span className="flex items-center gap-1">
@@ -160,16 +195,37 @@ export default function AideDetail() {
           </div>
         </div>
 
+        {/* FALC Toggle */}
+        <div className="mb-6">
+          <FalcToggle 
+            hasFalcContent={hasFalcContent}
+            onChange={setIsFalcMode}
+          />
+        </div>
+
         <div className="grid lg:grid-cols-3 gap-6">
           {/* Contenu principal */}
           <div className="lg:col-span-2 space-y-6">
-            {/* C'est quoi ? */}
-            <Card>
-              <CardContent className="p-6">
-                <h2 className="text-lg font-bold text-slate-900 mb-3">C'est quoi ?</h2>
-                <p className="text-slate-700 leading-relaxed">{aide.cest_quoi}</p>
-              </CardContent>
-            </Card>
+            {isFalcMode ? (
+              /* FALC Mode Content */
+              <Card>
+                <CardContent className="p-6">
+                  <FalcContent falcData={aide} entityType="aide" />
+                </CardContent>
+              </Card>
+            ) : (
+              /* Normal Mode Content */
+              <>
+                {/* C'est quoi ? */}
+                <Card>
+                  <CardContent className="p-6">
+                    <h2 className="text-lg font-bold text-slate-900 mb-3">C'est quoi ?</h2>
+                    <p className="text-slate-700 leading-relaxed">{aide.cest_quoi}</p>
+                  </CardContent>
+                </Card>
+
+                {/* FALC Summary */}
+                <FalcSummary text={aide?.summary_falc} />
 
             {/* Pour qui ? */}
             <Card>
@@ -232,14 +288,14 @@ export default function AideDetail() {
             )}
 
             {/* Où faire la demande */}
-            {aide.ou_demander && (
+            {(aide.ou_demander || aide.apply_url || aide.lien_demande) && (
               <Card>
                 <CardContent className="p-6">
                   <h2 className="text-lg font-bold text-slate-900 mb-3">Où faire la demande ?</h2>
-                  <p className="text-slate-700 mb-4">{aide.ou_demander}</p>
-                  {aide.lien_demande && (
+                  {aide.ou_demander && <p className="text-slate-700 mb-4">{aide.ou_demander}</p>}
+                  {(aide.apply_url || aide.lien_demande) && (
                     <Button asChild>
-                      <a href={aide.lien_demande} target="_blank" rel="noopener noreferrer">
+                      <a href={aide.apply_url || aide.lien_demande} target="_blank" rel="noopener noreferrer">
                         Faire ma demande
                         <ExternalLink className="ml-2 h-4 w-4" />
                       </a>
@@ -250,12 +306,21 @@ export default function AideDetail() {
             )}
 
             {/* Sources */}
-            {aide.sources?.length > 0 && (
+            {(aide.source_url || aide.sources?.length > 0) && (
               <Card className="bg-slate-50">
                 <CardContent className="p-6">
                   <h2 className="text-lg font-bold text-slate-900 mb-3">Sources</h2>
                   <ul className="space-y-2">
-                    {aide.sources.map((source, idx) => (
+                    {aide.source_url && (
+                        <li>
+                            <a href={aide.source_url} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline flex items-center gap-1">
+                                {aide.source_name || 'Source Officielle'}
+                                <ExternalLink className="h-3 w-3" />
+                            </a>
+                            <span className="text-xs text-slate-500 ml-2">(Lien direct)</span>
+                        </li>
+                    )}
+                    {aide.sources?.map((source, idx) => (
                       <li key={idx}>
                         <a
                           href={source.url}
@@ -275,16 +340,27 @@ export default function AideDetail() {
                 </CardContent>
               </Card>
             )}
+              </>
+            )}
           </div>
 
           {/* Sidebar */}
           <div className="space-y-6">
+            {/* Source Traceability */}
+            <SourceTraceability 
+              source_url={aide.source_url}
+              retrieved_at={aide.retrieved_at}
+              last_checked_at={aide.last_checked_at}
+              source_last_modified={aide.source_last_modified}
+              fetched_at={aide.fetched_at}
+            />
+
             {/* Actions */}
             <Card>
               <CardContent className="p-6 space-y-3">
-                {aide.lien_demande && (
+                {(aide.apply_url || aide.lien_demande) && (
                   <Button className="w-full" asChild>
-                    <a href={aide.lien_demande} target="_blank" rel="noopener noreferrer">
+                    <a href={aide.apply_url || aide.lien_demande} target="_blank" rel="noopener noreferrer">
                       Faire ma demande
                       <ExternalLink className="ml-2 h-4 w-4" />
                     </a>
@@ -298,12 +374,12 @@ export default function AideDetail() {
                   <Download className="mr-2 h-4 w-4" />
                   Télécharger en PDF (ou imprimer)
                 </Button>
-                <Link to={createPageUrl('Contact') + `?page=${encodeURIComponent(window.location.href)}&sujet=signalement_erreur`}>
-                  <Button variant="ghost" className="w-full text-slate-600">
+                <Button variant="ghost" className="w-full text-slate-600" asChild>
+                  <Link to={createPageUrl('Contact') + `?page=${encodeURIComponent(window.location.href)}&sujet=signalement_erreur`}>
                     <Flag className="mr-2 h-4 w-4" />
                     Signaler une erreur
-                  </Button>
-                </Link>
+                  </Link>
+                </Button>
               </CardContent>
             </Card>
 

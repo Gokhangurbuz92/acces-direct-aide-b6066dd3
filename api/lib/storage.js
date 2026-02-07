@@ -1,51 +1,136 @@
-
-import fs from 'fs';
-import path from 'path';
+import { S3Client, PutObjectCommand, GetObjectCommand, DeleteObjectCommand } from '@aws-sdk/client-s3';
+import { getSignedUrl } from '@aws-sdk/s3-request-presigner'; // Optional if we need signed URLs, but demand was upload/download logic.
 import crypto from 'crypto';
+import path from 'path';
 
-// Minimal implementation details for MVP:
-// In PROD (if STORAGE_BUCKET is set), we would use @aws-sdk/client-s3 or Supabase Storage.
-// For MVP/Verification without cloud creds, we use strict local storage with encryption simulation.
+// STRICT CONFIGURATION
+const CONFIG = {
+    endpoint: process.env.STORAGE_ENDPOINT,
+    bucket: process.env.STORAGE_BUCKET,
+    region: process.env.STORAGE_REGION || 'auto',
+    accessKeyId: process.env.STORAGE_ACCESS_KEY_ID,
+    secretAccessKey: process.env.STORAGE_SECRET_ACCESS_KEY,
+};
 
-const STORAGE_ROOT = path.join(process.cwd(), 'uploads_mock');
+const IS_PRODUCTION = process.env.VERCEL_ENV === 'production';
 
-if (!fs.existsSync(STORAGE_ROOT)) {
-    fs.mkdirSync(STORAGE_ROOT, { recursive: true });
+// Validation Helper
+function checkConfig() {
+    const missing = [];
+    if (!CONFIG.endpoint) missing.push('STORAGE_ENDPOINT');
+    if (!CONFIG.bucket) missing.push('STORAGE_BUCKET');
+    if (!CONFIG.accessKeyId) missing.push('STORAGE_ACCESS_KEY_ID');
+    if (!CONFIG.secretAccessKey) missing.push('STORAGE_SECRET_ACCESS_KEY');
+
+    if (missing.length > 0) {
+        const msg = `Missing Storage Configuration: ${missing.join(', ')}`;
+        console.error(`[Storage] CRITICAL: ${msg}`);
+
+        if (IS_PRODUCTION) {
+            const error = new Error("Service Unavailable: Storage Configuration Missing");
+            error.statusCode = 503;
+            throw error;
+        }
+        return false; // In dev, we might behave differently or just fail later
+    }
+    return true;
+}
+
+// Initialize Client (Lazy or Eager?)
+// Eager init allows failing fast, but we should handle it gracefully in the module.
+let s3Client = null;
+
+try {
+    if (checkConfig()) {
+        s3Client = new S3Client({
+            region: CONFIG.region,
+            endpoint: CONFIG.endpoint,
+            credentials: {
+                accessKeyId: CONFIG.accessKeyId,
+                secretAccessKey: CONFIG.secretAccessKey
+            },
+            forcePathStyle: true // Often needed for R2/MinIO compat
+        });
+    }
+} catch (e) {
+    if (IS_PRODUCTION && e.statusCode === 503) {
+        // We defer throwing until methods are called, effectively "disabling" storage
+        console.error("[Storage] Disabled due to missing config in PROD");
+    }
 }
 
 export const storage = {
     /**
-     * Uploads buffer to storage.
-     * In real S3 app, we stream encrypted.
-     * Here we just write to disk.
-     * Returns: storageKey
+     * Uploads buffer to R2.
+     * @param {Buffer} buffer 
+     * @param {string} mimeType 
+     * @returns {Promise<string>} storageKey
      */
-    async upload(buffer, mime) {
-        // We assume buffer is ALREADY encrypted by the upload handler?
-        // Or we encrypt here?
-        // Plan said: "Encrypt file blobs at rest (either client-side... or server-side before storage)"
-        // Let's assume the API handler encrypts the stream/buffer BEFORE calling this.
-        // So this just writes the BLOB.
+    async upload(buffer, mimeType) {
+        if (!s3Client) {
+            checkConfig(); // Will throw 503 in PROD
+            throw new Error("Storage not configured.");
+        }
 
         const key = `${Date.now()}-${crypto.randomBytes(8).toString('hex')}`;
-        const filePath = path.join(STORAGE_ROOT, key);
 
-        await fs.promises.writeFile(filePath, buffer);
-        console.log(`[Storage Mock] Written ${buffer.length} bytes to ${key} (${mime})`);
+        const command = new PutObjectCommand({
+            Bucket: CONFIG.bucket,
+            Key: key,
+            Body: buffer,
+            ContentType: mimeType,
+        });
+
+        await s3Client.send(command);
+        console.log(`[Storage] Uploaded ${key} (${buffer.length} bytes)`);
+
         return key;
     },
 
+    /**
+     * Downloads object as Buffer (for now, to match previous API signature).
+     * @param {string} key 
+     * @returns {Promise<Buffer>}
+     */
     async download(key) {
-        const filePath = path.join(STORAGE_ROOT, key);
-        if (!fs.existsSync(filePath)) throw new Error("File not found");
-        return fs.promises.readFile(filePath);
+        if (!s3Client) {
+            checkConfig();
+            throw new Error("Storage not configured.");
+        }
+
+        const command = new GetObjectCommand({
+            Bucket: CONFIG.bucket,
+            Key: key,
+        });
+
+        const response = await s3Client.send(command);
+
+        // Convert stream to buffer
+        return new Promise((resolve, reject) => {
+            const chunks = [];
+            response.Body.on('data', (chunk) => chunks.push(chunk));
+            response.Body.on('error', reject);
+            response.Body.on('end', () => resolve(Buffer.concat(chunks)));
+        });
     },
 
+    /**
+     * Deletes object.
+     * @param {string} key 
+     */
     async delete(key) {
-        const filePath = path.join(STORAGE_ROOT, key);
-        if (fs.existsSync(filePath)) {
-            await fs.promises.unlink(filePath);
-            console.log(`[Storage Mock] Deleted ${key}`);
+        if (!s3Client) {
+            console.warn("[Storage] Skipping delete (not configured)");
+            if (IS_PRODUCTION) checkConfig(); // Throw if strict
+            return;
         }
+
+        const command = new DeleteObjectCommand({
+            Bucket: CONFIG.bucket,
+            Key: key,
+        });
+
+        await s3Client.send(command);
+        console.log(`[Storage] Deleted ${key}`);
     }
 };

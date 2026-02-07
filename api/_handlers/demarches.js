@@ -1,11 +1,17 @@
-import { PrismaClient } from '@prisma/client';
+import prisma from '../_utils/prisma.js';
 import { searchDemarchesSchema } from '../_utils/validators.js';
 import { searchDemarches } from '../lib/search-query.js';
-
-const prisma = new PrismaClient();
+import { verifyAdmin } from '../_utils/auth.js';
 
 export default async function handler(req, res) {
+    const isAdmin = verifyAdmin(req);
+
     try {
+        // CRUD Operations (Admin Only) - Not implemented yet
+        if (req.method === 'POST') return res.status(501).json({ error: 'Not implemented' });
+        if (req.method === 'PUT') return res.status(501).json({ error: 'Not implemented' });
+        if (req.method === 'DELETE') return res.status(501).json({ error: 'Not implemented' });
+
         if (req.method !== 'GET') {
             return res.status(405).json({ error: 'Method not allowed' });
         }
@@ -24,7 +30,8 @@ export default async function handler(req, res) {
                 include: { category: true, situations: true }
             });
 
-            if (!demarche || demarche.statut !== 'publie') {
+            if (!demarche) return res.status(404).json({ error: "Démarche non trouvée" });
+            if (!isAdmin && demarche.statut !== 'publie') {
                 return res.status(404).json({ error: "Démarche non trouvée" });
             }
             return res.status(200).json(demarche);

@@ -1,0 +1,3 @@
+CP4 E2E Report
+Generated: 2026-02-07T05:54:22.742Z
+Legacy redirects verified: /aide/:slug, /annuaire. Regression check passed for actualites.

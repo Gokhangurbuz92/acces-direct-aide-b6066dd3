@@ -41,11 +41,14 @@ import actualites from './_handlers/actualites.js';
 import guides from './_handlers/guides.js';
 import tools from './_handlers/tools.js';
 import dispositifs from './_handlers/dispositifs/index.js';
+import ressources from './_handlers/ressources.js';
 
 // --- Cron ---
 import cronPipeline from './_handlers/cron/pipeline.js';
 import cronIngestStructures from './_handlers/cron/ingest-structures.js';
+import cronIngestAids from './_handlers/cron/ingest-aids.js';
 import cronPurge from './_handlers/cron/purge.js';
+import cronLinkCheck from './_handlers/cron/link-check.js';
 
 // --- Admin ---
 import adminPrivacyExport from './_handlers/admin/privacy/export.js';
@@ -54,6 +57,7 @@ import adminInbox from './_handlers/admin/inbox.js';
 import adminActions from './_handlers/admin/actions.js';
 import adminRuns from './_handlers/admin/runs.js';
 import adminPartnerships from './_handlers/admin/partnerships.js';
+import adminLinkChecks from './_handlers/admin/link-checks.js';
 
 export const routes = [
     // --- Special / Root ---
@@ -99,11 +103,14 @@ export const routes = [
     { path: 'guides', match: 'prefix', handler: guides },
     { path: 'tools', match: 'prefix', handler: tools },
     { path: 'dispositifs', match: 'prefix', handler: dispositifs },
+    { path: 'ressources', match: 'prefix', handler: ressources },
 
     // --- Cron ---
     { path: 'cron/pipeline', match: 'exact', handler: cronPipeline },
     { path: 'cron/ingest-structures', match: 'exact', handler: cronIngestStructures },
+    { path: 'cron/ingest-aids', match: 'exact', handler: cronIngestAids },
     { path: 'cron/purge', match: 'exact', handler: cronPurge },
+    { path: 'cron/link-check', match: 'exact', handler: cronLinkCheck },
 
     // --- Admin ---
     { path: 'admin/privacy/export', match: 'exact', handler: adminPrivacyExport },
@@ -112,4 +119,5 @@ export const routes = [
     { path: 'admin/actions', match: 'exact', handler: adminActions },
     { path: 'admin/runs', match: 'exact', handler: adminRuns },
     { path: 'admin/partnerships', match: 'exact', handler: adminPartnerships },
+    { path: 'admin/link-checks', match: 'exact', handler: adminLinkChecks },
 ];

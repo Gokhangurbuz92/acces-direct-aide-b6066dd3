@@ -1,15 +1,16 @@
 
-import { PrismaClient } from '@prisma/client';
+import prisma from '../../_utils/prisma.js';
 import { subMinutes, subDays } from 'date-fns';
 import { storage } from '../../lib/storage.js';
 import { logger } from '../../lib/logger.js';
-
-const prisma = new PrismaClient();
+import { isCronAuthorized } from '../../_utils/cronAuth.js';
 
 export default async function handler(req, res) {
-    // Cron security: Verify signature or strict IP/Header if deployed.
-    // Vercel Cron uses authorization header.
-    // For MVP/Verification, open or simple check.
+    // Cron security check
+    if (!isCronAuthorized(req)) {
+        logger.warn('Unauthorized purge attempt');
+        return res.status(401).json({ error: 'Unauthorized' });
+    }
 
     try {
         const now = new Date();
@@ -66,7 +67,6 @@ export default async function handler(req, res) {
             }
         }
 
-
         // 3. Purge Messages (> 60 days) and Attachments (> 30 days)
         // Attachments first (cleanup storage)
         const storageLimit = subDays(now, 30);
@@ -107,7 +107,6 @@ export default async function handler(req, res) {
         const expiredUpdates = await prisma.updateLog.deleteMany({
             where: { ran_at: { lt: retentionDate } }
         });
-
 
         const stats = {
             expiredLocks: expiredLocks.count,

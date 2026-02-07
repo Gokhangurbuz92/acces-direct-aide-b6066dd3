@@ -28,7 +28,7 @@ if (!KEY || KEY.length !== 32) {
 
 /**
  * Encrypts a text using AES-256-GCM
- * Returns: IV:AuthTag:EncryptedData (hex string)
+ * Format: v1:iv:tag:data
  */
 export function encrypt(text) {
     if (!text) return null;
@@ -42,25 +42,34 @@ export function encrypt(text) {
 
     const authTag = cipher.getAuthTag().toString('hex');
 
-    // Format: iv:authTag:encrypted
-    return `${iv.toString('hex')}:${authTag}:${encrypted}`;
+    // NEW v1 Format
+    return `v1:${iv.toString('hex')}:${authTag}:${encrypted}`;
 }
 
 /**
  * Decrypts a text using AES-256-GCM
+ * Supports: 
+ * - v1:iv:tag:data
+ * - Legacy: iv:tag:data
  */
 export function decrypt(encryptedText) {
     if (!encryptedText) return null;
     if (!KEY) throw new Error("Missing ADA_KEY");
 
     const parts = encryptedText.split(':');
-    if (parts.length !== 3) {
-        // Handle legacy or invalid data gracefully or throw?
-        // Return null to avoid crashing on bad data
-        return null;
-    }
 
-    const [ivHex, authTagHex, contentHex] = parts;
+    let ivHex, authTagHex, contentHex;
+
+    // Detect format
+    if (parts[0] === 'v1') {
+        // v1:iv:tag:data
+        if (parts.length !== 4) return null;
+        [, ivHex, authTagHex, contentHex] = parts;
+    } else {
+        // Legacy: iv:tag:data
+        if (parts.length !== 3) return null;
+        [ivHex, authTagHex, contentHex] = parts;
+    }
 
     try {
         const decipher = crypto.createDecipheriv(
@@ -86,11 +95,11 @@ export function decrypt(encryptedText) {
  */
 export function hash(text) {
     if (!text) return null;
-    // We can use a salt if we want, but blind index usually needs deterministic hash for lookup.
-    // If strict privacy, maybe pepper? 'process.env.HASH_PEPPER'
-    // For Lot 5, standard SHA-256 of input should suffice unless specified.
     return crypto.createHash('sha256').update(text).digest('hex');
 }
+
+// Alias for compatibility
+export const hashContact = hash;
 
 /**
  * Encrypts a Buffer using AES-256-GCM

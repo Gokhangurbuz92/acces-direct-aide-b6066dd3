@@ -53,9 +53,16 @@ model Aide {
   territory_scope  String?
   content_hash     String?
 
-  // Traceability
-  source_document_id String?
-  sourceDocument     SourceDocument? @relation(fields: [source_document_id], references: [id])
+  // New Standard Fields (Lot 9a)
+  theme                 String?
+  sub_theme             String?
+  apply_url             String?
+  source_last_modified  DateTime?
+  fetched_at            DateTime?
+  
+  // Traceability Fields (P1)
+  retrieved_at          DateTime?
+  last_checked_at       DateTime?
 
   @@index([statut, published_at])
   @@index([categoryId, statut])
@@ -136,6 +143,11 @@ model Structure {
   source_url_exact   String?
   territory_scope    String?
   content_hash       String?
+  
+  // Traceability Fields (P1)
+  retrieved_at          DateTime?
+  last_checked_at       DateTime?
+  source_last_modified  DateTime?
 
   // Traceability
   source_document_id String?
@@ -191,9 +203,12 @@ model Demarche {
   territory_scope  String?
   content_hash     String?
 
-  // Traceability
-  source_document_id String?
-  sourceDocument     SourceDocument? @relation(fields: [source_document_id], references: [id])
+  
+  // Traceability Fields (P1)
+  source_url            String?
+  retrieved_at          DateTime?
+  last_checked_at       DateTime?
+  source_last_modified  DateTime?
 
   @@index([statut, published_at])
   @@index([categoryId, statut])
@@ -546,6 +561,12 @@ model Dispositif {
   source_url_exact String?
   territory_scope  String?
   content_hash     String?
+  
+  // Traceability Fields (P1)
+  source_url            String?
+  retrieved_at          DateTime?
+  last_checked_at       DateTime?
+  source_last_modified  DateTime?
 
   // Traceability
   source_document_id String?
@@ -581,71 +602,9 @@ model ResourceAccessibility {
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
   status          String   @default("draft")
-
-  // Traceability
-  source_document_id String?
-  sourceDocument     SourceDocument? @relation(fields: [source_document_id], references: [id])
-
-  @@index([source_document_id])
-}
-
-// Traceability Models - Add to schema.prisma at the end
-
-model DataSource {
-  id           String    @id @default(uuid())
-  name         String
-  base_url     String?
-  region_scope String    @default("national") // national, 67, 68, etc.
-  license      String?
-  trust_level  String?   @default("OFFICIAL")
-  last_sync_at DateTime?
-  last_status  String?
-  created_at   DateTime  @default(now())
-  updated_at   DateTime  @updatedAt
-
-  documents SourceDocument[]
-  syncRuns  SyncRun[]
-
-  @@index([region_scope])
-}
-
-model SourceDocument {
-  id               String   @id @default(uuid())
-  source_id        String
-  source_url_exact String   @unique
-  fetched_at       DateTime @default(now())
-  content_hash     String?
-  raw_excerpt      String?
-  http_status      Int?
-  license          String?
-  created_at       DateTime @default(now())
-  updated_at       DateTime @updatedAt
-
-  source DataSource @relation(fields: [source_id], references: [id])
-
-  // Relations to content
-  aides       Aide[]
-  demarches   Demarche[]
-  structures  Structure[]
-  dispositifs Dispositif[]
-  resources   ResourceAccessibility[]
-
-  @@index([source_id])
-  @@index([fetched_at])
-}
-
-model SyncRun {
-  id         String    @id @default(uuid())
-  source_id  String?
-  started_at DateTime  @default(now())
-  ended_at   DateTime?
-  status     String    @default("running") // running, success, partial, failed
-  error      String?
-  stats      Json? // { fetched, created, updated, errors: [] }
-  created_at DateTime  @default(now())
-
-  source DataSource? @relation(fields: [source_id], references: [id])
-
-  @@index([source_id])
-  @@index([started_at])
+  
+  // Traceability Fields (P1)
+  retrieved_at          DateTime?
+  last_checked_at       DateTime?
+  source_last_modified  DateTime?
 }

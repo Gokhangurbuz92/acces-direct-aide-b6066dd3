@@ -1,7 +1,7 @@
-import { PrismaClient } from '@prisma/client';
+import prisma from '../api/_utils/prisma.js';
 import { fetch } from 'undici';
 
-const prisma = new PrismaClient();
+
 const CRON_URL = 'http://localhost:3000/api/cron/rss-ingest?key=dev-secret-key';
 
 async function verifyActualites() {

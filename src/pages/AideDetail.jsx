@@ -23,6 +23,8 @@ import {
   Flag
 } from 'lucide-react';
 import { generateBreadcrumbSchema, generateAideSchema } from '@/utils/schema';
+import SourceTraceability from '@/components/SourceTraceability';
+import FalcSummary from '@/components/FalcSummary';
 
 const CATEGORIE_LABELS = {
   logement: 'Logement',
@@ -172,11 +174,11 @@ export default function AideDetail() {
               <MapPin className="h-4 w-4" />
               {getTerritoireLabel()}
             </span>
-            {aide.date_verification && (
-              <span className="flex items-center gap-1">
-                <Calendar className="h-4 w-4" />
-                Vérifié le {new Date(aide.date_verification).toLocaleDateString('fr-FR')}
-              </span>
+            {aide.fetched_at && (
+               <span className="flex items-center gap-1" title="Date de dernière mise à jour de la source">
+                  <Calendar className="h-4 w-4" />
+                  Mise à jour : {new Date(aide.source_last_modified || aide.fetched_at).toLocaleDateString('fr-FR')}
+               </span>
             )}
             {aide.delai_indicatif && (
               <span className="flex items-center gap-1">
@@ -197,6 +199,9 @@ export default function AideDetail() {
                 <p className="text-slate-700 leading-relaxed">{aide.cest_quoi}</p>
               </CardContent>
             </Card>
+
+            {/* FALC Summary */}
+            <FalcSummary text={aide?.summary_falc} />
 
             {/* Pour qui ? */}
             <Card>
@@ -259,14 +264,14 @@ export default function AideDetail() {
             )}
 
             {/* Où faire la demande */}
-            {aide.ou_demander && (
+            {(aide.ou_demander || aide.apply_url || aide.lien_demande) && (
               <Card>
                 <CardContent className="p-6">
                   <h2 className="text-lg font-bold text-slate-900 mb-3">Où faire la demande ?</h2>
-                  <p className="text-slate-700 mb-4">{aide.ou_demander}</p>
-                  {aide.lien_demande && (
+                  {aide.ou_demander && <p className="text-slate-700 mb-4">{aide.ou_demander}</p>}
+                  {(aide.apply_url || aide.lien_demande) && (
                     <Button asChild>
-                      <a href={aide.lien_demande} target="_blank" rel="noopener noreferrer">
+                      <a href={aide.apply_url || aide.lien_demande} target="_blank" rel="noopener noreferrer">
                         Faire ma demande
                         <ExternalLink className="ml-2 h-4 w-4" />
                       </a>
@@ -277,12 +282,21 @@ export default function AideDetail() {
             )}
 
             {/* Sources */}
-            {aide.sources?.length > 0 && (
+            {(aide.source_url || aide.sources?.length > 0) && (
               <Card className="bg-slate-50">
                 <CardContent className="p-6">
                   <h2 className="text-lg font-bold text-slate-900 mb-3">Sources</h2>
                   <ul className="space-y-2">
-                    {aide.sources.map((source, idx) => (
+                    {aide.source_url && (
+                        <li>
+                            <a href={aide.source_url} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline flex items-center gap-1">
+                                {aide.source_name || 'Source Officielle'}
+                                <ExternalLink className="h-3 w-3" />
+                            </a>
+                            <span className="text-xs text-slate-500 ml-2">(Lien direct)</span>
+                        </li>
+                    )}
+                    {aide.sources?.map((source, idx) => (
                       <li key={idx}>
                         <a
                           href={source.url}
@@ -306,12 +320,21 @@ export default function AideDetail() {
 
           {/* Sidebar */}
           <div className="space-y-6">
+            {/* Source Traceability */}
+            <SourceTraceability 
+              source_url={aide.source_url}
+              retrieved_at={aide.retrieved_at}
+              last_checked_at={aide.last_checked_at}
+              source_last_modified={aide.source_last_modified}
+              fetched_at={aide.fetched_at}
+            />
+
             {/* Actions */}
             <Card>
               <CardContent className="p-6 space-y-3">
-                {aide.lien_demande && (
+                {(aide.apply_url || aide.lien_demande) && (
                   <Button className="w-full" asChild>
-                    <a href={aide.lien_demande} target="_blank" rel="noopener noreferrer">
+                    <a href={aide.apply_url || aide.lien_demande} target="_blank" rel="noopener noreferrer">
                       Faire ma demande
                       <ExternalLink className="ml-2 h-4 w-4" />
                     </a>

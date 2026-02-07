@@ -1,6 +1,5 @@
-import { PrismaClient } from '@prisma/client';
+import prisma from '../../_utils/prisma.js';
 
-const prisma = new PrismaClient();
 const CRON_SECRET = process.env.CRON_SECRET || 'dev-secret-key';
 const RETENTION_DAYS = 90;
 

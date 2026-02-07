@@ -1,9 +1,4 @@
-import { PrismaClient } from '@prisma/client';
-import { kv } from '../_utils/kv.js';
-import logger from '../_utils/logger.js';
-import crypto from 'crypto';
-
-const prisma = new PrismaClient();
+import prisma from '../_utils/prisma.js';
 
 export default async function handler(req, res) {
     const startTime = Date.now();

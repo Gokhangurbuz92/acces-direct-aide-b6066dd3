@@ -22,6 +22,8 @@ import {
   Loader2
 } from 'lucide-react';
 import { generateBreadcrumbSchema, generateStructureSchema } from '@/utils/schema';
+import SourceTraceability from '@/components/SourceTraceability';
+import FalcSummary from '@/components/FalcSummary';
 
 const TYPE_LABELS = {
   association: 'Association',
@@ -142,6 +144,9 @@ export default function StructureDetail() {
                 )}
               </CardContent>
             </Card>
+
+            {/* FALC Summary */}
+            <FalcSummary text={structure?.resume_falc || structure?.summary_falc || structure?.description_falc} />
 
             {/* Coordonnées */}
             <Card>
@@ -279,6 +284,14 @@ export default function StructureDetail() {
 
           {/* Sidebar */}
           <div className="space-y-6">
+            {/* Source Traceability */}
+            <SourceTraceability 
+              source_url={structure.source_url || structure.source_url_exact}
+              retrieved_at={structure.retrieved_at}
+              last_checked_at={structure.last_checked_at}
+              source_last_modified={structure.source_last_modified}
+            />
+
             {/* Actions rapides */}
             <Card>
               <CardContent className="p-6 space-y-3">

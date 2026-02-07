@@ -47,7 +47,11 @@ test-img*.jpg
 
 # Local Storage (Mock)
 uploads_mock/
+api/_utils/build-info.js
+
+# lint outputs
+lint_output*.txt
+lint_final.txt
 
 # Generated build info
-api/_utils/build-info.js
 .blackboxcli/

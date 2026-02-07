@@ -1,3 +1,4 @@
+
 /* global process */
 import { isCronAuthorized } from '../../_utils/cronAuth.js';
 import prisma from '../../_utils/prisma.js';
@@ -209,7 +210,10 @@ export default async function handler(req, res) {
 
                             processedCount++;
                         } catch (e) {
-                            // ignore unique constraints
+                            if (!e.message.includes('Unique constraint')) {
+                                throw e;
+                            }
+                            // Ignore duplicate canonical_url
                         }
                     }
                     stats.durationByStage.processingMs += (Date.now() - startProc);
@@ -292,7 +296,7 @@ export default async function handler(req, res) {
                     duration_ms: Date.now() - startTime
                 }
             });
-        } catch (e) { 
+        } catch (e) {
             console.error('Failed to log NOOP error:', e);
         }
 

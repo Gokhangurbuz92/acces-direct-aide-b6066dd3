@@ -2,9 +2,9 @@ import React from 'react';
 import { useParams } from 'react-router-dom';
 import SEO from '@/components/SEO';
 import { Header } from '@/components/layout/Header';
-import { Card } from '@/components/ui/Card';
+import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/Badge';
-import { Button } from '@/components/ui/Button';
+import { Button } from '@/components/ui/button';
 import { SourceProof } from '@/components/ui/SourceProof';
 import { CheckCircle2, FileText, AlertCircle } from 'lucide-react';
 

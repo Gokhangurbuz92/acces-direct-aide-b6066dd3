@@ -1,85 +1,102 @@
-# Cartographie du Dépôt (Official Repository Map)
+# Cartographie du Répertoire (REPO_MAP)
 
-## 1. Racine / Configuration
-**Dossier :** `/`
-- **Rôle :** Configuration globale du projet, dépendances, règles de build et de déploiement.
-- **Dépendances :** Node.js, NPM, Vercel CLI.
-- **Fichiers clés :**
-  - `package.json` : Dépendances et scripts NPM.
-  - `vite.config.js` : Configuration du build Front (Vite).
-  - `vercel.json` : Configuration du déploiement Vercel (rewrites, crons, headers).
-  - `.env.example` : Template des variables d'environnement.
-  - `eslint.config.js` : Règles de linting.
-- **Owner :** DevOps / Tech Lead.
-- **Risques :** Une mauvaise configuration ici casse le build ou le déploiement (ex: variables manquantes).
+Ce document est la source de vérité pour la structure du projet `AccesDirectAide`.
 
-## 2. Front App (SPA)
-**Dossier :** `src/`
-- **Rôle :** Application React (SPA) côté client.
-- **Dépendances :** React, Vite, Tailwind CSS, Radix UI, API Backend.
-- **Sous-dossiers :**
-  - `pages/` : Composants pages (vues).
-  - `components/` : Composants UI réutilisables.
-  - `api/` : Client API (fetch wrappers).
-  - `hooks/` : Hooks React personnalisés.
-  - `utils/` : Utilitaires front-end.
-- **Owner :** Front-end Developer.
-- **Risques :** Routes orphelines, erreurs de rendu, appels API incorrects, bundle size trop lourd.
+## Vue d'ensemble
 
-## 3. API (Serverless)
-**Dossier :** `api/`
-- **Rôle :** Backend serverless (Vercel Functions).
-- **Dépendances :** Node.js Runtime, Prisma Client, Vercel KV/Postgres, Sentry.
-- **Structure :**
-  - `index.js` : Point d'entrée unique (monolithic entrypoint).
-  - `routes.js` : Mapping centralisé des routes vers les handlers.
-  - `_handlers/` : Logique métier par domaine (aides, demarches, booking...).
-  - `_utils/` : Fonctions transverses (auth, rateLimit, crypto).
-  - `lib/` : Bibliothèques métier (ex: falc-summarizer).
-- **Owner :** Back-end Developer.
-- **Risques :** Shadowing de routes, failles de sécurité (auth bypass), timeouts, exhaustion de connexions DB.
+Le projet est une architecture Monorepo "Serverless" hébergée sur Vercel.
+- **Front**: React SPA (Vite)
+- **API**: Node.js Serverless Functions (dossier `api/`)
+- **DB**: PostgreSQL (Neon) géré via Prisma
 
-## 4. Prisma (Base de données)
-**Dossier :** `prisma/`
-- **Rôle :** ORM, Schéma de base de données et Migrations.
-- **Dépendances :** PostgreSQL (Neon), Prisma CLI.
-- **Fichiers clés :**
-  - `schema.prisma` : Définition des modèles de données.
-  - `migrations/` : Historique des changements de schéma SQL.
-  - `seed.js` : Script de peuplement initial.
-- **Owner :** Database Engineer / Back-end.
-- **Risques :** Perte de données, migrations destructives, désynchronisation code/DB.
+## Structure détaillée
 
-## 5. Scripts (Ops & CI)
-**Dossier :** `scripts/`
-- **Rôle :** Scripts d'automatisation, vérification, ingestion de données et maintenance.
-- **Dépendances :** Bash, Node.js, `curl`, `jq`.
-- **Types de scripts :**
-  - `verify-*.js` : Tests de santé et vérifications post-déploiement.
-  - `seed-*.js` : Scripts d'import de données.
-  - `generate-*.js` : Génération d'artefacts (build-info, repo-map).
-- **Owner :** Ops / DevOps.
-- **Risques :** Scripts obsolètes, corruption de données en prod si mal utilisés.
+### Racine / Config
+**Chemin**: `./`
+- **Rôle**: Configuration globale du projet, du déploiement et des outils de développement.
+- **Dépendances**: `package.json`, `vercel.json`
+- **Owner**: Tech Lead
+- **Risques Principaux**:
+  - Une modification de `vercel.json` peut casser le routing API ou les headers de sécurité.
+  - `package.json` gère les dépendances unifiées (Front + API), risque de conflits de versions.
 
-## 6. Documentation
-**Dossier :** `docs/`
-- **Rôle :** Documentation technique, fonctionnelle et opérationnelle.
-- **Dépendances :** Markdown.
-- **Fichiers clés :** `REPO_MAP.md`, `ROUTES_API.md`, `ROUTES_FRONT.md`, `RUNBOOK.md`.
-- **Owner :** Tout le monde.
-- **Risques :** Documentation obsolète induisant en erreur (Source of Truth corrompue).
+### Front (Source)
+**Chemin**: `src/`
+- **Rôle**: Code source de l'application React (SPA).
+- **Organisation**:
+  - `pages/`: Composants de pages (liés au routeur)
+  - `components/`: Composants réutilisables (UI, Layout)
+  - `api/`: Client API frontend (fetch wrappers)
+  - `utils/`: Utilitaires purs JS
+- **Dépendances**: React, Tailwind, Vite (build)
+- **Owner**: Frontend
+- **Risques Principaux**:
+  - Le routing (`pages/index.jsx`) doit être synchronisé avec l'API.
+  - Performance (Bundle size) si imports non optimisés.
 
-## 7. Data
-**Dossier :** `data/`
-- **Rôle :** Données statiques brutes (CSV, JSON) pour les seeds ou les tests.
-- **Dépendances :** Aucune.
-- **Owner :** Product Manager / Data.
-- **Risques :** Données sensibles versionnées par erreur (PII).
+### API (Backend)
+**Chemin**: `api/`
+- **Rôle**: Backend Serverless. Expose les endpoints REST et gère la logique métier.
+- **Organisation**:
+  - `index.js` & `routes.js`: Point d'entrée et définition du routeur monolithique.
+  - `_handlers/`: Logique métier par domaine (aides, structures, booking...).
+  - `_utils/`: Sécurité, Middleware, Sentry, Rate Limit.
+  - `lib/`: Services techniques (Ingestion, Crypto, Logger).
+- **Dépendances**: Node.js, Prisma Client
+- **Owner**: API
+- **Risques Principaux**:
+  - "Shadowing" des routes Vercel si `routes.js` est mal ordonné.
+  - Cold starts si les handlers sont trop lourds.
+  - Sécurité (Auth) gérée manuellement dans `_utils/auth.js`.
 
-## 8. Tests
-**Dossiers :** `tests/` (Unit/Integration), `e2e/` (End-to-End)
-- **Rôle :** Assurance qualité.
-- **Dépendances :** Vitest, Playwright, Node.js.
-- **Outils :** Vitest (Unit), Playwright (E2E).
-- **Owner :** QA / Dev.
-- **Risques :** Tests instables (flaky) bloquant la CI, faux positifs.
+### Prisma (Base de Données)
+**Chemin**: `prisma/`
+- **Rôle**: Définition du schéma de base de données et migrations.
+- **Fichiers clés**: `schema.prisma`, `migrations/`
+- **Owner**: DB / Backend
+- **Risques Principaux**:
+  - Migrations destructives en production.
+  - Désynchronisation entre le client généré (`@prisma/client`) et la DB réelle.
+
+### Scripts (Ops & Maintenance)
+**Chemin**: `scripts/`
+- **Rôle**: Scripts de maintenance, verification, seed, et ingestion manuelle.
+- **Fichiers clés**: `generate-repo-map.sh` (génère l'inventaire).
+- **Dépendances**: Node.js, Shell, Python (parfois)
+- **Owner**: DevOps / Ops
+- **Risques Principaux**:
+  - Scripts obsolètes pouvant corrompre les données.
+  - Doivent être exécutés avec les bonnes variables d'environnement.
+
+### Docs (Documentation)
+**Chemin**: `docs/`
+- **Rôle**: Documentation projet, guides d'exploitation, rapports d'exécution.
+- **Fichiers clés**:
+  - `REPO_MAP.md` (Cartographie fonctionnelle)
+  - `REPO_FILES.txt` (Inventaire technique exhaustif)
+  - `API_CONTRACT.md`, `RUNBOOK.md`
+- **Owner**: Tous
+- **Risques Principaux**: Documentation obsolète induisant en erreur.
+
+### Data (Données Statiques)
+**Chemin**: `data/`
+- **Rôle**: Sources de données statiques (CSV, JSON) pour l'initialisation ou les tests.
+- **Owner**: Data
+- **Risques Principaux**: Données sensibles committées par erreur (PII).
+
+### Tests & E2E
+**Chemin**: `tests/` (unitaires), `e2e/` (Playwright)
+- **Rôle**: Assurance qualité.
+- **Owner**: QA / Dev
+- **Risques Principaux**:
+  - Tests flakiess (instables) bloquant la CI.
+  - Couverture insuffisante sur les parcours critiques (RDV, Aides).
+
+## Fichiers à ignorer (Git Hygiene)
+Les dossiers suivants sont strictement ignorés par Git :
+- `node_modules/`
+- `venv/` (Python env)
+- `test-results/`, `playwright-report/`
+- `dist/`, `.vercel/`
+- `.env`, `.env.local`
+- `cookies*.txt`, `test-img*.jpg`

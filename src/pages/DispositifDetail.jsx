@@ -4,6 +4,7 @@ import SEO from '@/components/SEO';
 import NotFound from "./NotFound";
 import { createPageUrl } from '@/utils';
 import { useQuery } from '@tanstack/react-query';
+import { generateBreadcrumbSchema, generateDispositifSchema } from '@/utils/schema';
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
@@ -17,6 +18,7 @@ import {
   Flag
 } from 'lucide-react';
 import SourceTraceability from '@/components/SourceTraceability';
+import FalcSummary from '@/components/FalcSummary';
 
 export default function DispositifDetail() {
   const { slug } = useParams();
@@ -55,12 +57,24 @@ export default function DispositifDetail() {
     return <NotFound />;
   }
 
+  const breadcrumbs = [
+    { name: 'Accueil', url: '/' },
+    { name: 'Dispositifs', url: '/dispositifs' },
+    { name: dispositif.titre, url: `/dispositifs/${dispositif.slug}` }
+  ];
+
+  const schema = [
+    generateBreadcrumbSchema(breadcrumbs),
+    generateDispositifSchema(dispositif)
+  ].filter(Boolean);
+
   return (
     <div className="min-h-screen bg-slate-50">
       <SEO
         title={dispositif.titre}
         description={dispositif.description_falc}
-        url={window.location.href}
+        path={`/dispositifs/${dispositif.slug}`}
+        schema={schema}
       />
 
       {/* Breadcrumbs */}
@@ -121,11 +135,14 @@ export default function DispositifDetail() {
 
         <div className="grid lg:grid-cols-3 gap-6">
             <div className="lg:col-span-2 space-y-6">
+                {/* FALC Summary */}
+                <FalcSummary text={dispositif?.description_falc || dispositif?.summary_falc} />
+
                 <Card>
                     <CardContent className="p-6">
                         <h2 className="text-lg font-bold text-slate-900 mb-3">Description</h2>
                         <div className="prose prose-slate max-w-none text-slate-700 whitespace-pre-wrap">
-                            {dispositif.description_falc || dispositif.summary_falc || "Aucune description disponible."}
+                            {dispositif.description || "Aucune description disponible."}
                         </div>
                     </CardContent>
                 </Card>

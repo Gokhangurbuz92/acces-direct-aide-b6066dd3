@@ -4,6 +4,9 @@ import SEO from '@/components/SEO';
 import NotFound from "./NotFound";
 import { createPageUrl } from '@/utils';
 import { useQuery } from '@tanstack/react-query';
+import { generateBreadcrumbSchema, generateRessourceSchema } from '@/utils/schema';
+import SourceTraceability from '@/components/SourceTraceability';
+import FalcSummary from '@/components/FalcSummary';
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
@@ -12,9 +15,7 @@ import {
   ChevronRight,
   Loader2,
   ExternalLink,
-  FileText,
-  Calendar,
-  Link as LinkIcon
+  FileText
 } from 'lucide-react';
 
 export default function RessourceDetail() {
@@ -54,12 +55,24 @@ export default function RessourceDetail() {
     return <NotFound />;
   }
 
+  const breadcrumbs = [
+    { name: 'Accueil', url: '/' },
+    { name: 'Ressources', url: '/ressources' },
+    { name: ressource.title, url: `/ressources/${ressource.slug}` }
+  ];
+
+  const schema = [
+    generateBreadcrumbSchema(breadcrumbs),
+    generateRessourceSchema(ressource)
+  ].filter(Boolean);
+
   return (
     <div className="min-h-screen bg-slate-50">
       <SEO
         title={ressource.title}
         description={ressource.content?.substring(0, 150)}
-        url={window.location.href}
+        path={`/ressources/${ressource.slug}`}
+        schema={schema}
       />
 
       {/* Breadcrumbs */}
@@ -104,6 +117,9 @@ export default function RessourceDetail() {
             </h1>
         </div>
 
+        {/* FALC Summary */}
+        <FalcSummary text={ressource?.resume_falc || ressource?.summary_falc || ressource?.description_falc} />
+
         {/* Content */}
         {ressource.content && (
             <Card className="mb-6">
@@ -120,60 +136,12 @@ export default function RessourceDetail() {
         )}
 
         {/* Source Traceability */}
-        {ressource.source_url && (
-            <Card className="mb-6 border-blue-200 bg-blue-50">
-                <CardContent className="p-6">
-                    <h2 className="text-lg font-semibold mb-3 flex items-center gap-2 text-blue-900">
-                        <LinkIcon className="h-5 w-5" />
-                        Source et traçabilité
-                    </h2>
-                    <div className="space-y-2 text-sm">
-                        <div className="flex items-start gap-2">
-                            <span className="font-medium text-blue-900 min-w-[120px]">Source :</span>
-                            <a 
-                                href={ressource.source_url} 
-                                target="_blank" 
-                                rel="noopener noreferrer"
-                                className="text-blue-600 hover:underline flex items-center gap-1 break-all"
-                            >
-                                {ressource.source_url}
-                                <ExternalLink className="h-3 w-3 flex-shrink-0" />
-                            </a>
-                        </div>
-                        {ressource.createdAt && (
-                            <div className="flex items-center gap-2">
-                                <Calendar className="h-4 w-4 text-blue-700" />
-                                <span className="font-medium text-blue-900">Ajouté le :</span>
-                                <span className="text-blue-700">
-                                    {new Date(ressource.createdAt).toLocaleDateString('fr-FR')}
-                                </span>
-                            </div>
-                        )}
-                        {ressource.updatedAt && (
-                            <div className="flex items-center gap-2">
-                                <Calendar className="h-4 w-4 text-blue-700" />
-                                <span className="font-medium text-blue-900">Mis à jour le :</span>
-                                <span className="text-blue-700">
-                                    {new Date(ressource.updatedAt).toLocaleDateString('fr-FR')}
-                                </span>
-                            </div>
-                        )}
-                    </div>
-                </CardContent>
-            </Card>
-        )}
-
-        {/* External Link */}
-        {ressource.source_url && (
-            <div className="flex justify-center">
-                <Button asChild size="lg" className="gap-2">
-                    <a href={ressource.source_url} target="_blank" rel="noopener noreferrer">
-                        <ExternalLink className="h-4 w-4" />
-                        Consulter la source
-                    </a>
-                </Button>
-            </div>
-        )}
+        <SourceTraceability
+          source_url={ressource.source_url}
+          retrieved_at={ressource.retrieved_at || ressource.fetched_at || ressource.createdAt}
+          last_checked_at={ressource.last_checked_at || ressource.updatedAt}
+          source_last_modified={ressource.source_last_modified}
+        />
       </div>
     </div>
   );

@@ -269,6 +269,7 @@ export async function runIngestAids({ limit, runId, wipe = false }) {
 
 export default async function handler(req, res) {
     if (!isCronAuthorized(req)) {
+        logger.warn("Unauthorized Ingest-Aids Attempt");
         return res.status(401).json({ error: 'Unauthorized' });
     }
 

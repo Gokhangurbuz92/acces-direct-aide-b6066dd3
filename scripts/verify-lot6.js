@@ -1,10 +1,10 @@
 
-import { PrismaClient } from '@prisma/client';
+import prisma from '../api/_utils/prisma.js';
 import { hash, encrypt, decrypt, decryptBuffer } from '../api/lib/crypto.js';
 import fs from 'fs';
 import path from 'path';
 
-const prisma = new PrismaClient();
+
 const API_URL = 'http://localhost:3000/api';
 
 if (!process.env.ADA_ENCRYPTION_KEY) {

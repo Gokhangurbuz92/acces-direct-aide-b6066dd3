@@ -1,10 +1,8 @@
 
-import { PrismaClient } from '@prisma/client';
+import prisma from '../../../_utils/prisma.js';
 import { verifyAdmin } from '../../../_utils/auth.js';
 import { hash } from '../../../lib/crypto.js';
 import { logger } from '../../../lib/logger.js';
-
-const prisma = new PrismaClient();
 
 export default async function handler(req, res) {
     if (req.method !== 'POST') {

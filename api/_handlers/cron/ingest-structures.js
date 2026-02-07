@@ -1,11 +1,9 @@
 import { isCronAuthorized } from '../../_utils/cronAuth.js';
-import { PrismaClient } from '@prisma/client';
+import prisma from '../../_utils/prisma.js';
 import crypto from 'crypto';
 import { geocodeAddress } from '../../_utils/geocoder.js';
 import { withLock } from '../../_utils/pipelineLock.js';
 import logger from '../../_utils/logger.js';
-
-const prisma = new PrismaClient();
 
 const DATASETS = [
     {

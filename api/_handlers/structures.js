@@ -1,9 +1,7 @@
-import { PrismaClient } from '@prisma/client';
+import prisma from '../_utils/prisma.js';
 import { checkRateLimit, getClientIp } from '../_utils/rateLimit.js';
 import { searchStructuresSchema } from '../_utils/validators.js';
 import { searchStructures } from '../lib/search-query.js';
-
-const prisma = new PrismaClient();
 
 async function handler(req, res) {
     try {

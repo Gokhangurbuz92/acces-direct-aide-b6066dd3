@@ -1,8 +1,8 @@
-import { PrismaClient } from '@prisma/client';
+import prisma from '../api/_utils/prisma.js';
 import { hash } from '../api/lib/crypto.js';
 import crypto from 'crypto';
 
-const prisma = new PrismaClient();
+
 
 async function verifyRDV() {
     console.log('🚀 Starting RDV Flow Verification...');

@@ -20,6 +20,8 @@ const DemarcheDetail = lazy(() => import("./DemarcheDetail.jsx"));
 const Demarches = lazy(() => import("./Demarches.jsx"));
 const DispositifDetail = lazy(() => import("./DispositifDetail.jsx"));
 const Dispositifs = lazy(() => import("./Dispositifs.jsx"));
+const Ressources = lazy(() => import("./Ressources.jsx"));
+const RessourceDetail = lazy(() => import("./RessourceDetail.jsx"));
 const Guides = lazy(() => import("./Guides.jsx"));
 const GuideDetail = lazy(() => import("./GuideDetail.jsx"));
 const Tools = lazy(() => import("./Tools.jsx"));
@@ -175,21 +177,27 @@ function PagesContent() {
                     <Route path="/admin/login" element={<AdminLogin />} />
                     <Route path="/admin/inbox" element={<AdminGuard><AdminInbox /></AdminGuard>} />
                     <Route path="/admin/runs" element={<AdminGuard><AdminRuns /></AdminGuard>} />
-                    <Route path="/adminaideedit" element={<AdminGuard><AdminAideEdit /></AdminGuard>} />
-                    <Route path="/adminaides" element={<AdminGuard><AdminAides /></AdminGuard>} />
-                    <Route path="/admin" element={<Navigate to="/adminaides" replace />} />
-                    <Route path="/adminguidesync" element={<AdminGuard><AdminGuideSync /></AdminGuard>} />
-                    <Route path="/adminmessages" element={<AdminGuard><AdminMessages /></AdminGuard>} />
+                    <Route path="/admin/aides/:id" element={<AdminGuard><AdminAideEdit /></AdminGuard>} />
+                    <Route path="/admin/aides" element={<AdminGuard><AdminAides /></AdminGuard>} />
+                    <Route path="/admin" element={<Navigate to="/admin/aides" replace />} />
+                    <Route path="/admin/guides/sync" element={<AdminGuard><AdminGuideSync /></AdminGuard>} />
+                    <Route path="/admin/messages" element={<AdminGuard><AdminMessages /></AdminGuard>} />
                     <Route path="/admin/review" element={<AdminGuard><AdminReview /></AdminGuard>} />
-                    <Route path="/adminrecentsyncs" element={<AdminGuard><AdminRecentSyncs /></AdminGuard>} />
-                    <Route path="/adminsources" element={<AdminGuard><AdminSources /></AdminGuard>} />
-                    <Route path="/adminsync" element={<AdminGuard><AdminSync /></AdminGuard>} />
-                    <Route path="/admintestsync" element={<AdminGuard><AdminTestSync /></AdminGuard>} />
-                    <Route path="/appointmentrequest" element={<AppointmentRequest />} />
-                    <Route path="/adminappointments" element={<AdminGuard><AdminAppointments /></AdminGuard>} />
-                    <Route path="/adminstructures" element={<AdminGuard><AdminStructures /></AdminGuard>} />
-                    <Route path="/admindemarches" element={<AdminGuard><AdminDemarches /></AdminGuard>} />
-                    <Route path="/admindemarcheedit" element={<AdminGuard><AdminDemarcheEdit /></AdminGuard>} />
+                    <Route path="/admin/sync/recent" element={<AdminGuard><AdminRecentSyncs /></AdminGuard>} />
+                    <Route path="/admin/sources" element={<AdminGuard><AdminSources /></AdminGuard>} />
+                    <Route path="/admin/sync" element={<AdminGuard><AdminSync /></AdminGuard>} />
+                    <Route path="/admin/sync/test" element={<AdminGuard><AdminTestSync /></AdminGuard>} />
+                    <Route path="/appointments/request" element={<AppointmentRequest />} />
+                    <Route path="/admin/appointments" element={<AdminGuard><AdminAppointments /></AdminGuard>} />
+                    <Route path="/admin/structures" element={<AdminGuard><AdminStructures /></AdminGuard>} />
+                    <Route path="/admin/demarches" element={<AdminGuard><AdminDemarches /></AdminGuard>} />
+                    <Route path="/admin/demarches/:id" element={<AdminGuard><AdminDemarcheEdit /></AdminGuard>} />
+
+                    {/* Legacy Admin Redirects */}
+                    <Route path="/adminaides" element={<Navigate to="/admin/aides" replace />} />
+                    <Route path="/adminstructures" element={<Navigate to="/admin/structures" replace />} />
+                    <Route path="/adminappointments" element={<Navigate to="/admin/appointments" replace />} />
+                    <Route path="/admindemarches" element={<Navigate to="/admin/demarches" replace />} />
 
                     <Route path="/aidedetail" element={<AideDetail />} />
                     <Route path="/aide/view" element={<AideDetail />} />
@@ -217,7 +225,7 @@ function PagesContent() {
                     )}
 
                     <Route path="/demarches" element={<Demarches />} />
-                    <Route path="/home" element={<Home />} />
+                    <Route path="/home" element={<Navigate to="/" replace />} />
                     <Route path="/mentions-legales" element={<MentionsLegales />} />
                     <Route path="/sourcesmethode" element={<SourcesMethode />} />
                     <Route path="/sentry-test" element={<SentryTest />} />
@@ -229,6 +237,10 @@ function PagesContent() {
                     <Route path="/dispositifs" element={<Dispositifs />} />
                     <Route path="/dispositifs/:slug" element={<DispositifDetail />} />
                     <Route path="/dispositifs/view" element={<DispositifDetail />} />
+
+                    <Route path="/ressources" element={<Ressources />} />
+                    <Route path="/ressources/:slug" element={<RessourceDetail />} />
+                    <Route path="/ressources/view" element={<RessourceDetail />} />
 
                     <Route path="/impact" element={<Impact />} />
                     <Route path="/notre-mission" element={<Mission />} />

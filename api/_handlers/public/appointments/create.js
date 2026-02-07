@@ -1,11 +1,9 @@
-import { PrismaClient } from '@prisma/client';
+import prisma from '../../../_utils/prisma.js';
 import { z } from 'zod';
 import { createHandler } from '../../../_utils/wrapper.js';
 import { encrypt, hash } from '../../../lib/crypto.js';
 import crypto from 'crypto';
 import { createError, errorCodes } from '../../../_utils/errors.js';
-
-const prisma = new PrismaClient();
 
 const bodySchema = z.object({
     structureId: z.string().min(1),

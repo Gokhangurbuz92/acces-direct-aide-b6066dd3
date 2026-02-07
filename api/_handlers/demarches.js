@@ -1,9 +1,7 @@
-import { PrismaClient } from '@prisma/client';
+import prisma from '../_utils/prisma.js';
 import { searchDemarchesSchema } from '../_utils/validators.js';
 import { searchDemarches } from '../lib/search-query.js';
 import { verifyAdmin } from '../_utils/auth.js';
-
-const prisma = new PrismaClient();
 
 export default async function handler(req, res) {
     const isAdmin = verifyAdmin(req);

@@ -9,13 +9,13 @@
  *   node scripts/backfill-slugs.js --apply --report      (save JSON report)
  */
 
-import { PrismaClient } from '@prisma/client';
+import prisma from '../api/_utils/prisma.js';
 import { generateUniqueSlug } from '../api/lib/slug.js';
 import slugify from '@sindresorhus/slugify';
 import fs from 'fs';
 import path from 'path';
 
-const prisma = new PrismaClient();
+
 
 // Parse CLI args
 const args = process.argv.slice(2);

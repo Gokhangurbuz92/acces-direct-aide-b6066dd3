@@ -1,9 +1,7 @@
-import { PrismaClient } from '@prisma/client';
+import prisma from '../../_utils/prisma.js';
 import { verifyProToken, checkRateLimit, requireAuth } from '../../lib/pro-auth.js';
 import { encrypt, decrypt, generateAttachmentToken } from '../../lib/crypto.js';
 import { storage } from '../../lib/storage.js';
-
-const prisma = new PrismaClient();
 
 async function handler(req, res) {
     // Auth handled by requireAuth wrapper

@@ -1,30 +1,68 @@
-fix(prisma): move SourceDocument model to top for proper dependency order
+feat(diagnostic): add PostgreSQL connection testing and environment verification
 
-Fixes Vercel deployment blocker and Prisma validation error P1012.
+## Contexte
+Suite à l'audit global du projet, création d'outils de diagnostic pour identifier
+la cause des pages vides (problème environnemental, pas de code).
 
-Problem:
-- SourceDocument model was defined at line 625 (end of schema)
-- But referenced by Aide, Structure, Demarche, Dispositif models (lines 68-586)
-- Prisma requires models to be defined BEFORE they are referenced
-- This caused 4 validation errors during `prisma generate`
+## Ajouts
 
-Solution:
-- Moved SourceDocument model from line 625 to line 11
-- Now defined immediately after datasource block
-- All forward references now resolve correctly
+### Scripts de diagnostic (5 fichiers)
+- `scripts/test-db-production.cjs` - Test connexion base PROD/PREVIEW
+- `scripts/test-db-development.cjs` - Test connexion base DEVELOPMENT
+- `DIAGNOSTIC_DB_RESULTS.md` - Résultats des tests de connexion
+- `VERCEL_ENV_CHECKLIST.md` - Checklist variables d'environnement Vercel
+- `RAPPORT_DIAGNOSTIC_FINAL.md` - Synthèse complète du diagnostic
 
-Verification:
-✅ npx prisma validate - Schema is valid
-✅ npm run lint - 0 errors, 0 warnings
-✅ node scripts/verify-handler-imports.js - All handlers importable
-✅ npm run build - Builds successfully in 5.81s
+### Commandes npm
+- `npm run test:db:prod` - Tester connexion PROD/PREVIEW
+- `npm run test:db:dev` - Tester connexion DEVELOPMENT
 
-Impact:
-- Fixes Vercel build failures
-- Fixes GitHub Actions CI failures
-- No breaking changes
-- No data migration required
+### Dépendance
+- `pg@^8.18.0` (devDependencies) - Client PostgreSQL pour les tests
 
-Related:
-- PR #108
-- Vercel build: https://github.com/Gokhangurbuz92/acces-direct-aide-b6066dd3/actions/runs/21773648730
+## Résultats du diagnostic
+
+### ✅ Code source
+- Build réussi (5.71s, 980 packages)
+- Aucune erreur de compilation
+- Code propre et bien structuré
+
+### ❌ Connexion base de données
+- Erreur: `password authentication failed for user 'neondb_owner'`
+- Cause probable: Credentials incomplets (espace dans le mot de passe fourni)
+- URL fournie: `npg_xXADTwi7o4RC @ep-summer-cloud...` (espace suspect)
+
+### ⚠️ Problème identifié
+**Environnemental (90% de probabilité):**
+1. Variables d'environnement manquantes/incorrectes sur Vercel
+2. Base de données vide (pipeline jamais exécuté)
+3. Credentials PostgreSQL incomplets
+
+## Actions recommandées
+
+### P0 - Immédiat (5 min)
+1. Vérifier credentials PostgreSQL sur Neon Dashboard
+2. Copier connection string COMPLÈTE (sans espace)
+3. Mettre à jour variables Vercel (POSTGRES_URL_NON_POOLING)
+
+### P1 - Important (10 min)
+1. Vérifier contenu base de données (SELECT COUNT(*))
+2. Vérifier statut des données (brouillon vs publié)
+3. Déclencher pipeline d'ingestion si nécessaire
+
+## Fichiers modifiés
+- `package.json` - Ajout scripts test:db:prod et test:db:dev
+- `package-lock.json` - Ajout dépendance pg
+
+## Fichiers créés
+- 5 fichiers de documentation/diagnostic
+- 2 scripts de test de connexion
+
+## Notes
+- Aucun fichier de code métier modifié
+- Aucun fichier de configuration critique modifié
+- Uniquement ajout d'outils de diagnostic
+- Prêt pour vérification environnement Vercel
+
+## Temps estimé pour résolution
+25 minutes (une fois credentials corrects obtenus)

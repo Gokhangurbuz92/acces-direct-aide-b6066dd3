@@ -7,9 +7,8 @@ export function Card({
   return (
     <div
       className={
-        "rounded-xl bg-surface border border-border shadow-subtle " +
-        "transition-all duration-240 ease-apple hover:border-primary hover:shadow-float " +
-        "motion-reduce:transform-none motion-reduce:transition-none " +
+        "rounded-xl bg-bt-surface border border-bt-border shadow-subtle " +
+        "transition-colors duration-240 ease-apple hover:border-bt-primary " +
         className
       }
       {...props}

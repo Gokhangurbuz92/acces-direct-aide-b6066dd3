@@ -1,0 +1,31 @@
+name: Check Artifacts
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+
+jobs:
+  check-no-artifacts:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Check for unwanted artifacts
+        run: |
+          # Check if any proof files are being committed
+          if git diff --name-only origin/main...HEAD | grep -E 'release/.*/proofs/.*\.(png|jpg|jpeg|gif|webp|pdf)$'; then
+            echo "❌ ERROR: Proof artifacts detected in commit"
+            echo "Please remove proof files from release/**/proofs/ before committing"
+            exit 1
+          fi
+          
+          # Check if build-info.js is being committed
+          if git diff --name-only origin/main...HEAD | grep 'api/_utils/build-info.js'; then
+            echo "⚠️  WARNING: build-info.js should be auto-generated, not committed"
+            echo "This file is in .gitignore and should not be tracked"
+            exit 1
+          fi
+          
+          echo "✅ No unwanted artifacts detected"

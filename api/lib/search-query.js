@@ -73,19 +73,37 @@ export async function searchAides(prisma, params) {
     ? Prisma.sql`WHERE ${Prisma.join(conditions, ' AND ')}`
     : Prisma.empty;
 
-  // 3. Sorting
+  // 3. Sorting - Safe mapping with whitelist
   let orderBy;
   let selectRank = Prisma.empty;
 
-  if (q && sort === 'pertinence') {
+  // Parse sort parameter (handle prefix "-" for DESC)
+  const sortDirection = sort?.startsWith('-') ? 'DESC' : 'ASC';
+  const sortField = sort?.startsWith('-') ? sort.substring(1) : sort;
+
+  // Safe column mapping (whitelist only)
+  const SAFE_SORT_COLUMNS = {
+    'pertinence': 'rank',
+    'date': 'published_at',
+    'alpha': 'titre',
+    'created_date': 'updatedAt',
+    'published_at': 'published_at',
+    'date_publication': 'published_at',
+    'titre': 'titre'
+  };
+
+  if (q && (sort === 'pertinence' || sortField === 'pertinence')) {
     selectRank = Prisma.sql`, ts_rank_cd("search_vector", plainto_tsquery('french', unaccent(${q}))) as rank`;
     orderBy = Prisma.sql`ORDER BY rank DESC, published_at DESC`;
-  } else if (sort === 'date') {
-      orderBy = Prisma.sql`ORDER BY published_at DESC, id ASC`;
-  } else if (sort === 'alpha') {
-      orderBy = Prisma.sql`ORDER BY titre ASC, id ASC`;
+  } else if (sortField && SAFE_SORT_COLUMNS[sortField]) {
+    const dbColumn = SAFE_SORT_COLUMNS[sortField];
+    if (sortDirection === 'DESC') {
+      orderBy = Prisma.sql`ORDER BY ${Prisma.raw(`"${dbColumn}"`)} DESC, id ASC`;
+    } else {
+      orderBy = Prisma.sql`ORDER BY ${Prisma.raw(`"${dbColumn}"`)} ASC, id ASC`;
+    }
   } else {
-    // Default
+    // Default fallback
     orderBy = Prisma.sql`ORDER BY published_at DESC, id ASC`;
   }
 

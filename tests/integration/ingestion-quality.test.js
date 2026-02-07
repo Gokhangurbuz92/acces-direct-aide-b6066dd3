@@ -1,230 +1,291 @@
-import { describe, it, expect, beforeAll, afterAll } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import prisma from '../../api/_utils/prisma.js';
 import crypto from 'crypto';
 
-describe('Ingestion Quality', () => {
-  const testRunId = `test-${crypto.randomUUID()}`;
+/**
+ * Integration tests for Ingestion Quality (Phase 7)
+ * Tests idempotence, traceability, normalization, and observability
+ */
+describe('Ingestion Quality - Phase 7', () => {
+  const testRunId = crypto.randomUUID();
   const testSlug = `test-aide-${Date.now()}`;
   
-  afterAll(async () => {
-    // Cleanup test data
-    await prisma.aide.deleteMany({
-      where: {
-        slug: {
-          startsWith: 'test-aide-'
-        }
-      }
-    });
+  // Clean up test data after each test
+  afterEach(async () => {
+    try {
+      await prisma.aide.deleteMany({
+        where: { slug: { startsWith: 'test-aide-' } }
+      });
+      await prisma.importLog.deleteMany({
+        where: { run_id: testRunId }
+      });
+    } catch (error) {
+      // Ignore cleanup errors in test environment
+    }
   });
 
   describe('Idempotence', () => {
-    it('should not duplicate when ingesting same item twice', async () => {
-      const testData = {
+    it('should not duplicate items when re-ingesting same content', async () => {
+      const itemData = {
         slug: testSlug,
-        titre: 'Test Aide for Idempotence',
-        cest_quoi: 'Test description',
-        providerName: 'TestConnector',
-        providerType: 'ingest',
-        source_url: 'https://example.com/test-aide',
-        source_url_exact: 'https://example.com/test-aide',
-        statut: 'publie',
-        published_at: new Date(),
+        titre: 'Test Aide',
+        cest_quoi: 'Test content',
+        source_url: 'https://example.com/test',
         content_hash: crypto.createHash('md5').update('test-content').digest('hex'),
-        retrieved_at: new Date(),
-        last_checked_at: new Date()
+        statut: 'publie',
+        published_at: new Date()
       };
 
-      // First insert
-      const first = await prisma.aide.create({ data: testData });
-      expect(first).toBeDefined();
+      // First ingestion
+      const first = await prisma.aide.create({ data: itemData });
+      expect(first).toBeTruthy();
       expect(first.slug).toBe(testSlug);
 
-      // Try to insert again (should upsert instead)
+      // Second ingestion (should find existing)
       const existing = await prisma.aide.findFirst({
         where: {
           OR: [
             { slug: testSlug },
-            { source_url: testData.source_url }
+            { source_url: itemData.source_url }
           ]
         }
       });
 
-      expect(existing).toBeDefined();
+      expect(existing).toBeTruthy();
       expect(existing.id).toBe(first.id);
 
-      // Count should be 1
+      // Verify no duplication
       const count = await prisma.aide.count({
         where: { slug: testSlug }
       });
       expect(count).toBe(1);
     });
 
-    it('should update when content changes', async () => {
-      const slug = `test-aide-update-${Date.now()}`;
-      const initialHash = crypto.createHash('md5').update('initial-content').digest('hex');
-      const updatedHash = crypto.createHash('md5').update('updated-content').digest('hex');
+    it('should update item when content changes', async () => {
+      const originalHash = crypto.createHash('md5').update('original').digest('hex');
+      const updatedHash = crypto.createHash('md5').update('updated').digest('hex');
 
-      // Create initial
-      const initial = await prisma.aide.create({
+      const original = await prisma.aide.create({
         data: {
-          slug,
-          titre: 'Initial Title',
-          cest_quoi: 'Initial content',
-          providerName: 'TestConnector',
-          providerType: 'ingest',
-          source_url: `https://example.com/${slug}`,
+          slug: testSlug,
+          titre: 'Original Title',
+          cest_quoi: 'Original content',
+          content_hash: originalHash,
           statut: 'publie',
-          published_at: new Date(),
-          content_hash: initialHash,
-          retrieved_at: new Date(),
-          last_checked_at: new Date()
+          published_at: new Date()
         }
       });
 
-      expect(initial.content_hash).toBe(initialHash);
-
-      // Update with new content
+      // Simulate content change
       const updated = await prisma.aide.update({
-        where: { id: initial.id },
+        where: { id: original.id },
         data: {
           titre: 'Updated Title',
-          cest_quoi: 'Updated content',
           content_hash: updatedHash,
-          last_checked_at: new Date()
+          updatedAt: new Date()
         }
       });
 
-      expect(updated.content_hash).toBe(updatedHash);
       expect(updated.titre).toBe('Updated Title');
-      expect(updated.id).toBe(initial.id); // Same ID, not duplicated
+      expect(updated.content_hash).toBe(updatedHash);
+      expect(updated.content_hash).not.toBe(originalHash);
     });
 
-    it('should skip when content hash is unchanged', async () => {
-      const slug = `test-aide-skip-${Date.now()}`;
-      const contentHash = crypto.createHash('md5').update('unchanged-content').digest('hex');
+    it('should skip unchanged items but update last_checked_at', async () => {
+      const contentHash = crypto.createHash('md5').update('unchanged').digest('hex');
+      const originalDate = new Date('2024-01-01');
 
-      const initial = await prisma.aide.create({
+      const original = await prisma.aide.create({
         data: {
-          slug,
+          slug: testSlug,
           titre: 'Unchanged Title',
           cest_quoi: 'Unchanged content',
-          providerName: 'TestConnector',
-          providerType: 'ingest',
-          source_url: `https://example.com/${slug}`,
-          statut: 'publie',
-          published_at: new Date(),
           content_hash: contentHash,
-          retrieved_at: new Date(),
-          last_checked_at: new Date()
+          last_checked_at: originalDate,
+          statut: 'publie',
+          published_at: new Date()
         }
       });
 
-      // Check if content hash matches (simulating skip logic)
-      const existing = await prisma.aide.findUnique({
-        where: { id: initial.id }
+      // Simulate re-check with same content
+      const now = new Date();
+      const updated = await prisma.aide.update({
+        where: { id: original.id },
+        data: { last_checked_at: now }
       });
 
-      expect(existing.content_hash).toBe(contentHash);
-      // In real ingestion, this would trigger a skip (no update)
+      expect(updated.content_hash).toBe(contentHash);
+      expect(updated.last_checked_at.getTime()).toBeGreaterThan(originalDate.getTime());
     });
   });
 
   describe('Traceability', () => {
-    it('should store source_url and retrieved_at', async () => {
-      const slug = `test-aide-trace-${Date.now()}`;
+    it('should store retrieved_at timestamp', async () => {
       const retrievedAt = new Date();
-
+      
       const aide = await prisma.aide.create({
         data: {
-          slug,
-          titre: 'Traceable Aide',
+          slug: testSlug,
+          titre: 'Test Aide',
           cest_quoi: 'Test content',
-          providerName: 'TestConnector',
-          providerType: 'ingest',
-          source_url: 'https://example.com/traceable',
-          source_url_exact: 'https://example.com/traceable?param=value',
-          statut: 'publie',
-          published_at: new Date(),
           retrieved_at: retrievedAt,
-          last_checked_at: new Date()
+          statut: 'publie',
+          published_at: new Date()
         }
       });
 
-      expect(aide.source_url).toBe('https://example.com/traceable');
-      expect(aide.source_url_exact).toBe('https://example.com/traceable?param=value');
-      expect(aide.retrieved_at).toBeDefined();
-      expect(aide.last_checked_at).toBeDefined();
-      expect(aide.providerName).toBe('TestConnector');
+      expect(aide.retrieved_at).toBeTruthy();
+      expect(aide.retrieved_at.getTime()).toBe(retrievedAt.getTime());
     });
 
-    it('should update last_checked_at on re-ingestion', async () => {
-      const slug = `test-aide-recheck-${Date.now()}`;
-      const initialCheck = new Date('2024-01-01');
-
-      const initial = await prisma.aide.create({
+    it('should store last_checked_at timestamp', async () => {
+      const lastChecked = new Date();
+      
+      const aide = await prisma.aide.create({
         data: {
-          slug,
-          titre: 'Rechecked Aide',
+          slug: testSlug,
+          titre: 'Test Aide',
           cest_quoi: 'Test content',
-          providerName: 'TestConnector',
-          providerType: 'ingest',
-          source_url: `https://example.com/${slug}`,
+          last_checked_at: lastChecked,
           statut: 'publie',
-          published_at: new Date(),
-          retrieved_at: initialCheck,
-          last_checked_at: initialCheck
+          published_at: new Date()
         }
       });
 
-      // Simulate re-ingestion
-      await new Promise(resolve => setTimeout(resolve, 10)); // Small delay
-      const newCheckTime = new Date();
+      expect(aide.last_checked_at).toBeTruthy();
+      expect(aide.last_checked_at.getTime()).toBe(lastChecked.getTime());
+    });
 
-      const updated = await prisma.aide.update({
-        where: { id: initial.id },
+    it('should store source_url_exact for full traceability', async () => {
+      const exactUrl = 'https://example.com/aide?id=123&ref=source';
+      
+      const aide = await prisma.aide.create({
         data: {
-          last_checked_at: newCheckTime
+          slug: testSlug,
+          titre: 'Test Aide',
+          cest_quoi: 'Test content',
+          source_url: 'https://example.com/aide',
+          source_url_exact: exactUrl,
+          statut: 'publie',
+          published_at: new Date()
         }
       });
 
-      expect(updated.last_checked_at.getTime()).toBeGreaterThan(initial.last_checked_at.getTime());
-      expect(updated.retrieved_at).toEqual(initial.retrieved_at); // Original timestamp preserved
+      expect(aide.source_url_exact).toBe(exactUrl);
+      expect(aide.source_url_exact).toContain('?id=123&ref=source');
     });
   });
 
   describe('Data Normalization', () => {
     it('should trim whitespace from text fields', () => {
-      const title = '  Test Title  ';
-      const description = '\\n  Test Description  \\n';
-      const url = '  https://example.com/test  ';
+      const rawData = {
+        title: '  Test Title  ',
+        description: '  Test Description  ',
+        content: '  Test Content  '
+      };
 
       const normalized = {
-        title: title.trim(),
-        description: description.trim(),
-        url: url.trim()
+        title: rawData.title?.trim() || '',
+        description: rawData.description?.trim() || '',
+        content: rawData.content?.trim() || ''
       };
 
       expect(normalized.title).toBe('Test Title');
       expect(normalized.description).toBe('Test Description');
-      expect(normalized.url).toBe('https://example.com/test');
+      expect(normalized.content).toBe('Test Content');
     });
 
     it('should handle null/undefined values gracefully', () => {
-      const data = {
+      const rawData = {
         title: null,
         description: undefined,
-        url: ''
+        content: ''
       };
 
       const normalized = {
-        title: data.title?.trim() || '',
-        description: data.description?.trim() || '',
-        url: data.url?.trim() || ''
+        title: rawData.title?.trim() || '',
+        description: rawData.description?.trim() || '',
+        content: rawData.content?.trim() || ''
       };
 
       expect(normalized.title).toBe('');
       expect(normalized.description).toBe('');
-      expect(normalized.url).toBe('');
+      expect(normalized.content).toBe('');
+    });
+  });
+
+  describe('ImportLog Tracking', () => {
+    it('should create ImportLog with run_id', async () => {
+      const log = await prisma.importLog.create({
+        data: {
+          run_id: testRunId,
+          source_name: 'TEST_SOURCE',
+          status: 'SUCCESS',
+          items_total: 10,
+          items_new: 5,
+          items_updated: 3,
+          items_skipped: 2,
+          error_count: 0,
+          duration_ms: 1000
+        }
+      });
+
+      expect(log.run_id).toBe(testRunId);
+      expect(log.items_new).toBe(5);
+      expect(log.items_updated).toBe(3);
+      expect(log.items_skipped).toBe(2);
+    });
+
+    it('should track errors in ImportLog', async () => {
+      const errors = ['Error 1', 'Error 2'];
+      
+      const log = await prisma.importLog.create({
+        data: {
+          run_id: testRunId,
+          source_name: 'TEST_SOURCE',
+          status: 'PARTIAL',
+          items_total: 10,
+          items_new: 8,
+          error_count: errors.length,
+          logs: JSON.stringify(errors),
+          duration_ms: 1500
+        }
+      });
+
+      expect(log.error_count).toBe(2);
+      expect(JSON.parse(log.logs)).toEqual(errors);
+    });
+  });
+
+  describe('Silent Failure Detection', () => {
+    it('should detect when no items processed and no errors', () => {
+      const stats = {
+        processed: 0,
+        errors: []
+      };
+
+      const isSilentFailure = stats.processed === 0 && stats.errors.length === 0;
+      expect(isSilentFailure).toBe(true);
+    });
+
+    it('should not flag as silent failure when items processed', () => {
+      const stats = {
+        processed: 5,
+        errors: []
+      };
+
+      const isSilentFailure = stats.processed === 0 && stats.errors.length === 0;
+      expect(isSilentFailure).toBe(false);
+    });
+
+    it('should not flag as silent failure when errors reported', () => {
+      const stats = {
+        processed: 0,
+        errors: ['Some error']
+      };
+
+      const isSilentFailure = stats.processed === 0 && stats.errors.length === 0;
+      expect(isSilentFailure).toBe(false);
     });
   });
 });

@@ -166,6 +166,11 @@ export async function runIngestAids({ limit, runId, wipe = false }) {
                             });
                             stats.updated++;
                         } else {
+                            // Update last_checked_at even if content unchanged (traceability)
+                            await prisma.aide.update({
+                                where: { id: existing.id },
+                                data: { last_checked_at: new Date() }
+                            });
                             stats.skippedExisting++;
                         }
                     } else {
@@ -196,8 +201,7 @@ export async function runIngestAids({ limit, runId, wipe = false }) {
                             stage: 'item_processing'
                         },
                         extra: {
-                            url: url,
-                            itemTitle: item?.title || 'unknown'
+                            url: url
                         }
                     });
                 }
@@ -226,21 +230,39 @@ export async function runIngestAids({ limit, runId, wipe = false }) {
     }
 
     const durationTotal = Date.now() - startTotal;
+    
+    // Detect silent failures: no items processed and no errors
+    if (stats.processed === 0 && stats.errors.length === 0) {
+        const silentFailureError = new Error('Silent failure: No items processed and no errors reported');
+        logger.error('INGEST_AIDS_SILENT_FAILURE', { runId, stats });
+        Sentry.captureException(silentFailureError, {
+            tags: { runId, stage: 'validation' },
+            extra: { stats }
+        });
+        stats.errors.push('Silent failure detected: No items processed');
+    }
+    
     logger.info('INGEST_AIDS_END', { runId, stats, duration_ms: durationTotal });
 
-    // Log the Run
+    // Log the Run with enhanced traceability
     try {
         await prisma.importLog.create({
             data: {
+                run_id: runId, // Unique run identifier
                 source_name: 'CRON_AIDS',
                 status: stats.errors.length > 0 ? 'PARTIAL' : 'SUCCESS',
                 items_new: stats.created,
+                items_updated: stats.updated,
+                items_skipped: stats.skippedExisting,
                 items_total: stats.processed,
+                error_count: stats.errors.length,
                 logs: stats.errors.length ? JSON.stringify(stats.errors) : null,
                 duration_ms: durationTotal
             }
         });
-    } catch (e) { /* ignore */ }
+    } catch (e) { 
+        logger.error('IMPORT_LOG_ERROR', { runId, error: e });
+    }
 
     return stats;
 }

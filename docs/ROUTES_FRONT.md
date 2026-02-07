@@ -24,7 +24,7 @@ Ce document recense l'ensemble des routes définies dans l'application (`src/pag
 | `/outils` | `Tools.jsx` | `tools.js` | Liste outils |
 | `/outils/:slug` | `ToolDetail.jsx` | `tools.js` | Détail outil |
 | `/contact` | `Contact.jsx` | `public/messages.js` | Formulaire contact |
-| `/appointmentrequest` | `AppointmentRequest.jsx` | `booking/create.js`, `public/availability.js` | Prise de RDV |
+| `/appointments/request` | `AppointmentRequest.jsx` | `booking/create.js`, `public/availability.js` | Prise de RDV |
 | `/proposer-une-structure` | `SuggestStructure.jsx` | `public/suggest-structure.js` | Suggestion |
 | `/mentions-legales` | `MentionsLegales.jsx` | - | Légal |
 | `/confidentialite` | `Confidentialite.jsx` | - | Légal |
@@ -56,23 +56,23 @@ Routes préfixées par `/pro`.
 | `/pro/appointments/:id` | `pro/AppointmentDetail.jsx` | `RequireAuth` | `pro/appointments/details.js` |
 
 ## 3. Administration (Layout: `Layout.jsx` + `AdminGuard`)
-Routes préfixées par `/admin` (sauf alias).
+Routes préfixées par `/admin`.
 
 | Route | Page Component | API attendue | Notes |
 |---|---|---|---|
 | `/admin/login` | `AdminLogin.jsx` | `auth/login.js` | Login Admin |
-| `/adminaides` | `AdminAides.jsx` | `aides.js` | CRUD Aides |
-| `/adminaideedit` | `AdminAideEdit.jsx` | `aides.js` | Edit Aide |
-| `/admindemarches` | `AdminDemarches.jsx` | `demarches.js` | CRUD Démarches |
-| `/admindemarcheedit` | `AdminDemarcheEdit.jsx` | `demarches.js` | Edit Démarche |
-| `/adminstructures` | `AdminStructures.jsx` | `structures.js` | CRUD Structures |
-| `/adminappointments` | `AdminAppointments.jsx` | `booking/pro` | RDV Admin |
-| `/adminmessages` | `AdminMessages.jsx` | `public/messages.js` | Messagerie Admin |
-| `/adminsources` | `AdminSources.jsx` | `cron/ingest-rss.js` | Sources RSS |
-| `/adminsync` | `AdminSync.jsx` | `cron/pipeline.js` | Sync Pipelines |
-| `/adminrecentsyncs` | `AdminRecentSyncs.jsx` | `admin/runs.js` | Logs Sync |
-| `/admintestsync` | `AdminTestSync.jsx` | `admin/actions.js` | Test Sync |
-| `/adminguidesync` | `AdminGuideSync.jsx` | `guides.js` | Sync Guides |
+| `/admin/aides` | `AdminAides.jsx` | `aides.js` | CRUD Aides |
+| `/admin/aides/:id` | `AdminAideEdit.jsx` | `aides.js` | Edit Aide |
+| `/admin/demarches` | `AdminDemarches.jsx` | `demarches.js` | CRUD Démarches |
+| `/admin/demarches/:id` | `AdminDemarcheEdit.jsx` | `demarches.js` | Edit Démarche |
+| `/admin/structures` | `AdminStructures.jsx` | `structures.js` | CRUD Structures |
+| `/admin/appointments` | `AdminAppointments.jsx` | `booking/pro` | RDV Admin |
+| `/admin/messages` | `AdminMessages.jsx` | `public/messages.js` | Messagerie Admin |
+| `/admin/sources` | `AdminSources.jsx` | `cron/ingest-rss.js` | Sources RSS |
+| `/admin/sync` | `AdminSync.jsx` | `cron/pipeline.js` | Sync Pipelines |
+| `/admin/sync/recent` | `AdminRecentSyncs.jsx` | `admin/runs.js` | Logs Sync |
+| `/admin/sync/test` | `AdminTestSync.jsx` | `admin/actions.js` | Test Sync |
+| `/admin/guides/sync` | `AdminGuideSync.jsx` | `guides.js` | Sync Guides |
 | `/admin/inbox` | `admin/Inbox.jsx` | `admin/inbox.js` | Inbox |
 | `/admin/runs` | `admin/Runs.jsx` | `admin/runs.js` | Cron Runs |
 | `/admin/review` | `AdminReview.jsx` | `admin` | Review |
@@ -82,10 +82,14 @@ Routes préfixées par `/admin` (sauf alias).
 | Source | Cible |
 |---|---|
 | `/annuaire` | `/structures` |
-| `/admin` | `/adminaides` |
+| `/admin` | `/admin/aides` |
 | `/aidedetail` | `/aidedetail` (Legacy?) |
 | `/StructureDetail` | `/annuaire` |
 | `/DemarcheDetail` | `/demarches` |
+| `/adminaides` | `/admin/aides` |
+| `/adminstructures` | `/admin/structures` |
+| `/adminappointments` | `/admin/appointments` |
+| `/admindemarches` | `/admin/demarches` |
 
 ## 5. Pages Orphelines détectées
 Aucune page orpheline détectée dans `src/pages/`.

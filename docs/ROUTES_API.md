@@ -9,11 +9,15 @@ Toutes les routes sont préfixées par `/api` (ex: `/api/health`).
 | Path | Handler | Auth | Description |
 |---|---|---|---|
 | `/health` | `_handlers/health.js` | None | Vérification de santé (status 200) |
+| `/healthz` | `_handlers/health.js` | None | Alias Health |
 | `/robots.txt` | `_handlers/robots.js` | None | Robots.txt dynamique |
+| `/robots` | `_handlers/robots.js` | None | Alias Robots |
 | `/sitemap.xml` | `_handlers/sitemap.js` | None | Sitemap XML dynamique |
+| `/sitemap` | `_handlers/sitemap.js` | None | Alias Sitemap |
 | `/upload` | `_handlers/upload.js` | Admin/Pro | Upload de fichiers (mock ou stockage) |
 | `/download` | `_handlers/download.js` | Admin/Pro | Téléchargement / Export |
 | `/taxonomy` | `_handlers/taxonomy.js` | None | Référentiel (tags, catégories) |
+| `/login-pro-guard` | `_handlers/login-pro-guard.js` | None | Check Pro Login availability |
 
 ## 2. Authentification & Pro
 
@@ -44,6 +48,7 @@ Ces routes gèrent le CRUD (Lecture publique, Écriture Admin).
 | `/guides` | `_handlers/guides.js` | None / Admin | Bonnes pratiques |
 | `/tools` | `_handlers/tools.js` | None / Admin | Outils |
 | `/dispositifs` | `_handlers/dispositifs/index.js` | None / Admin | Dispositifs |
+| `/ressources` | `_handlers/ressources.js` | None / Admin | Ressources (Générique) |
 | `/public/stats` | `_handlers/public/stats.js` | None | Statistiques publiques |
 | `/public/messages` | `_handlers/public/messages.js` | None | Envoi message (Contact) |
 | `/public/suggest-structure` | `_handlers/public/suggest-structure.js` | None | Suggestion ajout structure |
@@ -64,12 +69,14 @@ Ces routes gèrent le CRUD (Lecture publique, Écriture Admin).
 | `/cron/ingest-structures` | `_handlers/cron/ingest-structures.js` | Cron Secret | Ingestion structures |
 | `/cron/ingest-aids` | `_handlers/cron/ingest-aids.js` | Cron Secret | Ingestion aides |
 | `/cron/purge` | `_handlers/cron/purge.js` | Cron Secret | Purge RGPD |
+| `/cron/link-check` | `_handlers/cron/link-check.js` | Cron Secret | Vérification liens morts |
 | `/admin/privacy/export` | `_handlers/admin/privacy/export.js` | Admin | Export données personnelles |
 | `/admin/privacy/delete` | `_handlers/admin/privacy/delete.js` | Admin | Suppression données |
 | `/admin/inbox` | `_handlers/admin/inbox.js` | Admin | Boîte réception admin |
 | `/admin/actions` | `_handlers/admin/actions.js` | Admin | Actions diverses (test sync) |
 | `/admin/runs` | `_handlers/admin/runs.js` | Admin | Historique Jobs/Runs |
 | `/admin/partnerships` | `_handlers/admin/partnerships.js` | Admin | Gestion Partenariats |
+| `/admin/link-checks` | `_handlers/admin/link-checks.js` | Admin | Rapport liens morts |
 
 ## Conventions de Réponse
 

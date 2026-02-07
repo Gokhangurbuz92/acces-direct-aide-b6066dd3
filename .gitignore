@@ -55,3 +55,25 @@ lint_final.txt
 
 # Generated build info
 .blackboxcli/
+
+# Documentation with sensitive data (should be regenerated without secrets)
+CONFIGURATION_COMPLETE.md
+DIAGNOSTIC_DB_RESULTS.md
+LIRE_MOI_CONFIGURATION.md
+RAPPORT_CONFIGURATION_ENV.md
+RAPPORT_DIAGNOSTIC_FINAL.md
+RESUME_FINAL_ENV.md
+SYNTHESE_TRAVAIL_EFFECTUE.md
+VERCEL_ENV_SETUP.md
+DEPLOYMENT_FIX_SUMMARY.md
+COMMIT_MESSAGE.txt
+
+# Scripts with hardcoded credentials (use env vars instead)
+scripts/test-db-simple.cjs
+scripts/apply-search-vector-migration.cjs
+scripts/check-db-columns.cjs
+scripts/check-db-extensions.cjs
+
+# Any file containing credentials or secrets
+*_CREDENTIALS.md
+*_SECRETS.md

@@ -1,4 +1,5 @@
 import { Prisma } from '@prisma/client';
+import { expandQueryWithSynonyms, normalizeSearchTerm } from './search-utils.js';
 
 /**
  * Builds and executes a search query for Aides.
@@ -23,9 +24,20 @@ export async function searchAides(prisma, params) {
 
   const conditions = [Prisma.sql`statut = ${statut}`];
 
-  // 1. Full Text Search
+  // 1. Full Text Search with Synonym Expansion
   if (q) {
-    conditions.push(Prisma.sql`"search_vector" @@ plainto_tsquery('french', unaccent(${q}))`);
+    const expandedTerms = expandQueryWithSynonyms(q);
+
+    // If we have expanded terms, create an OR condition for all variants
+    if (expandedTerms.length > 1) {
+      const searchConditions = expandedTerms.map(term =>
+        Prisma.sql`"search_vector" @@ plainto_tsquery('french', unaccent(${term}))`
+      );
+      conditions.push(Prisma.sql`(${Prisma.join(searchConditions, ' OR ')})`);
+    } else {
+      // Single term or no expansion
+      conditions.push(Prisma.sql`"search_vector" @@ plainto_tsquery('french', unaccent(${q}))`);
+    }
   }
 
   // 2. Filters

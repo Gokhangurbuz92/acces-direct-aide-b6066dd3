@@ -73,6 +73,19 @@ async function handler(req, res) {
         // Ensure ONLY ONE declaration of items/total
         const { items, total, facets } = await searchAides(prisma, params);
 
+        // P0-3: Track zero-result searches for synonym improvement
+        if (total === 0 && params.q) {
+            logger.warn('SEARCH_AIDES_ZERO_RESULTS', {
+                requestId,
+                query: params.q,
+                filters: {
+                    theme: params.theme,
+                    territoire: params.territoire,
+                    situation: params.situation,
+                },
+            });
+        }
+
         logger.info('SEARCH_AIDES_SUCCESS', {
             requestId,
             duration_ms: Date.now() - start,

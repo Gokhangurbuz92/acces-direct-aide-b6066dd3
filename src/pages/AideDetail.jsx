@@ -27,6 +27,7 @@ import SourceTraceability from '@/components/SourceTraceability';
 import FalcSummary from '@/components/FalcSummary';
 import FalcToggle from '@/components/FalcToggle';
 import FalcContent from '@/components/FalcContent';
+import ReportErrorModal from '@/components/ReportErrorModal';
 
 const CATEGORIE_LABELS = {
   logement: 'Logement',
@@ -99,14 +100,31 @@ export default function AideDetail() {
     return <NotFound />;
   }
 
+  const TERRITORY_LABELS = {
+    'national': 'France entière',
+    '67': 'Bas-Rhin (67)',
+    '68': 'Haut-Rhin (68)',
+    'GRAND_EST': 'Grand Est',
+    'ALSACE': 'Alsace',
+    'STRASBOURG': 'Strasbourg',
+    'COLMAR': 'Colmar',
+    'MULHOUSE': 'Mulhouse',
+  };
+
   const getTerritoireLabel = () => {
     if (!aide.territoires?.length) return 'Non précisé';
-    if (aide.territoires.includes('national')) return 'France entière';
-    return aide.territoires.map(t => {
-      if (t === '67') return 'Bas-Rhin (67)';
-      if (t === '68') return 'Haut-Rhin (68)';
-      return t;
-    }).join(', ');
+    return aide.territoires.map(t => TERRITORY_LABELS[t] || t).join(', ');
+  };
+
+  const getTerritoryScope = () => {
+    if (!aide.territory_scope) return null;
+    const scopeLabels = {
+      'NATIONAL': 'National',
+      'REGIONAL': 'Régional',
+      'DEPARTMENTAL': 'Départemental',
+      'COMMUNAL': 'Communal',
+    };
+    return scopeLabels[aide.territory_scope] || aide.territory_scope;
   };
 
   const breadcrumbs = [
@@ -128,6 +146,11 @@ export default function AideDetail() {
         path={`/aides/${aide.slug}`}
         schema={schema}
       />
+      {/* Print Header */}
+      <div className="print-only print-header">
+        AccesDirectAide — www.accesdirectaide.fr
+      </div>
+
       {/* Fil d'Ariane */}
       <div className="bg-white border-b border-slate-200">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 py-4">
@@ -179,6 +202,11 @@ export default function AideDetail() {
             <span className="flex items-center gap-1">
               <MapPin className="h-4 w-4" />
               {getTerritoireLabel()}
+              {getTerritoryScope() && (
+                <Badge variant="outline" className="ml-1 text-xs font-normal">
+                  {getTerritoryScope()}
+                </Badge>
+              )}
             </span>
             {aide.fetched_at && (
                <span className="flex items-center gap-1" title="Date de dernière mise à jour de la source">
@@ -194,6 +222,28 @@ export default function AideDetail() {
             )}
           </div>
         </div>
+
+        {/* P0-5: Stale verification warning */}
+        {(() => {
+          const lastVerified = aide.date_verification || aide.last_checked_at;
+          if (!lastVerified) return null;
+          const ageMs = Date.now() - new Date(lastVerified).getTime();
+          const twelveMonths = 12 * 30 * 24 * 60 * 60 * 1000;
+          if (ageMs <= twelveMonths) return null;
+          return (
+            <div className="bg-amber-50 border border-amber-200 rounded-lg p-4 mb-6 flex items-start gap-3">
+              <AlertCircle className="h-5 w-5 text-amber-600 flex-shrink-0 mt-0.5" />
+              <div>
+                <p className="font-medium text-amber-800">Information potentiellement obsolète</p>
+                <p className="text-sm text-amber-700">
+                  Cette fiche n'a pas été vérifiée depuis plus de 12 mois
+                  (dernière vérification : {new Date(lastVerified).toLocaleDateString('fr-FR')}).
+                  Vérifiez les informations auprès de la source officielle.
+                </p>
+              </div>
+            </div>
+          );
+        })()}
 
         {/* FALC Toggle */}
         <div className="mb-6">
@@ -374,12 +424,10 @@ export default function AideDetail() {
                   <Download className="mr-2 h-4 w-4" />
                   Télécharger en PDF (ou imprimer)
                 </Button>
-                <Button variant="ghost" className="w-full text-slate-600" asChild>
-                  <Link to={createPageUrl('Contact') + `?page=${encodeURIComponent(window.location.href)}&sujet=signalement_erreur`}>
-                    <Flag className="mr-2 h-4 w-4" />
-                    Signaler une erreur
-                  </Link>
-                </Button>
+                <ReportErrorModal
+                  contentType="AIDE"
+                  contentId={aide.id}
+                />
               </CardContent>
             </Card>
 
@@ -413,6 +461,11 @@ export default function AideDetail() {
             )}
           </div>
         </div>
+      </div>
+
+      {/* Print Footer */}
+      <div className="print-only print-footer">
+        Imprimé le {new Date().toLocaleDateString('fr-FR')} — AccesDirectAide — Vérifiez toujours les informations auprès de la source officielle.
       </div>
     </div>
   );

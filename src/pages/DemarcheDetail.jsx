@@ -26,6 +26,7 @@ import {
 import { generateBreadcrumbSchema, generateDemarcheSchema } from '@/utils/schema';
 import SourceTraceability from '@/components/SourceTraceability';
 import FalcSummary from '@/components/FalcSummary';
+import ReportErrorModal from '@/components/ReportErrorModal';
 
 const CATEGORIE_LABELS = {
   logement: 'Logement',
@@ -97,6 +98,11 @@ export default function DemarcheDetail() {
         path={`/demarches/${demarche.slug}`}
         schema={schema}
       />
+      {/* Print Header */}
+      <div className="print-only print-header">
+        AccesDirectAide — www.accesdirectaide.fr
+      </div>
+
       {/* Fil d'Ariane */}
       <div className="bg-white border-b border-slate-200">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 py-4">
@@ -303,12 +309,10 @@ export default function DemarcheDetail() {
                   <Download className="mr-2 h-4 w-4" />
                   Imprimer la fiche / PDF
                 </Button>
-                <Link to={createPageUrl('Contact') + `?page=${encodeURIComponent(window.location.href)}&sujet=signalement_erreur`}>
-                  <Button variant="ghost" className="w-full text-slate-600">
-                    <Flag className="mr-2 h-4 w-4" />
-                    Signaler une erreur
-                  </Button>
-                </Link>
+                <ReportErrorModal
+                  contentType="DEMARCHE"
+                  contentId={demarche.id}
+                />
               </CardContent>
             </Card>
 
@@ -346,6 +350,11 @@ export default function DemarcheDetail() {
             </Card>
           </div>
         </div>
+      </div>
+
+      {/* Print Footer */}
+      <div className="print-only print-footer">
+        Imprimé le {new Date().toLocaleDateString('fr-FR')} — AccesDirectAide — Vérifiez toujours les informations auprès de la source officielle.
       </div>
     </div>
   );

@@ -1,4 +1,6 @@
 import { Prisma } from '@prisma/client';
+import { buildExpandedTsquery } from './synonyms.js';
+import { getTerritoryFilterValues } from './territory-cascade.js';
 
 /**
  * Builds and executes a search query for Aides.
@@ -23,9 +25,18 @@ export async function searchAides(prisma, params) {
 
   const conditions = [Prisma.sql`statut = ${statut}`];
 
-  // 1. Full Text Search
+  // 1. Full Text Search (with synonym expansion)
+  let useSynonymQuery = false;
   if (q) {
-    conditions.push(Prisma.sql`"search_vector" @@ plainto_tsquery('french', unaccent(${q}))`);
+    const expandedTsquery = buildExpandedTsquery(q);
+    if (expandedTsquery) {
+      // Use expanded query with synonyms (OR-based)
+      conditions.push(Prisma.sql`"search_vector" @@ to_tsquery('french', unaccent(${expandedTsquery}))`);
+      useSynonymQuery = true;
+    } else {
+      // Fallback to standard plainto_tsquery
+      conditions.push(Prisma.sql`"search_vector" @@ plainto_tsquery('french', unaccent(${q}))`);
+    }
   }
 
   // 2. Filters
@@ -52,9 +63,16 @@ export async function searchAides(prisma, params) {
     )`);
   }
 
-  const effectiveGeo = geo; // 'territoire' alias
+  // P0-4: Territory cascade — resolve full chain (communal → dept → regional → national)
+  const effectiveGeo = geo;
   if (effectiveGeo) {
-    conditions.push(Prisma.sql`${effectiveGeo} = ANY("territoires")`);
+    const territoryChain = getTerritoryFilterValues(effectiveGeo);
+    if (territoryChain.length === 1) {
+      conditions.push(Prisma.sql`${territoryChain[0]} = ANY("territoires")`);
+    } else {
+      // Match any value in the resolved chain against the territoires array
+      conditions.push(Prisma.sql`"territoires" && ${territoryChain}`);
+    }
   }
 
   if (provider) {
@@ -93,7 +111,12 @@ export async function searchAides(prisma, params) {
   };
 
   if (q && (sort === 'pertinence' || sortField === 'pertinence')) {
-    selectRank = Prisma.sql`, ts_rank_cd("search_vector", plainto_tsquery('french', unaccent(${q}))) as rank`;
+    if (useSynonymQuery) {
+      const expandedTsquery = buildExpandedTsquery(q);
+      selectRank = Prisma.sql`, ts_rank_cd("search_vector", to_tsquery('french', unaccent(${expandedTsquery}))) as rank`;
+    } else {
+      selectRank = Prisma.sql`, ts_rank_cd("search_vector", plainto_tsquery('french', unaccent(${q}))) as rank`;
+    }
     orderBy = Prisma.sql`ORDER BY rank DESC, published_at DESC`;
   } else if (sortField && SAFE_SORT_COLUMNS[sortField]) {
     const dbColumn = SAFE_SORT_COLUMNS[sortField];
@@ -188,8 +211,15 @@ export async function searchDemarches(prisma, params) {
 
   const conditions = [Prisma.sql`statut = 'publie'`];
 
+  let useSynonymQueryD = false;
   if (q) {
-    conditions.push(Prisma.sql`"search_vector" @@ plainto_tsquery('french', unaccent(${q}))`);
+    const expandedTsquery = buildExpandedTsquery(q);
+    if (expandedTsquery) {
+      conditions.push(Prisma.sql`"search_vector" @@ to_tsquery('french', unaccent(${expandedTsquery}))`);
+      useSynonymQueryD = true;
+    } else {
+      conditions.push(Prisma.sql`"search_vector" @@ plainto_tsquery('french', unaccent(${q}))`);
+    }
   }
 
   if (category) {
@@ -216,7 +246,12 @@ export async function searchDemarches(prisma, params) {
   let selectRank = Prisma.empty;
 
   if (q) {
-    selectRank = Prisma.sql`, ts_rank_cd("search_vector", plainto_tsquery('french', unaccent(${q}))) as rank`;
+    if (useSynonymQueryD) {
+      const expandedTsquery = buildExpandedTsquery(q);
+      selectRank = Prisma.sql`, ts_rank_cd("search_vector", to_tsquery('french', unaccent(${expandedTsquery}))) as rank`;
+    } else {
+      selectRank = Prisma.sql`, ts_rank_cd("search_vector", plainto_tsquery('french', unaccent(${q}))) as rank`;
+    }
     orderBy = Prisma.sql`ORDER BY rank DESC, published_at DESC`;
   } else {
     orderBy = Prisma.sql`ORDER BY published_at DESC, id ASC`;
@@ -261,8 +296,15 @@ export async function searchStructures(prisma, params) {
 
   const conditions = [Prisma.sql`statut = 'actif'`];
 
+  let useSynonymQueryS = false;
   if (q) {
-    conditions.push(Prisma.sql`"search_vector" @@ plainto_tsquery('french', unaccent(${q}))`);
+    const expandedTsquery = buildExpandedTsquery(q);
+    if (expandedTsquery) {
+      conditions.push(Prisma.sql`"search_vector" @@ to_tsquery('french', unaccent(${expandedTsquery}))`);
+      useSynonymQueryS = true;
+    } else {
+      conditions.push(Prisma.sql`"search_vector" @@ plainto_tsquery('french', unaccent(${q}))`);
+    }
   }
 
   if (city) {
@@ -286,7 +328,12 @@ export async function searchStructures(prisma, params) {
   let selectRank = Prisma.empty;
 
   if (q) {
-    selectRank = Prisma.sql`, ts_rank_cd("search_vector", plainto_tsquery('french', unaccent(${q}))) as rank`;
+    if (useSynonymQueryS) {
+      const expandedTsquery = buildExpandedTsquery(q);
+      selectRank = Prisma.sql`, ts_rank_cd("search_vector", to_tsquery('french', unaccent(${expandedTsquery}))) as rank`;
+    } else {
+      selectRank = Prisma.sql`, ts_rank_cd("search_vector", plainto_tsquery('french', unaccent(${q}))) as rank`;
+    }
     orderBy = Prisma.sql`ORDER BY rank DESC, nom ASC`;
   } else {
     orderBy = Prisma.sql`ORDER BY nom ASC, id ASC`;

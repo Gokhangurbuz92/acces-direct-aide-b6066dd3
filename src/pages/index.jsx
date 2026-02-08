@@ -60,6 +60,7 @@ const AdminSources = lazy(() => import("./AdminSources.jsx"));
 const AdminSync = lazy(() => import("./AdminSync.jsx"));
 const AdminTestSync = lazy(() => import("./AdminTestSync.jsx"));
 const AdminReview = lazy(() => import("./AdminReview.jsx"));
+const AdminReports = lazy(() => import("./AdminReports.jsx"));
 
 // Pro
 const ProLayout = lazy(() => import("./pro/ProLayout.jsx"));
@@ -194,6 +195,7 @@ function PagesContent() {
                     <Route path="/admin/structures" element={<AdminGuard><AdminStructures /></AdminGuard>} />
                     <Route path="/admin/demarches" element={<AdminGuard><AdminDemarches /></AdminGuard>} />
                     <Route path="/admin/demarches/:id" element={<AdminGuard><AdminDemarcheEdit /></AdminGuard>} />
+                    <Route path="/admin/reports" element={<AdminGuard><AdminReports /></AdminGuard>} />
 
                     {/* Legacy Admin Redirects */}
                     <Route path="/adminaides" element={<Navigate to="/admin/aides" replace />} />

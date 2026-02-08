@@ -24,6 +24,7 @@ import {
 import { generateBreadcrumbSchema, generateStructureSchema } from '@/utils/schema';
 import SourceTraceability from '@/components/SourceTraceability';
 import FalcSummary from '@/components/FalcSummary';
+import ReportErrorModal from '@/components/ReportErrorModal';
 
 const TYPE_LABELS = {
   association: 'Association',
@@ -335,6 +336,10 @@ export default function StructureDetail() {
                     </a>
                   </Button>
                 )}
+                <ReportErrorModal
+                  contentType="STRUCTURE"
+                  contentId={structure.id}
+                />
               </CardContent>
             </Card>
 

@@ -7,7 +7,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Loader2, Save, ArrowLeft } from 'lucide-react';
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Loader2, Save, ArrowLeft, AlertCircle, AlertTriangle } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { createPageUrl } from '@/utils';
 import EntityHistory from '@/components/admin/EntityHistory';
@@ -17,6 +18,66 @@ const CATEGORIES = [
   'budget', 'mobilite', 'justice', 'numerique', 'etrangers',
   'isolement', 'lgbtqia', 'vieillissement', 'autre'
 ];
+
+const SIX_MONTHS_MS = 6 * 30 * 24 * 60 * 60 * 1000;
+const TWELVE_MONTHS_MS = 12 * 30 * 24 * 60 * 60 * 1000;
+
+function QualityGateWarnings({ aide }) {
+  if (!aide) return null;
+
+  const errors = [];
+  const warnings = [];
+
+  // Hard blocks
+  if (!aide.source_url && !aide.source_url_exact && !aide.lien_demande && !aide.apply_url) {
+    errors.push('Source URL manquante : impossible de publier sans lien source.');
+  }
+  if (!aide.summary_falc) {
+    errors.push('Résumé FALC manquant : obligatoire pour la publication.');
+  }
+
+  // Soft warnings
+  const lastVerified = aide.date_verification || aide.last_checked_at || aide.verified_at;
+  if (lastVerified) {
+    const age = Date.now() - new Date(lastVerified).getTime();
+    if (age > TWELVE_MONTHS_MS) {
+      warnings.push('Dernière vérification il y a plus de 12 mois — fiche potentiellement obsolète.');
+    } else if (age > SIX_MONTHS_MS) {
+      warnings.push('Dernière vérification il y a plus de 6 mois — revérification recommandée.');
+    }
+  } else {
+    warnings.push('Aucune date de vérification renseignée.');
+  }
+
+  if (errors.length === 0 && warnings.length === 0) return null;
+
+  return (
+    <div className="space-y-3">
+      {errors.length > 0 && (
+        <Alert variant="destructive">
+          <AlertCircle className="h-4 w-4" />
+          <AlertDescription>
+            <strong>Publication bloquée :</strong>
+            <ul className="mt-1 list-disc list-inside">
+              {errors.map((e, i) => <li key={i}>{e}</li>)}
+            </ul>
+          </AlertDescription>
+        </Alert>
+      )}
+      {warnings.length > 0 && (
+        <Alert>
+          <AlertTriangle className="h-4 w-4" />
+          <AlertDescription>
+            <strong>Avertissements :</strong>
+            <ul className="mt-1 list-disc list-inside">
+              {warnings.map((w, i) => <li key={i}>{w}</li>)}
+            </ul>
+          </AlertDescription>
+        </Alert>
+      )}
+    </div>
+  );
+}
 
 export default function AdminAideEdit() {
   const urlParams = new URLSearchParams(window.location.search);
@@ -231,6 +292,9 @@ export default function AdminAideEdit() {
             </div>
           </CardContent>
         </Card>
+
+        {/* P0-5: Quality Gate Warnings */}
+        <QualityGateWarnings aide={formData} />
 
         {/* Actions */}
         <div className="flex justify-end gap-4">

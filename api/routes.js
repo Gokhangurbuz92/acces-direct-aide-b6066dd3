@@ -50,6 +50,9 @@ import cronIngestAids from './_handlers/cron/ingest-aids.js';
 import cronPurge from './_handlers/cron/purge.js';
 import cronLinkCheck from './_handlers/cron/link-check.js';
 
+// --- Reports (P0-1) ---
+import reports from './_handlers/reports.js';
+
 // --- Admin ---
 import adminPrivacyExport from './_handlers/admin/privacy/export.js';
 import adminPrivacyDelete from './_handlers/admin/privacy/delete.js';
@@ -58,6 +61,7 @@ import adminActions from './_handlers/admin/actions.js';
 import adminRuns from './_handlers/admin/runs.js';
 import adminPartnerships from './_handlers/admin/partnerships.js';
 import adminLinkChecks from './_handlers/admin/link-checks.js';
+import adminQualityCheck from './_handlers/admin/quality-check.js';
 
 export const routes = [
     // --- Special / Root ---
@@ -95,6 +99,9 @@ export const routes = [
     { path: 'appointments', match: 'exact', handler: publicAppointmentsCreate },
     { path: 'appointments/cancel', match: 'exact', handler: publicAppointmentsCancel },
 
+    // --- Reports (P0-1) ---
+    { path: 'reports', match: 'exact', handler: reports },
+
     // --- Core Data ---
     { path: 'aides', match: 'prefix', handler: aides },
     { path: 'structures', match: 'prefix', handler: structures },
@@ -120,4 +127,5 @@ export const routes = [
     { path: 'admin/runs', match: 'exact', handler: adminRuns },
     { path: 'admin/partnerships', match: 'exact', handler: adminPartnerships },
     { path: 'admin/link-checks', match: 'exact', handler: adminLinkChecks },
+    { path: 'admin/quality-check', match: 'exact', handler: adminQualityCheck },
 ];

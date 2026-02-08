@@ -637,3 +637,21 @@ model ResourceAccessibility {
   source_last_modified  DateTime?
 }
 
+// P0-1: Content Report (Signalement)
+model ContentReport {
+  id            String   @id @default(cuid())
+  contentType   String   // AIDE | DEMARCHE | STRUCTURE | ACTUALITE
+  contentId     String
+  reason        String   // LIEN_MORT | HORAIRES_FAUX | INFO_FAUSSE | INFO_OBSOLETE | AUTRE
+  message       String?
+  pageUrl       String?
+  reporterEmail String?
+  status        String   @default("NEW") // NEW | IN_PROGRESS | FIXED | REJECTED
+  adminNote     String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@index([contentType, contentId])
+  @@index([status, createdAt])
+}
+

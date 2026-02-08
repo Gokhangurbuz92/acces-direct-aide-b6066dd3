@@ -171,21 +171,105 @@ export default function Layout({ children, currentPageName }) {
         
         /* Print styles pour PDF */
         @media print {
-          header, footer, .hidden-print, button, .skip-link {
+          header, footer, nav, .hidden-print, .skip-link,
+          .chat-widget, [data-chat-widget],
+          button:not(.print-keep) {
             display: none !important;
           }
+          
+          /* Show print-only elements */
+          .print-only {
+            display: block !important;
+          }
+          
           body {
-            background: white;
-            color: black;
+            background: white !important;
+            color: black !important;
+            font-size: 12pt;
+            line-height: 1.5;
+            -webkit-print-color-adjust: exact;
+            print-color-adjust: exact;
           }
+          
           .max-w-4xl, .max-w-5xl, .max-w-6xl, .max-w-7xl {
-            max-width: 100%;
+            max-width: 100% !important;
+            padding: 0 !important;
           }
-          a[href]:after {
+          
+          /* Typography */
+          h1 { font-size: 20pt !important; margin-bottom: 8pt !important; }
+          h2 { font-size: 16pt !important; margin-bottom: 6pt !important; }
+          h3 { font-size: 14pt !important; }
+          
+          /* Cards: remove shadows and borders for clean print */
+          .rounded-2xl, .rounded-xl, .rounded-lg {
+            border-radius: 0 !important;
+          }
+          
+          [class*="shadow"] {
+            box-shadow: none !important;
+          }
+          
+          /* Links: show URL */
+          a[href^="http"]:after {
             content: " (" attr(href) ")";
-            font-size: 0.8em;
+            font-size: 0.75em;
             color: #555;
+            word-break: break-all;
           }
+          
+          /* Avoid page breaks inside cards */
+          .space-y-6 > * {
+            break-inside: avoid;
+          }
+          
+          /* Grid: stack to single column */
+          .lg\\:grid-cols-3 {
+            grid-template-columns: 1fr !important;
+          }
+          .lg\\:col-span-2 {
+            grid-column: span 1 !important;
+          }
+          
+          /* Badges: ensure readable in B&W */
+          [class*="Badge"], [class*="badge"] {
+            border: 1px solid #333 !important;
+            background: white !important;
+            color: black !important;
+            padding: 2px 6px !important;
+          }
+          
+          /* Page margins */
+          @page {
+            margin: 1.5cm 2cm;
+          }
+          
+          /* Print header with site name */
+          .print-header {
+            display: block !important;
+            text-align: center;
+            font-size: 10pt;
+            color: #666;
+            border-bottom: 1px solid #ccc;
+            padding-bottom: 8pt;
+            margin-bottom: 16pt;
+          }
+          
+          /* Print footer with date */
+          .print-footer {
+            display: block !important;
+            text-align: center;
+            font-size: 9pt;
+            color: #888;
+            border-top: 1px solid #ccc;
+            padding-top: 8pt;
+            margin-top: 16pt;
+          }
+        }
+        
+        /* Hide print-only elements on screen */
+        .print-only {
+          display: none;
         }
       `}</style>
 
@@ -414,7 +498,9 @@ export default function Layout({ children, currentPageName }) {
       </footer>
 
       {/* Chat Widget */}
-      <ChatWidget />
+      <div className="hidden-print">
+        <ChatWidget />
+      </div>
     </div>
   );
 }

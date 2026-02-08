@@ -93,5 +93,8 @@ Routes préfixées par `/admin`.
 | `/admindemarches` | `/admin/demarches` |
 
 ## 5. Pages Orphelines détectées
-Aucune page orpheline détectée dans `src/pages/`.
+- `AideDetailBlueprintTrust.jsx` (Démonstrateur Blueprint ?)
+- `BlueprintTrustDemo.jsx` (Démonstrateur Blueprint ?)
+- `HomeBlueprintTrust.jsx` (Démonstrateur Blueprint ?)
+
 `SourcesMethode.jsx` est routé sur `/sourcesmethode`.

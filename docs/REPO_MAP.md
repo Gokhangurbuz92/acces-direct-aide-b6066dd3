@@ -27,7 +27,7 @@ Le projet est une architecture Monorepo "Serverless" hébergée sur Vercel.
   - `pages/`: Composants de pages (liés au routeur)
   - `components/`: Composants réutilisables (UI, Layout)
   - `api/`: Client API frontend (fetch wrappers)
-  - `utils/`: Utilitaires purs JS
+  - `utils/`: Utilitaires purs JS (Décision: Projet 100% JS, pas de TS strict)
 - **Dépendances**: React, Tailwind, Vite (build)
 - **Owner**: Frontend
 - **Risques Principaux**:
@@ -39,9 +39,11 @@ Le projet est une architecture Monorepo "Serverless" hébergée sur Vercel.
 - **Rôle**: Backend Serverless. Expose les endpoints REST et gère la logique métier.
 - **Organisation**:
   - `index.js` & `routes.js`: Point d'entrée et définition du routeur monolithique.
+  - `client.js`: Client API unique (src/api/client.js), pas de version JSX.
   - `_handlers/`: Logique métier par domaine (aides, structures, booking...).
   - `_utils/`: Sécurité, Middleware, Sentry, Rate Limit.
   - `lib/`: Services techniques (Ingestion, Crypto, Logger).
+    - Note: `api/lib/falc-summarizer.js` est la source de vérité pour le FALC (pas de doublon racine).
 - **Dépendances**: Node.js, Prisma Client
 - **Owner**: API
 - **Risques Principaux**:

@@ -1,5 +1,5 @@
 import React from 'react';
-import * as Sentry from '@sentry/react';
+import { sentryRef } from '@/observability/sentryRef';
 import { AlertTriangle, RefreshCw, Home } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -115,8 +115,9 @@ class ErrorBoundary extends React.Component {
   }
 
   componentDidCatch(error, errorInfo) {
-    // Log error to Sentry
-    if (typeof Sentry !== 'undefined' && Sentry.captureException) {
+    // Log error to Sentry if loaded
+    const Sentry = sentryRef.current;
+    if (Sentry && Sentry.captureException) {
       Sentry.captureException(error, {
         contexts: {
           react: {

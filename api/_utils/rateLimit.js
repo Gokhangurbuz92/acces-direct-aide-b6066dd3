@@ -8,7 +8,8 @@ import { Ratelimit } from '@upstash/ratelimit';
 const envUrl = process.env.KV_REST_API_URL || process.env.UPSTASH_REDIS_REST_URL;
 const envToken = process.env.KV_REST_API_TOKEN || process.env.UPSTASH_REDIS_REST_TOKEN;
 
-const hasHttpKv = !!(envUrl && envToken);
+// Robust check: must have URL starting with https:// and a token
+const hasHttpKv = !!(envUrl && envUrl.startsWith('https://') && envToken);
 const BACKEND_NAME = hasHttpKv ? "KV_REST_API" : "MEMORY";
 const IS_PRODUCTION = process.env.VERCEL_ENV === 'production';
 

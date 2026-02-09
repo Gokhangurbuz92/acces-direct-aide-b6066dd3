@@ -11,6 +11,7 @@ find . -type d \( \
     -o -name ".vercel" \
     -o -name "coverage" \
     -o -name "test-results" \
+    -o -name "playwright-report" \
     -o -name "venv" \
     -o -name "uploads_mock" \
 \) -prune -o \

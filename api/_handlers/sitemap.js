@@ -16,18 +16,24 @@ export default async function handler(req, res) {
         const indexable = isIndexable(req);
         const BASE_URL = getCanonicalBaseUrl(req);
 
-        // Fetch published content
-
-        const [aides, demarches, structures, dispositifs, ressources, guides, tools, actualites] = await Promise.all([
-            prisma.aide.findMany({ where: { statut: 'publie' }, select: { slug: true, updatedAt: true } }),
-            prisma.demarche.findMany({ where: { statut: 'publie' }, select: { slug: true, updatedAt: true } }),
-            prisma.structure.findMany({ where: { statut: 'publie' }, select: { slug: true, updatedAt: true } }),
-            prisma.dispositif.findMany({ where: { statut: 'publie' }, select: { slug: true, updatedAt: true } }),
-            prisma.resourceAccessibility.findMany({ where: { status: 'published' }, select: { slug: true, updatedAt: true } }),
-            prisma.guide.findMany({ where: { statut: 'publie' }, select: { slug: true, updatedAt: true } }),
-            prisma.toolboxItem.findMany({ where: { statut: 'publie' }, select: { slug: true, updatedAt: true } }),
-            prisma.actualite.findMany({ where: { statut: 'publie' }, select: { slug: true, updatedAt: true } })
-        ]);
+        // Fetch published content with fallback on error
+        let aides = [], demarches = [], structures = [], dispositifs = [], ressources = [], guides = [], tools = [], actualites = [];
+        
+        try {
+            [aides, demarches, structures, dispositifs, ressources, guides, tools, actualites] = await Promise.all([
+                prisma.aide.findMany({ where: { statut: 'publie' }, select: { slug: true, updatedAt: true } }).catch(() => []),
+                prisma.demarche.findMany({ where: { statut: 'publie' }, select: { slug: true, updatedAt: true } }).catch(() => []),
+                prisma.structure.findMany({ where: { statut: 'actif' }, select: { slug: true, updatedAt: true } }).catch(() => []),
+                prisma.dispositif.findMany({ where: { statut: 'publie' }, select: { slug: true, updatedAt: true } }).catch(() => []),
+                prisma.resourceAccessibility.findMany({ where: { status: 'published' }, select: { slug: true, updatedAt: true } }).catch(() => []),
+                prisma.guide.findMany({ where: { statut: 'publie' }, select: { slug: true, updatedAt: true } }).catch(() => []),
+                prisma.toolboxItem.findMany({ where: { statut: 'publie' }, select: { slug: true, updatedAt: true } }).catch(() => []),
+                prisma.actualite.findMany({ where: { statut: 'publie' }, select: { slug: true, updatedAt: true } }).catch(() => [])
+            ]);
+        } catch (dbError) {
+            console.warn('Sitemap DB fetch partial failure, using static pages only:', dbError.message);
+            // Continue with empty arrays - static pages will still be included
+        }
 
         // Static pages
         const staticPages = [

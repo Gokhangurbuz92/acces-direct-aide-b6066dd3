@@ -8,6 +8,21 @@ datasource db {
   directUrl = env("POSTGRES_URL_NON_POOLING")
 }
 
+model SourceDocument {
+  id           String   @id @default(uuid())
+  source_url   String?
+  fetched_at   DateTime @default(now())
+  content_hash String?
+  raw_content  String?
+  metadata     Json?
+
+  aides       Aide[]
+  structures  Structure[]
+  dispositifs Dispositif[]
+  demarches   Demarche[]
+}
+
+
 model Aide {
   id                    String          @id @default(uuid())
   slug                  String?         @unique
@@ -64,9 +79,13 @@ model Aide {
   retrieved_at          DateTime?
   last_checked_at       DateTime?
 
+  source_document_id    String?
+  sourceDocument        SourceDocument? @relation(fields: [source_document_id], references: [id])
+
   @@index([statut, published_at])
   @@index([categoryId, statut])
   @@index([statut])
+  @@index([source_document_id])
 }
 
 model AidCategory {
@@ -98,10 +117,10 @@ model AidSource {
 }
 
 model Structure {
-  id                 String         @id @default(uuid())
+  id                 String    @id @default(uuid())
   nom                String
   type_structure     String?
-  accessibilite_pmr  Boolean        @default(false)
+  accessibilite_pmr  Boolean   @default(false)
   description_courte String?
   adresse            String?
   code_postal        String?
@@ -115,27 +134,27 @@ model Structure {
   publics_accueillis String[]
   date_verification  DateTime?
   categories_aidees  String[]
-  updatedAt          DateTime       @updatedAt
-  status             String         @default("actif")
+  updatedAt          DateTime  @updatedAt
+  status             String    @default("actif")
   commentaire_statut String?
   published_at       DateTime?
-  statut             String         @default("brouillon")
-  updatedBy             String?
+  statut             String    @default("brouillon")
+  updatedBy          String?
   mots_cles          String[]
-  slug               String?        @unique
+  slug               String?   @unique
   summary_falc       String?
-  is_pro_enabled     Boolean        @default(false)
-  settings_json      Json?          @default("{}")
-  auto_publish       Boolean        @default(false)
+  is_pro_enabled     Boolean   @default(false)
+  settings_json      Json?     @default("{}")
+  auto_publish       Boolean   @default(false)
   geoloc_status      String?
   import_batch       String?
-  import_status      String         @default("pending")
-  last_sync          DateTime       @default(now())
+  import_status      String    @default("pending")
+  last_sync          DateTime  @default(now())
   latitude           Float?
   longitude          Float?
-  quality_score      Int            @default(50)
-  raw_data_hash      String?        @unique
-  siret              String?        @unique
+  quality_score      Int       @default(50)
+  raw_data_hash      String?   @unique
+  siret              String?   @unique
   source_id          String?
   source_url         String?
   // Ingestion Fields
@@ -148,11 +167,15 @@ model Structure {
   last_checked_at       DateTime?
   source_last_modified  DateTime?
 
-  appointments       Appointment[]
-  availabilities     Availability[]
-  invitations        Invitation[]
-  proUsers           ProUser[]
-  proServices        Service[]
+  // Traceability
+  source_document_id String?
+  sourceDocument     SourceDocument? @relation(fields: [source_document_id], references: [id])
+
+  appointments   Appointment[]
+  availabilities Availability[]
+  invitations    Invitation[]
+  proUsers       ProUser[]
+  proServices    Service[]
 
   @@index([source_id])
   @@index([raw_data_hash])
@@ -161,6 +184,7 @@ model Structure {
   @@index([departement])
   @@index([type_structure])
   @@index([statut, nom])
+  @@index([source_document_id])
 }
 
 model Demarche {
@@ -204,9 +228,13 @@ model Demarche {
   last_checked_at       DateTime?
   source_last_modified  DateTime?
 
+  source_document_id    String?
+  sourceDocument        SourceDocument? @relation(fields: [source_document_id], references: [id])
+
   @@index([statut, published_at])
   @@index([categoryId, statut])
   @@index([statut])
+  @@index([source_document_id])
 }
 
 model Actualite {
@@ -257,14 +285,21 @@ model Actualite {
 }
 
 model ImportLog {
-  id          String   @id @default(uuid())
-  source_name String
-  status      String
-  items_total Int      @default(0)
-  items_new   Int      @default(0)
-  duration_ms Int?
-  logs        Json?
-  createdAt   DateTime @default(now())
+  id            String   @id @default(uuid())
+  run_id        String?  // Unique run identifier for traceability
+  source_name   String
+  status        String
+  items_total   Int      @default(0)
+  items_new     Int      @default(0)
+  items_updated Int      @default(0) // Track updates separately
+  items_skipped Int      @default(0) // Track skipped items
+  duration_ms   Int?
+  logs          Json?
+  error_count   Int      @default(0) // Track error count
+  createdAt     DateTime @default(now())
+  
+  @@index([run_id])
+  @@index([source_name, createdAt])
 }
 
 model RssSource {
@@ -561,7 +596,12 @@ model Dispositif {
   last_checked_at       DateTime?
   source_last_modified  DateTime?
 
+  // Traceability
+  source_document_id String?
+  sourceDocument     SourceDocument? @relation(fields: [source_document_id], references: [id])
+
   @@index([statut, published_at])
+  @@index([source_document_id])
 }
 
 model SourceSnapshot {
@@ -596,3 +636,4 @@ model ResourceAccessibility {
   last_checked_at       DateTime?
   source_last_modified  DateTime?
 }
+

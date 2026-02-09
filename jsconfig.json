@@ -2,9 +2,16 @@
   "compilerOptions": {
     "baseUrl": ".",
     "paths": {
-      "@/*": ["./src/*"]
+      "@/*": [
+        "./src/*"
+      ]
     },
-    "jsx": "react-jsx"
+    "jsx": "react-jsx",
+    // TODO: Enable checkJs after fixing #45 (Tech Debt) - 2026-01-26
+    "checkJs": false
   },
-  "include": ["src/**/*.js", "src/**/*.jsx"]
-} 
+  "include": [
+    "src/**/*.js",
+    "src/**/*.jsx"
+  ]
+}

@@ -51,61 +51,61 @@ export default defineConfig({
           if (id.includes('node_modules/@sentry')) {
             return 'sentry-vendor';
           }
-          
+
           // React core (react, react-dom, scheduler) - must be before react-router
-          if (id.includes('node_modules/react/') || 
-              id.includes('node_modules/react-dom/') || 
-              id.includes('node_modules/scheduler/')) {
+          if (id.includes('node_modules/react/') ||
+            id.includes('node_modules/react-dom/') ||
+            id.includes('node_modules/scheduler/')) {
             return 'react-vendor';
           }
-          
+
           // React Router (separate from react core to avoid circular deps)
           if (id.includes('node_modules/react-router') ||
-              id.includes('node_modules/@remix-run/router')) {
+            id.includes('node_modules/@remix-run/router')) {
             return 'react-router-vendor';
           }
-          
+
           // React ecosystem (react-query, react-helmet, react-hook-form, etc.)
           if (id.includes('node_modules/@tanstack/react-query') ||
-              id.includes('node_modules/@tanstack/query-core') ||
-              id.includes('node_modules/react-helmet-async') ||
-              id.includes('node_modules/react-hook-form') ||
-              id.includes('node_modules/@hookform') ||
-              id.includes('node_modules/react-day-picker') ||
-              id.includes('node_modules/react-markdown') ||
-              id.includes('node_modules/react-resizable-panels')) {
+            id.includes('node_modules/@tanstack/query-core') ||
+            id.includes('node_modules/react-helmet-async') ||
+            id.includes('node_modules/react-hook-form') ||
+            id.includes('node_modules/@hookform') ||
+            id.includes('node_modules/react-day-picker') ||
+            id.includes('node_modules/react-markdown') ||
+            id.includes('node_modules/react-resizable-panels')) {
             return 'react-ecosystem';
           }
-          
+
           // UI libraries (radix-ui, lucide, framer-motion, etc.)
           if (id.includes('node_modules/@radix-ui') ||
-              id.includes('node_modules/lucide-react') ||
-              id.includes('node_modules/framer-motion') ||
-              id.includes('node_modules/cmdk') ||
-              id.includes('node_modules/vaul') ||
-              id.includes('node_modules/sonner') ||
-              id.includes('node_modules/embla-carousel') ||
-              id.includes('node_modules/@floating-ui') ||
-              id.includes('node_modules/aria-hidden') ||
-              id.includes('node_modules/react-remove-scroll')) {
+            id.includes('node_modules/lucide-react') ||
+            id.includes('node_modules/framer-motion') ||
+            id.includes('node_modules/cmdk') ||
+            id.includes('node_modules/vaul') ||
+            id.includes('node_modules/sonner') ||
+            id.includes('node_modules/embla-carousel') ||
+            id.includes('node_modules/@floating-ui') ||
+            id.includes('node_modules/aria-hidden') ||
+            id.includes('node_modules/react-remove-scroll')) {
             return 'ui-vendor';
           }
-          
+
           // Utilities (date-fns, zod, clsx, etc.)
           if (id.includes('node_modules/date-fns') ||
-              id.includes('node_modules/zod') ||
-              id.includes('node_modules/clsx') ||
-              id.includes('node_modules/class-variance-authority') ||
-              id.includes('node_modules/tailwind-merge') ||
-              id.includes('node_modules/@sindresorhus/slugify')) {
+            id.includes('node_modules/zod') ||
+            id.includes('node_modules/clsx') ||
+            id.includes('node_modules/class-variance-authority') ||
+            id.includes('node_modules/tailwind-merge') ||
+            id.includes('node_modules/@sindresorhus/slugify')) {
             return 'utils-vendor';
           }
-          
+
           // Charts and visualization
           if (id.includes('node_modules/recharts')) {
             return 'charts-vendor';
           }
-          
+
           // Other node_modules (catch-all for remaining dependencies)
           if (id.includes('node_modules/')) {
             return 'vendor';

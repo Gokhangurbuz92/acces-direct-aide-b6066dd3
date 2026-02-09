@@ -65,7 +65,10 @@ model Aide {
 
   // Ingestion Fields
   source_url_exact String?
-  territory_scope  String?
+  territory_scope  String? // NATIONAL | REGIONAL | DEPARTMENTAL | COMMUNAL
+  region_codes     String[] // For REGIONAL scope
+  department_codes String[] // For DEPARTMENTAL scope
+  insee_codes      String[] // For COMMUNAL scope
   content_hash     String?
 
   // New Standard Fields (Lot 9a)
@@ -159,9 +162,12 @@ model Structure {
   source_url         String?
   // Ingestion Fields
   source_url_exact   String?
-  territory_scope    String?
+  territory_scope    String? // NATIONAL | REGIONAL | DEPARTMENTAL | COMMUNAL
+  region_codes       String[] // For REGIONAL scope
+  department_codes   String[] // For DEPARTMENTAL scope
+  insee_codes        String[] // For COMMUNAL scope
   content_hash       String?
-  
+
   // Traceability Fields (P1)
   retrieved_at          DateTime?
   last_checked_at       DateTime?
@@ -218,10 +224,13 @@ model Demarche {
 
   // Ingestion Fields
   source_url_exact String?
-  territory_scope  String?
+  territory_scope  String? // NATIONAL | REGIONAL | DEPARTMENTAL | COMMUNAL
+  region_codes     String[] // For REGIONAL scope
+  department_codes String[] // For DEPARTMENTAL scope
+  insee_codes      String[] // For COMMUNAL scope
   content_hash     String?
 
-  
+
   // Traceability Fields (P1)
   source_url            String?
   retrieved_at          DateTime?
@@ -630,10 +639,48 @@ model ResourceAccessibility {
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
   status          String   @default("draft")
-  
+
   // Traceability Fields (P1)
   retrieved_at          DateTime?
   last_checked_at       DateTime?
   source_last_modified  DateTime?
+}
+
+enum ContentType {
+  AIDE
+  DEMARCHE
+  STRUCTURE
+  ACTUALITE
+}
+
+enum ReportReason {
+  LIEN_MORT
+  HORAIRES_FAUX
+  INFO_FAUSSE
+  INFO_OBSOLETE
+  AUTRE
+}
+
+enum ReportStatus {
+  NEW
+  IN_PROGRESS
+  FIXED
+  REJECTED
+}
+
+model ContentReport {
+  id            String       @id @default(cuid())
+  contentType   ContentType
+  contentId     String
+  reason        ReportReason
+  message       String?
+  pageUrl       String?
+  reporterEmail String?
+  status        ReportStatus @default(NEW)
+  createdAt     DateTime     @default(now())
+  updatedAt     DateTime     @updatedAt
+
+  @@index([contentType, contentId])
+  @@index([status, createdAt])
 }
 

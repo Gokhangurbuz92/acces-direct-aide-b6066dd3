@@ -27,6 +27,7 @@ import SourceTraceability from '@/components/SourceTraceability';
 import FalcSummary from '@/components/FalcSummary';
 import FalcToggle from '@/components/FalcToggle';
 import FalcContent from '@/components/FalcContent';
+import ReportContentButton from '@/components/ReportContentButton';
 
 const CATEGORIE_LABELS = {
   logement: 'Logement',
@@ -374,12 +375,13 @@ export default function AideDetail() {
                   <Download className="mr-2 h-4 w-4" />
                   Télécharger en PDF (ou imprimer)
                 </Button>
-                <Button variant="ghost" className="w-full text-slate-600" asChild>
-                  <Link to={createPageUrl('Contact') + `?page=${encodeURIComponent(window.location.href)}&sujet=signalement_erreur`}>
-                    <Flag className="mr-2 h-4 w-4" />
-                    Signaler une erreur
-                  </Link>
-                </Button>
+                <ReportContentButton
+                  contentType="aide"
+                  contentId={aide.id}
+                  pageUrl={window.location.href}
+                  variant="ghost"
+                  size="default"
+                />
               </CardContent>
             </Card>
 

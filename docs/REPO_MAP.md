@@ -98,5 +98,6 @@ Les dossiers suivants sont strictement ignorés par Git :
 - `venv/` (Python env)
 - `test-results/`, `playwright-report/`
 - `dist/`, `.vercel/`
-- `.env`, `.env.local`
+- `.env`, `.env.local` (seul `.env.example` est versionné)
 - `cookies*.txt`, `test-img*.jpg`
+- `uploads_mock/` (stockage temporaire dev)

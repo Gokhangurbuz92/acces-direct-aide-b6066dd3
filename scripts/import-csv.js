@@ -97,7 +97,7 @@ function mapData(type, row) {
     arrayFields.forEach(field => {
         if (data[field]) {
             data[field] = data[field].split('|').map(s => s.trim()).filter(Boolean);
-        } else if (row.hasOwnProperty(field)) {
+        } else if (Object.prototype.hasOwnProperty.call(row, field)) {
             data[field] = [];
         }
     });

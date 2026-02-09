@@ -80,3 +80,98 @@
     transition-duration: 0.01ms !important;
   }
 }
+
+/* Print Styles */
+@media print {
+  /* Hide navigation, footer, and interactive elements */
+  header,
+  footer,
+  nav,
+  .no-print,
+  button:not(.print-keep),
+  [role="banner"],
+  [role="navigation"],
+  [role="contentinfo"] {
+    display: none !important;
+  }
+
+  /* Basic page layout for print */
+  body {
+    background: white !important;
+    color: black !important;
+    font-size: 12pt;
+    line-height: 1.5;
+  }
+
+  /* Page breaks */
+  h1, h2, h3, h4, h5, h6 {
+    page-break-after: avoid;
+    break-after: avoid;
+  }
+
+  p, li, blockquote {
+    page-break-inside: avoid;
+    break-inside: avoid;
+  }
+
+  /* Remove shadows and backgrounds for cleaner print */
+  * {
+    box-shadow: none !important;
+    text-shadow: none !important;
+  }
+
+  /* Improve contrast */
+  a {
+    color: #000 !important;
+    text-decoration: underline;
+  }
+
+  /* Show URLs after links */
+  a[href^="http"]:after {
+    content: " (" attr(href) ")";
+    font-size: 90%;
+    color: #666;
+  }
+
+  /* Remove link underlines for internal links */
+  a[href^="/"]:after,
+  a[href^="#"]:after {
+    content: "";
+  }
+
+  /* Optimize tables and cards for print */
+  table {
+    border-collapse: collapse;
+    width: 100%;
+  }
+
+  th, td {
+    border: 1px solid #ddd;
+    padding: 8px;
+  }
+
+  /* Cards should have visible borders in print */
+  .card,
+  [class*="card"] {
+    border: 1px solid #ddd !important;
+    background: white !important;
+  }
+
+  /* Margins for better print layout */
+  @page {
+    margin: 2cm;
+  }
+
+  /* Ensure proper page breaks */
+  .page-break-before {
+    page-break-before: always;
+  }
+
+  .page-break-after {
+    page-break-after: always;
+  }
+
+  .avoid-page-break {
+    page-break-inside: avoid;
+  }
+}

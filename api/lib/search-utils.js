@@ -1,4 +1,10 @@
-import synonymsData from './synonyms.json' assert { type: 'json' };
+import { readFileSync } from 'fs';
+import { fileURLToPath } from 'url';
+import { dirname, join } from 'path';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
+const synonymsData = JSON.parse(readFileSync(join(__dirname, './synonyms.json'), 'utf8'));
 
 /**
  * Normalize a search term for comparison

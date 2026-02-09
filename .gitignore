@@ -7,6 +7,7 @@ yarn-error.log*
 pnpm-debug.log*
 lerna-debug.log*
 
+# Dependencies
 node_modules
 dist
 dist-ssr
@@ -23,7 +24,7 @@ dist-ssr
 *.sln
 *.sw?
 
-# Environment
+# Environment Variables
 .env
 .env.local
 .env.*
@@ -49,7 +50,7 @@ test-img*.jpg
 uploads_mock/
 api/_utils/build-info.js
 
-# lint outputs
+# Lint outputs
 lint_output*.txt
 lint_final.txt
 

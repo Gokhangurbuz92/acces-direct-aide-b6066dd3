@@ -1,7 +1,7 @@
 #!/bin/bash
 set -e
 
-# Generate REPO_FILES.txt excluding artifacts and secrets
+# Phase 0: Generate REPO_FILES.txt excluding artifacts and secrets
 
 # 1. Find all files, pruning ignored directories
 find . -type d \( \

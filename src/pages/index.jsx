@@ -6,6 +6,7 @@ import AdminGuard from "@/components/AdminGuard";
 // [LAZY LOADED PAGES]
 // Public
 const Home = lazy(() => import("./Home.jsx"));
+const Orientation = lazy(() => import("./Orientation.jsx"));
 const APropos = lazy(() => import("./APropos.jsx"));
 const Accessibilite = lazy(() => import("./Accessibilite.jsx"));
 const Actualites = lazy(() => import("./Actualites.jsx"));
@@ -44,6 +45,7 @@ const AppointmentRequest = lazy(() => import("./AppointmentRequest.jsx"));
 
 // Admin
 const AdminLogin = lazy(() => import("./AdminLogin.jsx"));
+const AdminHealth = lazy(() => import("./admin/Health.jsx"));
 const AdminInbox = lazy(() => import("./admin/Inbox.jsx"));
 const AdminRuns = lazy(() => import("./admin/Runs.jsx"));
 const AdminAideEdit = lazy(() => import("./AdminAideEdit.jsx"));
@@ -86,7 +88,7 @@ const PAGES = {
     AdminAideEdit, AdminAides, AdminGuideSync, AdminMessages,
     AdminRecentSyncs, AdminSources, AdminSync, AdminTestSync,
     AideDetail, Aides, Annuaire, Confidentialite, Contact, Cookies,
-    DemarcheDetail, DispositifDetail, LoginPro, Demarches, Home,
+    DemarcheDetail, DispositifDetail, LoginPro, Demarches, Home, Orientation,
     MentionsLegales, SourcesMethode, SentryTest, StructureDetail,
     AdminInbox, AdminRuns, AppointmentRequest, AdminStructures,
     AdminDemarches, AdminDemarcheEdit, AdminAppointments, AdminReview
@@ -175,6 +177,7 @@ function PagesContent() {
                     <Route path="/actualites/:slug" element={<ActualiteDetail />} />
 
                     <Route path="/admin/login" element={<AdminLogin />} />
+                    <Route path="/admin/health" element={<AdminGuard><AdminHealth /></AdminGuard>} />
                     <Route path="/admin/inbox" element={<AdminGuard><AdminInbox /></AdminGuard>} />
                     <Route path="/admin/runs" element={<AdminGuard><AdminRuns /></AdminGuard>} />
                     <Route path="/admin/aides/:id" element={<AdminGuard><AdminAideEdit /></AdminGuard>} />
@@ -208,8 +211,8 @@ function PagesContent() {
                     <Route path="/categories/:slug" element={<Aides />} />
                     <Route path="/situations/:slug" element={<Aides />} />
 
-                    <Route path="/annuaire" element={<Navigate to="/structures" replace />} />
-                    <Route path="/structures" element={<Annuaire />} />
+                    <Route path="/annuaire" element={<Annuaire />} />
+                    <Route path="/structures" element={<Navigate to="/annuaire" replace />} />
                     <Route path="/structures/view" element={<StructureDetail />} />
                     <Route path="/structures/:slug" element={<StructureDetail />} />
 
@@ -224,6 +227,7 @@ function PagesContent() {
                         <Route path="/login/pro" element={<LoginPro />} />
                     )}
 
+                    <Route path="/orientation" element={<Orientation />} />
                     <Route path="/demarches" element={<Demarches />} />
                     <Route path="/home" element={<Navigate to="/" replace />} />
                     <Route path="/mentions-legales" element={<MentionsLegales />} />

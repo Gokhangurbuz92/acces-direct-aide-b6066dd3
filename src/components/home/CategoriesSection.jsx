@@ -1,0 +1,36 @@
+import React from 'react';
+import { Link } from 'react-router-dom';
+import { ChevronRight } from 'lucide-react';
+
+const categories = ['Étudiant', 'Travail', 'Handicap', 'Famille', 'Senior', 'Étranger', 'Logement', 'Santé'];
+
+export default function CategoriesSection() {
+  return (
+    <section className="py-14 lg:py-16">
+      <div className="mx-auto max-w-6xl px-4 sm:px-6">
+        <h2 className="text-3xl font-bold text-slate-900">Quelle est votre situation ?</h2>
+        <p className="mt-3 max-w-3xl text-slate-600">
+          Nous avons organisé les dispositifs par situation pour vous aider à accéder plus vite aux informations utiles.
+        </p>
+
+        <div className="mt-8 grid grid-cols-2 gap-4 md:grid-cols-4">
+          {categories.map((category) => (
+            <Link
+              key={category}
+              to="/aides"
+              className="group rounded-xl border border-slate-200 bg-white p-4 transition hover:border-blue-500 hover:bg-blue-50/30"
+            >
+              <div className="flex items-center justify-between gap-3">
+                <p className="font-semibold text-slate-900">{category}</p>
+                <span className="inline-flex h-8 w-8 items-center justify-center rounded-md bg-slate-100 text-slate-600 transition group-hover:bg-blue-600 group-hover:text-white">
+                  <ChevronRight className="h-4 w-4 transition group-hover:rotate-90" />
+                </span>
+              </div>
+              <p className="mt-3 text-sm text-slate-600">Explorer les dispositifs →</p>
+            </Link>
+          ))}
+        </div>
+      </div>
+    </section>
+  );
+}

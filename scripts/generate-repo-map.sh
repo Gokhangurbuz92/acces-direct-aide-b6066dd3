@@ -1,7 +1,7 @@
 #!/bin/bash
 set -e
 
-# Generate REPO_FILES.txt excluding artifacts and secrets
+# Phase 0: Generate REPO_FILES.txt excluding artifacts and secrets
 
 # 1. Find all files, pruning ignored directories
 find . -type d \( \
@@ -11,13 +11,17 @@ find . -type d \( \
     -o -name ".vercel" \
     -o -name "coverage" \
     -o -name "test-results" \
+    -o -name "playwright-report" \
     -o -name "venv" \
     -o -name "uploads_mock" \
 \) -prune -o \
 -type f -print | \
 grep -vE "/\.DS_Store$" | \
 grep -vE "REPO_FILES.tmp$" | \
-grep -vE "^\./\.env" > docs/REPO_FILES.tmp
+grep -vE "^\./\.env" | \
+grep -vE "cookies.*\.txt$" | \
+grep -vE "test-img.*\.jpg$" | \
+grep -vE "api/_utils/build-info\.js$" > docs/REPO_FILES.tmp
 
 # 2. Append .env.example if it exists (since we excluded all .env*)
 if [ -f .env.example ]; then

@@ -42,6 +42,7 @@ import guides from './_handlers/guides.js';
 import tools from './_handlers/tools.js';
 import dispositifs from './_handlers/dispositifs/index.js';
 import ressources from './_handlers/ressources.js';
+import reports from './_handlers/reports.js';
 
 // --- Cron ---
 import cronPipeline from './_handlers/cron/pipeline.js';
@@ -58,6 +59,7 @@ import adminActions from './_handlers/admin/actions.js';
 import adminRuns from './_handlers/admin/runs.js';
 import adminPartnerships from './_handlers/admin/partnerships.js';
 import adminLinkChecks from './_handlers/admin/link-checks.js';
+import adminValidatePublication from './_handlers/admin/validate-publication.js';
 
 export const routes = [
     // --- Special / Root ---
@@ -104,6 +106,7 @@ export const routes = [
     { path: 'tools', match: 'prefix', handler: tools },
     { path: 'dispositifs', match: 'prefix', handler: dispositifs },
     { path: 'ressources', match: 'prefix', handler: ressources },
+    { path: 'reports', match: 'prefix', handler: reports },
 
     // --- Cron ---
     { path: 'cron/pipeline', match: 'exact', handler: cronPipeline },
@@ -120,4 +123,5 @@ export const routes = [
     { path: 'admin/runs', match: 'exact', handler: adminRuns },
     { path: 'admin/partnerships', match: 'exact', handler: adminPartnerships },
     { path: 'admin/link-checks', match: 'exact', handler: adminLinkChecks },
+    { path: 'admin/validate-publication', match: 'exact', handler: adminValidatePublication },
 ];

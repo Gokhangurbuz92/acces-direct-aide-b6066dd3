@@ -10,37 +10,40 @@ Platform connecting professional aid structures with beneficiaries, featuring se
 - **Messaging**: End-to-end encrypted messaging and file exchange between Pro and Beneficiary.
 - **Privacy**: Strict PII encryption (AES-256-GCM) and tenant isolation.
 
+## Prerequisites
+
+- **Node.js**: v20 or later.
+- **Docker**: (Recommended) for local PostgreSQL.
+- **NPM**: v10 or later.
+
 ## Getting Started (Development)
 
 1.  **Install Dependencies**
+    Always use `npm ci` to ensure a consistent environment based on the lockfile.
     ```bash
-    npm install
+    npm ci
     ```
 
 2.  **Environment Setup**
-    Copy `.env.example` to `.env` and fill in the required keys.
+    Copy `.env.example` to `.env`.
     ```bash
     cp .env.example .env
     ```
+    *Note: For local development, ensure your DATABASE_URL points to a local PostgreSQL instance.*
 
-3.  **Run Development Server**
+3.  **Local Database (Docker)**
+    Start a local PostgreSQL instance and apply migrations:
+    ```bash
+    docker-compose up -d
+    npx prisma migrate dev
+    ```
+
+4.  **Run Development Server**
     ```bash
     npm run dev
     ```
     Access the app at `http://localhost:5173`.
 
-## Turnkey Verification (Quick Start)
-
-To quickly generate a test environment with a Pro account, Beneficiary, and active conversation:
-
-1.  Ensure `npm run dev` is running.
-2.  Run the setup script:
-    ```bash
-    node scripts/dev-demo-setup.js
-    ```
-3.  The script will output:
-    - A **Beneficiary Magic Link** (access messages without login).
-    - **Pro Credentials** (login at `/pro/login`).
 
 ## Architecture
 

@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Link, useParams, useNavigate } from 'react-router-dom';
 import { createPageUrl } from '@/utils';
 import { client } from '@/api/client';
@@ -25,6 +25,9 @@ import {
 import { generateBreadcrumbSchema, generateAideSchema } from '@/utils/schema';
 import SourceTraceability from '@/components/SourceTraceability';
 import FalcSummary from '@/components/FalcSummary';
+import FalcToggle from '@/components/FalcToggle';
+import FalcContent from '@/components/FalcContent';
+import ReportContentButton from '@/components/ReportContentButton';
 
 const CATEGORIE_LABELS = {
   logement: 'Logement',
@@ -57,6 +60,10 @@ export default function AideDetail() {
   const aide = Array.isArray(queryData)
     ? queryData[0]
     : (queryData?.items ? queryData?.items[0] : queryData);
+
+  // FALC mode state
+  const [isFalcMode, setIsFalcMode] = useState(false);
+  const hasFalcContent = !!(aide?.summary_falc || aide?.conditions_falc || aide?.montant_falc);
 
   // Canonical Redirect: If accessed via ID but slug exists, redirect to slug URL
   useEffect(() => {
@@ -189,19 +196,37 @@ export default function AideDetail() {
           </div>
         </div>
 
+        {/* FALC Toggle */}
+        <div className="mb-6">
+          <FalcToggle 
+            hasFalcContent={hasFalcContent}
+            onChange={setIsFalcMode}
+          />
+        </div>
+
         <div className="grid lg:grid-cols-3 gap-6">
           {/* Contenu principal */}
           <div className="lg:col-span-2 space-y-6">
-            {/* C'est quoi ? */}
-            <Card>
-              <CardContent className="p-6">
-                <h2 className="text-lg font-bold text-slate-900 mb-3">C'est quoi ?</h2>
-                <p className="text-slate-700 leading-relaxed">{aide.cest_quoi}</p>
-              </CardContent>
-            </Card>
+            {isFalcMode ? (
+              /* FALC Mode Content */
+              <Card>
+                <CardContent className="p-6">
+                  <FalcContent falcData={aide} entityType="aide" />
+                </CardContent>
+              </Card>
+            ) : (
+              /* Normal Mode Content */
+              <>
+                {/* C'est quoi ? */}
+                <Card>
+                  <CardContent className="p-6">
+                    <h2 className="text-lg font-bold text-slate-900 mb-3">C'est quoi ?</h2>
+                    <p className="text-slate-700 leading-relaxed">{aide.cest_quoi}</p>
+                  </CardContent>
+                </Card>
 
-            {/* FALC Summary */}
-            <FalcSummary text={aide?.summary_falc} />
+                {/* FALC Summary */}
+                <FalcSummary text={aide?.summary_falc} />
 
             {/* Pour qui ? */}
             <Card>
@@ -316,6 +341,8 @@ export default function AideDetail() {
                 </CardContent>
               </Card>
             )}
+              </>
+            )}
           </div>
 
           {/* Sidebar */}
@@ -348,12 +375,13 @@ export default function AideDetail() {
                   <Download className="mr-2 h-4 w-4" />
                   Télécharger en PDF (ou imprimer)
                 </Button>
-                <Button variant="ghost" className="w-full text-slate-600" asChild>
-                  <Link to={createPageUrl('Contact') + `?page=${encodeURIComponent(window.location.href)}&sujet=signalement_erreur`}>
-                    <Flag className="mr-2 h-4 w-4" />
-                    Signaler une erreur
-                  </Link>
-                </Button>
+                <ReportContentButton
+                  contentType="aide"
+                  contentId={aide.id}
+                  pageUrl={window.location.href}
+                  variant="ghost"
+                  size="default"
+                />
               </CardContent>
             </Card>
 

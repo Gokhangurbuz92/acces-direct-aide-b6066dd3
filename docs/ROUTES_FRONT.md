@@ -1,96 +1,90 @@
-# Cartographie des Routes Front-End
+# Routes Frontend (SPA)
 
-Ce document recense l'ensemble des routes définies dans l'application (`src/pages/index.jsx`).
+Source de vérité : `src/pages/index.jsx`
 
-## 1. Routes Publiques (Layout: `Layout.jsx`)
+## 1. Routes Publiques
 
-| Route | Page Component | API attendue (Principale) | Notes |
+**Layout** : `src/pages/Layout.jsx` (Standard)
+**Guard** : Aucun (Public)
+
+| Route | Page Component | API Calls Attendus | Description |
 |---|---|---|---|
-| `/` | `Home.jsx` | `public/stats.js` (optionnel) | Accueil |
-| `/a-propos` | `APropos.jsx` | - | Statique |
-| `/accessibilite` | `Accessibilite.jsx` | - | Statique |
-| `/actualites` | `Actualites.jsx` | `actualites.js` | Liste des actualités |
-| `/actualites/:slug` | `ActualiteDetail.jsx` | `actualites.js` | Détail actualité |
-| `/aides` | `Aides.jsx` | `aides.js`, `taxonomy.js` | Liste des aides |
-| `/aides/:slug` | `AideDetail.jsx` | `aides.js` | Détail aide |
-| `/demarches` | `Demarches.jsx` | `demarches.js` | Liste démarches |
-| `/demarches/:slug` | `DemarcheDetail.jsx` | `demarches.js` | Détail démarche |
-| `/structures` | `Annuaire.jsx` | `structures.js` | Annuaire (Liste) |
-| `/structures/:slug` | `StructureDetail.jsx` | `structures.js` | Détail structure |
-| `/dispositifs` | `Dispositifs.jsx` | `dispositifs/index.js` | Liste dispositifs |
-| `/dispositifs/:slug` | `DispositifDetail.jsx` | `dispositifs/index.js` | Détail dispositif |
-| `/bonnes-pratiques` | `Guides.jsx` | `guides.js` | Liste guides |
-| `/bonnes-pratiques/:slug` | `GuideDetail.jsx` | `guides.js` | Détail guide |
-| `/outils` | `Tools.jsx` | `tools.js` | Liste outils |
-| `/outils/:slug` | `ToolDetail.jsx` | `tools.js` | Détail outil |
-| `/contact` | `Contact.jsx` | `public/messages.js` | Formulaire contact |
-| `/appointments/request` | `AppointmentRequest.jsx` | `booking/create.js`, `public/availability.js` | Prise de RDV |
-| `/proposer-une-structure` | `SuggestStructure.jsx` | `public/suggest-structure.js` | Suggestion |
-| `/mentions-legales` | `MentionsLegales.jsx` | - | Légal |
-| `/confidentialite` | `Confidentialite.jsx` | - | Légal |
-| `/cookies` | `Cookies.jsx` | - | Légal |
-| `/securite-et-rgpd` | `Security.jsx` | - | Sécurité |
-| `/notre-mission` | `Mission.jsx` | - | Statique |
-| `/notre-methode` | `Method.jsx` | - | Statique |
-| `/sources` | `Sources.jsx` | - | Statique |
-| `/impact` | `Impact.jsx` | - | Statique |
-| `/partenaires` | `Partners.jsx` | - | Statique |
-| `/dossier-subventions` | `SubventionDossier.jsx` | - | Statique |
-| `/r/:token/messages` | `BeneficiaryMessages.jsx` | `public/messages.js` | Messagerie bénéficiaire |
-| `/sentry-test` | `SentryTestPage.jsx` | `sentry-test.js` | Debug Sentry |
+| `/` | `Home` | `public/stats` | Page d'accueil |
+| `/aides` | `Aides` | `aides`, `taxonomy` | Liste des aides (avec filtres) |
+| `/aides/:slug` | `AideDetail` | `aides/:slug` | Détail d'une aide |
+| `/demarches` | `Demarches` | `demarches`, `taxonomy` | Liste des démarches |
+| `/demarches/:slug` | `DemarcheDetail` | `demarches/:slug` | Détail d'une démarche |
+| `/structures`, `/annuaire` | `Annuaire` | `structures` | Liste des structures |
+| `/structures/:slug` | `StructureDetail` | `structures/:slug` | Détail d'une structure |
+| `/actualites` | `Actualites` | `actualites` | Liste des actualités |
+| `/actualites/:slug` | `ActualiteDetail` | `actualites/:slug` | Détail d'une actualité |
+| `/dispositifs` | `Dispositifs` | `dispositifs` | Liste des dispositifs |
+| `/dispositifs/:slug` | `DispositifDetail` | `dispositifs/:slug` | Détail d'un dispositif |
+| `/ressources` | `Ressources` | `ressources` | Liste des ressources |
+| `/ressources/:slug` | `RessourceDetail` | `ressources/:slug` | Détail d'une ressource |
+| `/bonnes-pratiques` | `Guides` | `guides` | Liste des guides |
+| `/bonnes-pratiques/:slug` | `GuideDetail` | `guides/:slug` | Détail d'un guide |
+| `/outils` | `Tools` | `tools` | Liste des outils |
+| `/outils/:slug` | `ToolDetail` | `tools/:slug` | Détail d'un outil |
+| `/appointments/request` | `AppointmentRequest` | `appointments`, `availability` | Prise de RDV |
+| `/proposer-une-structure` | `SuggestStructure` | `public/suggest-structure` | Formulaire suggestion |
+| `/dossier-subventions` | `SubventionDossier` | - | Info dossier subvention |
+| `/contact` | `Contact` | `public/messages` | Page de contact |
+| `/accessibilite` | `Accessibilite` | - | Déclaration d'accessibilité |
+| `/mentions-legales` | `MentionsLegales` | - | Mentions légales |
+| `/confidentialite` | `Confidentialite` | `public/consent` | Politique de confidentialité |
+| `/cookies` | `Cookies` | `public/consent` | Gestion des cookies |
+| `/a-propos` | `APropos` | - | À propos |
+| `/notre-mission` | `Mission` | - | Mission |
+| `/notre-methode` | `Method` | - | Méthode |
+| `/impact` | `Impact` | - | Impact |
+| `/sources` | `Sources` | - | Sources des données |
+| `/sourcesmethode` | `SourcesMethode` | - | Sources & Méthode |
+| `/securite-et-rgpd` | `Security` | - | Sécurité et RGPD |
+| `/partenaires` | `Partners` | - | Partenaires |
+| `/styleguide/branding` | `StyleguideBranding` | - | Guide de style |
+| `/r/:token/messages` | `BeneficiaryMessages` | `public/messages` | Messagerie bénéficiaire |
 
-## 2. Espace Pro (Layout: `ProLayout.jsx`)
-Routes préfixées par `/pro`.
+## 2. Espace Pro
 
-| Route | Page Component | Guard | API attendue |
+**Layout** : `src/pages/pro/ProLayout.jsx`
+**Guard** : Authentification Pro (via `RequireAuth` ou logique interne)
+
+| Route | Page Component | API Calls Attendus | Description |
 |---|---|---|---|
-| `/pro/login` | `pro/Login.jsx` | Public | `auth/login.js` |
-| `/pro/register` | `pro/Register.jsx` | Public | `pro/invite.js` |
-| `/pro/forgot-password` | `pro/ForgotPassword.jsx` | Public | `pro/auth/forgot-password.js` |
-| `/pro/reset-password` | `pro/ResetPassword.jsx` | Public | `pro/auth/reset-password.js` |
-| `/pro/dashboard` | `pro/Dashboard.jsx` | `RequireAuth` | `pro/me.js` |
-| `/pro/services` | `pro/Services.jsx` | `RequireAuth` | `pro/services.js` |
-| `/pro/team` | `pro/Team.jsx` | `RequireAuth` | `pro/team.js` |
-| `/pro/structure` | `pro/Structure.jsx` | `RequireAuth` | `pro/structure.js` |
-| `/pro/appointments` | `pro/Appointments.jsx` | `RequireAuth` | `pro/appointments/list.js` |
-| `/pro/appointments/:id` | `pro/AppointmentDetail.jsx` | `RequireAuth` | `pro/appointments/details.js` |
+| `/pro/login` | `Login` | `auth/login` | Connexion Pro |
+| `/pro/register` | `Register` | `pro/register` | Inscription Pro |
+| `/pro/forgot-password` | `ForgotPassword` | `pro/auth/forgot-password` | Mot de passe oublié |
+| `/pro/reset-password` | `ResetPassword` | `pro/auth/reset-password` | Réinitialisation MDP |
+| `/pro/dashboard` | `Dashboard` | `pro/me`, `stats` | Tableau de bord |
+| `/pro/appointments` | `Appointments` | `pro/appointments` | Liste des RDV |
+| `/pro/appointments/:id` | `AppointmentDetail` | `pro/appointments/:id` | Détail RDV |
+| `/pro/structure` | `Structure` | `pro/structure` | Gestion structure |
+| `/pro/team` | `Team` | `pro/team` | Gestion équipe |
+| `/pro/services` | `Services` | `pro/services` | Gestion services |
+| `/pro/availability` | `Availability` | `pro/availability` | Gestion disponibilités |
 
-## 3. Administration (Layout: `Layout.jsx` + `AdminGuard`)
-Routes préfixées par `/admin`.
+## 3. Espace Admin
 
-| Route | Page Component | API attendue | Notes |
-|---|---|---|---|
-| `/admin/login` | `AdminLogin.jsx` | `auth/login.js` | Login Admin |
-| `/admin/aides` | `AdminAides.jsx` | `aides.js` | CRUD Aides |
-| `/admin/aides/:id` | `AdminAideEdit.jsx` | `aides.js` | Edit Aide |
-| `/admin/demarches` | `AdminDemarches.jsx` | `demarches.js` | CRUD Démarches |
-| `/admin/demarches/:id` | `AdminDemarcheEdit.jsx` | `demarches.js` | Edit Démarche |
-| `/admin/structures` | `AdminStructures.jsx` | `structures.js` | CRUD Structures |
-| `/admin/appointments` | `AdminAppointments.jsx` | `booking/pro` | RDV Admin |
-| `/admin/messages` | `AdminMessages.jsx` | `public/messages.js` | Messagerie Admin |
-| `/admin/sources` | `AdminSources.jsx` | `cron/ingest-rss.js` | Sources RSS |
-| `/admin/sync` | `AdminSync.jsx` | `cron/pipeline.js` | Sync Pipelines |
-| `/admin/sync/recent` | `AdminRecentSyncs.jsx` | `admin/runs.js` | Logs Sync |
-| `/admin/sync/test` | `AdminTestSync.jsx` | `admin/actions.js` | Test Sync |
-| `/admin/guides/sync` | `AdminGuideSync.jsx` | `guides.js` | Sync Guides |
-| `/admin/inbox` | `admin/Inbox.jsx` | `admin/inbox.js` | Inbox |
-| `/admin/runs` | `admin/Runs.jsx` | `admin/runs.js` | Cron Runs |
-| `/admin/review` | `AdminReview.jsx` | `admin` | Review |
+**Layout** : `src/pages/Layout.jsx` (Standard)
+**Guard** : `AdminGuard` (sauf Login)
 
-## 4. Redirections & Compatibilité
-
-| Source | Cible |
-|---|---|
-| `/annuaire` | `/structures` |
-| `/admin` | `/admin/aides` |
-| `/aidedetail` | `/aidedetail` (Legacy?) |
-| `/StructureDetail` | `/annuaire` |
-| `/DemarcheDetail` | `/demarches` |
-| `/adminaides` | `/admin/aides` |
-| `/adminstructures` | `/admin/structures` |
-| `/adminappointments` | `/admin/appointments` |
-| `/admindemarches` | `/admin/demarches` |
-
-## 5. Pages Orphelines détectées
-Aucune page orpheline détectée dans `src/pages/`.
-`SourcesMethode.jsx` est routé sur `/sourcesmethode`.
+| Route | Page Component | Guard | API Calls Attendus | Description |
+|---|---|---|---|---|
+| `/admin/login` | `AdminLogin` | - | `auth/login` | Connexion Admin |
+| `/admin/aides` | `AdminAides` | Oui | `aides` (admin) | CRUD Aides |
+| `/admin/aides/:id` | `AdminAideEdit` | Oui | `aides/:id` | Édition Aide |
+| `/admin/demarches` | `AdminDemarches` | Oui | `demarches` (admin) | CRUD Démarches |
+| `/admin/demarches/:id` | `AdminDemarcheEdit` | Oui | `demarches/:id` | Édition Démarche |
+| `/admin/structures` | `AdminStructures` | Oui | `structures` (admin) | CRUD Structures |
+| `/admin/appointments` | `AdminAppointments` | Oui | `admin/appointments` | Gestion RDV Global |
+| `/admin/inbox` | `AdminInbox` | Oui | `admin/inbox` | Boîte de réception |
+| `/admin/runs` | `AdminRuns` | Oui | `admin/runs` | Historique jobs (Cron) |
+| `/admin/sync` | `AdminSync` | Oui | `cron/pipeline` | Synchronisation |
+| `/admin/sync/test` | `AdminTestSync` | Oui | `admin/actions` | Test Synchronisation |
+| `/admin/sync/recent` | `AdminRecentSyncs` | Oui | `admin/runs` | Logs de synchro |
+| `/admin/sources` | `AdminSources` | Oui | `admin/sources` | Sources de données |
+| `/admin/messages` | `AdminMessages` | Oui | `admin/messages` | Messages |
+| `/admin/review` | `AdminReview` | Oui | `admin/review` | Revue contenu |
+| `/admin/guides/sync` | `AdminGuideSync` | Oui | `guides` | Synchro guides |
+| `/admin/health` | `Health` | Oui | `health` | Santé système |

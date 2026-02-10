@@ -17,7 +17,7 @@ import {
 } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import AccessibilityToolbar from '@/components/ui/AccessibilityToolbar';
-import ChatWidget from '@/components/chat/ChatWidget';
+import ChatAssistant from '@/components/chat/ChatAssistant';
 import { adminClient as client } from '@/api/client';
 import PropTypes from 'prop-types';
 
@@ -413,8 +413,8 @@ export default function Layout({ children, currentPageName }) {
         </div>
       </footer>
 
-      {/* Chat Widget */}
-      <ChatWidget />
+      {/* Chat Assistant */}
+      <ChatAssistant />
     </div>
   );
 }

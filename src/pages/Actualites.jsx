@@ -55,10 +55,12 @@ export default function Actualites() {
   const selectedCategory = searchParams.get('categorie') || '';
   const page = parseInt(searchParams.get('page') || '1', 10);
 
-  const { data: actualites = [], isLoading } = useQuery({
+  const { data: response = {}, isLoading } = useQuery({
     queryKey: ['actualites'],
     queryFn: () => client.entities.Actualite.filter({ statut: 'publie' }, '-date_publication'),
   });
+
+  const actualites = Array.isArray(response) ? response : (response.items || []);
 
   // Client-side filtering and pagination
   const filteredActualites = selectedCategory

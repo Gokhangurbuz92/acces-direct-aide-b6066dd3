@@ -106,6 +106,7 @@
 ./api/index.js
 ./api/lib/crypto.js
 ./api/lib/falc-summarizer.js
+./api/lib/gemini.js
 ./api/lib/ingestion/AgefiphConnector.js
 ./api/lib/ingestion/GrandEstConnector.js
 ./api/lib/ingestion/SourceConnector.js
@@ -473,6 +474,7 @@
 ./scripts/smoke-prod.sh
 ./scripts/smoke-test.js
 ./scripts/test-admin-security.js
+./scripts/test-ai-apl.js
 ./scripts/test-alsace-ingest.js
 ./scripts/test-api-endpoints.cjs
 ./scripts/test-db-development.cjs
@@ -539,12 +541,18 @@
 ./src/components/cards/DemarcheCard.jsx
 ./src/components/cards/DispositifCard.jsx
 ./src/components/cards/StructureCard.jsx
+./src/components/chat/ChatAssistant.jsx
 ./src/components/chat/ChatWidget.jsx
 ./src/components/feedback/EmptyState.jsx
 ./src/components/feedback/ListSkeleton.jsx
+./src/components/home/AssistantFeatureSection.jsx
+./src/components/home/CategoriesSection.jsx
 ./src/components/home/CategoryGrid.jsx
 ./src/components/home/Hero.jsx
+./src/components/home/HeroSection.jsx
+./src/components/home/NewsSection.jsx
 ./src/components/home/QuickAccessCards.jsx
+./src/components/home/QuickAccessSection.jsx
 ./src/components/home/TrustBand.jsx
 ./src/components/layout/Header.jsx
 ./src/components/navigation/Breadcrumbs.jsx
@@ -605,6 +613,7 @@
 ./src/components/ui/tooltip.jsx
 ./src/components/ui/use-toast.jsx
 ./src/contexts/FalcContext.jsx
+./src/data/rulepacks/apl_v1.json
 ./src/design/tokens.json
 ./src/hooks/use-mobile.jsx
 ./src/index.css
@@ -658,6 +667,7 @@
 ./src/pages/Method.jsx
 ./src/pages/Mission.jsx
 ./src/pages/NotFound.jsx
+./src/pages/Orientation.jsx
 ./src/pages/Partners.jsx
 ./src/pages/RessourceDetail.jsx
 ./src/pages/Ressources.jsx

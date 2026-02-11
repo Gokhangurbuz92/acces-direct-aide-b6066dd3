@@ -49,6 +49,7 @@ Ces routes gèrent le CRUD (Lecture publique, Écriture Admin).
 | `/tools` | `_handlers/tools.js` | None / Admin | Outils |
 | `/dispositifs` | `_handlers/dispositifs/index.js` | None / Admin | Dispositifs |
 | `/ressources` | `_handlers/ressources.js` | None / Admin | Ressources (Générique) |
+| `/reports` | `_handlers/reports.js` | None / Admin | Signalements de contenu |
 | `/public/stats` | `_handlers/public/stats.js` | None | Statistiques publiques |
 | `/public/messages` | `_handlers/public/messages.js` | None | Envoi message (Contact) |
 | `/public/suggest-structure` | `_handlers/public/suggest-structure.js` | None | Suggestion ajout structure |
@@ -77,6 +78,7 @@ Ces routes gèrent le CRUD (Lecture publique, Écriture Admin).
 | `/admin/runs` | `_handlers/admin/runs.js` | Admin | Historique Jobs/Runs |
 | `/admin/partnerships` | `_handlers/admin/partnerships.js` | Admin | Gestion Partenariats |
 | `/admin/link-checks` | `_handlers/admin/link-checks.js` | Admin | Rapport liens morts |
+| `/admin/validate-publication` | `_handlers/admin/validate-publication.js` | Admin | Validation contenu modéré |
 
 ## Conventions de Réponse
 

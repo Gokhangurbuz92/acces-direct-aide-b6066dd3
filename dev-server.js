@@ -4,7 +4,10 @@ import url from 'url';
 import dotenv from 'dotenv';
 import { routes } from './api/routes.js';
 
-dotenv.config({ override: true });
+if (process.env.NODE_ENV !== 'production') {
+    dotenv.config({ path: '.env.local', override: false, quiet: true });
+    dotenv.config({ path: '.env', override: false, quiet: true });
+}
 
 
 const PORT = 3000;

@@ -1,62 +1,101 @@
-# Routes Frontend (SPA)
+# Routes Frontend
 
-Ce document recense les routes définies dans `src/pages/index.jsx` et leur politique d'accès.
+Ce document liste les routes définies dans `src/pages/index.jsx` (Router principal).
 
-## Routes Publiques
-| Route | Composant | Description |
-|-------|-----------|-------------|
-| `/` | `Home.jsx` | Page d'accueil |
-| `/aides` | `Aides.jsx` | Moteur de recherche des aides |
-| `/aides/:slug` | `AideDetail.jsx` | Détail d'une aide |
-| `/demarches` | `Demarches.jsx` | Liste des démarches |
-| `/demarches/:slug` | `DemarcheDetail.jsx` | Détail d'une démarche |
-| `/annuaire` | `Annuaire.jsx` | Annuaire des structures |
-| `/structures/:slug` | `StructureDetail.jsx` | Détail d'une structure |
-| `/actualites` | `Actualites.jsx` | Liste des actualités |
-| `/actualites/:slug` | `ActualiteDetail.jsx` | Détail d'une actualité |
-| `/bonnes-pratiques` | `Guides.jsx` | Guides méthodologiques |
-| `/bonnes-pratiques/:slug` | `GuideDetail.jsx` | Détail d'un guide |
-| `/outils` | `Tools.jsx` | Outils pratiques |
-| `/outils/:slug` | `ToolDetail.jsx` | Détail d'un outil |
-| `/dispositifs` | `Dispositifs.jsx` | Liste des dispositifs |
-| `/dispositifs/:slug` | `DispositifDetail.jsx` | Détail d'un dispositif |
-| `/ressources` | `Ressources.jsx` | Ressources documentaires |
-| `/ressources/:slug` | `RessourceDetail.jsx` | Détail d'une ressource |
-| `/appointments/request` | `AppointmentRequest.jsx` | Prise de rendez-vous (Public) |
-| `/mentions-legales` | `MentionsLegales.jsx` | Mentions légales |
-| `/confidentialite` | `Confidentialite.jsx` | Politique de confidentialité |
-| `/cookies` | `Cookies.jsx` | Gestion des cookies |
-| `/accessibilite` | `Accessibilite.jsx` | Déclaration d'accessibilité |
-| `/contact` | `Contact.jsx` | Formulaire de contact |
-| `/proposer-une-structure` | `SuggestStructure.jsx` | Suggérer un ajout |
+## Public
 
-## Routes Pro (`/pro`)
-Nécessite une authentification Pro (Token).
-| Route | Composant | Description |
-|-------|-----------|-------------|
-| `/pro/login` | `pro/Login.jsx` | Connexion Pro |
-| `/pro/dashboard` | `pro/Dashboard.jsx` | Tableau de bord |
-| `/pro/appointments` | `pro/Appointments.jsx` | Gestion des RDV |
-| `/pro/appointments/:id` | `pro/AppointmentDetail.jsx` | Détail RDV |
-| `/pro/structure` | `pro/Structure.jsx` | Édition structure |
-| `/pro/team` | `pro/Team.jsx` | Gestion équipe |
+| Route | Page Component | Notes |
+|---|---|---|
+| `/` | `Home` | |
+| `/a-propos` | `APropos` | |
+| `/accessibilite` | `Accessibilite` | |
+| `/actualites` | `Actualites` | |
+| `/actualites/view` | `ActualiteDetail` | |
+| `/actualites/:slug` | `ActualiteDetail` | |
+| `/aidedetail` | `AideDetail` | |
+| `/aide/view` | `AideDetail` | |
+| `/aides/view` | `AideDetail` | |
+| `/aide/:slug` | `LegacyAideRedirect` | Redirects to `/aides/:slug` |
+| `/aides/:slug` | `AideDetail` | |
+| `/aides` | `Aides` | |
+| `/categories/:slug` | `Aides` | |
+| `/situations/:slug` | `Aides` | |
+| `/annuaire` | `Annuaire` | |
+| `/structures` | `Navigate` | Redirects to `/annuaire` |
+| `/structures/view` | `StructureDetail` | |
+| `/structures/:slug` | `StructureDetail` | |
+| `/confidentialite` | `Confidentialite` | |
+| `/contact` | `Contact` | |
+| `/cookies` | `Cookies` | |
+| `/demarches/view` | `DemarcheDetail` | |
+| `/demarches/:slug` | `DemarcheDetail` | |
+| `/demarches` | `Demarches` | |
+| `/orientation` | `Orientation` | |
+| `/home` | `Navigate` | Redirects to `/` |
+| `/mentions-legales` | `MentionsLegales` | |
+| `/sourcesmethode` | `SourcesMethode` | |
+| `/sentry-test` | `SentryTest` | |
+| `/r/:token/messages` | `BeneficiaryMessages` | |
+| `/bonnes-pratiques` | `Guides` | |
+| `/bonnes-pratiques/:slug` | `GuideDetail` | |
+| `/outils` | `Tools` | |
+| `/outils/:slug` | `ToolDetail` | |
+| `/dispositifs` | `Dispositifs` | |
+| `/dispositifs/:slug` | `DispositifDetail` | |
+| `/dispositifs/view` | `DispositifDetail` | |
+| `/ressources` | `Ressources` | |
+| `/ressources/:slug` | `RessourceDetail` | |
+| `/ressources/view` | `RessourceDetail` | |
+| `/impact` | `Impact` | |
+| `/notre-mission` | `Mission` | |
+| `/notre-methode` | `Method` | |
+| `/sources` | `Sources` | |
+| `/securite-et-rgpd` | `Security` | |
+| `/partenaires` | `Partners` | |
+| `/proposer-une-structure` | `SuggestStructure` | |
+| `/dossier-subventions` | `SubventionDossier` | |
+| `/styleguide/branding` | `StyleguideBranding` | |
+| `/appointments/request` | `AppointmentRequest` | |
+| `/appointments/cancel/:token` | `AppointmentCancel` | |
+| `/appointments/reschedule/:token` | `AppointmentReschedule` | |
+| `/login/pro` | `LoginPro` | Only if `VITE_DEV_LOGIN_ENABLED` is true |
 
-## Routes Admin (`/admin`)
-Protégées par `AdminGuard` (Admin Only).
-| Route | Composant | Description |
-|-------|-----------|-------------|
-| `/admin/login` | `AdminLogin.jsx` | Connexion Admin |
-| `/admin/aides` | `AdminAides.jsx` | Gestion des aides |
-| `/admin/structures` | `AdminStructures.jsx` | Gestion des structures |
-| `/admin/demarches` | `AdminDemarches.jsx` | Gestion des démarches |
-| `/admin/appointments` | `AdminAppointments.jsx` | Supervision RDV |
-| `/admin/sync` | `AdminSync.jsx` | Pilotage synchronisations |
-| `/admin/runs` | `admin/Runs.jsx` | Logs des crons |
-| `/admin/inbox` | `admin/Inbox.jsx` | Boîte de réception |
+## Admin (Protected by `AdminGuard`)
 
-## Pages Orphelines / Drafts
-Ces pages sont présentes dans le code source mais non routées actuellement.
-- `src/pages/AideDetailBlueprintTrust.jsx`
-- `src/pages/BlueprintTrustDemo.jsx`
-- `src/pages/HomeBlueprintTrust.jsx`
-- `src/pages/admin/AdminReports.jsx`
+| Route | Page Component |
+|---|---|
+| `/admin/login` | `AdminLogin` |
+| `/admin/health` | `AdminHealth` |
+| `/admin/inbox` | `AdminInbox` |
+| `/admin/runs` | `AdminRuns` |
+| `/admin/aides/:id` | `AdminAideEdit` |
+| `/admin/aides` | `AdminAides` |
+| `/admin` | `Navigate` (to `/admin/aides`) |
+| `/admin/guides/sync` | `AdminGuideSync` |
+| `/admin/messages` | `AdminMessages` |
+| `/admin/review` | `AdminReview` |
+| `/admin/sync/recent` | `AdminRecentSyncs` |
+| `/admin/sources` | `AdminSources` |
+| `/admin/sync` | `AdminSync` |
+| `/admin/sync/test` | `AdminTestSync` |
+| `/admin/appointments` | `AdminAppointments` |
+| `/admin/structures` | `AdminStructures` |
+| `/admin/demarches` | `AdminDemarches` |
+| `/admin/demarches/:id` | `AdminDemarcheEdit` |
+
+## Pro (Protected by `ProLayout` / Auth)
+
+All routes prefixed with `/pro`.
+
+| Route | Page Component |
+|---|---|
+| `/pro/login` | `ProLogin` |
+| `/pro/register` | `ProRegister` |
+| `/pro/forgot-password` | `ProForgotPassword` |
+| `/pro/reset-password` | `ProResetPassword` |
+| `/pro/dashboard` | `ProDashboard` |
+| `/pro/services` | `ProServices` |
+| `/pro/team` | `ProTeam` |
+| `/pro/structure` | `ProStructure` |
+| `/pro/appointments` | `ProAppointments` |
+| `/pro/appointments/:id` | `ProAppointmentDetail` |

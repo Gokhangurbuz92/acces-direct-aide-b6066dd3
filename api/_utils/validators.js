@@ -44,3 +44,33 @@ export const searchStructuresSchema = baseSearchSchema.extend({
   zip: z.string().optional(),
   type: z.string().optional(),
 });
+
+const aidCategoryCodeSchema = z.enum([
+  'LOGEMENT',
+  'SANTE',
+  'HANDICAP',
+  'EMPLOI',
+  'FAMILLE',
+  'ETUDES',
+  'MOBILITE',
+  'ENERGIE',
+  'ALIMENTATION',
+  'JUSTICE',
+  'NUMERIQUE',
+  'AUTRE',
+]);
+
+export const hybridSearchSchema = z.object({
+  query: z.string().trim().min(2).max(500),
+  category: aidCategoryCodeSchema.optional(),
+  situations: z
+    .union([z.string().trim().min(1), z.array(z.string().trim().min(1)).max(20)])
+    .optional()
+    .transform((value) => {
+      if (!value) return [];
+      if (Array.isArray(value)) return value;
+      return [value];
+    }),
+  geoScope: z.string().trim().min(1).max(64).optional(),
+  limit: z.coerce.number().int().min(1).max(30).default(10),
+});

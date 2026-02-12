@@ -15,7 +15,7 @@ Expected minimum variables:
 - `POSTGRES_URL_NON_POOLING`
 - `DIRECT_URL` (only if referenced in `prisma/schema.prisma`)
 - `ADA_ENCRYPTION_KEY`
-- `GEMINI_API_KEY`
+- `GEMINI_API_KEY` (optional for lexical-only search; warning only in doctor)
 
 ## A2. Load variables in current shell
 
@@ -23,6 +23,23 @@ Expected minimum variables:
 set -a
 source .env.local
 set +a
+```
+
+## Minimum viable env
+
+For a local setup that can migrate/seed and run search in lexical-only mode:
+
+- `ADA_ENCRYPTION_KEY` must be set
+- `DATABASE_URL` must point to local Postgres
+- `POSTGRES_URL_NON_POOLING` should be set (often same value as `DATABASE_URL` locally)
+- `GEMINI_API_KEY` can be absent for now (doctor prints WARN, not KO)
+
+Example (local, no `sslmode=require`):
+
+```bash
+ADA_ENCRYPTION_KEY="dev-local-key-change-me"
+DATABASE_URL="postgresql://app_user:app_password@localhost:5432/acces_direct_aide"
+POSTGRES_URL_NON_POOLING="postgresql://app_user:app_password@localhost:5432/acces_direct_aide"
 ```
 
 ## A3. Run doctor and fix KO reasons
@@ -59,6 +76,13 @@ If needed:
 ```bash
 npm run db:migrate
 npm run db:seed
+```
+
+DB checks (table is `"Aide"`, not `"Aid"`):
+
+```bash
+psql "host=<host> port=<port> dbname=<dbname> user=<user> sslmode=<mode>" -c 'select count(*) from "Aide";'
+psql "host=<host> port=<port> dbname=<dbname> user=<user> sslmode=<mode>" -c "select column_name from information_schema.columns where table_schema='public' and table_name='Aide' and column_name='quality_score';"
 ```
 
 ## A6. Final verification

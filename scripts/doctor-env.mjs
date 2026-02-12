@@ -126,33 +126,45 @@ function parseDbUrl(varName, rawValue) {
 function checkRequiredEnv(schemaContent) {
   const usesDirectUrl = /env\(\s*["']DIRECT_URL["']\s*\)/.test(schemaContent);
 
-  const requiredEnv = [
-    { name: 'DATABASE_URL', required: true },
-    { name: 'POSTGRES_URL_NON_POOLING', required: true },
-    { name: 'DIRECT_URL', required: usesDirectUrl },
-    { name: 'ADA_ENCRYPTION_KEY', required: true },
-    { name: 'GEMINI_API_KEY', required: true },
+  const envChecks = [
+    { name: 'DATABASE_URL', required: true, warnOnly: false },
+    { name: 'POSTGRES_URL_NON_POOLING', required: true, warnOnly: false },
+    { name: 'DIRECT_URL', required: usesDirectUrl, warnOnly: false },
+    { name: 'ADA_ENCRYPTION_KEY', required: true, warnOnly: false },
+    { name: 'GEMINI_API_KEY', required: false, warnOnly: true },
   ];
 
   addLine('Required variables');
-  for (const item of requiredEnv) {
+  for (const item of envChecks) {
     const value = process.env[item.name];
     const hasValue = Boolean(value && value.trim() !== '');
-    const status = hasValue ? 'present' : item.required ? 'missing' : 'optional-missing';
+    let status = 'present';
+    if (!hasValue && item.required) status = 'missing';
+    if (!hasValue && !item.required && item.warnOnly) status = 'warn-missing';
+    if (!hasValue && !item.required && !item.warnOnly) status = 'optional-missing';
 
     addLine(`- ${item.name}: ${status}`);
 
     if (item.required && !hasValue) {
       issues.push(`${item.name} is required but missing.`);
     }
+    if (item.warnOnly && !hasValue) {
+      warnings.push(
+        `${item.name} is missing. Lexical-only search still works; embeddings are disabled until key is set.`,
+      );
+    }
 
     if (hasValue && (value.includes('...') || value.includes('<') || value.toLowerCase().includes('your-'))) {
-      issues.push(`${item.name} looks like a placeholder value.`);
+      if (item.warnOnly) {
+        warnings.push(`${item.name} looks like a placeholder value.`);
+      } else {
+        issues.push(`${item.name} looks like a placeholder value.`);
+      }
     }
   }
 
   if (!process.env.GEMINI_API_KEY && process.env.GOOGLE_API_KEY) {
-    warnings.push('GEMINI_API_KEY is missing but GOOGLE_API_KEY is present. Add GEMINI_API_KEY for local consistency.');
+    warnings.push('GEMINI_API_KEY is missing but GOOGLE_API_KEY is present. This is acceptable if code falls back to GOOGLE_API_KEY.');
   }
 }
 

@@ -4,7 +4,8 @@ import fs from 'fs';
 import path from 'path';
 import dotenv from 'dotenv';
 
-dotenv.config({ override: true });
+dotenv.config({ path: '.env.local', override: false, quiet: true });
+dotenv.config({ path: '.env', override: false, quiet: true });
 
 console.log(`Checking ${routes.length} routes for valid imports...`);
 

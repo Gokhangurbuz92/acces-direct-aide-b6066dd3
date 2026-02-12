@@ -35,6 +35,7 @@ import publicAppointmentsCancel from './_handlers/public/appointments/cancel.js'
 
 // --- Core Data ---
 import aides from './_handlers/aides.js';
+import search from './_handlers/search.js';
 import structures from './_handlers/structures.js';
 import demarches from './_handlers/demarches.js';
 import actualites from './_handlers/actualites.js';
@@ -99,6 +100,7 @@ export const routes = [
 
     // --- Core Data ---
     { path: 'aides', match: 'prefix', handler: aides },
+    { path: 'search', match: 'exact', handler: search },
     { path: 'structures', match: 'prefix', handler: structures },
     { path: 'demarches', match: 'prefix', handler: demarches },
     { path: 'actualites', match: 'prefix', handler: actualites },

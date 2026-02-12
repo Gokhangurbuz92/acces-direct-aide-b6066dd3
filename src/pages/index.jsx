@@ -42,6 +42,8 @@ const NotFound = lazy(() => import("./NotFound.jsx"));
 const LoginPro = lazy(() => import("./LoginPro.jsx"));
 const BeneficiaryMessages = lazy(() => import("./BeneficiaryMessages.jsx"));
 const AppointmentRequest = lazy(() => import("./AppointmentRequest.jsx"));
+const AppointmentCancel = lazy(() => import("./AppointmentCancel.jsx"));
+const AppointmentReschedule = lazy(() => import("./AppointmentReschedule.jsx"));
 
 // Admin
 const AdminLogin = lazy(() => import("./AdminLogin.jsx"));
@@ -90,7 +92,7 @@ const PAGES = {
     AideDetail, Aides, Annuaire, Confidentialite, Contact, Cookies,
     DemarcheDetail, DispositifDetail, LoginPro, Demarches, Home, Orientation,
     MentionsLegales, SourcesMethode, SentryTest, StructureDetail,
-    AdminInbox, AdminRuns, AppointmentRequest, AdminStructures,
+    AdminInbox, AdminRuns, AppointmentRequest, AppointmentCancel, AppointmentReschedule, AdminStructures,
     AdminDemarches, AdminDemarcheEdit, AdminAppointments, AdminReview
 };
 
@@ -191,6 +193,8 @@ function PagesContent() {
                     <Route path="/admin/sync" element={<AdminGuard><AdminSync /></AdminGuard>} />
                     <Route path="/admin/sync/test" element={<AdminGuard><AdminTestSync /></AdminGuard>} />
                     <Route path="/appointments/request" element={<AppointmentRequest />} />
+                    <Route path="/appointments/cancel/:token" element={<AppointmentCancel />} />
+                    <Route path="/appointments/reschedule/:token" element={<AppointmentReschedule />} />
                     <Route path="/admin/appointments" element={<AdminGuard><AdminAppointments /></AdminGuard>} />
                     <Route path="/admin/structures" element={<AdminGuard><AdminStructures /></AdminGuard>} />
                     <Route path="/admin/demarches" element={<AdminGuard><AdminDemarches /></AdminGuard>} />

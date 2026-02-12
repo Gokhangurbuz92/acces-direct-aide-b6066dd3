@@ -70,5 +70,5 @@ jobs:
       - name: Install Playwright browsers (chromium only)
         run: npx playwright install --with-deps chromium
 
-      - name: E2E (public core, mocked)
-        run: CI=1 npx playwright test e2e/public-core.spec.js --project=chromium --reporter=line
+      - name: E2E (public core & booking, mocked)
+        run: CI=1 npx playwright test e2e/public-core.spec.js e2e/booking.spec.js --project=chromium --reporter=line

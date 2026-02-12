@@ -85,5 +85,11 @@ Certains fichiers présents dans `src/pages/` ne sont pas routés (voir `docs/RO
 - `src/pages/admin/AdminReports.jsx`
 
 ---
+## 10. Décisions Techniques (Standards)
+- **API Client** : `src/api/client.js` est la source unique. Pas de version `.jsx`.
+- **FALC Logic** : `api/lib/falc-summarizer.js` est la source de vérité pour la logique de résumé.
+- **JS vs TS** : Le projet est majoritairement JavaScript. L'introduction de TypeScript se fait de manière incrémentale et optionnelle (ex: `tsconfig.typecheck.json`), sans migration massive pour éviter les risques de régression.
+
+---
 **Note sur les fichiers ignorés** :
 Les dossiers `venv/`, `node_modules/`, `test-results/` et les fichiers `.env` sont strictement exclus du versionning pour des raisons de sécurité et de propreté.

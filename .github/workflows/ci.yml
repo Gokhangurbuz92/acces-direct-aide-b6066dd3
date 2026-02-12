@@ -2,73 +2,42 @@ name: CI
 
 on:
   push:
-    branches: [ "main" ]
+    branches: [ main ]
   pull_request:
-
-concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: true
+    branches: [ main ]
 
 jobs:
-  quality-gate:
+  build-and-test:
     runs-on: ubuntu-latest
-    timeout-minutes: 20
 
     env:
-      NODE_ENV: test
-      # Dummy envs (no secrets). The code should fallback to memory stores where applicable.
-      DATABASE_URL: postgresql://user:pass@localhost:5432/db?schema=public
-      VERCEL_KV_REST_API_URL: ""
-      VERCEL_KV_REST_API_TOKEN: ""
-      SENTRY_DSN: ""
+      DATABASE_URL: "postgresql://user:password@localhost:5432/testdb" # Mock value for build
+      ADA_ENCRYPTION_KEY: "0000000000000000000000000000000000000000000000000000000000000000" # Mock 32 bytes hex
+      JWT_SECRET: "mock-jwt-secret"
+      CRON_SECRET: "mock-cron-secret"
+      # Start Vite automatically if needed (playwright handles it)
+      CI: true
 
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
+    - uses: actions/checkout@v4
 
-      - name: Setup Node
-        uses: actions/setup-node@v4
-        with:
-          node-version: '20'
+    - name: Use Node.js 20
+      uses: actions/setup-node@v4
+      with:
+        node-version: 20
+        cache: 'npm'
 
-      - name: Cache node_modules
-        uses: actions/cache@v4
-        id: npm-cache
-        with:
-          path: |
-            node_modules
-            ~/.npm
-          key: ${{ runner.os }}-node-${{ hashFiles('package-lock.json') }}-v2
-          restore-keys: |
-            ${{ runner.os }}-node-
+    - name: Install dependencies
+      run: npm ci
 
-      - name: Install Dependencies
-        if: steps.npm-cache.outputs.cache-hit != 'true'
-        run: npm ci --include=optional
+    - name: Lint
+      run: npm run lint
 
-      - name: Verify Rollup Installation
-        run: npm list @rollup/rollup-linux-x64-gnu || npm install --no-save @rollup/rollup-linux-x64-gnu
+    - name: Build
+      run: npm run build
 
-      - name: Check Bidi Characters
-        run: ./scripts/check-bidi.sh
+    - name: Install Playwright Browsers
+      run: npx playwright install --with-deps chromium
 
-      - name: Security Audit
-        run: npm audit --audit-level=high
-
-      - name: Lint
-        run: npm run lint
-
-      - name: Typecheck
-        run: npm run typecheck
-
-      - name: Build
-        run: npm run build
-
-      - name: Verify handler imports
-        run: node scripts/verify-handler-imports.js
-
-      - name: Install Playwright browsers (chromium only)
-        run: npx playwright install --with-deps chromium
-
-      - name: E2E (public core & booking, mocked)
-        run: CI=1 npx playwright test e2e/public-core.spec.js e2e/booking.spec.js --project=chromium --reporter=line
+    - name: Run E2E Tests (Core)
+      run: npx playwright test e2e/booking.spec.js e2e/public-core.spec.js

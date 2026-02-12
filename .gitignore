@@ -79,3 +79,4 @@ scripts/check-db-extensions.cjs
 # Any file containing credentials or secrets
 *_CREDENTIALS.md
 *_SECRETS.md
+.env*.local

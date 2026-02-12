@@ -22,7 +22,6 @@ model SourceDocument {
   demarches   Demarche[]
 }
 
-
 model Aide {
   id                    String          @id @default(uuid())
   slug                  String?         @unique
@@ -62,6 +61,25 @@ model Aide {
   category              AidCategory?    @relation(fields: [categoryId], references: [id])
   source                AidSource?      @relation(fields: [sourceId], references: [id])
   situations            LifeSituation[] @relation("AideToLifeSituation")
+  aidSituations         AidSituation[]
+
+  // AI Foundation Fields (P0/P1)
+  title         String?
+  description   String?
+  content       String?
+  category_code AidCategoryCode             @default(AUTRE)
+  status_code   AidStatus                   @default(DRAFT)
+  eligibility   Json?
+  financials    Json?
+  citations     Json?
+  qa_score      Int                         @default(0)
+  qa_report     Json?
+  source_org    String?
+  source_hash   String?
+  last_checked  DateTime?
+  geo_scope     String?
+  embedding     Unsupported("vector(768)")?
+  ts_content    Unsupported("tsvector")?
 
   // Ingestion Fields
   source_url_exact String?
@@ -72,23 +90,27 @@ model Aide {
   content_hash     String?
 
   // New Standard Fields (Lot 9a)
-  theme                 String?
-  sub_theme             String?
-  apply_url             String?
-  source_last_modified  DateTime?
-  fetched_at            DateTime?
-  
-  // Traceability Fields (P1)
-  retrieved_at          DateTime?
-  last_checked_at       DateTime?
+  theme                String?
+  sub_theme            String?
+  apply_url            String?
+  source_last_modified DateTime?
+  fetched_at           DateTime?
 
-  source_document_id    String?
-  sourceDocument        SourceDocument? @relation(fields: [source_document_id], references: [id])
+  // Traceability Fields (P1)
+  retrieved_at    DateTime?
+  last_checked_at DateTime?
+
+  source_document_id String?
+  sourceDocument     SourceDocument? @relation(fields: [source_document_id], references: [id])
 
   @@index([statut, published_at])
   @@index([categoryId, statut])
   @@index([statut])
   @@index([source_document_id])
+  @@index([category_code, status_code])
+  @@index([status_code])
+  @@index([source_hash])
+  @@index([geo_scope])
 }
 
 model AidCategory {
@@ -105,6 +127,28 @@ model LifeSituation {
   label     String
   aides     Aide[]     @relation("AideToLifeSituation")
   demarches Demarche[] @relation("DemarcheToSituation")
+}
+
+model Situation {
+  id           String         @id @default(uuid())
+  code         String         @unique
+  label        String
+  description  String?
+  createdAt    DateTime       @default(now())
+  updatedAt    DateTime       @updatedAt
+  aidRelations AidSituation[]
+}
+
+model AidSituation {
+  id          String    @id @default(uuid())
+  aidId       String
+  situationId String
+  createdAt   DateTime  @default(now())
+  aid         Aide      @relation(fields: [aidId], references: [id], onDelete: Cascade)
+  situation   Situation @relation(fields: [situationId], references: [id], onDelete: Cascade)
+
+  @@unique([aidId, situationId])
+  @@index([situationId])
 }
 
 model AidSource {
@@ -169,9 +213,9 @@ model Structure {
   content_hash       String?
 
   // Traceability Fields (P1)
-  retrieved_at          DateTime?
-  last_checked_at       DateTime?
-  source_last_modified  DateTime?
+  retrieved_at         DateTime?
+  last_checked_at      DateTime?
+  source_last_modified DateTime?
 
   // Traceability
   source_document_id String?
@@ -230,15 +274,14 @@ model Demarche {
   insee_codes      String[] // For COMMUNAL scope
   content_hash     String?
 
-
   // Traceability Fields (P1)
-  source_url            String?
-  retrieved_at          DateTime?
-  last_checked_at       DateTime?
-  source_last_modified  DateTime?
+  source_url           String?
+  retrieved_at         DateTime?
+  last_checked_at      DateTime?
+  source_last_modified DateTime?
 
-  source_document_id    String?
-  sourceDocument        SourceDocument? @relation(fields: [source_document_id], references: [id])
+  source_document_id String?
+  sourceDocument     SourceDocument? @relation(fields: [source_document_id], references: [id])
 
   @@index([statut, published_at])
   @@index([categoryId, statut])
@@ -295,7 +338,7 @@ model Actualite {
 
 model ImportLog {
   id            String   @id @default(uuid())
-  run_id        String?  // Unique run identifier for traceability
+  run_id        String? // Unique run identifier for traceability
   source_name   String
   status        String
   items_total   Int      @default(0)
@@ -306,7 +349,7 @@ model ImportLog {
   logs          Json?
   error_count   Int      @default(0) // Track error count
   createdAt     DateTime @default(now())
-  
+
   @@index([run_id])
   @@index([source_name, createdAt])
 }
@@ -339,6 +382,22 @@ model UpdateLog {
   errors              String[]
   source_name         String?
   is_dry_run          Boolean  @default(false)
+}
+
+model IngestJob {
+  id            String          @id @default(uuid())
+  source        String
+  status        IngestJobStatus @default(PENDING)
+  payload       Json?
+  result        Json?
+  error_message String?
+  started_at    DateTime?
+  finished_at   DateTime?
+  createdAt     DateTime        @default(now())
+  updatedAt     DateTime        @updatedAt
+
+  @@index([status, createdAt])
+  @@index([source, createdAt])
 }
 
 model Source {
@@ -598,12 +657,12 @@ model Dispositif {
   source_url_exact String?
   territory_scope  String?
   content_hash     String?
-  
+
   // Traceability Fields (P1)
-  source_url            String?
-  retrieved_at          DateTime?
-  last_checked_at       DateTime?
-  source_last_modified  DateTime?
+  source_url           String?
+  retrieved_at         DateTime?
+  last_checked_at      DateTime?
+  source_last_modified DateTime?
 
   // Traceability
   source_document_id String?
@@ -641,9 +700,9 @@ model ResourceAccessibility {
   status          String   @default("draft")
 
   // Traceability Fields (P1)
-  retrieved_at          DateTime?
-  last_checked_at       DateTime?
-  source_last_modified  DateTime?
+  retrieved_at         DateTime?
+  last_checked_at      DateTime?
+  source_last_modified DateTime?
 }
 
 enum ContentType {
@@ -668,6 +727,34 @@ enum ReportStatus {
   REJECTED
 }
 
+enum AidCategoryCode {
+  LOGEMENT
+  SANTE
+  HANDICAP
+  EMPLOI
+  FAMILLE
+  ETUDES
+  MOBILITE
+  ENERGIE
+  ALIMENTATION
+  JUSTICE
+  NUMERIQUE
+  AUTRE
+}
+
+enum AidStatus {
+  DRAFT
+  PUBLISHED
+  ARCHIVED
+}
+
+enum IngestJobStatus {
+  PENDING
+  PROCESSING
+  COMPLETED
+  ERROR
+}
+
 model ContentReport {
   id            String       @id @default(cuid())
   contentType   ContentType
@@ -683,4 +770,3 @@ model ContentReport {
   @@index([contentType, contentId])
   @@index([status, createdAt])
 }
-

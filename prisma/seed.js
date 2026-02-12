@@ -1,79 +1,369 @@
+import crypto from 'crypto';
 import { PrismaClient } from '@prisma/client';
 
 const prisma = new PrismaClient();
 
-async function main() {
-  console.log('Seeding...');
+const AID_CATEGORY_TAXONOMY = [
+  { code: 'LOGEMENT', slug: 'logement', label: 'Logement' },
+  { code: 'SANTE', slug: 'sante', label: 'Santé' },
+  { code: 'HANDICAP', slug: 'handicap', label: 'Handicap' },
+  { code: 'EMPLOI', slug: 'emploi', label: 'Emploi' },
+  { code: 'FAMILLE', slug: 'famille', label: 'Famille' },
+  { code: 'ETUDES', slug: 'etudes', label: 'Études' },
+  { code: 'MOBILITE', slug: 'mobilite', label: 'Mobilité' },
+  { code: 'ENERGIE', slug: 'energie', label: 'Énergie' },
+  { code: 'ALIMENTATION', slug: 'alimentation', label: 'Alimentation' },
+  { code: 'JUSTICE', slug: 'justice', label: 'Justice' },
+  { code: 'NUMERIQUE', slug: 'numerique', label: 'Numérique' },
+  { code: 'AUTRE', slug: 'autre', label: 'Autre' },
+];
 
-  // Create minimal taxonomy
-  const category = await prisma.aidCategory.upsert({
-    where: { slug: 'aide-financiere' },
-    update: {},
-    create: {
-      slug: 'aide-financiere',
-      label: 'Aide Financière',
+const SITUATIONS = [
+  { code: 'etudiant', label: 'Étudiant' },
+  { code: 'demandeur_emploi', label: "Demandeur d'emploi" },
+  { code: 'handicap', label: 'Situation de handicap' },
+  { code: 'parent_isole', label: 'Parent isolé' },
+  { code: 'jeune_actif', label: 'Jeune actif' },
+  { code: 'senior', label: 'Senior' },
+  { code: 'faibles_revenus', label: 'Faibles revenus' },
+  { code: 'aidant', label: 'Aidant familial' },
+  { code: 'sans_domicile', label: 'Sans domicile' },
+  { code: 'resident_alsace', label: 'Résident Alsace' },
+];
+
+const GOLDEN_AIDS = [
+  {
+    slug: 'apl-etudiant-strasbourg',
+    title: 'APL étudiant à Strasbourg',
+    description: "Aide au logement pour réduire le loyer d'un étudiant à Strasbourg.",
+    content:
+      "L'APL est une aide versée par la CAF pour aider à payer le loyer étudiant. Vérifiez les plafonds de ressources, le type de bail et la localisation du logement à Strasbourg.",
+    categoryCode: 'LOGEMENT',
+    geoScope: 'DEPARTMENTAL',
+    situations: ['etudiant', 'resident_alsace', 'faibles_revenus'],
+    keywords: ['apl', 'caf', 'loyer', 'etudiant', 'strasbourg', 'logement'],
+    sourceUrl: 'https://www.caf.fr/',
+    sourceOrg: 'CAF',
+    financials: { min: 50, max: 320, currency: 'EUR', periodicity: 'MONTH' },
+    eligibility: { ageMin: 18, studentStatusRequired: true, residence: 'FR' },
+  },
+  {
+    slug: 'visale-garantie-logement-jeunes',
+    title: 'Garantie Visale pour les jeunes',
+    description: 'Garantie gratuite pour couvrir les loyers impayés.',
+    content:
+      'Visale sécurise le bailleur et facilite l’accès au logement des jeunes actifs et étudiants.',
+    categoryCode: 'LOGEMENT',
+    geoScope: 'NATIONAL',
+    situations: ['etudiant', 'jeune_actif'],
+    keywords: ['visale', 'garantie', 'loyer', 'logement', 'jeune'],
+    sourceUrl: 'https://www.visale.fr/',
+    sourceOrg: 'Action Logement',
+    financials: { type: 'GARANTIE', cap: 'Selon barème Visale' },
+    eligibility: { ageMax: 30, residence: 'FR' },
+  },
+  {
+    slug: 'complementaire-sante-solidaire',
+    title: 'Complémentaire santé solidaire',
+    description: 'Aide pour réduire les dépenses de santé des ménages modestes.',
+    content:
+      'La complémentaire santé solidaire prend en charge la part complémentaire des dépenses de santé selon les ressources.',
+    categoryCode: 'SANTE',
+    geoScope: 'NATIONAL',
+    situations: ['faibles_revenus'],
+    keywords: ['sante', 'css', 'mutuelle', 'soins'],
+    sourceUrl: 'https://www.ameli.fr/',
+    sourceOrg: 'Assurance Maladie',
+    financials: { copay: '0 à faible', currency: 'EUR' },
+    eligibility: { resourceCeiling: 'CSS', residence: 'FR' },
+  },
+  {
+    slug: 'prestation-compensation-handicap',
+    title: 'Prestation de compensation du handicap (PCH)',
+    description: 'Aide financière liée aux besoins de compensation du handicap.',
+    content:
+      'La PCH finance certaines dépenses liées au handicap: aide humaine, technique, aménagement du logement ou du véhicule.',
+    categoryCode: 'HANDICAP',
+    geoScope: 'NATIONAL',
+    situations: ['handicap'],
+    keywords: ['pch', 'handicap', 'mdph', 'compensation'],
+    sourceUrl: 'https://www.service-public.fr/',
+    sourceOrg: 'Service Public',
+    financials: { type: 'VARIABLE', currency: 'EUR' },
+    eligibility: { mdphEvaluation: true },
+  },
+  {
+    slug: 'rsa-parent-isole',
+    title: 'RSA pour parent isolé',
+    description: 'Revenu minimum pour les parents isolés selon ressources.',
+    content:
+      'Le RSA parent isolé soutient les personnes assumant seules la charge d’un ou plusieurs enfants.',
+    categoryCode: 'FAMILLE',
+    geoScope: 'NATIONAL',
+    situations: ['parent_isole', 'faibles_revenus'],
+    keywords: ['rsa', 'parent', 'isole', 'revenu'],
+    sourceUrl: 'https://www.caf.fr/',
+    sourceOrg: 'CAF',
+    financials: { type: 'MENSUEL', currency: 'EUR' },
+    eligibility: { isolatedParent: true, residence: 'FR' },
+  },
+  {
+    slug: 'prime-activite-salarie-modeste',
+    title: "Prime d'activité pour salarié modeste",
+    description: "Complément de revenu pour travailleurs à revenus modestes.",
+    content:
+      "La prime d'activité est versée par la CAF ou la MSA selon la situation professionnelle et les ressources du foyer.",
+    categoryCode: 'EMPLOI',
+    geoScope: 'NATIONAL',
+    situations: ['jeune_actif', 'faibles_revenus'],
+    keywords: ['prime activite', 'emploi', 'salaire'],
+    sourceUrl: 'https://www.caf.fr/',
+    sourceOrg: 'CAF',
+    financials: { type: 'MENSUEL', currency: 'EUR' },
+    eligibility: { activityRequired: true, residence: 'FR' },
+  },
+  {
+    slug: 'bourse-crous-alsace',
+    title: "Bourse CROUS d'Alsace",
+    description: 'Bourse sur critères sociaux pour les étudiants en Alsace.',
+    content:
+      "La bourse CROUS dépend des revenus du foyer, de l'éloignement et du nombre d'enfants à charge.",
+    categoryCode: 'ETUDES',
+    geoScope: 'REGIONAL',
+    situations: ['etudiant', 'resident_alsace'],
+    keywords: ['bourse', 'crous', 'etudiant', 'alsace'],
+    sourceUrl: 'https://www.etudiant.gouv.fr/',
+    sourceOrg: 'CROUS',
+    financials: { type: 'ECHELONS', currency: 'EUR' },
+    eligibility: { enrolledInHigherEducation: true },
+  },
+  {
+    slug: 'aide-mobilite-france-travail',
+    title: 'Aide à la mobilité France Travail',
+    description: 'Prise en charge de frais de déplacement pour retour à l’emploi.',
+    content:
+      "France Travail peut prendre en charge certains frais de mobilité pour une reprise d'emploi, formation ou concours.",
+    categoryCode: 'MOBILITE',
+    geoScope: 'NATIONAL',
+    situations: ['demandeur_emploi'],
+    keywords: ['mobilite', 'france travail', 'transport'],
+    sourceUrl: 'https://www.francetravail.fr/',
+    sourceOrg: 'France Travail',
+    financials: { type: 'REMBOURSEMENT', currency: 'EUR' },
+    eligibility: { registeredJobSeeker: true },
+  },
+  {
+    slug: 'cheque-energie-menages-modestes',
+    title: 'Chèque énergie pour ménages modestes',
+    description: "Aide au paiement des factures d'énergie.",
+    content:
+      "Le chèque énergie aide à payer l'électricité, le gaz ou d'autres combustibles selon le revenu fiscal de référence.",
+    categoryCode: 'ENERGIE',
+    geoScope: 'NATIONAL',
+    situations: ['faibles_revenus'],
+    keywords: ['cheque energie', 'facture', 'gaz', 'electricite'],
+    sourceUrl: 'https://chequeenergie.gouv.fr/',
+    sourceOrg: 'Ministère de la Transition écologique',
+    financials: { min: 48, max: 277, currency: 'EUR', periodicity: 'YEAR' },
+    eligibility: { taxReferenceIncome: true },
+  },
+  {
+    slug: 'pass-numerique-inclusion',
+    title: 'Pass numérique inclusion',
+    description: "Accompagnement et ateliers pour l'autonomie numérique.",
+    content:
+      'Le pass numérique finance des ateliers pour apprendre les démarches administratives en ligne.',
+    categoryCode: 'NUMERIQUE',
+    geoScope: 'NATIONAL',
+    situations: ['senior', 'faibles_revenus'],
+    keywords: ['numerique', 'inclusion', 'atelier', 'demarches en ligne'],
+    sourceUrl: 'https://societenumerique.gouv.fr/',
+    sourceOrg: 'Société Numérique',
+    financials: { type: 'PRISE_EN_CHARGE_ATELIERS' },
+    eligibility: { digitalAutonomySupport: true },
+  },
+];
+
+function citationsFor(aid) {
+  return [
+    {
+      source: aid.sourceOrg,
+      url: aid.sourceUrl,
+      checkedAt: new Date().toISOString(),
+      note: 'Placeholder citation for initial grounding',
     },
-  });
+  ];
+}
 
-  const situation = await prisma.lifeSituation.upsert({
+function stableHash(value) {
+  return crypto.createHash('sha256').update(value).digest('hex');
+}
+
+async function seedTaxonomy() {
+  const categoryMap = new Map();
+
+  for (const category of AID_CATEGORY_TAXONOMY) {
+    const created = await prisma.aidCategory.upsert({
+      where: { slug: category.slug },
+      update: { label: category.label },
+      create: { slug: category.slug, label: category.label },
+    });
+    categoryMap.set(category.code, created);
+  }
+
+  await prisma.lifeSituation.upsert({
     where: { slug: 'je-suis-etudiant' },
-    update: {},
+    update: { label: 'Je suis étudiant' },
     create: {
       slug: 'je-suis-etudiant',
       label: 'Je suis étudiant',
     },
   });
 
-  console.log('Taxonomy seeded.');
+  const situationMap = new Map();
+  for (const situation of SITUATIONS) {
+    const created = await prisma.situation.upsert({
+      where: { code: situation.code },
+      update: { label: situation.label },
+      create: situation,
+    });
+    situationMap.set(situation.code, created);
+  }
 
-  // Aides
-  for (let i = 1; i <= 10; i++) {
-    const slug = `aide-test-${i}`;
-    await prisma.aide.upsert({
-      where: { slug },
-      update: {},
-      create: {
-        slug,
-        titre: `Aide Test ${i}`,
+  return { categoryMap, situationMap };
+}
+
+async function seedGoldenAids(categoryMap, situationMap) {
+  for (const aid of GOLDEN_AIDS) {
+    const now = new Date();
+    const category = categoryMap.get(aid.categoryCode) || null;
+    const sourceHash = stableHash(`${aid.slug}:${aid.sourceUrl}`);
+
+    const created = await prisma.aide.upsert({
+      where: { slug: aid.slug },
+      update: {
+        titre: aid.title,
+        title: aid.title,
+        description: aid.description,
+        content: aid.content,
+        category_code: aid.categoryCode,
+        status_code: 'PUBLISHED',
         statut: 'publie',
-        published_at: new Date(),
-        categoryId: category.id,
-        cest_quoi: `Description pour aide test ${i}. C'est une aide importante.`,
-        pour_qui: 'Tout le monde',
+        published_at: now,
+        categoryId: category?.id || null,
+        cest_quoi: aid.description,
+        pour_qui: aid.situations.join(', '),
+        source_url: aid.sourceUrl,
+        source_name: aid.sourceOrg,
+        source_org: aid.sourceOrg,
+        source_hash: sourceHash,
+        last_checked: now,
+        eligibility: aid.eligibility,
+        financials: aid.financials,
+        citations: citationsFor(aid),
+        qa_score: 95,
+        qa_report: { status: 'seeded', reviewed: true },
+        geo_scope: aid.geoScope,
+        summary_falc: aid.description,
+        mots_cles: aid.keywords,
+        theme: category?.slug || 'autre',
+        sub_theme: aid.categoryCode.toLowerCase(),
+      },
+      create: {
+        slug: aid.slug,
+        titre: aid.title,
+        title: aid.title,
+        description: aid.description,
+        content: aid.content,
+        category_code: aid.categoryCode,
+        status_code: 'PUBLISHED',
+        statut: 'publie',
+        published_at: now,
+        categoryId: category?.id || null,
+        cest_quoi: aid.description,
+        pour_qui: aid.situations.join(', '),
+        source_url: aid.sourceUrl,
+        source_name: aid.sourceOrg,
+        source_org: aid.sourceOrg,
+        source_hash: sourceHash,
+        last_checked: now,
+        eligibility: aid.eligibility,
+        financials: aid.financials,
+        citations: citationsFor(aid),
+        qa_score: 95,
+        qa_report: { status: 'seeded', reviewed: true },
+        geo_scope: aid.geoScope,
+        summary_falc: aid.description,
+        mots_cles: aid.keywords,
+        theme: category?.slug || 'autre',
+        sub_theme: aid.categoryCode.toLowerCase(),
       },
     });
-  }
-  console.log('Aides seeded.');
 
-  // Demarches
-  for (let i = 1; i <= 10; i++) {
+    for (const code of aid.situations) {
+      const situation = situationMap.get(code);
+      if (!situation) continue;
+
+      await prisma.aidSituation.upsert({
+        where: {
+          aidId_situationId: {
+            aidId: created.id,
+            situationId: situation.id,
+          },
+        },
+        update: {},
+        create: {
+          aidId: created.id,
+          situationId: situation.id,
+        },
+      });
+    }
+  }
+}
+
+async function seedDemarches(categoryId) {
+  for (let i = 1; i <= 10; i += 1) {
     const slug = `demarche-test-${i}`;
     await prisma.demarche.upsert({
       where: { slug },
-      update: {},
+      update: {
+        titre: `Démarche Test ${i}`,
+        statut: 'publie',
+        published_at: new Date(),
+        categoryId,
+        description_courte: `Courte description de la démarche ${i}`,
+      },
       create: {
         slug,
         titre: `Démarche Test ${i}`,
         statut: 'publie',
         published_at: new Date(),
-        categoryId: category.id,
+        categoryId,
         description_courte: `Courte description de la démarche ${i}`,
       },
     });
   }
-  console.log('Demarches seeded.');
+}
 
-  // Structures
-  for (let i = 1; i <= 20; i++) {
+async function seedStructures() {
+  for (let i = 1; i <= 20; i += 1) {
     const siret = `000000000000${i.toString().padStart(2, '0')}`;
     await prisma.structure.upsert({
       where: { siret },
-      update: {},
+      update: {
+        nom: `Structure Test ${i}`,
+        statut: 'actif',
+        status: 'actif',
+        ville: 'Paris',
+        departement: '75',
+        type_structure: 'Association',
+        email: `contact@structure${i}.test`,
+      },
       create: {
         nom: `Structure Test ${i}`,
         siret,
-        statut: 'actif', // Visible status
-        status: 'actif', // Internal status
+        statut: 'actif',
+        status: 'actif',
         ville: 'Paris',
         departement: '75',
         type_structure: 'Association',
@@ -81,14 +371,22 @@ async function main() {
       },
     });
   }
-  console.log('Structures seeded.');
+}
 
-  // Actualites
-  for (let i = 1; i <= 10; i++) {
+async function seedActualites() {
+  for (let i = 1; i <= 10; i += 1) {
     const slug = `actu-test-${i}`;
     await prisma.actualite.upsert({
       where: { slug },
-      update: {},
+      update: {
+        titre: `Actualité Test ${i}`,
+        statut: 'publie',
+        published_at: new Date(),
+        date_publication: new Date(),
+        contenu: 'Ceci est une actualité de test.',
+        type_actu: 'info',
+        source_name: 'Test Source',
+      },
       create: {
         slug,
         titre: `Actualité Test ${i}`,
@@ -101,14 +399,32 @@ async function main() {
       },
     });
   }
+}
+
+async function main() {
+  console.log('Seeding...');
+
+  const { categoryMap, situationMap } = await seedTaxonomy();
+  console.log(`Taxonomy seeded (${categoryMap.size} categories, ${situationMap.size} situations).`);
+
+  await seedGoldenAids(categoryMap, situationMap);
+  console.log(`Golden aids seeded (${GOLDEN_AIDS.length}).`);
+
+  await seedDemarches(categoryMap.get('AUTRE')?.id || null);
+  console.log('Demarches seeded.');
+
+  await seedStructures();
+  console.log('Structures seeded.');
+
+  await seedActualites();
   console.log('Actualites seeded.');
 
   console.log('Seeding finished.');
 }
 
 main()
-  .catch((e) => {
-    console.error(e);
+  .catch((error) => {
+    console.error(error);
     process.exit(1);
   })
   .finally(async () => {

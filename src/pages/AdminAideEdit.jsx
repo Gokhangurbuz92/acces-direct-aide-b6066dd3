@@ -8,7 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Loader2, Save, ArrowLeft } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { createPageUrl } from '@/utils';
 import EntityHistory from '@/components/admin/EntityHistory';
 
@@ -19,8 +19,10 @@ const CATEGORIES = [
 ];
 
 export default function AdminAideEdit() {
-  const urlParams = new URLSearchParams(window.location.search);
-  const aideId = urlParams.get('id');
+  const { id: routeId } = useParams();
+  const [searchParams] = useSearchParams();
+  const queryId = searchParams.get('id');
+  const aideId = routeId && routeId !== 'new' ? routeId : queryId;
   const navigate = useNavigate();
   const queryClient = useQueryClient();
 

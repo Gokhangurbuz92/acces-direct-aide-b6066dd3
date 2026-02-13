@@ -10,6 +10,35 @@ export function fromSlug(slug) {
   return slug.split('-').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ');
 }
 
-export function createPageUrl(pageName) {
+const PAGE_URL_MAP = {
+  Home: '/',
+  Aides: '/aides',
+  AideDetail: '/aide/view',
+  Demarches: '/demarches',
+  DemarcheDetail: '/demarches/view',
+  StructureDetail: '/structures/view',
+  Actualites: '/actualites',
+  Contact: '/contact',
+  AppointmentRequest: '/appointments/request',
+  AdminAides: '/admin/aides',
+  AdminAideEdit: '/admin/aides/:id',
+  AdminDemarches: '/admin/demarches',
+  AdminDemarcheEdit: '/admin/demarches/:id',
+  AdminRecentSyncs: '/admin/sync/recent',
+};
+
+function fillRouteParams(routeTemplate, params = {}) {
+  return routeTemplate.replace(/:([A-Za-z0-9_]+)/g, (_match, key) => {
+    const value = params[key];
+    const normalizedValue = value === undefined || value === null || value === '' ? 'new' : String(value);
+    return encodeURIComponent(normalizedValue);
+  });
+}
+
+export function createPageUrl(pageName, params = {}) {
+  const routeTemplate = PAGE_URL_MAP[pageName];
+  if (routeTemplate) {
+    return fillRouteParams(routeTemplate, params);
+  }
   return '/' + toSlug(pageName);
 }

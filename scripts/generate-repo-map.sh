@@ -1,4 +1,5 @@
 #!/bin/bash
+set -e
 
 # Generates a map of the repository files, excluding noise
 # Usage: ./scripts/generate-repo-map.sh

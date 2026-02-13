@@ -14,6 +14,7 @@ Toutes les routes sont préfixées par `/api` (ex: `/api/health`).
 | `/robots` | `_handlers/robots.js` | None | Alias Robots |
 | `/sitemap.xml` | `_handlers/sitemap.js` | None | Sitemap XML dynamique |
 | `/sitemap` | `_handlers/sitemap.js` | None | Alias Sitemap |
+| `/search` | `_handlers/search.js` | None | Recherche hybride aides (POST) |
 | `/upload` | `_handlers/upload.js` | Admin/Pro | Upload de fichiers (mock ou stockage) |
 | `/download` | `_handlers/download.js` | Admin/Pro | Téléchargement / Export |
 | `/taxonomy` | `_handlers/taxonomy.js` | None | Référentiel (tags, catégories) |

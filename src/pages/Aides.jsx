@@ -1,244 +1,260 @@
-import React, { useState, useEffect } from 'react';
-import { useParams, useSearchParams } from 'react-router-dom';
-import { client } from '@/api/client';
-import { useQuery } from '@tanstack/react-query';
-import SearchBar from '@/components/search/SearchBar';
-import AideCard from '@/components/cards/AideCard';
+import React, { useEffect, useMemo, useState } from 'react';
+import { useLocation, useParams, useSearchParams } from 'react-router-dom';
+import { Search, RotateCcw } from 'lucide-react';
 import SEO from '@/components/SEO';
-import { Loader2, Filter, X } from 'lucide-react';
-import EmptyState from '@/components/feedback/EmptyState';
-import { trackBusinessEvent } from '@/utils/analytics';
-import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { Skeleton } from '@/components/ui/skeleton';
+import AidesSearchForm from '@/components/search/AidesSearchForm';
+import SearchResultsList from '@/components/search/SearchResultsList';
+import { isAbortError, normalizeSearchCategory, searchAides } from '@/lib/searchClient';
+
+const DEFAULT_LIMIT = 10;
+const EXAMPLE_SEARCHES = [
+  { query: 'loyer étudiant Strasbourg', category: 'LOGEMENT' },
+  { query: 'aide transport travail', category: 'MOBILITE' },
+  { query: 'complémentaire santé solidaire', category: 'SANTE' },
+];
+
+function parseLimit(value) {
+  const parsed = Number.parseInt(String(value ?? DEFAULT_LIMIT), 10);
+  if (!Number.isFinite(parsed)) return DEFAULT_LIMIT;
+  if (parsed < 1) return 1;
+  if (parsed > 30) return 30;
+  return parsed;
+}
+
+function buildCanonicalSearchParams(query, category, limit) {
+  const params = new URLSearchParams();
+  const trimmedQuery = query.trim();
+  if (trimmedQuery) {
+    params.set('q', trimmedQuery);
+  }
+  if (category) {
+    params.set('cat', category);
+  }
+  params.set('limit', String(parseLimit(limit)));
+  return params;
+}
 
 export default function Aides() {
   const { slug } = useParams();
+  const location = useLocation();
   const [searchParams, setSearchParams] = useSearchParams();
+  const [refreshKey, setRefreshKey] = useState(0);
 
-  // Local state for UI toggles
-  const [isFilterOpen, setIsFilterOpen] = useState(false);
+  const queryFromUrl = (searchParams.get('q') || '').trim();
+  const categoryFromUrl = normalizeSearchCategory(
+    searchParams.get('cat') ||
+    searchParams.get('category') ||
+    searchParams.get('categorie') ||
+    searchParams.get('theme') ||
+    (location.pathname.startsWith('/categories/') ? slug : '')
+  );
+  const limitFromUrl = parseLimit(searchParams.get('limit'));
 
-  // Parse filters from URL
-  const query = searchParams.get('q') || '';
-  // Support 'theme', 'category' (legacy), and 'categorie' (fr)
-  const theme = searchParams.get('theme') || searchParams.get('category') || searchParams.get('categorie') || (window.location.pathname.startsWith('/categories/') ? slug : '');
-  const situation = searchParams.get('situation') || (window.location.pathname.startsWith('/situations/') ? slug : '');
-  const geo = searchParams.get('territoire') || searchParams.get('geo') || '';
-  const audience = searchParams.get('public') || '';
-  const provider = searchParams.get('organisme') || '';
-  const urgent = searchParams.get('urgent') || '';
-  const page = searchParams.get('page') || '1';
+  const [queryInput, setQueryInput] = useState(queryFromUrl);
+  const [categoryInput, setCategoryInput] = useState(categoryFromUrl);
+  const [limitInput, setLimitInput] = useState(limitFromUrl);
+  const [status, setStatus] = useState('idle');
+  const [results, setResults] = useState([]);
+  const [meta, setMeta] = useState({ total: 0, message: null });
+  const [errorMessage, setErrorMessage] = useState('');
 
-  // Fetch Taxonomy for filters (Static base)
-  const { data: taxonomy } = useQuery({
-    queryKey: ['taxonomy'],
-    queryFn: () => client.taxonomy.get(),
-  });
-
-  // Fetch Aides (Server-side)
-  const { data, isLoading } = useQuery({
-    queryKey: ['aides', { query, theme, situation, geo, audience, provider, urgent, page }],
-    queryFn: () => client.entities.Aide.filter({
-      q: query,
-      theme,
-      situation,
-      territoire: geo,
-      public: audience,
-      organisme: provider,
-      urgent,
-      page,
-      pageSize: 12
-    }),
-  });
-
-  // Tracking: Zero Results
   useEffect(() => {
-    if (!isLoading && data && data.items && data.items.length === 0) {
-      trackBusinessEvent('SEARCH_ZERO_RESULTS', {
-        query,
-        theme,
-        situation,
-        geo
+    setQueryInput(queryFromUrl);
+    setCategoryInput(categoryFromUrl);
+    setLimitInput(limitFromUrl);
+  }, [queryFromUrl, categoryFromUrl, limitFromUrl]);
+
+  useEffect(() => {
+    if (!queryFromUrl) {
+      setStatus('idle');
+      setResults([]);
+      setMeta({ total: 0, message: null });
+      setErrorMessage('');
+      return;
+    }
+
+    if (queryFromUrl.length < 2) {
+      setStatus('error');
+      setResults([]);
+      setMeta({ total: 0, message: null });
+      setErrorMessage('Veuillez saisir au moins 2 caractères pour lancer la recherche.');
+      return;
+    }
+
+    let isMounted = true;
+    setStatus('loading');
+    setErrorMessage('');
+
+    searchAides({
+      query: queryFromUrl,
+      category: categoryFromUrl,
+      limit: limitFromUrl,
+    })
+      .then((response) => {
+        if (!isMounted) return;
+
+        setResults(response.results);
+        setMeta(response.meta);
+        setStatus(response.results.length > 0 ? 'success' : 'empty');
+      })
+      .catch((error) => {
+        if (!isMounted || isAbortError(error)) return;
+        setResults([]);
+        setMeta({ total: 0, message: null });
+        setStatus('error');
+        setErrorMessage(error.message || 'La recherche est temporairement indisponible.');
       });
-    }
-  }, [isLoading, data, query, theme, situation, geo]);
 
-  const aides = data?.items || [];
-  const pagination = data?.pagination || {};
-  const facets = data?.facets || {};
+    return () => {
+      isMounted = false;
+    };
+  }, [queryFromUrl, categoryFromUrl, limitFromUrl, refreshKey]);
 
-  const handleFilterChange = (key, value) => {
-    const newParams = new URLSearchParams(searchParams);
-    if (value) {
-      newParams.set(key, value);
-    } else {
-      newParams.delete(key);
+  const liveMessage = useMemo(() => {
+    if (status === 'loading') return 'Recherche en cours...';
+    if (status === 'success') return `${meta.total} résultat${meta.total > 1 ? 's' : ''} trouvé${meta.total > 1 ? 's' : ''}.`;
+    if (status === 'empty') return 'Aucun résultat trouvé.';
+    if (status === 'error') return `Erreur de recherche: ${errorMessage}`;
+    return 'Recherche prête.';
+  }, [status, meta.total, errorMessage]);
+
+  const applySearch = (query, category, limit) => {
+    const normalizedCategory = normalizeSearchCategory(category);
+    const nextParams = buildCanonicalSearchParams(query, normalizedCategory, limit);
+    const currentParams = buildCanonicalSearchParams(queryFromUrl, categoryFromUrl, limitFromUrl);
+
+    setSearchParams(nextParams);
+    if (nextParams.toString() === currentParams.toString()) {
+      setRefreshKey((value) => value + 1);
     }
-    if (key !== 'page') {
-      newParams.set('page', '1');
-    }
-    setSearchParams(newParams);
   };
 
-  const clearFilters = () => {
-    setSearchParams({});
+  const handleSubmit = (event) => {
+    event.preventDefault();
+    applySearch(queryInput, categoryInput, limitInput);
   };
 
-  const getTitle = () => {
-    if (theme && taxonomy) {
-      const cat = taxonomy.categories.find(c => c.slug === theme);
-      if (cat) return `Aides - ${cat.label}`;
-    }
-    return 'Catalogue des aides';
+  const handleRetry = () => {
+    setRefreshKey((value) => value + 1);
   };
 
-  const getDescription = () => {
-    return 'Parcourez le catalogue complet des aides sociales et dispositifs d\'accompagnement disponibles.';
+  const handleExampleClick = (example) => {
+    setQueryInput(example.query);
+    setCategoryInput(example.category);
+    applySearch(example.query, example.category, limitInput);
   };
-
-  const currentPath = theme ? `/categories/${theme}` : '/aides';
 
   return (
-    <div className="min-h-screen bg-slate-50">
-      <SEO title={getTitle()} description={getDescription()} path={currentPath} />
+    <main id="main-content" className="min-h-screen bg-slate-50 pb-12">
+      <SEO
+        title="Aides - Recherche intelligente"
+        description="Recherchez rapidement des aides sociales par mots-clés et catégorie."
+        path="/aides"
+      />
 
-      {/* Search Header */}
-      <div className="bg-white border-b border-slate-200 py-6 sticky top-0 z-10 shadow-sm">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 flex flex-col md:flex-row md:items-center gap-4">
-          <h1 className="text-2xl font-bold text-slate-900 whitespace-nowrap hidden lg:block">
-            {getTitle()}
-          </h1>
-          <div className="flex-1">
-            <SearchBar
-              key={query} // Force remount when query changes from URL
-              onSearch={(p) => handleFilterChange('q', p.query)}
-              initialValue={query}
-              compact
-            />
-          </div>
-          <Button
-            variant="outline"
-            className="md:hidden"
-            onClick={() => setIsFilterOpen(!isFilterOpen)}
-          >
-            <Filter className="h-4 w-4 mr-2" />
-            Filtres
-          </Button>
-        </div>
-      </div>
+      <div className="mx-auto w-full max-w-6xl px-4 pt-8 sm:px-6 lg:pt-12">
+        <header className="mb-6">
+          <h1 className="text-3xl font-bold text-slate-900">Moteur de recherche des aides</h1>
+          <p className="mt-2 max-w-3xl text-slate-600">
+            Saisissez votre besoin pour trouver rapidement des aides pertinentes.
+          </p>
+        </header>
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8">
-        <div className="flex gap-8">
-          {/* Sidebar Filters */}
-          <aside className={`
-            fixed inset-0 z-20 bg-white p-6 md:relative md:bg-transparent md:p-0 md:block w-72 shrink-0
-            ${isFilterOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'}
-            transition-transform duration-200 ease-in-out
-          `}>
-            <div className="flex items-center justify-between mb-6 md:hidden">
-              <h2 className="text-xl font-bold">Filtres</h2>
-              <Button variant="ghost" size="icon" onClick={() => setIsFilterOpen(false)}>
-                <X className="h-6 w-6" />
-              </Button>
-            </div>
+        <AidesSearchForm
+          query={queryInput}
+          category={categoryInput}
+          limit={limitInput}
+          onQueryChange={setQueryInput}
+          onCategoryChange={setCategoryInput}
+          onLimitChange={setLimitInput}
+          onSubmit={handleSubmit}
+          isLoading={status === 'loading'}
+        />
 
-            <div className="space-y-8">
-              {/* Thèmes (Facets or Taxonomy) */}
-              <div>
-                <h3 className="text-sm font-semibold text-slate-900 uppercase tracking-wider mb-4">Thèmes</h3>
-                <div className="space-y-1">
-                  <button onClick={() => handleFilterChange('theme', '')} className={`w-full text-left text-sm px-2 py-1.5 rounded ${!theme ? 'bg-slate-100 font-medium' : 'hover:bg-slate-50'}`}>Tous</button>
-                  {(Object.keys(facets.themes || {}).length > 0 ? Object.entries(facets.themes || {}) : (taxonomy?.categories || []).map(c => [c.slug, c.count])).map(([slug, count]) => (
-                     <button
-                       key={slug}
-                       onClick={() => handleFilterChange('theme', slug)}
-                       className={`w-full text-left text-sm px-2 py-1.5 rounded flex justify-between ${theme === slug ? 'bg-blue-50 text-blue-700 font-medium' : 'hover:bg-slate-50 text-slate-600'}`}
-                     >
-                       <span className="truncate">{slug}</span> {/* TODO: Map slug to Label using taxonomy */}
-                       <span className="text-xs text-slate-400 ml-2">{count}</span>
-                     </button>
-                  ))}
+        <p className="sr-only" role="status" aria-live="polite">
+          {liveMessage}
+        </p>
+
+        <section className="mt-8">
+          {status === 'idle' && (
+            <div className="rounded-2xl border border-dashed border-slate-300 bg-white p-6" data-testid="search-idle-state">
+              <div className="mb-4 flex items-center gap-3">
+                <div className="rounded-full bg-blue-100 p-2 text-blue-700">
+                  <Search className="h-5 w-5" />
                 </div>
+                <p className="font-semibold text-slate-900">Exemples de recherche</p>
               </div>
-
-              {/* Territoires */}
-              {facets.territoires && Object.keys(facets.territoires).length > 0 && (
-                <div>
-                   <h3 className="text-sm font-semibold text-slate-900 uppercase tracking-wider mb-4">Territoires</h3>
-                   <div className="space-y-1">
-                      {Object.entries(facets.territoires).map(([t, count]) => (
-                        <button
-                          key={t}
-                          onClick={() => handleFilterChange('territoire', t)}
-                          className={`w-full text-left text-sm px-2 py-1.5 rounded flex justify-between ${geo === t ? 'bg-blue-50 text-blue-700 font-medium' : 'hover:bg-slate-50 text-slate-600'}`}
-                        >
-                          <span className="truncate">{t}</span>
-                          <span className="text-xs text-slate-400 ml-2">{count}</span>
-                        </button>
-                      ))}
-                   </div>
-                </div>
-              )}
-            </div>
-          </aside>
-
-          {/* Main Content */}
-          <main className="flex-1">
-            {/* Active Filters Bar */}
-            {(theme || geo || query) && (
-              <div className="flex flex-wrap items-center gap-2 mb-6">
-                <span className="text-sm text-slate-500 mr-2">Filtres actifs :</span>
-                {theme && <Badge variant="secondary" className="pl-3 pr-2 py-1">Thème : {theme} <X className="h-3 w-3 ml-2 cursor-pointer" onClick={() => handleFilterChange('theme', '')} /></Badge>}
-                {geo && <Badge variant="secondary" className="pl-3 pr-2 py-1">Territoire : {geo} <X className="h-3 w-3 ml-2 cursor-pointer" onClick={() => handleFilterChange('territoire', '')} /></Badge>}
-                {query && <Badge variant="secondary" className="pl-3 pr-2 py-1">Recherche : {query} <X className="h-3 w-3 ml-2 cursor-pointer" onClick={() => handleFilterChange('q', '')} /></Badge>}
-                <Button variant="ghost" size="sm" onClick={clearFilters} className="text-xs text-blue-600">Tout effacer</Button>
-              </div>
-            )}
-
-            {isLoading ? (
-              <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {[...Array(6)].map((_, i) => (
-                  <div key={i} className="bg-white rounded-xl h-64 animate-pulse shadow-sm border border-slate-100" />
+              <p className="text-sm text-slate-600">
+                Lancez une requête avec une expression naturelle, puis affinez avec la catégorie.
+              </p>
+              <div className="mt-4 flex flex-wrap gap-2">
+                {EXAMPLE_SEARCHES.map((example) => (
+                  <Button
+                    key={`${example.query}-${example.category}`}
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => handleExampleClick(example)}
+                  >
+                    {example.query}
+                  </Button>
                 ))}
               </div>
-            ) : aides.length > 0 ? (
-              <>
-                <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-                  {aides.map((aide) => (
-                    <AideCard key={aide.id} aide={aide} />
-                  ))}
-                </div>
+            </div>
+          )}
 
-                {/* Pagination */}
-                {pagination.totalPages > 1 && (
-                  <div className="flex justify-center mt-12 gap-2">
-                    <Button
-                      variant="outline"
-                      disabled={pagination.page <= 1}
-                      onClick={() => handleFilterChange('page', pagination.page - 1)}
-                    > Précédent </Button>
-                    <span className="flex items-center px-4 text-sm text-slate-600">
-                      Page {pagination.page} sur {pagination.totalPages}
-                    </span>
-                    <Button
-                      variant="outline"
-                      disabled={pagination.page >= pagination.totalPages}
-                      onClick={() => handleFilterChange('page', pagination.page + 1)}
-                    > Suivant </Button>
-                  </div>
-                )}
-              </>
-            ) : (
-              <EmptyState
-                title="Aucune aide trouvée"
-                message="Essayez de modifier vos filtres ou d'élargir votre recherche. Vous pouvez aussi consulter l'annuaire des structures."
-                actionLabel="Réinitialiser les filtres"
-                onAction={clearFilters}
-              />
-            )}
-          </main>
-        </div>
+          {status === 'loading' && (
+            <div className="space-y-3" data-testid="search-loading-state">
+              {[1, 2, 3].map((value) => (
+                <div key={value} className="rounded-xl border border-slate-200 bg-white p-5">
+                  <Skeleton className="h-4 w-24" />
+                  <Skeleton className="mt-3 h-5 w-3/4" />
+                  <Skeleton className="mt-2 h-4 w-full" />
+                  <Skeleton className="mt-2 h-4 w-2/3" />
+                </div>
+              ))}
+            </div>
+          )}
+
+          {status === 'error' && (
+            <div
+              className="rounded-2xl border border-red-200 bg-red-50 p-6 text-red-900"
+              role="alert"
+              data-testid="search-error-state"
+            >
+              <h2 className="text-lg font-semibold">La recherche a rencontré une erreur</h2>
+              <p className="mt-2 text-sm">{errorMessage}</p>
+              <Button type="button" variant="outline" className="mt-4" onClick={handleRetry}>
+                <RotateCcw className="mr-2 h-4 w-4" />
+                Réessayer
+              </Button>
+            </div>
+          )}
+
+          {status === 'empty' && (
+            <div className="rounded-2xl border border-slate-200 bg-white p-6" data-testid="search-empty-state">
+              <h2 className="text-lg font-semibold text-slate-900">Aucun résultat trouvé</h2>
+              <p className="mt-2 text-sm text-slate-600">
+                Essayez avec d&apos;autres mots-clés, une catégorie différente, ou une limite plus large.
+              </p>
+              <Button type="button" variant="outline" className="mt-4" onClick={handleRetry}>
+                Relancer la recherche
+              </Button>
+            </div>
+          )}
+
+          {status === 'success' && (
+            <>
+              <p className="mb-4 text-sm text-slate-600" data-testid="search-success-state">
+                {meta.total} résultat{meta.total > 1 ? 's' : ''} affiché{meta.total > 1 ? 's' : ''}.
+              </p>
+              <SearchResultsList results={results} />
+            </>
+          )}
+        </section>
       </div>
-    </div>
+    </main>
   );
 }

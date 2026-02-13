@@ -30,6 +30,11 @@ Ce document recense les routes définies dans `src/pages/index.jsx` et leur poli
 | `/contact` | `Contact.jsx` | Formulaire de contact |
 | `/proposer-une-structure` | `SuggestStructure.jsx` | Suggérer un ajout |
 
+### Paramètres de recherche (`/aides`)
+- `q`: requête texte utilisateur.
+- `cat`: catégorie normalisée (`LOGEMENT`, `SANTE`, etc.).
+- `limit`: nombre de résultats (max 30).
+
 ## Routes Pro (`/pro`)
 Nécessite une authentification Pro (Token).
 | Route | Composant | Description |

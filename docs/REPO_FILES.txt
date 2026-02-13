@@ -84,6 +84,7 @@
 ./api/_handlers/upload.js
 ./api/_handlers/version.js
 ./api/_utils/auth.js
+./api/_utils/build-info.js
 ./api/_utils/cache.js
 ./api/_utils/cachePolicy.js
 ./api/_utils/cronAuth.js
@@ -150,6 +151,7 @@
 ./docs/CI_PIPELINE.md
 ./docs/CRITICAL_PATHS.md
 ./docs/CRON_SECURITY.md
+./docs/DEV_DB_LOCAL.md
 ./docs/FALC_FIELDS_PRIORITY.md
 ./docs/FALC_GUIDE.md
 ./docs/GO-LIVE.md
@@ -330,6 +332,8 @@
 ./prisma/migrations/20260207_p0_db_drift_fix/migration.sql
 ./prisma/migrations/20260208030304_add_content_report/migration.sql
 ./prisma/migrations/20260208031043_add_territory_fields/migration.sql
+./prisma/migrations/20260212161000_add_quality_score/migration.sql
+./prisma/migrations/20260212162500_add_quality_score_demarche/migration.sql
 ./prisma/migrations/20260228000000_ensure_unaccent/migration.sql
 ./prisma/migrations/20260228000001_add_fts_indexes/migration.sql
 ./prisma/migrations/20260228000002_add_missing_aide_fields/migration.sql
@@ -446,6 +450,7 @@
 ./scripts/debug-security.mjs
 ./scripts/dev-demo-setup.js
 ./scripts/diagnostic-env.js
+./scripts/doctor-env.mjs
 ./scripts/enable-unaccent.js
 ./scripts/final_verify.sh
 ./scripts/fix_extensions.py

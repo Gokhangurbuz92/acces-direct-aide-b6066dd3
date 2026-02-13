@@ -175,7 +175,7 @@ export default function AdminAides() {
                             <Eye className="h-4 w-4" />
                           </Button>
                         </Link>
-                        <Link to={createPageUrl('AdminAideEdit') + '?id=' + aide.id}>
+                        <Link to={createPageUrl('AdminAideEdit', { id: aide.id })}>
                           <Button variant="ghost" size="sm">
                             <Edit className="h-4 w-4" />
                           </Button>

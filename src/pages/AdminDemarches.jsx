@@ -51,7 +51,7 @@ export default function AdminDemarches() {
                         <h1 className="text-2xl font-bold text-slate-900">Gestion des Démarches</h1>
                         <p className="text-slate-600">Gérez les fiches démarches et checklists.</p>
                     </div>
-                    <Link to={createPageUrl('AdminDemarcheEdit')}>
+                    <Link to={createPageUrl('AdminDemarcheEdit', { id: 'new' })}>
                         <Button>
                             <Plus className="mr-2 h-4 w-4" /> Créer une démarche
                         </Button>
@@ -99,7 +99,7 @@ export default function AdminDemarches() {
                                                     <Link to={createPageUrl('DemarcheDetail') + `?id=${demarche.id}`} target="_blank">
                                                         <Button size="sm" variant="ghost"><Eye className="h-4 w-4" /></Button>
                                                     </Link>
-                                                    <Link to={createPageUrl('AdminDemarcheEdit') + `?id=${demarche.id}`}>
+                                                    <Link to={createPageUrl('AdminDemarcheEdit', { id: demarche.id })}>
                                                         <Button size="sm" variant="ghost"><Edit className="h-4 w-4" /></Button>
                                                     </Link>
                                                     <Button

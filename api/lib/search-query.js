@@ -107,6 +107,9 @@ export async function searchAides(prisma, params) {
   if (q && (sort === 'pertinence' || sortField === 'pertinence')) {
     selectRank = Prisma.sql`, ts_rank_cd("search_vector", plainto_tsquery('french', unaccent(${q}))) as rank`;
     orderBy = Prisma.sql`ORDER BY rank DESC, published_at DESC`;
+  } else if (sortField === 'pertinence') {
+    // Relevance sorting requires q. Without q we fallback to date.
+    orderBy = Prisma.sql`ORDER BY published_at DESC, id ASC`;
   } else if (sortField && SAFE_SORT_COLUMNS[sortField]) {
     const dbColumn = SAFE_SORT_COLUMNS[sortField];
     if (sortDirection === 'DESC') {
@@ -121,7 +124,7 @@ export async function searchAides(prisma, params) {
 
   // 4. Execution
   const itemsQuery = Prisma.sql`
-    SELECT * ${selectRank}
+    SELECT id ${selectRank}
     FROM "Aide"
     ${whereClause}
     ${orderBy}
@@ -234,7 +237,7 @@ export async function searchDemarches(prisma, params) {
     orderBy = Prisma.sql`ORDER BY published_at DESC, id ASC`;
   }
 
-  const itemsQuery = Prisma.sql`SELECT * ${selectRank} FROM "Demarche" ${whereClause} ${orderBy} LIMIT ${LIMIT} OFFSET ${OFFSET}`;
+  const itemsQuery = Prisma.sql`SELECT id ${selectRank} FROM "Demarche" ${whereClause} ${orderBy} LIMIT ${LIMIT} OFFSET ${OFFSET}`;
   const countQuery = Prisma.sql`SELECT count(*) as total FROM "Demarche" ${whereClause}`;
 
   const [items, countResult] = await Promise.all([
@@ -304,7 +307,7 @@ export async function searchStructures(prisma, params) {
     orderBy = Prisma.sql`ORDER BY nom ASC, id ASC`;
   }
 
-  const itemsQuery = Prisma.sql`SELECT * ${selectRank} FROM "Structure" ${whereClause} ${orderBy} LIMIT ${LIMIT} OFFSET ${OFFSET}`;
+  const itemsQuery = Prisma.sql`SELECT id ${selectRank} FROM "Structure" ${whereClause} ${orderBy} LIMIT ${LIMIT} OFFSET ${OFFSET}`;
   const countQuery = Prisma.sql`SELECT count(*) as total FROM "Structure" ${whereClause}`;
 
   const [items, countResult] = await Promise.all([

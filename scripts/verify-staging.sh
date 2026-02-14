@@ -19,7 +19,7 @@ else
 fi
 
 echo -e "\n3️⃣  Admin Security - With Bad Token"
-STATUS=$(curl -s -o /dev/null -w "%{http_code}" -H "Authorization: Bearer BAD_TOKEN" "$URL/api/admin/inbox")
+STATUS=$(curl -s -o /dev/null -w "%{http_code}" -H "Authorization: Bearer BAD_TOKEN" "$URL/api/admin/inbox") # gitleaks:allow
 echo "Status: $STATUS"
 if [ "$STATUS" == "401" ] || [ "$STATUS" == "403" ]; then
     echo "✅ PASS (Blocked)"

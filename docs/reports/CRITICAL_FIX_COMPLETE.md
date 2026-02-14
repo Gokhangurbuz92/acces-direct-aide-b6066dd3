@@ -140,8 +140,8 @@ search_vector =
 ### ⚠️ IMPORTANT: Migration déjà appliquée sur la base de production
 
 La migration a été appliquée directement sur la base de données de production Neon:
-- **Host:** `ep-summer-cloud-ag14ucwz.c-2.eu-central-1.aws.neon.tech`
-- **Database:** `neondb`
+- **Host:** `<NEON_HOST>`
+- **Database:** `<DB_NAME>`
 - **Date:** 7 février 2026
 
 ### Actions requises sur Vercel:

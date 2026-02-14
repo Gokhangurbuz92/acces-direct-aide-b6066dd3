@@ -19,7 +19,7 @@
 
 #### Production & Preview
 ```bash
-POSTGRES_URL_NON_POOLING=postgresql://neondb_owner:PASSWORD@ep-summer-cloud-ag14ucwz.eu-central-1.aws.neon.tech/neondb?sslmode=require
+POSTGRES_URL_NON_POOLING=postgresql://<DB_USER>@<DB_HOST>/<DB_NAME>?sslmode=require
 ```
 
 **Environnements à configurer:**
@@ -31,11 +31,11 @@ POSTGRES_URL_NON_POOLING=postgresql://neondb_owner:PASSWORD@ep-summer-cloud-ag14
 - [ ] Variable existe
 - [ ] Pas d'espace dans le mot de passe
 - [ ] URL complète (pas tronquée)
-- [ ] Endpoint correct: `ep-summer-cloud-ag14ucwz`
+- [ ] Endpoint correct: `<NEON_ENDPOINT>`
 
 #### Development (optionnel)
 ```bash
-POSTGRES_URL_NON_POOLING=postgresql://neondb_owner:PASSWORD@ep-crimson-night-ag7jy3cm.eu-central-1.aws.neon.tech/neondb?sslmode=require
+POSTGRES_URL_NON_POOLING=postgresql://<DB_USER>@<DB_HOST>/<DB_NAME>?sslmode=require
 ```
 
 **Environnements à configurer:**
@@ -43,7 +43,7 @@ POSTGRES_URL_NON_POOLING=postgresql://neondb_owner:PASSWORD@ep-crimson-night-ag7
 
 **Comment vérifier:**
 - [ ] Variable existe (si utilisée)
-- [ ] Endpoint correct: `ep-crimson-night-ag7jy3cm`
+- [ ] Endpoint correct: `<NEON_ENDPOINT>`
 
 ---
 
@@ -205,8 +205,8 @@ password authentication failed
 
 **Solution:**
 - Vérifier l'endpoint dans la connection string
-- PROD: `ep-summer-cloud-ag14ucwz`
-- DEV: `ep-crimson-night-ag7jy3cm`
+- PROD: `<NEON_ENDPOINT>`
+- DEV: `<NEON_ENDPOINT>`
 
 ---
 
@@ -250,7 +250,7 @@ Copiez ce template et remplissez-le:
 ✅ POSTGRES_URL_NON_POOLING
    - Production: ✅ / ❌
    - Preview: ✅ / ❌
-   - Endpoint: ep-summer-cloud-ag14ucwz
+   - Endpoint: <NEON_ENDPOINT>
    - Pas d'espace: ✅ / ❌
 
 ✅ CRON_SECRET

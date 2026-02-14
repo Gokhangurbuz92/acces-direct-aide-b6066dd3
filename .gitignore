@@ -30,6 +30,7 @@ dist-ssr
 .env.local
 .env.*
 !.env.example
+!.env.template
 
 # Next.js / Vercel
 .vercel
@@ -80,3 +81,4 @@ scripts/check-db-extensions.cjs
 *_CREDENTIALS.md
 *_SECRETS.md
 .env*.local
+!docs/ROTATE_SECRETS.md

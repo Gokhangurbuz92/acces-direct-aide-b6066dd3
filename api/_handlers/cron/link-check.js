@@ -1,4 +1,4 @@
-import { isCronAuthorized } from '../../_utils/cronAuth.js';
+import { getCronAuth } from '../../_utils/cronAuth.js';
 import prisma from '../../_utils/prisma.js';
 import { logger } from '../../lib/logger.js';
 import crypto from 'crypto';
@@ -12,7 +12,11 @@ import crypto from 'crypto';
  * @param {import('../../_utils/http-types').ApiResponse} res
  */
 export default async function handler(req, res) {
-    if (!isCronAuthorized(req)) {
+    const auth = getCronAuth(req);
+    if (!auth.ok) {
+        if (auth.reason === 'missing_secret') {
+            return res.status(500).json({ error: 'CRON_SECRET is not configured' });
+        }
         logger.warn('Unauthorized link-check attempt');
         return res.status(401).json({ error: 'Unauthorized' });
     }

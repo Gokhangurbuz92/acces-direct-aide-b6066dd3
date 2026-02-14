@@ -30,39 +30,71 @@ export function getBearer(req) {
 }
 
 /**
- * Standardized Cron Authorization Check
- * Accepts:
- * 1. Authorization: Bearer <CRON_SECRET>
- * 2. ?secret=<CRON_SECRET>
- * 3. x-vercel-cron: 1
+ * Extract cron secret from supported inputs, in priority order:
+ * 1) x-cron-secret header (preferred, avoids proxy/header stripping issues)
+ * 2) Authorization: Bearer <token>
+ * 3) ?secret=<token> (legacy fallback; avoid in production because it may appear in logs)
+ *
+ * @param {any} req
+ * @returns {string|null}
  */
-export function isCronAuthorized(req) {
-    if (!process.env.CRON_SECRET) {
-        console.error("CRITICAL: CRON_SECRET is not defined in environment.");
-        return false;
+export function getCronToken(req) {
+    const headerSecret = getHeader(req, 'x-cron-secret');
+    if (headerSecret != null) {
+        const s = String(headerSecret).trim();
+        if (s) return s;
     }
 
-    // 1. Query Params (supports generic Node req or Vercel req.query)
-    let secretQuery = req.query?.secret;
-    if (!secretQuery && req.url) {
+    const bearer = getBearer(req);
+    if (bearer) return bearer;
+
+    // Legacy: query param (supports generic Node req or Vercel req.query)
+    let secretQuery = req?.query?.secret;
+    if (!secretQuery && req?.url) {
         // Fallback parsing for manual calls or raw URLs
         try {
             const proto = getHeader(req, 'x-forwarded-proto') || 'http';
             const host = getHeader(req, 'host') || 'localhost';
             secretQuery = new URL(req.url, `${proto}://${host}`).searchParams.get('secret');
-        } catch (e) {
+        } catch {
             // ignore URL parse errors
         }
     }
 
-    // 2. Bearer Token
-    const bearer = getBearer(req);
+    if (secretQuery != null) {
+        const s = String(secretQuery).trim();
+        if (s) return s;
+    }
 
-    // 3. Vercel Cron Header
-    const vercelCronHeader = getHeader(req, 'x-vercel-cron');
+    return null;
+}
 
-    // Matching logic
-    const token = bearer || secretQuery;
+/**
+ * Standardized Cron Authorization Check
+ * Accepts:
+ * 1. x-cron-secret: <CRON_SECRET>
+ * 2. Authorization: Bearer <CRON_SECRET>
+ * 3. ?secret=<CRON_SECRET> (legacy fallback)
+ */
+export function isCronAuthorized(req) {
+    return getCronAuth(req).ok;
+}
 
-    return (token === process.env.CRON_SECRET) || (vercelCronHeader === '1');
+/**
+ * Detailed cron authorization result so handlers can fail closed.
+ *
+ * @param {any} req
+ * @returns {{ ok: true } | { ok: false, reason: 'missing_secret' | 'unauthorized' }}
+ */
+export function getCronAuth(req) {
+    if (!process.env.CRON_SECRET) {
+        return { ok: false, reason: 'missing_secret' };
+    }
+
+    const token = getCronToken(req);
+    if (token && token === process.env.CRON_SECRET) {
+        return { ok: true };
+    }
+
+    return { ok: false, reason: 'unauthorized' };
 }

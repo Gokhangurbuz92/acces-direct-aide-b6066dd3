@@ -4,7 +4,7 @@
  * Script de diagnostic PostgreSQL - Base de données DEVELOPMENT
  * 
  * Teste la connexion et compte le contenu publié
- * Endpoint: ep-crimson-night-ag7jy3cm (Development)
+ * Endpoint: <NEON_ENDPOINT> (Development)
  * 
  * IMPORTANT: Ce script utilise les variables d'environnement
  * Définir DATABASE_URL avant d'exécuter
@@ -19,7 +19,7 @@ if (!DEV_URL) {
   console.error('❌ ERREUR: Variable d\'environnement manquante');
   console.error('   Définir DATABASE_URL ou POSTGRES_URL_NON_POOLING\n');
   console.error('Exemple:');
-  console.error('   export DATABASE_URL="postgresql://user:password@host/db"');
+  console.error('   export DATABASE_URL="postgresql://USER@HOST/DB"');
   console.error('   node scripts/test-db-development.cjs\n');
   process.exit(1);
 }

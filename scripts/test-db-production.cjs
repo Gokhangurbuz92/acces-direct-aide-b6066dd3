@@ -4,7 +4,7 @@
  * Script de diagnostic PostgreSQL - Base de données PRODUCTION/PREVIEW
  * 
  * Teste la connexion et compte le contenu publié
- * Endpoint: ep-summer-cloud-ag14ucwz (Production et Preview)
+ * Endpoint: <NEON_ENDPOINT> (Production et Preview)
  * 
  * IMPORTANT: Ce script utilise les variables d'environnement
  * Définir POSTGRES_URL_NON_POOLING avant d'exécuter
@@ -19,7 +19,7 @@ if (!PROD_URL) {
   console.error('❌ ERREUR: Variable d\'environnement manquante');
   console.error('   Définir POSTGRES_URL_NON_POOLING ou DATABASE_URL_UNPOOLED\n');
   console.error('Exemple:');
-  console.error('   export POSTGRES_URL_NON_POOLING="postgresql://user:password@host/db"');
+  console.error('   export POSTGRES_URL_NON_POOLING="postgresql://USER@HOST/DB"');
   console.error('   node scripts/test-db-production.cjs\n');
   process.exit(1);
 }

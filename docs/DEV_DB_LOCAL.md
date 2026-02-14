@@ -38,8 +38,9 @@ Example (local, no `sslmode=require`):
 
 ```bash
 ADA_ENCRYPTION_KEY="dev-local-key-change-me"
-DATABASE_URL="postgresql://app_user:app_password@localhost:5432/acces_direct_aide"
-POSTGRES_URL_NON_POOLING="postgresql://app_user:app_password@localhost:5432/acces_direct_aide"
+# NOTE: password omitted intentionally in docs. Use your real local credentials.
+DATABASE_URL="postgresql://app_user@localhost:5432/acces_direct_aide"
+POSTGRES_URL_NON_POOLING="postgresql://app_user@localhost:5432/acces_direct_aide"
 ```
 
 ## A3. Run doctor and fix KO reasons
@@ -55,7 +56,7 @@ Doctor output:
 Common fixes:
 - Pull env again: `vercel env pull .env.local`
 - Replace placeholders (`HOST`, `USER`, `PASSWORD`, `...`)
-- Use a valid Postgres URL format: `postgresql://user:password@host:5432/dbname?sslmode=require`
+- Use a valid Postgres URL format: `postgresql://USER@HOST:5432/DBNAME?sslmode=require`
 
 ## A4. Validate DB auth with psql (safe key=value form)
 

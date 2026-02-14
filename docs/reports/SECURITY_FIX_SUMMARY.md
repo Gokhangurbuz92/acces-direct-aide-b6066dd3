@@ -27,7 +27,7 @@ GitGuardian a détecté **11 secrets hardcodés** dans 5 commits de la PR #114 :
 
 **Changement** :
 ```diff
-- const PROD_URL = 'postgresql://neondb_owner:HARDCODED_PASSWORD@ep-summer-cloud...';
+- const PROD_URL = 'postgresql://USER@HOST/DB';
 + const PROD_URL = process.env.POSTGRES_URL_NON_POOLING || process.env.DATABASE_URL_UNPOOLED;
 + 
 + if (!PROD_URL) {

@@ -52,8 +52,8 @@ Added PostgreSQL service and database setup:
 +       - 5432:5432
 
 + env:
-+   DATABASE_URL: "postgresql://testuser:testpass@localhost:5432/testdb"
-+   POSTGRES_URL_NON_POOLING: "postgresql://testuser:testpass@localhost:5432/testdb"
++   DATABASE_URL: "postgresql://testuser@localhost:5432/testdb"  # password omitted in docs
++   POSTGRES_URL_NON_POOLING: "postgresql://testuser@localhost:5432/testdb"  # password omitted in docs
 +   VITE_BASE_URL: "https://www.accesdirectaide.fr"
 
 + - name: Setup Database
@@ -110,7 +110,7 @@ Duration    325ms
 ### Before
 ```yaml
 env:
-  DATABASE_URL: "postgresql://user:pass@localhost:5432/db"  # Dummy, no real DB
+  DATABASE_URL: "postgresql://localhost:5432/db"  # Dummy, no real DB
   
 steps:
   - name: Build
@@ -124,7 +124,7 @@ services:
     image: postgres:15
     
 env:
-  DATABASE_URL: "postgresql://testuser:testpass@localhost:5432/testdb"  # Real DB
+  DATABASE_URL: "postgresql://testuser@localhost:5432/testdb"  # Example only (do not paste real creds)
   VITE_BASE_URL: "https://www.accesdirectaide.fr"  # For SEO tests
   
 steps:

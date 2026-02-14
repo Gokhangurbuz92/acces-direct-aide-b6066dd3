@@ -43,7 +43,7 @@ Node version: 20
 **Environment Variables (CI):**
 ```yaml
 # Dedicated test DB for `npm test` (never an external DB)
-DATABASE_URL_TEST: "postgresql://postgres:postgres@localhost:5432/acces_direct_aide_test?schema=public"
+DATABASE_URL_TEST: "postgresql://postgres@localhost:5432/acces_direct_aide_test?schema=public"
 
 # Safe dummy secrets (tests only)
 ADA_ENCRYPTION_KEY: "0000000000000000000000000000000000000000000000000000000000000000"

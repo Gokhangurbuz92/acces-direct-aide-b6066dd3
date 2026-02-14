@@ -8,7 +8,7 @@ async function handler(req, res) {
     let isAdmin = false;
     try {
         isAdmin = verifyAdmin(req);
-    } catch (e) {
+    } catch {
         // verifyAdmin might throw if secret is missing or something
         // Treat as non-admin
         isAdmin = false;

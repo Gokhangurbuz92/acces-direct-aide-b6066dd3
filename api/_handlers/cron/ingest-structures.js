@@ -249,13 +249,13 @@ export default async function handler(req, res) {
 
     try {
         // Use distributed lock to prevent concurrent runs
-        const stats = await withLock('ingest-structures', async () => {
-            // Log sync run start
-            const syncRun = await prisma.syncRun.create({
-                data: {
-                    id: runId,
-                    source_id: null, // Multi-source run
-                    status: 'running',
+	        const stats = await withLock('ingest-structures', async () => {
+	            // Log sync run start
+	            await prisma.syncRun.create({
+	                data: {
+	                    id: runId,
+	                    source_id: null, // Multi-source run
+	                    status: 'running',
                     started_at: new Date()
                 }
             });

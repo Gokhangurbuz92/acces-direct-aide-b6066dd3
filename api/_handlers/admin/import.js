@@ -22,7 +22,7 @@ export default async function handler(req, res) {
             if (fieldname === 'entity') entityType = val;
         });
 
-        busboy.on('file', (fieldname, file, filename, encoding, mimetype) => {
+        busboy.on('file', (fieldname, file) => {
             if (fieldname === 'file') {
                  const chunks = [];
                  file.on('data', (data) => chunks.push(data));

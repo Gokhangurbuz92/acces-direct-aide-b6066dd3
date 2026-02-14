@@ -17,7 +17,7 @@ export default async function handler(req, res) {
 
     try {
         // Fetch all pros in structure
-        const availabilities = await prisma.availability.findMany({
+        await prisma.availability.findMany({
             where: { structureId }
         });
 

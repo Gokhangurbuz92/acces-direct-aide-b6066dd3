@@ -1,5 +1,4 @@
-import React from 'react';
-import { Search, Info, AlertTriangle, ArrowRight } from 'lucide-react';
+import { Search, ArrowRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
 export default function EmptyState({

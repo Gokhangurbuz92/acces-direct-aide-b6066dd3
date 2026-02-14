@@ -36,11 +36,11 @@ Patterns searched (non-exhaustive):
 - `.env.template`: required variable names (no values).
 - `docs/ENV_VERCEL_SETUP.md`: reproducible setup guide (names only).
 - `docs/ROTATE_SECRETS.md`: rotation checklist (no values).
+- `docs/SECRETS_HYGIENE.md`: policy + PR checklist (no values).
 - `scripts/vercel-env-sync.mjs`: checks that required variable names exist on Vercel (dev/preview/prod) and prints missing names only.
-- `npm run security:secrets`: local gitleaks scan over tracked files only (no history; no values printed).
+- `npm run security:scan`: local gitleaks scan over tracked files only (no history; no values printed).
 
 ## Notes
 
 - If a secret was ever committed, rotation is required even after removal from the working tree (git history still contains it).
 - This change set intentionally avoids runtime behavior changes, except for removing an insecure fallback secret on a cron endpoint (covered by tests).
-

@@ -16,14 +16,11 @@ const server = spawn('npm', ['run', 'dev'], {
   shell: true
 });
 
-let serverReady = false;
-
 server.stdout.on('data', (data) => {
   const output = data.toString();
   console.log(output);
   
   if (output.includes('Local:') || output.includes('localhost')) {
-    serverReady = true;
     setTimeout(runTests, 2000); // Attendre 2 secondes après le démarrage
   }
 });
@@ -60,7 +57,7 @@ async function testEndpoint(path, description) {
           try {
             const json = JSON.parse(data);
             console.log(`   Erreur: ${json.error || JSON.stringify(json)}`);
-          } catch (e) {
+          } catch {
             console.log(`   Réponse: ${data.substring(0, 100)}`);
           }
         }

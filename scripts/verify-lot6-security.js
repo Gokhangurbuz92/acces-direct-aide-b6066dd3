@@ -16,7 +16,7 @@ async function main() {
     const sA = await prisma.structure.create({ data: { slug: `s-sec-a-${suffix}`, nom: 'Struct A', is_pro_enabled: true } });
     const pA = await prisma.proUser.create({ data: { email: `pro-a-${suffix}@test.com`, password_hash: 'x', structureId: sA.id, role: 'PRO', status: 'active' } });
     const svcA = await prisma.service.create({ data: { structureId: sA.id, slug: `srv-a-${suffix}`, name: 'Svc A', duration_minutes: 30 } });
-    const apptA = await prisma.appointment.create({
+    await prisma.appointment.create({
         data: {
             structure: { connect: { id: sA.id } },
             pro: { connect: { id: pA.id } },

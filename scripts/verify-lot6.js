@@ -99,7 +99,7 @@ async function main() {
         console.log("Testing known cipher: " + knownCipher);
         const decKnown = decrypt(knownCipher);
         console.log("Decrypted Known: " + decKnown);
-    } catch (e) {
+    } catch {
         console.error("Failed to decrypt KNOWN cipher from server!");
     }
 
@@ -152,7 +152,6 @@ async function main() {
     form.append('access_token', token); // For auth, assuming API checks it (logic implied in upload.js draft)
 
     // Create dummy file
-    const filePath = path.join(process.cwd(), `test-file-${suffix}.txt`);
     // Wait config allowed PDF/JPG.
     const jpgPath = path.join(process.cwd(), `test-img-${suffix}.jpg`);
     fs.writeFileSync(jpgPath, Buffer.alloc(1024, 'a')); // 1KB dummy

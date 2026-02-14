@@ -1,7 +1,4 @@
-import fs from 'fs';
-import path from 'path';
 import { execSync } from 'child_process';
-import { fileURLToPath } from 'url';
 
 console.log('🛡️  Checking for direct PrismaClient instantiation...');
 

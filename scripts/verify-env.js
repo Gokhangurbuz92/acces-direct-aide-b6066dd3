@@ -1,9 +1,6 @@
 import fs from 'fs';
 import path from 'path';
-import { fileURLToPath } from 'url';
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
 const envPath = path.join(process.cwd(), '.env.local');
 
 console.log("🔍 Checking .env.local configuration...\n");
@@ -31,7 +28,7 @@ content.split('\n').forEach(line => {
 });
 
 const REQUIRED_KEYS = [
-    { key: 'DATABASE_URL', type: 'url', prefix: 'postgres://' },
+    { key: 'DATABASE_URL', type: 'url' },
     { key: 'CRON_SECRET', type: 'string' },
     // ADMIN_TOKEN is used for admin auth
     { key: 'ADMIN_TOKEN', type: 'string' },
@@ -41,7 +38,7 @@ const REQUIRED_KEYS = [
 
 let hasError = false;
 
-REQUIRED_KEYS.forEach(({ key, type, prefix }) => {
+REQUIRED_KEYS.forEach(({ key, type }) => {
     const value = envVars[key];
 
     if (!value || value === '...') {

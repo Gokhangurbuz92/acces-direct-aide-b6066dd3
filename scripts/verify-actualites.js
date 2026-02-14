@@ -1,8 +1,4 @@
 import prisma from '../api/_utils/prisma.js';
-import { fetch } from 'undici';
-
-
-const CRON_URL = 'http://localhost:3000/api/cron/rss-ingest?key=dev-secret-key';
 
 async function verifyActualites() {
     console.log('🚀 Starting RSS Ingestion Verification...');

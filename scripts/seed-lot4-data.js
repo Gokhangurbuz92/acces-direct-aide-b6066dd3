@@ -1,6 +1,5 @@
 
 import prisma from '../api/_utils/prisma.js';
-import bcrypt from 'bcryptjs';
 
 
 

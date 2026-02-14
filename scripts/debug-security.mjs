@@ -9,7 +9,7 @@ try {
     const result = auth.verifyAdmin(req);
     console.log("Direct Verify Result:", result);
 
-    const inbox = await import('../api/_handlers/admin/inbox.js');
+    await import('../api/_handlers/admin/inbox.js');
     console.log("Inbox loaded");
 } catch (e) {
     console.error("Error:", e);

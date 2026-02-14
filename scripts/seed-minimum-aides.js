@@ -1015,13 +1015,14 @@ async function main() {
     let created = 0;
     let updated = 0;
 
-    for (const aideData of aides) {
-        // Remove fields that don't exist in Prisma schema
-        const { sources, ...cleanData } = aideData;
+	for (const aideData of aides) {
+		// Remove fields that don't exist in Prisma schema
+		const cleanData = { ...aideData };
+		delete cleanData.sources;
 
-        // Ensure published_at is set for published aides
-        if (cleanData.statut === 'publie' && !cleanData.published_at) {
-            cleanData.published_at = new Date();
+		// Ensure published_at is set for published aides
+		if (cleanData.statut === 'publie' && !cleanData.published_at) {
+			cleanData.published_at = new Date();
         }
 
         const existing = await prisma.aide.findUnique({

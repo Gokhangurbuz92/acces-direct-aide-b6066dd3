@@ -13,7 +13,6 @@ import prisma from '../api/_utils/prisma.js';
 import { generateUniqueSlug } from '../api/lib/slug.js';
 import slugify from '@sindresorhus/slugify';
 import fs from 'fs';
-import path from 'path';
 
 
 

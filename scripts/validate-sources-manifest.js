@@ -24,10 +24,9 @@ try {
 }
 
 // Load schema
-let schema;
 try {
     const schemaContent = fs.readFileSync(schemaPath, 'utf-8');
-    schema = JSON.parse(schemaContent);
+    JSON.parse(schemaContent);
     console.log('✓ Schema loaded');
 } catch (e) {
     console.error(`✗ Failed to load schema: ${e.message}`);

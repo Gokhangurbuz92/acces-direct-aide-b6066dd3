@@ -1,6 +1,5 @@
 import prisma from '../api/_utils/prisma.js';
 import fs from 'fs';
-import path from 'path';
 import slugify from '@sindresorhus/slugify';
 
 

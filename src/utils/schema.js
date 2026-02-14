@@ -78,22 +78,47 @@ export function generateStructureSchema(structure) {
     return schema;
 }
 
+/** @param {any} demarche */
 export function generateDemarcheSchema(demarche) {
     if (!demarche) return null;
+    const title = demarche.titre;
+    const description = demarche.summary_falc || demarche.description_courte;
+    const url = demarche.slug ? `${BASE_URL}/demarches/${demarche.slug}` : undefined;
+
+    const steps = Array.isArray(demarche.etapes) ? demarche.etapes : [];
+    const normalizedSteps = steps
+        .filter((/** @type {any} */ step) => step && typeof step === 'object')
+        .map((/** @type {any} */ step, /** @type {number} */ index) => ({
+            index,
+            name: step.titre || step.title || step.nom || '',
+            text: step.description || step.contenu || step.text || '',
+        }))
+        .filter((step) => Boolean(step.name || step.text));
+
+    const howToSchema = normalizedSteps.length > 0 ? {
+        "@type": "HowTo",
+        ...(title && { "name": title }),
+        ...(description && { "description": description }),
+        ...(url && { "url": url }),
+        "inLanguage": "fr-FR",
+        "step": normalizedSteps.map((step, idx) => ({
+            "@type": "HowToStep",
+            "position": idx + 1,
+            "name": step.name || `Étape ${idx + 1}`,
+            ...(step.text && { "text": step.text }),
+        })),
+    } : null;
+
     return {
         "@context": "https://schema.org",
-        "@type": "Article",
-        "headline": demarche.titre,
-        "description": demarche.description_courte,
-        "dateModified": demarche.updatedAt,
-        "mainEntityOfPage": {
-            "@type": "WebPage",
-            "@id": `${BASE_URL}/demarches/${demarche.slug}`
-        },
-        "author": {
-             "@type": "Organization",
-             "name": "Accès Direct Aide"
-        }
+        "@type": "WebPage",
+        ...(url && { "url": url }),
+        ...(title && { "name": title }),
+        ...(description && { "description": description }),
+        "inLanguage": "fr-FR",
+        ...(demarche.published_at && { "datePublished": demarche.published_at }),
+        ...(demarche.updatedAt && { "dateModified": demarche.updatedAt }),
+        ...(howToSchema && { "mainEntity": howToSchema }),
     };
 }
 

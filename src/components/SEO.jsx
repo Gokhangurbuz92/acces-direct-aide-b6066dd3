@@ -10,6 +10,18 @@ const BASE_URL = 'https://www.accesdirectaide.fr';
  * SEO Component with OpenGraph and Twitter Card support.
  * Use this in individual pages for consistent SEO.
  */
+/**
+ * @typedef {object | object[] | null | undefined} SchemaValue
+ * @typedef {Object} SEOProps
+ * @property {string} title
+ * @property {string} description
+ * @property {string=} path
+ * @property {string=} image
+ * @property {boolean=} noindex
+ * @property {SchemaValue=} schema
+ */
+
+/** @param {SEOProps} props */
 export default function SEO({
     title,
     description,

@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef } from 'react';
 
 // Simplified FALC-compatible Chat Window
 export default function ChatWindow({ messages, onSendMessage, onUploadFile, loading, error, isPro = false }) {
@@ -71,10 +71,6 @@ export default function ChatWindow({ messages, onSendMessage, onUploadFile, load
                                                     target="_blank"
                                                     rel="noopener noreferrer"
                                                     className="underline font-bold"
-                                                    onClick={(e) => {
-                                                        // Fallback logic handled by parent if needed?
-                                                        // If href works (proxy + header), great.
-                                                    }}
                                                 >
                                                     Télécharger
                                                 </a>

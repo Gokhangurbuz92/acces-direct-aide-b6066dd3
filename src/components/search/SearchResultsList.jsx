@@ -1,4 +1,3 @@
-import React from 'react';
 import SearchResultCard from '@/components/search/SearchResultCard';
 
 export default function SearchResultsList({ results }) {

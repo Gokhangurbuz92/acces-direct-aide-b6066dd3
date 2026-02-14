@@ -1,3 +1,5 @@
+import { env } from '../_utils/env.js';
+
 /**
  * @param {import('../_utils/http-types').ApiRequest} req
  * @param {import('../_utils/http-types').ApiResponse} res
@@ -6,7 +8,7 @@ export default function handler(req, res) {
     // STRICT HTTP GUARD
     // If variable is not explicitly "true", we return 404 immediately.
     // This prevents the SPA loop and returns a semantic error to the browser/crawler.
-    if (process.env.VITE_DEV_LOGIN_ENABLED !== 'true') {
+    if (!env.flags.devLoginEnabled) {
         return res.status(404).send('Not Found');
     }
 

@@ -2,17 +2,18 @@ import { S3Client, PutObjectCommand, GetObjectCommand, DeleteObjectCommand } fro
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner'; // Optional if we need signed URLs, but demand was upload/download logic.
 import crypto from 'crypto';
 import path from 'path';
+import { env } from '../_utils/env.js';
 
 // STRICT CONFIGURATION
 const CONFIG = {
-    endpoint: process.env.STORAGE_ENDPOINT,
-    bucket: process.env.STORAGE_BUCKET,
-    region: process.env.STORAGE_REGION || 'auto',
-    accessKeyId: process.env.STORAGE_ACCESS_KEY_ID,
-    secretAccessKey: process.env.STORAGE_SECRET_ACCESS_KEY,
+    endpoint: env.storage.endpoint,
+    bucket: env.storage.bucket,
+    region: env.storage.region,
+    accessKeyId: env.storage.accessKeyId,
+    secretAccessKey: env.storage.secretAccessKey,
 };
 
-const IS_PRODUCTION = process.env.VERCEL_ENV === 'production';
+const IS_PRODUCTION = env.runtime.vercelEnv === 'production';
 
 // Validation Helper
 function checkConfig() {

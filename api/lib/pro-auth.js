@@ -3,12 +3,13 @@ import jwt from 'jsonwebtoken';
 import prisma from '../_utils/prisma.js';
 import crypto from 'crypto';
 import { checkRateLimit as checkRateLimitUtil } from '../_utils/rateLimit.js';
+import { env } from '../_utils/env.js';
 
 /** @typedef {import('../_utils/http-types').ApiRequest} ApiRequest */
 /** @typedef {import('../_utils/http-types').ApiResponse} ApiResponse */
 
 function getJwtSecret() {
-    return process.env.JWT_SECRET;
+    return env.secrets.jwtSecret;
 }
 
 export const ROLE = {

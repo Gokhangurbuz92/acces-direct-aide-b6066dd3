@@ -4,6 +4,7 @@ import logger from './_utils/logger.js';
 import { randomUUID } from 'crypto';
 import { attachNoStoreOnError } from "./_utils/cache.js";
 import { applyCachePolicy } from "./_utils/cachePolicy.js";
+import { env, getEnv } from './_utils/env.js';
 
 /**
  * Avoid leaking secrets in logs.
@@ -54,8 +55,9 @@ export default async function handler(req, res) {
         res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, x-cron-secret');
         res.setHeader('x-request-id', requestId);
 
-        if (process.env.VERCEL_GIT_COMMIT_SHA) {
-            res.setHeader('x-release-sha', process.env.VERCEL_GIT_COMMIT_SHA);
+        const vercelGitSha = getEnv('VERCEL_GIT_COMMIT_SHA');
+        if (vercelGitSha) {
+            res.setHeader('x-release-sha', vercelGitSha);
         }
 
         if (req.method === 'OPTIONS') {
@@ -82,7 +84,7 @@ export default async function handler(req, res) {
         // 4. Route Matching (Inner Block)
         // Security check for __dev
         if ((path.startsWith('__dev') || req.url.includes('/__dev/')) &&
-            (process.env.VERCEL_ENV === 'production' || process.env.VERCEL_ENV === 'preview')) {
+            (env.runtime.vercelEnv === 'production' || env.runtime.vercelEnv === 'preview')) {
             log.warn({ msg: "Blocked access to __dev", path });
             return res.status(403).json({ error: "Forbidden" });
         }
@@ -142,7 +144,7 @@ export default async function handler(req, res) {
                 res.status(500).json({
                     error: "Server Boot Error",
                     requestId,
-                    message: process.env.NODE_ENV === 'production' ? "Internal Error" : String(bootError.message)
+                    message: env.runtime.nodeEnv === 'production' ? "Internal Error" : String(bootError.message)
                 });
             } catch (inner) {
                 console.error("Error sending 500 response:", inner);

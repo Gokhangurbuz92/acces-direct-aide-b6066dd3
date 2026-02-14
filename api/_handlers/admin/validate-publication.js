@@ -2,6 +2,7 @@ import prisma from '../../_utils/prisma.js';
 import { validateForPublication, generateValidationReport } from '../../lib/publication-validator.js';
 import logger from '../../_utils/logger.js';
 import Sentry from '../../_utils/sentry.js';
+import { env } from '../../_utils/env.js';
 
 const ENTITY_MODELS = {
   aide: prisma.aide,
@@ -93,7 +94,7 @@ export default async function handler(req, res) {
 
     return res.status(500).json({
       error: 'Internal server error',
-      message: process.env.NODE_ENV === 'production' ? 'An error occurred' : error.message,
+      message: env.runtime.nodeEnv === 'production' ? 'An error occurred' : error.message,
     });
   }
 }

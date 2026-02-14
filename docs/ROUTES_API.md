@@ -57,7 +57,7 @@ Ces routes gèrent souvent GET (list/detail) et parfois POST/PUT/DELETE (admin).
 | `/api/search` | `_handlers/search.js` | Recherche globale |
 | `/api/structures` | `_handlers/structures.js` | Structures (Annuaire) (Listing, Détail via `?slug=` ou `/api/structures/:slug`) |
 | `/api/demarches` | `_handlers/demarches.js` | Démarches (Listing, Détail via `?slug=` ou `/api/demarches/:slug`) |
-| `/api/actualites` | `_handlers/actualites.js` | Actualités |
+| `/api/actualites` | `_handlers/actualites.js` | Actualités (Listing, Détail via `?slug=` ou `/api/actualites/:slug`) |
 | `/api/guides` | `_handlers/guides.js` | Guides |
 | `/api/tools` | `_handlers/tools.js` | Outils |
 | `/api/dispositifs` | `_handlers/dispositifs/index.js` | Dispositifs |

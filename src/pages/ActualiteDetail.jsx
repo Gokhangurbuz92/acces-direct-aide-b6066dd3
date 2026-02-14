@@ -17,7 +17,8 @@ import {
   Star,
   RefreshCw,
   AlertTriangle,
-  Info
+  Info,
+  ExternalLink
 } from 'lucide-react';
 
 const TYPE_ICONS = {
@@ -55,15 +56,29 @@ export default function ActualiteDetail() {
   const id = searchParams.get('id');
   const identifier = slug || id;
 
-  const { data: queryData, isLoading } = useQuery({
+  const { data: actu, isLoading, error, refetch } = useQuery({
     queryKey: ['actualite', identifier],
-    queryFn: () => client.entities.Actualite.filter(slug ? { slug } : { id }),
-    enabled: !!identifier
-  });
+    queryFn: async () => {
+      if (!identifier) return null;
 
-  const actu = Array.isArray(queryData)
-    ? queryData[0]
-    : (queryData?.items ? queryData?.items[0] : queryData);
+      // Prefer the canonical endpoint for slug-based routes.
+      if (slug) {
+        const res = await fetch(`/api/actualites/${encodeURIComponent(slug)}`);
+        if (res.status === 404) return null;
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        return await res.json();
+      }
+
+      // Legacy route: /actualites/view?id=...
+      try {
+        return await client.entities.Actualite.get(id);
+      } catch (e) {
+        if (e?.status === 404) return null;
+        throw e;
+      }
+    },
+    enabled: !!identifier,
+  });
 
   // Canonical Redirect: If accessed via ID but slug exists, redirect to slug URL
   React.useEffect(() => {
@@ -76,6 +91,22 @@ export default function ActualiteDetail() {
     return (
       <div className="min-h-screen bg-slate-50 flex items-center justify-center">
         <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="min-h-screen bg-slate-50 flex items-center justify-center">
+        <div className="text-center max-w-md px-4">
+          <p className="text-slate-600 mb-4">Impossible de charger cette actualité.</p>
+          <div className="flex items-center justify-center gap-2">
+            <Button variant="outline" onClick={() => refetch()}>Réessayer</Button>
+            <Link to={createPageUrl('Actualites')}>
+              <Button>Retour aux actualités</Button>
+            </Link>
+          </div>
+        </div>
       </div>
     );
   }
@@ -94,6 +125,8 @@ export default function ActualiteDetail() {
   }
 
   const TypeIcon = TYPE_ICONS[actu.type_actu] || Info;
+  const sourceName = actu.source_nom || actu.source_name || actu.source || '';
+  const sourceUrl = actu.canonical_url || actu.lien_url || actu.url || actu.source_url || '';
 
   const breadcrumbs = [
     { name: 'Accueil', url: '/' },
@@ -110,7 +143,7 @@ export default function ActualiteDetail() {
     <div className="min-h-screen bg-slate-50">
       <SEO
         title={actu.titre}
-        description={actu.summary_falc || actu.contenu?.substring(0, 150)}
+        description={actu.summary_falc || actu.resume || actu.contenu?.substring(0, 150)}
         path={`/actualites/${actu.slug}`}
         schema={schema}
       />
@@ -171,14 +204,30 @@ export default function ActualiteDetail() {
                   year: 'numeric'
                 })}
               </span>
-              {actu.source_nom && (
-                <span>Source : {actu.source_nom}</span>
+              {sourceName && (
+                <span>Source : {sourceName}</span>
               )}
             </div>
 
             <div className="prose prose-slate max-w-none text-slate-700 leading-relaxed whitespace-pre-line">
               {actu.contenu}
             </div>
+
+            {sourceUrl && (
+              <div className="mt-8">
+                <a
+                  href={sourceUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex"
+                >
+                  <Button variant="outline" className="gap-2">
+                    Lire la source officielle
+                    <ExternalLink className="h-4 w-4" aria-hidden="true" />
+                  </Button>
+                </a>
+              </div>
+            )}
           </CardContent>
         </Card>
 
@@ -189,6 +238,7 @@ export default function ActualiteDetail() {
         <SourceTraceability
           source_url={actu.source_url}
           retrieved_at={actu.retrieved_at || actu.fetched_at}
+          fetched_at={actu.fetched_at}
           last_checked_at={actu.last_checked_at}
           source_last_modified={actu.source_last_modified}
         />

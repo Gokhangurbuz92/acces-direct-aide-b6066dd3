@@ -2,66 +2,32 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 
 const mocks = vi.hoisted(() => {
   return {
-    upsert: vi.fn().mockResolvedValue({ id: '1', fetched_at: new Date() }),
-    create: vi.fn().mockResolvedValue({}),
-    update: vi.fn().mockResolvedValue({}),
-    findMany: vi.fn(),
-    findFirst: vi.fn(),
-    parseURL: vi.fn(),
-  }
+    importLogCreate: vi.fn().mockResolvedValue({}),
+    runIngestActualitesRss: vi.fn().mockResolvedValue({
+      fetched: 0,
+      processed: 0,
+      created: 0,
+      updated: 0,
+      skippedExisting: 0,
+      errors: [],
+      durationByStage: { fetchMs: 0, processingMs: 0 },
+    }),
+  };
 });
 
 vi.mock('@prisma/client', () => {
   return {
     PrismaClient: class {
       constructor() {
-        this.rssSource = {
-          upsert: mocks.upsert,
-          findMany: mocks.findMany,
-          update: mocks.update,
-        };
-        this.actualite = {
-          upsert: mocks.upsert,
-          findMany: mocks.findMany,
-          update: mocks.update,
-          findFirst: mocks.findFirst,
-        };
-        this.importLog = {
-          create: mocks.create,
-        };
+        this.importLog = { create: mocks.importLogCreate };
       }
-    }
+    },
   };
 });
 
-vi.mock('rss-parser', () => {
-  return {
-    default: class {
-      constructor() {
-        this.parseURL = mocks.parseURL;
-      }
-    }
-  };
-});
-
-vi.mock('../../lib/falc-summarizer.js', () => ({
-  summarizeToFalc: vi.fn().mockResolvedValue({ summary: 'FALC', key_points: [] })
+vi.mock('./ingest-actualites-rss.js', () => ({
+  runIngestActualitesRss: mocks.runIngestActualitesRss,
 }));
-
-// Mock FS for config
-vi.mock('fs', async () => {
-  const actual = await vi.importActual('fs');
-  return {
-    ...actual,
-    existsSync: vi.fn().mockReturnValue(true),
-    readFileSync: vi.fn().mockReturnValue(JSON.stringify([{
-      name: "Test Source",
-      url: "http://test.com/rss",
-      domain: "test.com",
-      trust_level: "OFFICIAL"
-    }]))
-  };
-});
 
 import handler from './pipeline.js';
 
@@ -109,27 +75,14 @@ describe('News Pipeline', () => {
   });
 
   it('should run pipeline successfully', async () => {
-    // Setup mocks
-    mocks.findMany.mockImplementation((args) => {
-      if (args && args.where && args.where.enabled === true) {
-        return Promise.resolve([{ // Sources
-          id: 'src1',
-          name: 'Test Source',
-          feed_url: 'http://test.com/rss',
-          trust_level: 'OFFICIAL',
-          enabled: true
-        }]);
-      }
-      return Promise.resolve([]);
-    });
-
-    mocks.parseURL.mockResolvedValueOnce({
-      items: [{
-        title: 'Test News',
-        link: 'http://test.com/news/1',
-        contentSnippet: 'Summary',
-        isoDate: new Date().toISOString()
-      }]
+    mocks.runIngestActualitesRss.mockResolvedValueOnce({
+      fetched: 1,
+      processed: 1,
+      created: 1,
+      updated: 0,
+      skippedExisting: 0,
+      errors: [],
+      durationByStage: { fetchMs: 10, processingMs: 5 },
     });
 
     const req = mockReq({
@@ -141,7 +94,7 @@ describe('News Pipeline', () => {
         secret: 'test-secret'
       },
       headers: {
-        get: (name) => {
+        get: (/** @type {string} */ name) => {
           if (name === 'authorization') return 'Bearer test-secret';
           return null;
         },
@@ -153,8 +106,8 @@ describe('News Pipeline', () => {
     const resMock = mockRes();
     await handler(req, resMock);
     expect(resMock.status).toHaveBeenCalledWith(200);
-
-    // Verify RssSource upsert (from config)
-    expect(mocks.upsert).toHaveBeenCalled();
+    expect(mocks.runIngestActualitesRss).toHaveBeenCalledWith(
+      expect.objectContaining({ limit: 5, runId: expect.any(String) }),
+    );
   });
 });

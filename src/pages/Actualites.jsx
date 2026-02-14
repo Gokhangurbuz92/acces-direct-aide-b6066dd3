@@ -1,21 +1,37 @@
+import { useEffect, useMemo, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
-import { client } from '@/api/client';
 import { useQuery } from '@tanstack/react-query';
-import { Button } from "@/components/ui/button";
+import { Search, SlidersHorizontal, Calendar, ExternalLink, AlertTriangle, Info, RefreshCw, Star, ArrowRight } from 'lucide-react';
 import SEO from '@/components/SEO';
-import { Badge } from "@/components/ui/badge";
-import { Card, CardContent } from "@/components/ui/card";
-import {
-  Calendar,
-  ExternalLink,
-  AlertTriangle,
-  Info,
-  RefreshCw,
-  Star,
-  Loader2,
-  ArrowRight
-} from 'lucide-react';
+import { client } from '@/api/client';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Card, CardContent } from '@/components/ui/card';
+import EmptyState from '@/components/ui/EmptyState';
+import ListSkeleton from '@/components/feedback/ListSkeleton';
+import { Badge } from '@/components/ui/badge';
 import NewsFallback from '@/components/news/NewsFallback';
+import { generateBreadcrumbSchema } from '@/utils/schema';
+
+/**
+ * @typedef {object} ActualiteListItem
+ * @property {string} id
+ * @property {string=} slug
+ * @property {string} titre
+ * @property {string=} resume
+ * @property {string=} summary_falc
+ * @property {string | Date} date_publication
+ * @property {string=} type_actu
+ * @property {string=} categorie
+ * @property {boolean=} est_important
+ * @property {string=} source_nom
+ * @property {string=} source_name
+ * @property {string=} source
+ * @property {string=} canonical_url
+ * @property {string=} lien_url
+ * @property {string=} url
+ * @property {string=} source_url
+ */
 
 const CATEGORIES = {
   logement: 'Logement',
@@ -45,107 +61,299 @@ const TYPE_COLORS = {
   info: 'bg-slate-100 text-slate-800',
 };
 
-const ITEMS_PER_PAGE = 10;
+const DEFAULT_LIMIT = 10;
+const LIMIT_OPTIONS = [10, 20, 50];
+/** @type {ActualiteListItem[]} */
+const EMPTY_ITEMS = [];
+
+/** @param {unknown} value */
+function parsePage(value) {
+  const parsed = Number.parseInt(String(value ?? '1'), 10);
+  if (!Number.isFinite(parsed) || parsed < 1) return 1;
+  return parsed;
+}
+
+/** @param {unknown} value */
+function parseLimit(value) {
+  const parsed = Number.parseInt(String(value ?? DEFAULT_LIMIT), 10);
+  if (!Number.isFinite(parsed)) return DEFAULT_LIMIT;
+  if (parsed < 1) return 1;
+  if (parsed > 50) return 50;
+  return parsed;
+}
+
+/** @param {ActualiteListItem | null | undefined} actu */
+function getSourceName(actu) {
+  return actu?.source_nom || actu?.source_name || actu?.source || '';
+}
+
+/** @param {ActualiteListItem | null | undefined} actu */
+function getSourceUrl(actu) {
+  return actu?.canonical_url || actu?.lien_url || actu?.url || actu?.source_url || '';
+}
 
 export default function Actualites() {
   const [searchParams, setSearchParams] = useSearchParams();
-  
-  const selectedCategory = searchParams.get('categorie') || '';
-  const page = parseInt(searchParams.get('page') || '1', 10);
+  const [isFiltersOpen, setIsFiltersOpen] = useState(false);
 
-  const { data: response = {}, isLoading } = useQuery({
-    queryKey: ['actualites'],
-    queryFn: () => client.entities.Actualite.filter({ statut: 'publie' }, '-date_publication'),
+  const q = (searchParams.get('q') || '').trim();
+  const categorie = (searchParams.get('categorie') || '').trim();
+  const source = (searchParams.get('source') || '').trim();
+  const page = parsePage(searchParams.get('page'));
+  const limit = parseLimit(searchParams.get('limit') || searchParams.get('pageSize'));
+  const sort = (searchParams.get('sort') || 'recent').trim();
+
+  const [queryInput, setQueryInput] = useState(q);
+
+  useEffect(() => {
+    setQueryInput(q);
+  }, [q]);
+
+  const {
+    data,
+    isLoading,
+    isFetching,
+    error,
+    refetch,
+  } = useQuery({
+    queryKey: ['actualites', { q, categorie, source, sort, page, limit }],
+    queryFn: () => client.entities.Actualite.filter({
+      q: q || undefined,
+      categorie: categorie || undefined,
+      source: source || undefined,
+      sort,
+      page,
+      limit,
+      statut: 'publie',
+    }),
   });
 
-  const actualites = Array.isArray(response) ? response : (response.items || []);
+  /** @type {ActualiteListItem[]} */
+  const actualites = (data?.items ?? EMPTY_ITEMS);
+  const pagination = data?.pagination || {};
 
-  // Client-side filtering and pagination
-  const filteredActualites = selectedCategory
-    ? actualites.filter(a => a.categorie === selectedCategory)
-    : actualites;
+  const liveMessage = useMemo(() => {
+    if (isLoading || isFetching) return 'Chargement des actualités...';
+    if (error) return "Erreur lors du chargement des actualités.";
+    if (!actualites.length) return "Aucune actualité trouvée.";
+    const total = typeof pagination.total === 'number' ? pagination.total : actualites.length;
+    return `${total} actualité${total > 1 ? 's' : ''} trouvée${total > 1 ? 's' : ''}.`;
+  }, [isLoading, isFetching, error, actualites.length, pagination.total]);
 
-  const totalPages = Math.ceil(filteredActualites.length / ITEMS_PER_PAGE);
-  const startIndex = (page - 1) * ITEMS_PER_PAGE;
-  const endIndex = startIndex + ITEMS_PER_PAGE;
-  const paginatedActualites = filteredActualites.slice(startIndex, endIndex);
-
-  const handleCategoryChange = (category) => {
-    const newParams = new URLSearchParams(searchParams);
-    if (category) {
-      newParams.set('categorie', category);
+  /**
+   * @param {string} key
+   * @param {string} value
+   */
+  const handleParamChange = (key, value) => {
+    const params = new URLSearchParams(searchParams);
+    if (!value) {
+      params.delete(key);
     } else {
-      newParams.delete('categorie');
+      params.set(key, value);
     }
-    newParams.set('page', '1'); // Reset to page 1 when changing category
-    setSearchParams(newParams);
+    params.set('page', '1');
+    setSearchParams(params);
   };
 
-  const handlePageChange = (newPage) => {
-    const newParams = new URLSearchParams(searchParams);
-    newParams.set('page', String(newPage));
-    setSearchParams(newParams);
-    // Scroll to top
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+  /** @param {import('react').FormEvent<HTMLFormElement>} event */
+  const handleSearchSubmit = (event) => {
+    event.preventDefault();
+    handleParamChange('q', queryInput.trim());
   };
+
+  /** @param {number} nextPage */
+  const handlePageChange = (nextPage) => {
+    const params = new URLSearchParams(searchParams);
+    params.set('page', String(nextPage));
+    setSearchParams(params);
+  };
+
+  const clearFilters = () => {
+    setSearchParams({});
+    setIsFiltersOpen(false);
+  };
+
+  const schema = useMemo(() => {
+    return [
+      generateBreadcrumbSchema([
+        { name: 'Accueil', url: '/' },
+        { name: 'Actualités', url: '/actualites' },
+      ]),
+    ].filter(Boolean);
+  }, []);
+
+  const sourceOptions = useMemo(() => {
+    const fromItems = actualites
+      .map((a) => getSourceName(a))
+      .filter((v) => v);
+    const unique = Array.from(new Set(fromItems)).sort((a, b) => a.localeCompare(b, 'fr'));
+    const options = [{ value: '', label: 'Toutes les sources' }, ...unique.map((v) => ({ value: v, label: v }))];
+    if (source && !unique.includes(source)) {
+      options.splice(1, 0, { value: source, label: source });
+    }
+    return options;
+  }, [actualites, source]);
+
+  const hasNext = Boolean(pagination.hasNext);
+  const totalPages = pagination.totalPages || 1;
 
   return (
     <div className="min-h-screen bg-slate-50">
       <SEO
         title="Actualités"
-        description="Les dernières informations sur les aides et les droits pour les personnes en situation de précarité."
+        description="Les dernières informations officielles sur les aides et les droits."
         path="/actualites"
+        schema={schema}
       />
-      {/* En-tête */}
-      <div className="bg-white border-b border-slate-200 py-8">
-        <div className="max-w-4xl mx-auto px-4 sm:px-6">
-          <h1 className="text-3xl font-bold text-slate-900 mb-2">
-            Actualités
-          </h1>
-          <p className="text-slate-600 mb-6">
-            Les dernières informations sur les aides et les droits
-          </p>
 
-          {/* Filtres */}
-          <div className="flex flex-wrap gap-2">
+      <p className="sr-only" role="status" aria-live="polite">
+        {liveMessage}
+      </p>
+
+      {/* Header */}
+      <div className="bg-white border-b border-slate-200 py-6 sticky top-0 z-10 shadow-sm">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 flex flex-col gap-4">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+            <div>
+              <h1 className="text-2xl font-bold text-slate-900">Actualités</h1>
+              <p className="text-slate-600 text-sm">
+                Recherchez et filtrez les dernières mises à jour.
+              </p>
+            </div>
             <Button
-              variant={selectedCategory === '' ? 'default' : 'outline'}
-              size="sm"
-              onClick={() => handleCategoryChange('')}
+              type="button"
+              variant="outline"
+              className="gap-2"
+              onClick={() => setIsFiltersOpen((open) => !open)}
+              aria-expanded={isFiltersOpen}
             >
-              Toutes
+              <SlidersHorizontal className="h-4 w-4" aria-hidden="true" />
+              Filtres
             </Button>
-            {Object.entries(CATEGORIES).map(([key, label]) => (
-              <Button
-                key={key}
-                variant={selectedCategory === key ? 'default' : 'outline'}
-                size="sm"
-                onClick={() => handleCategoryChange(key)}
-              >
-                {label}
-              </Button>
-            ))}
           </div>
+
+          {/* Search bar */}
+          <form onSubmit={handleSearchSubmit} className="flex flex-col sm:flex-row gap-3">
+            <div className="relative flex-1">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-slate-400" aria-hidden="true" />
+              <Input
+                value={queryInput}
+                onChange={(e) => setQueryInput(e.target.value)}
+                placeholder="Rechercher une actualité (ex: APL, RSA, logement...)"
+                aria-label="Rechercher une actualité"
+                className="pl-10 h-11 bg-slate-50 border-slate-200 focus:bg-white transition-colors"
+              />
+            </div>
+            <Button type="submit" className="h-11">
+              Rechercher
+            </Button>
+          </form>
+
+          {/* Filters */}
+          {isFiltersOpen && (
+            <Card>
+              <CardContent className="p-4">
+                <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+                  <div>
+                    <label htmlFor="actualites-source" className="block text-sm font-semibold text-slate-900 mb-1">
+                      Source
+                    </label>
+                    <select
+                      id="actualites-source"
+                      className="w-full h-10 rounded-md border border-slate-200 bg-white px-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      value={source}
+                      onChange={(e) => handleParamChange('source', e.target.value)}
+                    >
+                      {sourceOptions.map((opt) => (
+                        <option key={opt.value || 'all'} value={opt.value}>
+                          {opt.label}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div>
+                    <label htmlFor="actualites-limit" className="block text-sm font-semibold text-slate-900 mb-1">
+                      Résultats par page
+                    </label>
+                    <select
+                      id="actualites-limit"
+                      className="w-full h-10 rounded-md border border-slate-200 bg-white px-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      value={String(limit)}
+                      onChange={(e) => handleParamChange('limit', e.target.value)}
+                    >
+                      {LIMIT_OPTIONS.map((opt) => (
+                        <option key={opt} value={String(opt)}>
+                          {opt}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div className="md:col-span-2">
+                    <p className="block text-sm font-semibold text-slate-900 mb-2">Catégorie</p>
+                    <div className="flex flex-wrap gap-2">
+                      <Button
+                        type="button"
+                        variant={categorie === '' ? 'default' : 'outline'}
+                        size="sm"
+                        onClick={() => handleParamChange('categorie', '')}
+                      >
+                        Toutes
+                      </Button>
+                      {Object.entries(CATEGORIES).map(([key, label]) => (
+                        <Button
+                          type="button"
+                          key={key}
+                          variant={categorie === key ? 'default' : 'outline'}
+                          size="sm"
+                          onClick={() => handleParamChange('categorie', key)}
+                        >
+                          {label}
+                        </Button>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+
+                <div className="mt-4 flex justify-end">
+                  <Button type="button" variant="ghost" onClick={clearFilters}>
+                    Réinitialiser
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          )}
         </div>
       </div>
 
-      {/* Contenu */}
       <div className="max-w-4xl mx-auto px-4 sm:px-6 py-8">
         {isLoading ? (
-          <div className="flex items-center justify-center py-12">
-            <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
-          </div>
-        ) : paginatedActualites.length > 0 ? (
-          <>
-            <div className="space-y-6">
-              {paginatedActualites.map((actu) => {
-                const TypeIcon = TYPE_ICONS[actu.type_actu] || Info;
-                const linkUrl = actu.slug
-                  ? `/actualites/${actu.slug}`
-                  : `/actualites/view?id=${actu.id}`;
+          <ListSkeleton layout="list" count={5} message="Chargement des actualités..." />
+        ) : error ? (
+          <EmptyState
+            type="warning"
+            title="Impossible de charger les actualités"
+            message="Un problème est survenu lors de la récupération des actualités. Vous pouvez réessayer."
+            actionLabel="Réessayer"
+            onAction={() => refetch()}
+          />
+        ) : actualites.length > 0 ? (
+	          <>
+	            <div className="space-y-6" data-testid="actualites-results-list">
+	              {actualites.map((actu) => {
+	                const typeKey = actu.type_actu || 'info';
+	                const TypeIcon = TYPE_ICONS[typeKey] || Info;
+	                const linkUrl = actu.slug ? `/actualites/${actu.slug}` : `/actualites/view?id=${actu.id}`;
+	                const sourceName = getSourceName(actu);
+	                const sourceUrl = getSourceUrl(actu);
 
                 return (
-                  <Card key={actu.id} className={`group hover:shadow-lg transition-all relative ${actu.est_important ? 'border-l-4 border-l-blue-500' : ''}`} data-testid="actualite-card">
+                  <Card
+                    key={actu.id}
+                    className={`group hover:shadow-lg transition-all relative ${actu.est_important ? 'border-l-4 border-l-blue-500' : ''}`}
+                    data-testid="actualite-card"
+                  >
                     {/* Overlay Link */}
                     <Link
                       to={linkUrl}
@@ -155,14 +363,15 @@ export default function Actualites() {
                       <span className="sr-only">Lire l'actualité {actu.titre}</span>
                     </Link>
 
-                    <CardContent className="p-6">
-                      <div className="flex flex-wrap gap-2 mb-3">
-                        <Badge className={TYPE_COLORS[actu.type_actu] || 'bg-slate-100 text-slate-800'}>
-                          <TypeIcon className="h-3 w-3 mr-1" />
-                          {actu.type_actu === 'nouveaute' ? 'Nouveauté' :
-                            actu.type_actu === 'modification' ? 'Modification' :
-                              actu.type_actu === 'alerte' ? 'Alerte' : 'Information'}
-                        </Badge>
+	                    <CardContent className="p-6">
+	                      <div className="flex flex-wrap gap-2 mb-3">
+	                        <Badge className={TYPE_COLORS[typeKey] || 'bg-slate-100 text-slate-800'}>
+	                          <TypeIcon className="h-3 w-3 mr-1" />
+	                          {typeKey === 'nouveaute' ? 'Nouveauté'
+	                            : typeKey === 'modification' ? 'Modification'
+	                              : typeKey === 'alerte' ? 'Alerte'
+	                                : 'Information'}
+	                        </Badge>
                         {actu.categorie && (
                           <Badge variant="outline">
                             {CATEGORIES[actu.categorie] || actu.categorie}
@@ -175,14 +384,12 @@ export default function Actualites() {
                         )}
                       </div>
 
-                      <div className="block mb-3">
-                        <h2 className="text-xl font-bold text-slate-900 group-hover:text-blue-700 transition-colors" data-testid="actualite-title">
-                          {actu.titre}
-                        </h2>
-                      </div>
+                      <h2 className="text-xl font-bold text-slate-900 group-hover:text-blue-700 transition-colors mb-3" data-testid="actualite-title">
+                        {actu.titre}
+                      </h2>
 
                       <p className="text-slate-600 mb-4 leading-relaxed line-clamp-3">
-                        {actu.summary_falc || actu.contenu}
+                        {actu.summary_falc || actu.resume || ''}
                       </p>
 
                       <div className="flex flex-wrap items-center justify-between gap-4 pt-4 border-t border-slate-100 relative z-20">
@@ -192,18 +399,18 @@ export default function Actualites() {
                             {new Date(actu.date_publication).toLocaleDateString('fr-FR', {
                               day: 'numeric',
                               month: 'long',
-                              year: 'numeric'
+                              year: 'numeric',
                             })}
                           </span>
-                          {actu.source_nom && (
-                            <span>Source : {actu.source_nom}</span>
+                          {sourceName && (
+                            <span>Source : {sourceName}</span>
                           )}
                         </div>
 
                         <div className="flex items-center gap-4">
-                          {actu.source_url && (
+                          {sourceUrl && (
                             <a
-                              href={actu.source_url}
+                              href={sourceUrl}
                               target="_blank"
                               rel="noopener noreferrer"
                               className="text-slate-500 hover:text-blue-600 text-sm font-medium flex items-center gap-1"
@@ -225,7 +432,6 @@ export default function Actualites() {
               })}
             </div>
 
-            {/* Pagination */}
             {totalPages > 1 && (
               <div className="flex justify-center mt-12 gap-2">
                 <Button
@@ -240,7 +446,7 @@ export default function Actualites() {
                 </span>
                 <Button
                   variant="outline"
-                  disabled={page >= totalPages}
+                  disabled={!hasNext}
                   onClick={() => handlePageChange(page + 1)}
                 >
                   Suivant

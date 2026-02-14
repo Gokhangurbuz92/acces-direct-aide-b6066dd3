@@ -3,22 +3,37 @@ import { cva } from "class-variance-authority";
 import { X } from "lucide-react";
 import { cn } from "@/lib/utils";
 
-const ToastProvider = React.forwardRef(({ ...props }, ref) => (
-  <div
-    ref={ref}
-    className="fixed top-0 z-[100] flex max-h-screen w-full flex-col-reverse p-4 sm:bottom-0 sm:right-0 sm:top-auto sm:flex-col md:max-w-[420px]"
-    {...props}
-  />
-));
+/** @typedef {'default' | 'destructive'} ToastVariant */
+/** @typedef {import("react").ComponentPropsWithoutRef<"div">} ToastProviderProps */
+/** @typedef {import("react").ComponentPropsWithoutRef<"div">} ToastViewportProps */
+/** @typedef {import("react").ComponentPropsWithoutRef<"div"> & { variant?: ToastVariant }} ToastProps */
+/** @typedef {import("react").ComponentPropsWithoutRef<"div">} ToastActionProps */
+/** @typedef {import("react").ComponentPropsWithoutRef<"button">} ToastCloseProps */
+/** @typedef {import("react").ComponentPropsWithoutRef<"div">} ToastTitleProps */
+/** @typedef {import("react").ComponentPropsWithoutRef<"div">} ToastDescriptionProps */
+
+const ToastProvider = React.forwardRef(
+  /** @type {import("react").ForwardRefRenderFunction<HTMLDivElement, ToastProviderProps>} */
+  (({ ...props }, ref) => (
+    <div
+      ref={ref}
+      className="fixed top-0 z-[100] flex max-h-screen w-full flex-col-reverse p-4 sm:bottom-0 sm:right-0 sm:top-auto sm:flex-col md:max-w-[420px]"
+      {...props}
+    />
+  ))
+);
 ToastProvider.displayName = "ToastProvider";
 
-const ToastViewport = React.forwardRef(({ ...props }, ref) => (
-  <div
-    ref={ref}
-    className="fixed top-0 z-[100] flex max-h-screen w-full flex-col-reverse p-4 sm:bottom-0 sm:right-0 sm:top-auto sm:flex-col md:max-w-[420px]"
-    {...props}
-  />
-));
+const ToastViewport = React.forwardRef(
+  /** @type {import("react").ForwardRefRenderFunction<HTMLDivElement, ToastViewportProps>} */
+  (({ ...props }, ref) => (
+    <div
+      ref={ref}
+      className="fixed top-0 z-[100] flex max-h-screen w-full flex-col-reverse p-4 sm:bottom-0 sm:right-0 sm:top-auto sm:flex-col md:max-w-[420px]"
+      {...props}
+    />
+  ))
+);
 ToastViewport.displayName = "ToastViewport";
 
 const toastVariants = cva(
@@ -37,61 +52,75 @@ const toastVariants = cva(
   }
 );
 
-const Toast = React.forwardRef(({ className, variant, ...props }, ref) => {
-  return (
-    <div
-      ref={ref}
-      className={cn(toastVariants({ variant }), className)}
-      {...props}
-    />
-  );
-});
+const Toast = React.forwardRef(
+  /** @type {import("react").ForwardRefRenderFunction<HTMLDivElement, ToastProps>} */
+  (({ className, variant, ...props }, ref) => {
+    return (
+      <div
+        ref={ref}
+        className={cn(toastVariants({ variant }), className)}
+        {...props}
+      />
+    );
+  })
+);
 Toast.displayName = "Toast";
 
-const ToastAction = React.forwardRef(({ className, ...props }, ref) => (
-  <div
-    ref={ref}
-    className={cn(
-      "inline-flex h-8 shrink-0 items-center justify-center rounded-md border bg-transparent px-3 text-sm font-medium ring-offset-background transition-colors hover:bg-secondary focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 group-[.destructive]:border-muted/40 group-[.destructive]:hover:border-destructive/30 group-[.destructive]:hover:bg-destructive group-[.destructive]:hover:text-destructive-foreground group-[.destructive]:focus:ring-destructive",
-      className
-    )}
-    {...props}
-  />
-));
+const ToastAction = React.forwardRef(
+  /** @type {import("react").ForwardRefRenderFunction<HTMLDivElement, ToastActionProps>} */
+  (({ className, ...props }, ref) => (
+    <div
+      ref={ref}
+      className={cn(
+        "inline-flex h-8 shrink-0 items-center justify-center rounded-md border bg-transparent px-3 text-sm font-medium ring-offset-background transition-colors hover:bg-secondary focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 group-[.destructive]:border-muted/40 group-[.destructive]:hover:border-destructive/30 group-[.destructive]:hover:bg-destructive group-[.destructive]:hover:text-destructive-foreground group-[.destructive]:focus:ring-destructive",
+        className
+      )}
+      {...props}
+    />
+  ))
+);
 ToastAction.displayName = "ToastAction";
 
-const ToastClose = React.forwardRef(({ className, ...props }, ref) => (
-  <button
-    ref={ref}
-    className={cn(
-      "absolute right-2 top-2 rounded-md p-1 text-foreground/50 opacity-0 transition-opacity hover:text-foreground focus:opacity-100 focus:outline-none focus:ring-2 group-hover:opacity-100 group-[.destructive]:text-red-300 group-[.destructive]:hover:text-red-50 group-[.destructive]:focus:ring-red-400 group-[.destructive]:focus:ring-offset-red-600",
-      className
-    )}
-     
-    toast-close=""
-    {...props}
-  >
-    <X className="h-4 w-4" />
-  </button>
-));
+const ToastClose = React.forwardRef(
+  /** @type {import("react").ForwardRefRenderFunction<HTMLButtonElement, ToastCloseProps>} */
+  (({ className, ...props }, ref) => (
+    <button
+      ref={ref}
+      className={cn(
+        "absolute right-2 top-2 rounded-md p-1 text-foreground/50 opacity-0 transition-opacity hover:text-foreground focus:opacity-100 focus:outline-none focus:ring-2 group-hover:opacity-100 group-[.destructive]:text-red-300 group-[.destructive]:hover:text-red-50 group-[.destructive]:focus:ring-red-400 group-[.destructive]:focus:ring-offset-red-600",
+        className
+      )}
+      toast-close=""
+      {...props}
+    >
+      <X className="h-4 w-4" />
+    </button>
+  ))
+);
 ToastClose.displayName = "ToastClose";
 
-const ToastTitle = React.forwardRef(({ className, ...props }, ref) => (
-  <div
-    ref={ref}
-    className={cn("text-sm font-semibold", className)}
-    {...props}
-  />
-));
+const ToastTitle = React.forwardRef(
+  /** @type {import("react").ForwardRefRenderFunction<HTMLDivElement, ToastTitleProps>} */
+  (({ className, ...props }, ref) => (
+    <div
+      ref={ref}
+      className={cn("text-sm font-semibold", className)}
+      {...props}
+    />
+  ))
+);
 ToastTitle.displayName = "ToastTitle";
 
-const ToastDescription = React.forwardRef(({ className, ...props }, ref) => (
-  <div
-    ref={ref}
-    className={cn("text-sm opacity-90", className)}
-    {...props}
-  />
-));
+const ToastDescription = React.forwardRef(
+  /** @type {import("react").ForwardRefRenderFunction<HTMLDivElement, ToastDescriptionProps>} */
+  (({ className, ...props }, ref) => (
+    <div
+      ref={ref}
+      className={cn("text-sm opacity-90", className)}
+      {...props}
+    />
+  ))
+);
 ToastDescription.displayName = "ToastDescription";
 
 export {

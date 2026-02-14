@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import { useEffect } from 'react';
 import { Link, useParams, useSearchParams, useNavigate } from 'react-router-dom';
 import SEO from '@/components/SEO';
 import NotFound from "./NotFound";
@@ -43,7 +43,7 @@ export default function StructureDetail() {
   const navigate = useNavigate();
   const structureId = searchParams.get('id');
 
-  const { data: queryData, isLoading, error } = useQuery({
+  const { data: queryData, isLoading } = useQuery({
     queryKey: ['structure', slug || structureId],
     queryFn: () => client.entities.Structure.filter(slug ? { slug } : { id: structureId }),
     // API now returns single object for id/slug queries

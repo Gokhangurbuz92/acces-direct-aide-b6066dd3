@@ -1,4 +1,4 @@
-import React from 'react';
+
 import SEO from '@/components/SEO';
 import { Header } from '@/components/layout/Header';
 import { Hero } from '@/components/home/Hero';

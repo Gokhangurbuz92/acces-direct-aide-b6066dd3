@@ -1,6 +1,6 @@
 
-import React, { useEffect, useState } from 'react';
-import { useOutletContext, Link } from 'react-router-dom';
+import { useEffect, useState } from 'react';
+import { useOutletContext } from 'react-router-dom';
 import { Loader2, Calendar, User, Clock, CheckCircle, XCircle, AlertCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { format, parseISO } from 'date-fns';
@@ -16,7 +16,7 @@ const STATUS_CONFIG = {
 };
 
 export default function ProAppointments() {
-    const { user } = useOutletContext();
+    useOutletContext();
     const [appointments, setAppointments] = useState([]);
     const [loading, setLoading] = useState(true);
     const { toast } = useToast();

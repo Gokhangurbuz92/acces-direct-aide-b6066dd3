@@ -1,4 +1,4 @@
-import React from 'react';
+
 import { Link, useParams, useSearchParams } from 'react-router-dom';
 import SEO from '@/components/SEO';
 import NotFound from "./NotFound";
@@ -7,14 +7,12 @@ import { useQuery } from '@tanstack/react-query';
 import { generateBreadcrumbSchema, generateRessourceSchema } from '@/utils/schema';
 import SourceTraceability from '@/components/SourceTraceability';
 import FalcSummary from '@/components/FalcSummary';
-import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import {
   ArrowLeft,
   ChevronRight,
   Loader2,
-  ExternalLink,
   FileText
 } from 'lucide-react';
 

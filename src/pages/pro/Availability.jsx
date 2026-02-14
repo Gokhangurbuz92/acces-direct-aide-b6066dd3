@@ -1,10 +1,9 @@
 
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { useOutletContext } from 'react-router-dom';
 import { Loader2, Save, Plus, Trash2, Clock } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Label } from '@/components/ui/label';
+import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { useToast } from "@/components/ui/use-toast";
 
@@ -19,7 +18,7 @@ const DAYS = [
 ];
 
 export default function ProAvailability() {
-    const { user } = useOutletContext();
+    useOutletContext();
     const { toast } = useToast();
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
@@ -54,7 +53,7 @@ export default function ProAvailability() {
             });
             if(!res.ok) throw new Error('Failed to save');
             toast({ title: "Disponibilités enregistrées", description: "Vos créneaux ont été mis à jour." });
-        } catch(e) {
+        } catch {
             toast({ variant: "destructive", title: "Erreur", description: "Impossible d'enregistrer." });
         } finally {
             setSaving(false);

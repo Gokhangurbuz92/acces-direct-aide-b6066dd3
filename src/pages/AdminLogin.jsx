@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { apiClient } from '@/api/client';
 import SEO from '@/components/SEO';
@@ -18,7 +18,7 @@ export default function AdminLogin() {
             await apiClient.auth.login(email, password);
             toast.success("Connexion réussie");
             navigate('/admin');
-        } catch (err) {
+        } catch {
             toast.error("Erreur de connexion", { description: "Vérifiez vos identifiants" });
         }
     };

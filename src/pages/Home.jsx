@@ -1,4 +1,4 @@
-import React from 'react';
+
 import SEO from '@/components/SEO';
 import HeroSection from '@/components/home/HeroSection';
 import QuickAccessSection from '@/components/home/QuickAccessSection';

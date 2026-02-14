@@ -1,4 +1,4 @@
-import { isCronAuthorized } from '../../_utils/cronAuth.js';
+import { getCronAuth } from '../../_utils/cronAuth.js';
 import prisma from '../../_utils/prisma.js';
 import crypto from 'crypto';
 import { geocodeAddress } from '../../_utils/geocoder.js';
@@ -243,7 +243,11 @@ export async function runIngestStructures({ limit, runId }) {
 
 export default async function handler(req, res) {
     // 1. Authorization
-    if (!isCronAuthorized(req)) {
+    const auth = getCronAuth(req);
+    if (!auth.ok) {
+        if (auth.reason === 'missing_secret') {
+            return res.status(500).json({ error: 'CRON_SECRET is not configured' });
+        }
         logger.warn("Unauthorized Ingest-Structures Attempt");
         return res.status(401).json({ error: 'Unauthorized' });
     }

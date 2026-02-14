@@ -1,7 +1,7 @@
 import { vi, describe, it, expect, beforeEach } from 'vitest';
 import handler from './pipeline.js';
 import * as ingestStructures from './ingest-structures.js';
-import { isCronAuthorized } from '../../_utils/cronAuth.js';
+import { getCronAuth } from '../../_utils/cronAuth.js';
 
 // Mock Dependencies
 vi.mock('../../_utils/cronAuth.js');
@@ -27,7 +27,7 @@ describe('Pipeline Regression Test (P0)', () => {
     beforeEach(() => {
         vi.resetAllMocks();
         // Default authorized
-        isCronAuthorized.mockReturnValue(true);
+        getCronAuth.mockReturnValue({ ok: true });
 
         req = {
             query: { source: 'structures', mode: 'smoke' },

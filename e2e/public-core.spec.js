@@ -14,40 +14,46 @@ test.describe('Public Core Navigation', () => {
     });
   });
 
-  test('Aides Flow: List -> Detail -> Refresh', async ({ page }) => {
-    // Mock List
-    await page.route('**/api/aides*', async route => {
+  test('Aides Flow: Search -> Detail -> Refresh', async ({ page }) => {
+    // The /aides page is now powered by /api/search (not /api/aides list).
+    // Mock search results.
+    await page.route('**/api/search', async route => {
       await route.fulfill({
         json: {
           items: [{
             id: 'aide-1',
             slug: 'aide-test-slug',
-            titre: 'Aide Test Title',
-            cest_quoi: 'Summary of aide test',
-            categorie: 'sante'
+            title: 'Aide Test Title',
+            description: 'Summary of aide test',
+            category: 'LOGEMENT'
           }],
-          pagination: { page: 1, totalPages: 1 },
-          facets: {}
+          total: 1
         }
       });
     });
 
-    // Mock Detail
-    await page.route('**/api/aides/aide-test-slug', async route => {
+    // Mock Detail (AideDetail uses /api/aides?slug=...)
+    await page.route('**/api/aides?slug=aide-test-slug', async route => {
       await route.fulfill({
         json: {
           id: 'aide-1',
           slug: 'aide-test-slug',
           titre: 'Aide Test Title',
           description: 'Full description',
-          categorie: 'sante'
+          categorie: 'logement',
+          cest_quoi: 'Full description'
         }
       });
     });
 
-    // Go to list
-    await page.goto('/aides');
-    await expect(page.getByText('Aide Test Title').first()).toBeVisible();
+    // Sidebar query from AideDetail
+    await page.route('**/api/structures*', async route => {
+      await route.fulfill({ json: { items: [] } });
+    });
+
+    // Go to search page with a query so results load.
+    await page.goto('/aides?q=loyer');
+    await expect(page.getByRole('link', { name: /Aide Test Title/i }).first()).toBeVisible();
 
     // Click result (assuming card has a link)
     // We target the link that contains the slug
@@ -55,11 +61,11 @@ test.describe('Public Core Navigation', () => {
 
     // Check URL
     await expect(page).toHaveURL(/\/aides\/aide-test-slug/);
-    await expect(page.getByRole('heading', { level: 1 })).toContainText('Aide Test Title');
+    await expect(page.getByRole('heading', { level: 1, name: /Aide Test Title/i })).toBeVisible();
 
     // Refresh
     await page.reload();
-    await expect(page.getByRole('heading', { level: 1 })).toContainText('Aide Test Title');
+    await expect(page.getByRole('heading', { level: 1, name: /Aide Test Title/i })).toBeVisible();
   });
 
   test('Demarches Flow: List -> Detail -> Refresh', async ({ page }) => {

@@ -1,4 +1,5 @@
 import prisma from '../_utils/prisma.js';
+import { checkRateLimit, getClientIp } from '../_utils/rateLimit.js';
 import { hybridSearchSchema } from '../_utils/validators.js';
 import { searchAidesHybrid } from '../lib/hybrid-search.js';
 import { generateEmbedding } from '../lib/gemini-embedding.js';
@@ -7,6 +8,12 @@ export default async function handler(req, res) {
   try {
     if (req.method !== 'POST') {
       return res.status(405).json({ error: 'Method not allowed' });
+    }
+
+    const ip = getClientIp(req);
+    const rateLimit = await checkRateLimit('SEARCH_AIDES', ip);
+    if (!rateLimit.allowed) {
+      return res.status(rateLimit.status || 429).json(rateLimit.error);
     }
 
     const validation = hybridSearchSchema.safeParse(req.body || {});

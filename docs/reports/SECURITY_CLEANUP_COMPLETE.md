@@ -14,33 +14,13 @@
 Vérification complète effectuée - **0 secret trouvé** dans le code source :
 
 ```bash
-# Vérification PostgreSQL password
-grep -r "npg_xXADTwi7o4RC" . --exclude-dir=node_modules --exclude-dir=.git
-# Résultat: 0 occurrences
+# Vérification (exemple) : rechercher des fragments de secrets SANS les révéler dans le dépôt
+# Remplacez <FRAGMENT_SECRET> par 6-10 caractères d'un secret (idéalement un secret déjà révoqué/rotaté).
+grep -r "<FRAGMENT_SECRET>" . --exclude-dir=node_modules --exclude-dir=.git
+# Résultat attendu: 0 occurrences
 
-# Vérification Upstash token
-grep -r "Ae1WAAIncD" . --exclude-dir=node_modules --exclude-dir=.git
-# Résultat: 0 occurrences
-
-# Vérification ADMIN_TOKEN
-grep -r "j5X6YGaJT" . --exclude-dir=node_modules --exclude-dir=.git
-# Résultat: 0 occurrences
-
-# Vérification BYPASS_SECRET
-grep -r "d0a682492108" . --exclude-dir=node_modules --exclude-dir=.git
-# Résultat: 0 occurrences
-
-# Vérification CRON_SECRET
-grep -r "756709f776f7" . --exclude-dir=node_modules --exclude-dir=.git
-# Résultat: 0 occurrences
-
-# Vérification JWT_SECRET
-grep -r "8062cf60f7e2" . --exclude-dir=node_modules --exclude-dir=.git
-# Résultat: 0 occurrences
-
-# Vérification ADA_ENCRYPTION_KEY
-grep -r "113d10632a14" . --exclude-dir=node_modules --exclude-dir=.git
-# Résultat: 0 occurrences
+# Recherche de patterns typiques (peut générer des faux positifs)
+git grep -nE "postgresql://|KV_REST_API_TOKEN=|STORAGE_SECRET_ACCESS_KEY=|SENTRY_AUTH_TOKEN=" -- . ':!.env.example' || true
 ```
 
 ## 📦 Modifications Appliquées

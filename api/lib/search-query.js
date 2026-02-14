@@ -95,7 +95,6 @@ export async function searchAides(prisma, params) {
 
   // Safe column mapping (whitelist only)
   const SAFE_SORT_COLUMNS = {
-    'pertinence': 'rank',
     'date': 'published_at',
     'alpha': 'titre',
     'created_date': 'updatedAt',

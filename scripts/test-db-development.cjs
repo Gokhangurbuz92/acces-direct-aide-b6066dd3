@@ -97,15 +97,32 @@ async function testDevelopmentDB() {
     console.log('─'.repeat(64));
     try {
       const structuresTotal = await client.query('SELECT COUNT(*) AS total FROM "Structure"');
-      const structuresPubliees = await client.query('SELECT COUNT(*) AS total FROM "Structure" WHERE statut = \'publie\'');
+      // Public API treats statut='actif' as visible/published for structures.
+      const structuresActives = await client.query('SELECT COUNT(*) AS total FROM "Structure" WHERE statut = \'actif\'');
+      const structuresParStatut = await client.query('SELECT statut, COUNT(*) AS count FROM "Structure" GROUP BY statut ORDER BY count DESC');
+      const structuresParStatus = await client.query('SELECT status, COUNT(*) AS count FROM "Structure" GROUP BY status ORDER BY count DESC');
       
       console.log(`   Total structures: ${structuresTotal.rows[0].total}`);
-      console.log(`   Structures publiées: ${structuresPubliees.rows[0].total}`);
+      console.log(`   Structures actives: ${structuresActives.rows[0].total}`);
+
+      if (structuresParStatut.rows.length > 0) {
+        console.log('   Répartition par statut:');
+        structuresParStatut.rows.forEach(row => {
+          console.log(`     - ${row.statut || '(null)'}: ${row.count}`);
+        });
+      }
+
+      if (structuresParStatus.rows.length > 0) {
+        console.log('   Répartition par status:');
+        structuresParStatus.rows.forEach(row => {
+          console.log(`     - ${row.status || '(null)'}: ${row.count}`);
+        });
+      }
       
-      if (structuresPubliees.rows[0].total === '0') {
-        console.log('   ⚠️  PROBLÈME: Aucune structure publiée → annuaire vide');
+      if (structuresActives.rows[0].total === '0') {
+        console.log('   ⚠️  PROBLÈME: Aucune structure active → annuaire vide');
       } else {
-        console.log(`   ✅ ${structuresPubliees.rows[0].total} structure(s) publiée(s)`);
+        console.log(`   ✅ ${structuresActives.rows[0].total} structure(s) active(s)`);
       }
     } catch (err) {
       console.log(`   ❌ Table "Structure" n'existe pas: ${err.message}`);
@@ -137,7 +154,7 @@ async function testDevelopmentDB() {
     console.log('─'.repeat(64));
     try {
       const logsRecents = await client.query(`
-        SELECT type, status, "createdAt" 
+        SELECT source_name, status, "createdAt" 
         FROM "ImportLog" 
         ORDER BY "createdAt" DESC 
         LIMIT 5
@@ -150,7 +167,7 @@ async function testDevelopmentDB() {
       } else {
         console.log(`   ✅ ${logsRecents.rows.length} import(s) récent(s):`);
         logsRecents.rows.forEach(row => {
-          console.log(`     - ${row.type}: ${row.status} (${row.createdAt})`);
+          console.log(`     - ${row.source_name}: ${row.status} (${row.createdAt})`);
         });
       }
     } catch (err) {

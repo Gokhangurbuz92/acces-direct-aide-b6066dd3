@@ -1,7 +1,6 @@
-import React from 'react';
+
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { adminClient as client } from '@/api/client';
 import { ExternalLink, PlayCircle, CheckCircle2 } from 'lucide-react';
 
 export default function AdminGuideSync() {

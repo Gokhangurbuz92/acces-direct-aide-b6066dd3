@@ -13,9 +13,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import {
   ArrowLeft,
   Calendar,
-  ExternalLink,
   Loader2,
-  Newspaper,
   Star,
   RefreshCw,
   AlertTriangle,

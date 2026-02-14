@@ -1,4 +1,4 @@
-import React from 'react';
+
 import SEO from '@/components/SEO';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { CheckCircle2, Eye, Keyboard, Type } from 'lucide-react';

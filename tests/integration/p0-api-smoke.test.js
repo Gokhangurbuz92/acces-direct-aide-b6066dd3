@@ -83,7 +83,8 @@ describe('P0 API Smoke Tests', () => {
       
       // Should return 200 even if DB is not available (fallback)
       expect(res.statusCode).toBe(200);
-      expect(Array.isArray(res.body)).toBe(true);
+      expect(res.body).toHaveProperty('items');
+      expect(Array.isArray(res.body.items)).toBe(true);
     });
   });
 

@@ -195,33 +195,42 @@ test.describe('Public Core Navigation', () => {
   });
 
   test('Actualites Flow: List -> Detail -> Refresh', async ({ page }) => {
-     // Mock List
-    await page.route('**/api/actualites*', async route => {
+    // Mock List + Detail (supports both /api/actualites?slug=... and /api/actualites/:slug)
+    await page.route('**/api/actualites**', async (route) => {
+      const url = new URL(route.request().url());
+      const slugParam = url.searchParams.get('slug');
+      const isDetailPath = url.pathname.endsWith('/api/actualites/actu-test');
+      const isDetail = isDetailPath || slugParam === 'actu-test';
+
+      if (isDetail) {
+        await route.fulfill({
+          json: {
+            id: 'actu-1',
+            slug: 'actu-test',
+            titre: 'Actu Test',
+            contenu: 'Full content',
+            resume: 'Summary',
+            type_actu: 'info',
+            date_publication: '2023-01-01',
+            source_nom: 'Test Source',
+            canonical_url: 'https://example.com/source',
+          }
+        });
+        return;
+      }
+
       await route.fulfill({
         json: {
           items: [{
             id: 'actu-1',
             slug: 'actu-test',
             titre: 'Actu Test',
-            contenu: 'Summary',
+            resume: 'Summary',
             type_actu: 'info',
-            date_publication: '2023-01-01'
+            date_publication: '2023-01-01',
+            source_nom: 'Test Source',
           }],
-          pagination: { page: 1, totalPages: 1 }
-        }
-      });
-    });
-
-    // Mock Detail
-    await page.route('**/api/actualites/actu-test', async route => {
-      await route.fulfill({
-        json: {
-          id: 'actu-1',
-          slug: 'actu-test',
-          titre: 'Actu Test',
-          contenu: 'Full content',
-          type_actu: 'info',
-          date_publication: '2023-01-01'
+          pagination: { page: 1, totalPages: 1, total: 1, limit: 10, pageSize: 10, hasNext: false }
         }
       });
     });

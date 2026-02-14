@@ -1,30 +1,10 @@
 
-/* global process */
 import { isCronAuthorized } from '../../_utils/cronAuth.js';
 import prisma from '../../_utils/prisma.js';
-import Parser from 'rss-parser';
 import crypto from 'crypto';
-import fs from 'fs';
-import path from 'path';
-import { ensureSlug } from '../../lib/slug.js';
 import { runIngestStructures } from './ingest-structures.js';
 import { runIngestAids } from './ingest-aids.js';
-
-const parser = new Parser();
-
-// Helper: Slugify
-function slugify(text) {
-    if (!text) return '';
-    return text
-        .toString()
-        .toLowerCase()
-        .trim()
-        .replace(/\s+/g, '-')
-        .replace(/[^\w-]+/g, '')
-        .replace(/--+/g, '-')
-        .replace(/^-+/, '')
-        .replace(/-+$/, '');
-}
+import { runIngestActualitesRss } from './ingest-actualites-rss.js';
 /**
  * @param {import('../../_utils/http-types').ApiRequest} req
  * @param {import('../../_utils/http-types').ApiResponse} res
@@ -122,100 +102,11 @@ export default async function handler(req, res) {
             return;
 
         } else if (sourceResolved === 'rss') {
-            // RSS Logic adapted for new stats
-
-            // Step 0: Seed Config
-            try {
-                const configPath = path.join(process.cwd(), 'config', 'rss-sources.json');
-                if (fs.existsSync(configPath)) {
-                    const configSources = JSON.parse(fs.readFileSync(configPath, 'utf8'));
-                    for (const src of configSources) {
-                        await prisma.rssSource.upsert({
-                            where: { feed_url: src.url },
-                            update: { enabled: true, trust_level: src.trust_level },
-                            create: { name: src.name, feed_url: src.url, domain: src.domain, trust_level: src.trust_level, enabled: true }
-                        });
-                    }
-                }
-            } catch { /* ignore */ }
-
-            const sources = await prisma.rssSource.findMany({ where: { enabled: true } });
-
-            let processedCount = 0;
-
-            for (const source of sources) {
-                if (limit && processedCount >= limit) break;
-
-                try {
-                    const startFetch = Date.now();
-                    const feed = await retry(() => parser.parseURL(source.feed_url));
-                    stats.durationByStage.fetchMs += (Date.now() - startFetch);
-
-                    let itemsToProcess = feed.items;
-                    if (limit) {
-                        const remaining = limit - processedCount;
-                        itemsToProcess = itemsToProcess.slice(0, remaining);
-                    }
-                    stats.fetched += itemsToProcess.length;
-
-                    const startProc = Date.now();
-                    for (const item of itemsToProcess) {
-                        stats.processed++;
-                        const rawContent = `${item.title}${item.link}`;
-                        const hash = crypto.createHash('md5').update(rawContent).digest('hex');
-                        const isOfficial = source.trust_level === 'OFFICIAL';
-
-                        try {
-                            const itemSlug = await ensureSlug(prisma, 'actualite', { id: null, titre: item.title || "Sans", slug: null }, 'titre');
-                            const upsertData = {
-                                titre: item.title || "Sans titre",
-                                slug: itemSlug || (slugify(item.title || "info") + '-' + hash.substring(0, 6)),
-                                contenu: item.content || item.contentSnippet || "",
-                                resume: item.contentSnippet || item.content || "",
-                                canonical_url: item.link,
-                                guid: item.guid || item.link,
-                                source_id: source.id,
-                                source_name: source.name,
-                                source_url: source.feed_url,
-                                dedupe_hash: hash,
-                                ingest_batch: runId,
-                                statut: "brouillon",
-                                falc_status: "pending",
-                                quality_score: isOfficial ? 60 : 40,
-                                auto_publish: isOfficial,
-                                date_publication: item.isoDate ? new Date(item.isoDate) : new Date(),
-                                fetched_at: new Date(),
-                                tags: []
-                            };
-
-                            const result = await prisma.actualite.upsert({
-                                where: { raw_data_hash: hash },
-                                update: {},
-                                create: { ...upsertData, raw_data_hash: hash }
-                            });
-
-                            if (Math.abs(result.fetched_at - upsertData.fetched_at) < 2000) {
-                                stats.created++;
-                            } else {
-                                stats.skippedExisting++;
-                            }
-                            // Map to ingested
-                            stats.ingested = stats.created;
-
-                            processedCount++;
-                        } catch (e) {
-                            if (!e.message.includes('Unique constraint')) {
-                                throw e;
-                            }
-                            // Ignore duplicate canonical_url
-                        }
-                    }
-                    stats.durationByStage.processingMs += (Date.now() - startProc);
-
-                } catch (err) {
-                    stats.errors.push(`${source.name}: ${err.message}`);
-                }
-            }
+            // RSS ingestion (Actualites)
+            // Note: this function is also used by the local script (scripts/ingest-actualites.js).
+            const result = await retry(() => runIngestActualitesRss({ limit, runId }));
+            stats = { ...stats, ...result };
+            stats.ingested = result.created || 0;
         } else {
             const err = new Error(`Invalid source '${sourceResolved}' (resolved from '${sourceInput}'). Valid: structures, aides, rss`);
             throw err;

@@ -9,9 +9,9 @@ vi.mock('../../api/_utils/auth.js', () => ({
 
 // Mock CRUD
 vi.mock('../../api/_utils/crud.js', () => ({
-    createEntity: vi.fn(),
-    updateEntity: vi.fn(),
-    deleteEntity: vi.fn(),
+    handleAdminCreate: vi.fn(),
+    handleAdminUpdate: vi.fn(),
+    handleAdminDelete: vi.fn(),
 }));
 
 // Mock Prisma
@@ -56,27 +56,40 @@ describe('Actualites API Handler', () => {
     });
 
     it('should return 200 with items on success', async () => {
+        mPrisma.actualite.count.mockResolvedValue(1);
         mPrisma.actualite.findMany.mockResolvedValue([{ id: '1', titre: 'News' }]);
 
         await actualitesHandler(req, res);
 
         expect(res.status).toHaveBeenCalledWith(200);
-        expect(res.json).toHaveBeenCalledWith([{ id: '1', titre: 'News' }]);
+        expect(res.json).toHaveBeenCalledWith(
+          expect.objectContaining({
+            items: [{ id: '1', titre: 'News' }],
+            pagination: expect.objectContaining({ page: 1 }),
+          }),
+        );
     });
 
-    it('should fall back to empty array on DB error (Resilience)', async () => {
+    it('should fall back to empty list on DB error (Resilience)', async () => {
         // Simulate DB crash
+        mPrisma.actualite.count.mockRejectedValue(new Error('DB Connection Failed'));
         mPrisma.actualite.findMany.mockRejectedValue(new Error('DB Connection Failed'));
 
         await actualitesHandler(req, res);
 
-        // Expect 200 OK and []
+        // Expect 200 OK and empty envelope
         expect(res.status).toHaveBeenCalledWith(200);
-        expect(res.json).toHaveBeenCalledWith([]);
+        expect(res.json).toHaveBeenCalledWith(
+          expect.objectContaining({
+            items: [],
+            pagination: expect.any(Object),
+          }),
+        );
     });
 
     it('should handle HEAD request as GET to avoid 401', async () => {
         req.method = 'HEAD';
+        mPrisma.actualite.count.mockResolvedValue(0);
         mPrisma.actualite.findMany.mockResolvedValue([]);
 
         await actualitesHandler(req, res);

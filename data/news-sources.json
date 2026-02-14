@@ -1,0 +1,38 @@
+[
+  {
+    "id": "service_public_particuliers",
+    "name": "Service-Public - Particuliers",
+    "feedUrl": "https://www.service-public.gouv.fr/abonnements/rss/actu-actualites-particuliers.rss",
+    "homepageUrl": "https://www.service-public.fr/",
+    "domain": "service-public.fr",
+    "trustLevel": "OFFICIAL",
+    "category": "famille",
+    "enabled": true,
+    "language": "fr",
+    "territory": "FRANCE"
+  },
+  {
+    "id": "service_public_professionnels",
+    "name": "Service-Public - Professionnels",
+    "feedUrl": "https://www.service-public.gouv.fr/abonnements/rss/actu-actu-pro.rss",
+    "homepageUrl": "https://www.service-public.fr/",
+    "domain": "service-public.fr",
+    "trustLevel": "OFFICIAL",
+    "category": "professionnel",
+    "enabled": true,
+    "language": "fr",
+    "territory": "FRANCE"
+  },
+  {
+    "id": "example_disabled",
+    "name": "Example (disabled)",
+    "feedUrl": "https://example.invalid/rss",
+    "homepageUrl": "https://example.invalid/",
+    "domain": "example.invalid",
+    "trustLevel": "UNVERIFIED",
+    "category": "general",
+    "enabled": false,
+    "language": "fr",
+    "territory": "FRANCE"
+  }
+]

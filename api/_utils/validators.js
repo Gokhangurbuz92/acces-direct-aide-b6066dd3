@@ -119,6 +119,58 @@ export const searchStructuresSchema = baseSearchSchema.extend({
   ]).optional(),
 });
 
+export const searchActualitesSchema = baseSearchSchema.extend({
+  // P5: cap listing page size for public /api/actualites
+  pageSize: z.coerce.number().int().min(1).max(50).default(10),
+  // Allow `limit=` (empty) without failing validation (compat with legacy list() calls).
+  limit: z.preprocess(
+    (value) => (value === '' || value == null ? undefined : value),
+    z.coerce.number().int().min(1).max(50).optional(),
+  ),
+  q: z.preprocess(
+    (value) => (value === '' || value == null ? undefined : value),
+    z.string().trim().min(1).max(80).optional(),
+  ),
+  source: z.preprocess(
+    (value) => (value === '' || value == null ? undefined : value),
+    z.string().trim().min(1).max(80).optional(),
+  ),
+  categorie: z.preprocess(
+    (value) => (value === '' || value == null ? undefined : value),
+    z.string().trim().min(1).max(40).optional(),
+  ),
+  territoire: z.preprocess(
+    (value) => (value === '' || value == null ? undefined : value),
+    z.string().trim().min(1).max(60).optional(),
+  ),
+  territory: z.preprocess(
+    (value) => (value === '' || value == null ? undefined : value),
+    z.string().trim().min(1).max(60).optional(),
+  ),
+  statut: z.preprocess(
+    (value) => (value === '' || value == null ? undefined : value),
+    z.string().trim().min(1).max(40).default('publie'),
+  ),
+  sort: z.preprocess(
+    (value) => (value === '' || value == null ? undefined : value),
+    z.enum([
+      // External stable aliases
+      'relevance',
+      'recent',
+      '-recent',
+      'quality',
+      '-quality',
+      // Backward compatible aliases (admin/front)
+      'updated_date',
+      '-updated_date',
+      'date_publication',
+      '-date_publication',
+      'titre',
+      '-titre',
+    ]).optional(),
+  ),
+});
+
 const aidCategoryCodeSchema = z.enum([
   'LOGEMENT',
   'SANTE',

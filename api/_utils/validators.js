@@ -85,9 +85,38 @@ export const searchDemarchesSchema = baseSearchSchema.extend({
 });
 
 export const searchStructuresSchema = baseSearchSchema.extend({
+  // P4: cap listing page size for public /api/structures
+  pageSize: z.coerce.number().int().min(1).max(50).default(20),
+  // Allow `limit=` (empty) without failing validation (compat with legacy list() calls).
+  limit: z.preprocess(
+    (value) => (value === '' || value == null ? undefined : value),
+    z.coerce.number().int().min(1).max(50).optional(),
+  ),
   city: z.string().optional(),
   zip: z.string().optional(),
   type: z.string().optional(),
+  departement: z.string().optional(),
+  territory: z.string().optional(), // alias
+  geo: z.string().optional(), // alias
+  pmr: z.enum(['true', 'false', '1', '0']).optional(),
+  // Strict whitelist for sort to prevent SQL injection
+  sort: z.enum([
+    // External stable aliases
+    'relevance',
+    'recent',
+    '-recent',
+    'quality',
+    '-quality',
+    // Backward compatible aliases (admin/front)
+    'updated_date',
+    '-updated_date',
+    'alpha',
+    '-alpha',
+    'nom',
+    '-nom',
+    'quality_score',
+    '-quality_score',
+  ]).optional(),
 });
 
 const aidCategoryCodeSchema = z.enum([

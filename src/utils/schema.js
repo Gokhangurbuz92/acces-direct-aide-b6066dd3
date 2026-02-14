@@ -124,6 +124,7 @@ export function generateDemarcheSchema(demarche) {
 
 export function generateActualiteSchema(actu) {
     if (!actu) return null;
+    const authorName = actu.source_nom || actu.source_name || actu.source || undefined;
     return {
         "@context": "https://schema.org",
         "@type": "NewsArticle",
@@ -131,14 +132,20 @@ export function generateActualiteSchema(actu) {
         "description": actu.summary_falc || actu.contenu?.substring(0, 150),
         "datePublished": actu.date_publication,
         "dateModified": actu.updatedAt,
-        "image": actu.image_url ? [actu.image_url] : [],
+        ...(actu.image_url ? { "image": [actu.image_url] } : {}),
         "mainEntityOfPage": {
              "@type": "WebPage",
              "@id": `${BASE_URL}/actualites/${actu.slug}`
         },
-        "author": {
-             "@type": "Organization",
-             "name": "Accès Direct Aide"
+        ...(authorName && {
+            "author": {
+                "@type": "Organization",
+                "name": authorName
+            }
+        }),
+        "publisher": {
+            "@type": "Organization",
+            "name": "Accès Direct Aide"
         }
     };
 }

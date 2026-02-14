@@ -10,22 +10,35 @@ const baseSearchSchema = z.object({
 });
 
 export const searchAidesSchema = baseSearchSchema.extend({
+  // P2: cap listing page size for public /api/aides
+  pageSize: z.coerce.number().int().min(1).max(50).default(20),
+  limit: z.coerce.number().int().min(1).max(50).optional(),
   theme: z.string().optional(),
   sousTheme: z.string().optional(),
   public: z.string().optional(), // audience alias
   territoire: z.string().optional(),
+  territory: z.string().optional(), // english alias (P2)
   organisme: z.string().optional(),
   urgent: z.enum(['true', 'false']).optional(),
   statut: z.string().default('publie'),
   // Strict whitelist for sort to prevent SQL injection
   // Accepts: pertinence, date, alpha, created_date, -created_date, published_at, -published_at, date_publication, -date_publication
   sort: z.enum([
+    // P2 aliases
+    'relevance',
+    'recent',
+    '-recent',
+    'quality',
+    '-quality',
+    // Backward compatible aliases (admin/front)
+    'updated_date',
+    '-updated_date',
     'pertinence', 'date', 'alpha',
     'created_date', '-created_date',
     'published_at', '-published_at',
     'date_publication', '-date_publication',
     'titre', '-titre'
-  ]).default('pertinence'),
+  ]).optional(),
   // Legacy/Compatibility
   category: z.string().optional(),
   situation: z.string().optional(),

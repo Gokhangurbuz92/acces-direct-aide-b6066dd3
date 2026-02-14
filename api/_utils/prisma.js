@@ -3,7 +3,8 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { config as dotenvConfig, parse as dotenvParse } from 'dotenv';
 
-const isDevRuntime = process.env.NODE_ENV !== 'production' && process.env.VERCEL_ENV !== 'production';
+const isTestRuntime = process.env.NODE_ENV === 'test' || process.env.VITEST === 'true' || process.env.VITEST === '1';
+const isDevRuntime = !isTestRuntime && process.env.NODE_ENV !== 'production' && process.env.VERCEL_ENV !== 'production';
 
 function loadDevEnvFiles() {
     if (!isDevRuntime) return;

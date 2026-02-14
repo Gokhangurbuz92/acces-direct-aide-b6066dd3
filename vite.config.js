@@ -204,6 +204,10 @@ export default defineConfig({
   test: {
     globals: true,
     environment: "node",
+    // DB-backed integration tests share a single Postgres schema.
+    // Running files concurrently makes the suite flaky (race conditions / non-deterministic state).
+    fileParallelism: false,
+    maxWorkers: 1,
     include: [
       "src/**/*.{test,spec}.{js,mjs,cjs,ts,mts,cts,jsx,tsx}",
       "tests/**/*.{test,spec}.{js,mjs,cjs,ts,mts,cts,jsx,tsx}",

@@ -11,8 +11,7 @@ The cron authentication system (`api/_utils/cronAuth.js`) supports three methods
 ### 1. Bearer Token (Recommended for Manual Testing)
 
 ```bash
-curl -H "Authorization: Bearer YOUR_CRON_SECRET" \
-  https://your-domain.com/api/cron/ingest-structures
+curl -H "Authorization: Bearer $CRON_SECRET" "https://your-domain.com/api/cron/ingest-structures" # gitleaks:allow
 ```
 
 ### 2. Query Parameter (Fallback)
@@ -70,19 +69,17 @@ Uses standard cron syntax:
 
 ```bash
 # Set CRON_SECRET in .env
-CRON_SECRET="local-dev-secret"
+CRON_SECRET="local-dev-placeholder"
 
 # Test with curl
-curl -H "Authorization: Bearer local-dev-secret" \
-  http://localhost:5173/api/cron/ingest-structures?limit=5
+curl -H "Authorization: Bearer $CRON_SECRET" "http://localhost:5173/api/cron/ingest-structures?limit=5" # gitleaks:allow
 ```
 
 ### Production/Preview
 
 ```bash
 # Use Vercel environment variable
-curl -H "Authorization: Bearer $CRON_SECRET" \
-  https://your-domain.com/api/cron/ingest-structures
+curl -H "Authorization: Bearer $CRON_SECRET" "https://your-domain.com/api/cron/ingest-structures" # gitleaks:allow
 ```
 
 ## Monitoring

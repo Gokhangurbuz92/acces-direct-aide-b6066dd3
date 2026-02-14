@@ -13,6 +13,7 @@ const Actualites = lazy(() => import("./Actualites.jsx"));
 const ActualiteDetail = lazy(() => import("./ActualiteDetail.jsx"));
 const AideDetail = lazy(() => import("./AideDetail.jsx"));
 const Aides = lazy(() => import("./Aides.jsx"));
+const Recherche = lazy(() => import("./Recherche.jsx"));
 const Annuaire = lazy(() => import("./Annuaire.jsx"));
 const Confidentialite = lazy(() => import("./Confidentialite.jsx"));
 const Contact = lazy(() => import("./Contact.jsx"));
@@ -212,6 +213,7 @@ function PagesContent() {
                     <Route path="/aide/:slug" element={<LegacyAideRedirect />} />
                     <Route path="/aides/:slug" element={<AideDetail />} />
                     <Route path="/aides" element={<Aides />} />
+                    <Route path="/recherche" element={<Recherche />} />
                     <Route path="/categories/:slug" element={<Aides />} />
                     <Route path="/situations/:slug" element={<Aides />} />
 

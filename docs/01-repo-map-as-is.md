@@ -76,7 +76,7 @@ Les éléments suivants nécessitent une attention immédiate (P0) :
 
 | Fichier | Problème | Gravité |
 | :--- | :--- | :--- |
-| `api/lib/crypto.js` | **Hardcoded Fallback Key**: `default-long-secret-key-32-chars-!!` si `ADA_ENCRYPTION_KEY` manquant. | **CRITIQUE** |
+| `api/lib/crypto.js` | Clé de chiffrement obligatoire via `ADA_ENCRYPTION_KEY` (pas de fallback). | **CRITIQUE** |
 | `api/_utils/auth.js` | **Weak Auth Check**: `token === process.env.ADMIN_TOKEN`. Auth statique sans rotation facile. | Élevée |
 | `api/_handlers/tools.js` | **Backdoor**: `if (process.env.VITE_DEV_LOGIN_ENABLED === 'true') return true;`. Risque majeur si activé en prod. | **CRITIQUE** |
 | `api/_handlers/sentry-test.js` | **Exposition DSN?**: Vérifier si d'autres secrets ne sont pas exposés via ce handler de test. | Moyenne |

@@ -83,8 +83,8 @@ services:
 2. **Updated Environment Variables:**
 ```yaml
 env:
-  DATABASE_URL: "postgresql://testuser:testpass@localhost:5432/testdb"
-  POSTGRES_URL_NON_POOLING: "postgresql://testuser:testpass@localhost:5432/testdb"
+  DATABASE_URL: "postgresql://testuser@localhost:5432/testdb"  # password omitted in docs
+  POSTGRES_URL_NON_POOLING: "postgresql://testuser@localhost:5432/testdb"  # password omitted in docs
   VITE_BASE_URL: "https://www.accesdirectaide.fr"
 ```
 

@@ -237,7 +237,7 @@ return res.status(200).json({ items, facets, pagination: {...} });
 #### Fichier `.env.example`
 ```bash
 # Database
-DATABASE_URL="postgresql://user:password@host:5432/db?schema=public"
+DATABASE_URL="postgresql://USER@HOST:5432/DB?schema=public"
 
 # Security
 JWT_SECRET="..."

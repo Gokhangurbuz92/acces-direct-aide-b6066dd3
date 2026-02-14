@@ -22,7 +22,9 @@
     "diagnostic": "node scripts/diagnostic-env.js",
     "test:db:prod": "node scripts/test-db-production.cjs",
     "test:db:dev": "node scripts/test-db-development.cjs",
-    "verify:env": "node scripts/verify-env-consistency.cjs"
+    "verify:env": "node scripts/verify-env-consistency.cjs",
+    "security:secrets": "node scripts/security-secrets-scan.mjs",
+    "vercel:env:check": "node scripts/vercel-env-sync.mjs"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.980.0",

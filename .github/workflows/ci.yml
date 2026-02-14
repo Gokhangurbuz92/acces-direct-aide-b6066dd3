@@ -11,7 +11,8 @@ jobs:
     runs-on: ubuntu-latest
 
     env:
-      DATABASE_URL: "postgresql://user:password@localhost:5432/testdb" # Mock value for build
+      # Dummy value for build-time checks (no real credentials, no password in URL).
+      DATABASE_URL: "postgresql://localhost:5432/testdb"
       ADA_ENCRYPTION_KEY: "0000000000000000000000000000000000000000000000000000000000000000" # Mock 32 bytes hex
       JWT_SECRET: "mock-jwt-secret"
       CRON_SECRET: "mock-cron-secret"

@@ -5,7 +5,7 @@ describe('Cron Authorization (P1D)', () => {
     const ORIGINAL_CRON_SECRET = process.env.CRON_SECRET;
 
     beforeAll(() => {
-        process.env.CRON_SECRET = 'test-cron-secret-12345';
+        process.env.CRON_SECRET = 'test-cron-secret';
     });
 
     afterAll(() => {
@@ -13,12 +13,12 @@ describe('Cron Authorization (P1D)', () => {
     });
 
     it('should ACCEPT valid Bearer token', () => {
-        const req = {
-            headers: {
-                authorization: 'Bearer test-cron-secret-12345'
-            },
-            query: {}
-        };
+            const req = {
+                headers: {
+                authorization: 'Bearer test-cron-secret'
+                },
+                query: {}
+            };
         expect(isCronAuthorized(req)).toBe(true);
     });
 
@@ -26,7 +26,7 @@ describe('Cron Authorization (P1D)', () => {
         const req = {
             headers: {},
             query: {
-                secret: 'test-cron-secret-12345'
+                secret: 'test-cron-secret'
             }
         };
         expect(isCronAuthorized(req)).toBe(true);
@@ -83,7 +83,7 @@ describe('Cron Authorization (P1D)', () => {
     it('should REJECT malformed Authorization header', () => {
         const req = {
             headers: {
-                authorization: 'test-cron-secret-12345'
+                authorization: 'test-cron-secret'
             },
             query: {}
         };

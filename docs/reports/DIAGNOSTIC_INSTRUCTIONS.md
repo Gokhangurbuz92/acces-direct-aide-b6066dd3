@@ -104,7 +104,7 @@ SELECT statut, COUNT(*) FROM "Aide" GROUP BY statut;
 ```bash
 # Remplacer par votre domaine et CRON_SECRET
 curl -i "https://www.accesdirectaide.fr/api/cron/pipeline" \
-  -H "Authorization: Bearer VOTRE_CRON_SECRET"
+  -H "Authorization: Bearer $CRON_SECRET" # gitleaks:allow
 
 # Vérifier la réponse
 # ✅ 200 OK → Pipeline exécuté

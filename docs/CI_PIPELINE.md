@@ -33,7 +33,7 @@ Node version: 20
 
 **Environment Variables:**
 ```yaml
-DATABASE_URL: "postgresql://user:pass@localhost:5432/db"  # Dummy for Prisma generate
+DATABASE_URL: "postgresql://localhost:5432/db"  # Dummy for Prisma generate (no password in docs)
 ADA_ENCRYPTION_KEY: "0123...abcdef"  # 64-char hex (32 bytes)
 JWT_SECRET: "dummy_jwt_secret"
 VITE_API_URL: "http://localhost:3000"

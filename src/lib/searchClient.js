@@ -23,6 +23,7 @@ const SEARCH_CATEGORY_LOOKUP = Object.fromEntries(
   SEARCH_CATEGORY_OPTIONS.map((option) => [option.value, option.label])
 );
 
+/** @type {Record<string, string>} */
 const LEGACY_CATEGORY_MAP = {
   logement: 'LOGEMENT',
   sante: 'SANTE',
@@ -40,11 +41,13 @@ const LEGACY_CATEGORY_MAP = {
 
 const activeControllers = new Map();
 
+/** @param {unknown} scope */
 function normalizeScope(scope) {
   if (!scope) return 'default';
   return String(scope);
 }
 
+/** @param {unknown} limit */
 function clampLimit(limit) {
   const parsed = Number.parseInt(String(limit ?? DEFAULT_LIMIT), 10);
   if (!Number.isFinite(parsed)) return DEFAULT_LIMIT;
@@ -53,6 +56,7 @@ function clampLimit(limit) {
   return parsed;
 }
 
+/** @param {Response} response */
 async function parsePayload(response) {
   const contentType = response.headers.get('content-type') || '';
   if (contentType.includes('application/json')) {
@@ -67,6 +71,7 @@ async function parsePayload(response) {
   }
 }
 
+/** @param {number} status @param {any} payload */
 function buildErrorMessage(status, payload) {
   if (payload && typeof payload === 'object') {
     if (typeof payload.error === 'string' && payload.error.trim()) {
@@ -85,8 +90,10 @@ function buildErrorMessage(status, payload) {
   return 'La recherche a échoué.';
 }
 
+/** @param {any} item */
 function normalizeResultItem(item) {
   const normalizedCategory = normalizeSearchCategory(item?.category || item?.categorie);
+  /** @param {any} value */
   const toOptionalNumber = (value) => {
     if (typeof value === 'number' && Number.isFinite(value)) return value;
     const parsed = Number(value);
@@ -107,6 +114,7 @@ function normalizeResultItem(item) {
   };
 }
 
+/** @param {any} payload */
 function normalizeResponse(payload) {
   const rawItems = Array.isArray(payload?.items) ? payload.items : [];
   const results = rawItems.map(normalizeResultItem);
@@ -122,6 +130,7 @@ function normalizeResponse(payload) {
   };
 }
 
+/** @param {AbortSignal | undefined} externalSignal @param {AbortController} controller */
 function linkAbortSignal(externalSignal, controller) {
   if (!externalSignal) {
     return () => {};
@@ -137,6 +146,7 @@ function linkAbortSignal(externalSignal, controller) {
   return () => externalSignal.removeEventListener('abort', abortActiveController);
 }
 
+/** @param {unknown} value */
 export function normalizeSearchCategory(value) {
   if (!value) return '';
   const rawValue = String(value).trim();
@@ -149,24 +159,39 @@ export function normalizeSearchCategory(value) {
   return SEARCH_CATEGORY_LOOKUP[upperValue] ? upperValue : '';
 }
 
+/** @param {unknown} categoryCode */
 export function getSearchCategoryLabel(categoryCode) {
   const normalizedCategory = normalizeSearchCategory(categoryCode);
   return normalizedCategory ? SEARCH_CATEGORY_LOOKUP[normalizedCategory] : 'Non classée';
 }
 
+/** @param {unknown} error */
 export function isAbortError(error) {
   return error instanceof Error && error.name === 'AbortError';
 }
 
-export async function searchAides({
-  query,
-  category,
-  situations,
-  geoScope,
-  limit = DEFAULT_LIMIT,
-  signal,
-  scope = 'aides-search',
-} = {}) {
+/**
+ * @typedef {Object} SearchAidesParams
+ * @property {string=} query
+ * @property {string=} category
+ * @property {string | string[]=} situations
+ * @property {string=} geoScope
+ * @property {number=} limit
+ * @property {AbortSignal=} signal
+ * @property {string=} scope
+ */
+
+/** @param {SearchAidesParams=} params */
+export async function searchAides(params = {}) {
+  const {
+    query,
+    category,
+    situations,
+    geoScope,
+    limit = DEFAULT_LIMIT,
+    signal,
+    scope = 'aides-search',
+  } = params;
   const normalizedQuery = typeof query === 'string' ? query.trim() : '';
   if (normalizedQuery.length < MIN_QUERY_LENGTH) {
     throw new Error(`Veuillez saisir au moins ${MIN_QUERY_LENGTH} caractères.`);
@@ -180,6 +205,7 @@ export async function searchAides({
   activeControllers.set(normalizedScope, controller);
   const detachAbortListener = linkAbortSignal(signal, controller);
 
+  /** @type {Record<string, any>} */
   const payload = {
     query: normalizedQuery,
     limit: clampLimit(limit),

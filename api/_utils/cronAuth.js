@@ -1,4 +1,6 @@
 
+import { env } from './env.js';
+
 /**
  * Helper to retrieve a header safely from Vercel Request or Node Request
  */
@@ -87,12 +89,13 @@ export function isCronAuthorized(req) {
  * @returns {{ ok: true } | { ok: false, reason: 'missing_secret' | 'unauthorized' }}
  */
 export function getCronAuth(req) {
-    if (!process.env.CRON_SECRET) {
+    const cronSecret = env.secrets.cronSecret;
+    if (!cronSecret) {
         return { ok: false, reason: 'missing_secret' };
     }
 
     const token = getCronToken(req);
-    if (token && token === process.env.CRON_SECRET) {
+    if (token && token === cronSecret) {
         return { ok: true };
     }
 

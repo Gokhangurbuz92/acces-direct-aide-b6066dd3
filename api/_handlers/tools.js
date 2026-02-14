@@ -1,16 +1,19 @@
 
 import prisma from '../_utils/prisma.js';
 import jwt from 'jsonwebtoken';
+import { env } from '../_utils/env.js';
 
 const ALLOWED_ADMIN_ROLES = ['admin', 'superadmin'];
 
 function isAdmin(req) {
-    if (process.env.NODE_ENV !== 'production' && process.env.VITE_DEV_LOGIN_ENABLED === 'true') return true;
+    if (env.runtime.nodeEnv !== 'production' && env.flags.devLoginEnabled) return true;
     const authHeader = req.headers.authorization;
     if (!authHeader || !authHeader.startsWith('Bearer ')) return false;
+    const jwtSecret = env.secrets.jwtSecret;
+    if (!jwtSecret) return false;
     try {
         const token = authHeader.split(' ')[1];
-        const decoded = jwt.verify(token, process.env.JWT_SECRET);
+        const decoded = jwt.verify(token, jwtSecret);
         return decoded && ALLOWED_ADMIN_ROLES.includes(decoded.role);
     } catch { return false; }
 }

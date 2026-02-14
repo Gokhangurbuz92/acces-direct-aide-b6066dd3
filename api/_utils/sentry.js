@@ -1,8 +1,9 @@
 import * as Sentry from '@sentry/node';
+import { env } from './env.js';
 
-const dsn = process.env.VITE_SENTRY_DSN || process.env.SENTRY_DSN;
-const environment = process.env.VERCEL_ENV || process.env.VITE_ENV || 'development';
-const release = process.env.VERCEL_GIT_COMMIT_SHA || process.env.VITE_GIT_COMMIT_SHA || 'dev';
+const dsn = env.sentry.dsn;
+const environment = env.sentry.environment;
+const release = env.sentry.release;
 
 if (dsn) {
   Sentry.init({

@@ -1,4 +1,5 @@
 import { verifyAdmin } from '../../_utils/auth.js';
+import { env } from '../../_utils/env.js';
 /**
  * @param {import('../../_utils/http-types').ApiRequest} req
  * @param {import('../../_utils/http-types').ApiResponse} res
@@ -17,7 +18,7 @@ export default async function handler(req, res) {
     // Since we use a static token, we assume the user is the generic admin
     return res.status(200).json({
         user: {
-            email: process.env.ADMIN_EMAIL || 'admin@accesdirectaide.fr',
+            email: env.secrets.adminEmail || 'admin@accesdirectaide.fr',
             role: 'admin'
         }
     });

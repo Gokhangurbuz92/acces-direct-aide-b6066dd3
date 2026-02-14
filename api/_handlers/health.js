@@ -1,6 +1,7 @@
 import prisma from '../_utils/prisma.js';
 import { logger } from '../lib/logger.js';
 import { kv } from '@vercel/kv';
+import { env, getEnv } from '../_utils/env.js';
 /**
  * @param {import('../_utils/http-types').ApiRequest} req
  * @param {import('../_utils/http-types').ApiResponse} res
@@ -50,9 +51,9 @@ export default async function handler(req, res) {
         status: overallStatus,
         timestamp: new Date().toISOString(),
         requestId,
-        version: process.env.npm_package_version || '0.0.0',
-        commitSha: process.env.VERCEL_GIT_COMMIT_SHA || process.env.VITE_GIT_COMMIT_SHA || 'dev',
-        environment: process.env.VERCEL_ENV || process.env.VITE_ENV || 'development',
+        version: getEnv('npm_package_version') || '0.0.0',
+        commitSha: env.sentry.release,
+        environment: env.runtime.vercelEnv,
         checks: {
             database: {
                 status: dbStatus,

@@ -2,8 +2,10 @@
  * @param {import('../_utils/http-types').ApiRequest} req
  * @param {import('../_utils/http-types').ApiResponse} res
  */
+import { env, getEnv } from '../_utils/env.js';
+
 export default async function handler(req, res) {
-    const debugToken = process.env.DEBUG_TOKEN;
+    const debugToken = env.secrets.debugToken;
     const requestToken = req.headers['x-debug-token'];
 
     // Strict security: if DEBUG_TOKEN is not set, disable the endpoint
@@ -16,7 +18,7 @@ export default async function handler(req, res) {
         return res.status(401).json({ error: 'Unauthorized' });
     }
 
-    const dbUrl = process.env.DATABASE_URL || process.env.POSTGRES_PRISMA_URL;
+    const dbUrl = env.db.databaseUrl || getEnv('POSTGRES_PRISMA_URL');
     let dbHost = 'unknown';
     if (dbUrl) {
         try {
@@ -42,9 +44,9 @@ export default async function handler(req, res) {
     }
 
     const info = {
-        commitSha: process.env.VERCEL_GIT_COMMIT_SHA || process.env.VITE_GIT_COMMIT_SHA || 'dev',
+        commitSha: env.sentry.release,
         buildTime: buildTime,
-        vercelEnv: process.env.VERCEL_ENV || process.env.VITE_ENV || 'development',
+        vercelEnv: env.runtime.vercelEnv,
         effectiveBaseUrl: `https://${req.headers.host}`,
         dbHost: dbHost,
     };

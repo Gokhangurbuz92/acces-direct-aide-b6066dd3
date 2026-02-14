@@ -2,16 +2,31 @@ import { GoogleGenerativeAI } from "@google/generative-ai";
 import { readFileSync } from 'fs';
 import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
+import { env } from '../_utils/env.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
-// Initialize Gemini
-const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
+/** @type {import('@google/generative-ai').GoogleGenerativeAI | null} */
+let genAI = null;
+
+/** @returns {import('@google/generative-ai').GoogleGenerativeAI} */
+function getGenAI() {
+    if (genAI) return genAI;
+
+    const apiKey = env.ai.geminiKey;
+    if (!apiKey) {
+        throw new Error('[env] Missing required environment variable: GEMINI_API_KEY (or GOOGLE_API_KEY)');
+    }
+
+    genAI = new GoogleGenerativeAI(apiKey);
+    return genAI;
+}
 
 /**
  * Detects the intent of the message to load the correct RulePack
  */
+/** @param {string} message */
 function detectIntent(message) {
     const text = message.toLowerCase();
     if (text.match(/apl|aide au logement|loyer|caf|appartement|studio|logement/)) {
@@ -23,6 +38,7 @@ function detectIntent(message) {
 /**
  * Loads a RulePack JSON from the data directory
  */
+/** @param {string} id */
 function loadRulePack(id) {
     try {
         const path = join(__dirname, '../../src/data/rulepacks', `${id}.json`);
@@ -36,11 +52,20 @@ function loadRulePack(id) {
 /**
  * Chat with Gemini using RulePack injection
  */
+/**
+ * @typedef {{ role: string, content: string }} ChatMessage
+ */
+
+/**
+ * @param {string} message
+ * @param {ChatMessage[]=} history
+ * @returns {Promise<string>}
+ */
 export async function chatWithRulePack(message, history = []) {
     const intent = detectIntent(message);
     const rulePack = intent ? loadRulePack(intent) : null;
 
-    const model = genAI.getGenerativeModel({ 
+    const model = getGenAI().getGenerativeModel({ 
         model: "gemini-1.5-flash",
         generationConfig: {
             temperature: 0.2, // Strict mode to avoid hallucinations

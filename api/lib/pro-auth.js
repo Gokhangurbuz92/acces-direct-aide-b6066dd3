@@ -4,10 +4,8 @@ import prisma from '../_utils/prisma.js';
 import crypto from 'crypto';
 import { checkRateLimit as checkRateLimitUtil } from '../_utils/rateLimit.js';
 
-const JWT_SECRET = process.env.JWT_SECRET;
-
-if (!JWT_SECRET) {
-    throw new Error("JWT_SECRET is missing");
+function getJwtSecret() {
+    return process.env.JWT_SECRET;
 }
 
 export const ROLE = {
@@ -20,6 +18,11 @@ export const ROLE = {
  * Sign a JWT token for a Pro user
  */
 export function signProToken(user) {
+    const JWT_SECRET = getJwtSecret();
+    if (!JWT_SECRET) {
+        throw new Error("JWT_SECRET is missing");
+    }
+
     return jwt.sign(
         {
             userId: user.id,
@@ -40,6 +43,9 @@ export function signProToken(user) {
  * Hardened: Enforce HS256 to prevent algorithm confusion attacks
  */
 export function verifyProToken(token) {
+    const JWT_SECRET = getJwtSecret();
+    if (!JWT_SECRET) return null;
+
     try {
         return jwt.verify(token, JWT_SECRET, {
             algorithms: ['HS256']

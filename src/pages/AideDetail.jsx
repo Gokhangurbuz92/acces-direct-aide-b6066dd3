@@ -43,6 +43,7 @@ const CATEGORIE_LABELS = {
   isolement: 'Isolement',
   lgbtqia: 'LGBTQIA+',
   vieillissement: 'Autonomie',
+  autre: 'Autre',
 };
 
 export default function AideDetail() {
@@ -100,6 +101,20 @@ export default function AideDetail() {
     return <NotFound />;
   }
 
+  const categorySlug = (() => {
+    const raw = aide?.categorie || aide?.theme || aide?.category?.slug || aide?.category_code;
+    if (!raw) return null;
+    const value = String(raw).trim();
+    if (!value) return null;
+    return /^[A-Z_]+$/.test(value) ? value.toLowerCase() : value;
+  })();
+
+  const categoryLabel =
+    (categorySlug && CATEGORIE_LABELS[categorySlug]) ||
+    aide?.category?.label ||
+    categorySlug ||
+    'Autre';
+
   const getTerritoireLabel = () => {
     if (!aide.territoires?.length) return 'Non précisé';
     if (aide.territoires.includes('national')) return 'France entière';
@@ -156,7 +171,7 @@ export default function AideDetail() {
         <div className="bg-white rounded-2xl p-6 md:p-8 border border-slate-200 mb-6">
           <div className="flex flex-wrap gap-2 mb-4">
             <Badge className="bg-blue-100 text-blue-800">
-              {CATEGORIE_LABELS[aide.categorie] || aide.categorie}
+              {categoryLabel}
             </Badge>
             {aide.est_urgent && (
               <Badge className="bg-red-100 text-red-800">

@@ -15,21 +15,35 @@ export function generateBreadcrumbSchema(items) {
 
 export function generateAideSchema(aide) {
     if (!aide) return null;
+    const title = aide.titre || aide.title;
+    const description = aide.summary_falc || aide.description || aide.cest_quoi?.substring(0, 200);
+    const url = aide.slug ? `${BASE_URL}/aides/${aide.slug}` : undefined;
+    const serviceType = aide.theme || aide.categorie || undefined;
+    const providerName = aide.providerName || aide.source_org || aide.source_name || undefined;
+
+    const governmentService = {
+        "@type": "GovernmentService",
+        ...(title && { "name": title }),
+        ...(description && { "description": description }),
+        ...(serviceType && { "serviceType": serviceType }),
+        ...(url && { "url": url }),
+        ...(providerName && {
+            "provider": {
+                "@type": "Organization",
+                "name": providerName
+            }
+        })
+    };
+
     return {
         "@context": "https://schema.org",
-        "@type": "Article",
-        "headline": aide.titre,
-        "description": aide.summary_falc || aide.cest_quoi?.substring(0, 150),
+        "@type": "WebPage",
+        ...(url && { "url": url }),
+        ...(title && { "name": title }),
+        ...(description && { "description": description }),
         "datePublished": aide.published_at || aide.updatedAt,
         "dateModified": aide.updatedAt,
-        "mainEntityOfPage": {
-            "@type": "WebPage",
-            "@id": `${BASE_URL}/aide/${aide.slug}`
-        },
-        "author": {
-            "@type": "Organization",
-            "name": "Accès Direct Aide"
-        }
+        "mainEntity": governmentService
     };
 }
 

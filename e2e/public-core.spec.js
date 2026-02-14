@@ -14,35 +14,41 @@ test.describe('Public Core Navigation', () => {
     });
   });
 
-  test('Aides Flow: Search -> Detail -> Refresh', async ({ page }) => {
-    // The /aides page is now powered by /api/search (not /api/aides list).
-    // Mock search results.
-    await page.route('**/api/search', async route => {
-      await route.fulfill({
-        json: {
-          items: [{
+  test('Aides Flow: Listing -> Detail -> Refresh', async ({ page }) => {
+    // Mock Listing + Detail (AideDetail uses /api/aides?slug=...)
+    await page.route('**/api/aides*', async (route) => {
+      const url = new URL(route.request().url());
+      const slug = url.searchParams.get('slug');
+
+      if (slug === 'aide-test-slug') {
+        await route.fulfill({
+          json: {
             id: 'aide-1',
             slug: 'aide-test-slug',
-            title: 'Aide Test Title',
-            description: 'Summary of aide test',
-            category: 'LOGEMENT'
-          }],
-          total: 1
-        }
-      });
-    });
+            titre: 'Aide Test Title',
+            categorie: 'logement',
+            cest_quoi: 'Full description',
+            summary_falc: 'Summary',
+          },
+        });
+        return;
+      }
 
-    // Mock Detail (AideDetail uses /api/aides?slug=...)
-    await page.route('**/api/aides?slug=aide-test-slug', async route => {
       await route.fulfill({
         json: {
-          id: 'aide-1',
-          slug: 'aide-test-slug',
-          titre: 'Aide Test Title',
-          description: 'Full description',
-          categorie: 'logement',
-          cest_quoi: 'Full description'
-        }
+          items: [
+            {
+              id: 'aide-1',
+              slug: 'aide-test-slug',
+              titre: 'Aide Test Title',
+              categorie: 'logement',
+              cest_quoi: 'Summary',
+              summary_falc: 'Summary',
+            },
+          ],
+          facets: {},
+          pagination: { page: 1, totalPages: 1, total: 1, limit: 20, pageSize: 20, hasNext: false },
+        },
       });
     });
 
@@ -51,13 +57,11 @@ test.describe('Public Core Navigation', () => {
       await route.fulfill({ json: { items: [] } });
     });
 
-    // Go to search page with a query so results load.
-    await page.goto('/aides?q=loyer');
-    await expect(page.getByRole('link', { name: /Aide Test Title/i }).first()).toBeVisible();
+    await page.goto('/aides');
+    await expect(page.getByTestId('aides-results-list')).toBeVisible();
+    await expect(page.getByTestId('aide-card').first()).toBeVisible();
 
-    // Click result (assuming card has a link)
-    // We target the link that contains the slug
-    await page.getByRole('link', { name: /Aide Test Title/i }).first().click();
+    await page.getByTestId('aide-card').first().click();
 
     // Check URL
     await expect(page).toHaveURL(/\/aides\/aide-test-slug/);

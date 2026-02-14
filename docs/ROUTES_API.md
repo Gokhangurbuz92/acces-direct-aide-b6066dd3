@@ -53,7 +53,7 @@ Ces routes gèrent souvent GET (list/detail) et parfois POST/PUT/DELETE (admin).
 
 | Path (Prefix) | Handler | Description |
 |---|---|---|
-| `/api/aides` | `_handlers/aides.js` | Aides (Listing, Détail, CRUD) |
+| `/api/aides` | `_handlers/aides.js` | Aides (Listing, Détail via `?slug=` ou `/api/aides/:slug`) |
 | `/api/search` | `_handlers/search.js` | Recherche globale |
 | `/api/structures` | `_handlers/structures.js` | Structures (Annuaire) |
 | `/api/demarches` | `_handlers/demarches.js` | Démarches |

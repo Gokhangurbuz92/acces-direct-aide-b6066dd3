@@ -17,7 +17,8 @@ Ce document liste les routes définies dans `src/pages/index.jsx` (Router princi
 | `/aides/view` | `AideDetail` | |
 | `/aide/:slug` | `LegacyAideRedirect` | Redirects to `/aides/:slug` |
 | `/aides/:slug` | `AideDetail` | |
-| `/aides` | `Aides` | |
+| `/aides` | `Aides` | Listing + filtres (API `/api/aides`) |
+| `/recherche` | `Recherche` | Recherche intelligente (API `/api/search`) |
 | `/categories/:slug` | `Aides` | |
 | `/situations/:slug` | `Aides` | |
 | `/annuaire` | `Annuaire` | |

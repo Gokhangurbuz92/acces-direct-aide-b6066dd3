@@ -24,6 +24,7 @@ const CATEGORIE_COLORS = {
   isolement: 'bg-rose-100 text-rose-800',
   lgbtqia: 'bg-violet-100 text-violet-800',
   vieillissement: 'bg-amber-100 text-amber-800',
+  autre: 'bg-slate-100 text-slate-800',
 };
 
 const CATEGORIE_LABELS = {
@@ -40,9 +41,21 @@ const CATEGORIE_LABELS = {
   isolement: 'Isolement',
   lgbtqia: 'LGBTQIA+',
   vieillissement: 'Autonomie',
+  autre: 'Autre',
 };
 
 export default function AideCard({ aide, compact = false }) {
+  const categorySlug = (() => {
+    const raw = aide?.categorie || aide?.theme || aide?.category?.slug || aide?.category_code;
+    if (!raw) return null;
+    const value = String(raw).trim();
+    if (!value) return null;
+    return /^[A-Z_]+$/.test(value) ? value.toLowerCase() : value;
+  })();
+
+  const categoryLabel = (categorySlug && CATEGORIE_LABELS[categorySlug]) || aide?.category?.label || categorySlug;
+  const categoryColor = (categorySlug && CATEGORIE_COLORS[categorySlug]) || 'bg-slate-100 text-slate-800';
+
   const getTerritoireLabel = () => {
     if (!aide.territoires?.length) return null;
     if (aide.territoires.includes('national')) return 'France entière';
@@ -72,9 +85,11 @@ export default function AideCard({ aide, compact = false }) {
           {/* En-tête avec badges */}
           <div className="flex flex-wrap gap-2 items-start justify-between relative z-0">
             <div className="flex flex-wrap gap-2">
-              <Badge className={`${CATEGORIE_COLORS[aide.categorie] || 'bg-slate-100 text-slate-800'}`}>
-                {CATEGORIE_LABELS[aide.categorie] || aide.categorie}
-              </Badge>
+              {categoryLabel && (
+                <Badge className={categoryColor}>
+                  {categoryLabel}
+                </Badge>
+              )}
               {aide.est_urgent && (
                 <Badge className="bg-red-100 text-red-800 flex items-center gap-1">
                   <AlertTriangle className="h-3 w-3" />

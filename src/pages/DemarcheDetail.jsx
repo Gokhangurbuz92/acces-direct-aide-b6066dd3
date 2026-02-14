@@ -26,6 +26,11 @@ import { generateBreadcrumbSchema, generateDemarcheSchema } from '@/utils/schema
 import SourceTraceability from '@/components/SourceTraceability';
 import FalcSummary from '@/components/FalcSummary';
 
+/** @typedef {Error & { status?: number, payload?: unknown }} ApiError */
+/** @typedef {{ numero?: number, titre?: string, title?: string, nom?: string, description?: string, contenu?: string, text?: string, conseils?: string }} DemarcheStep */
+/** @typedef {{ url?: string, nom?: string }} DemarcheSource */
+
+/** @type {Record<string, string>} */
 const CATEGORIE_LABELS = {
   logement: 'Logement',
   sante: 'Santé',
@@ -38,7 +43,31 @@ const CATEGORIE_LABELS = {
   numerique: 'Numérique',
   etrangers: 'Nouveaux arrivants',
   vieillissement: 'Autonomie',
+  autre: 'Autre',
 };
+
+/**
+ * @param {string} slug
+ * @param {AbortSignal | undefined} signal
+ * @returns {Promise<any>}
+ */
+async function fetchDemarcheBySlug(slug, signal) {
+  const res = await fetch(`/api/demarches/${encodeURIComponent(slug)}`, { signal });
+  const contentType = res.headers.get('content-type') || '';
+  const payload = contentType.includes('application/json')
+    ? await res.json().catch(() => null)
+    : await res.text().catch(() => null);
+
+  if (!res.ok) {
+    /** @type {ApiError} */
+    const err = new Error(`API Error: ${res.status}`);
+    err.status = res.status;
+    err.payload = payload;
+    throw err;
+  }
+
+  return payload;
+}
 
 export default function DemarcheDetail() {
   const { slug } = useParams();
@@ -47,13 +76,22 @@ export default function DemarcheDetail() {
   const id = searchParams.get('id');
   const identifier = slug || id;
 
-  const { data: queryData, isLoading } = useQuery({
+  const {
+    data: queryData,
+    isLoading,
+    isFetching,
+    error,
+    refetch,
+  } = useQuery({
     queryKey: ['demarche', identifier],
-    queryFn: () => client.entities.Demarche.filter(slug ? { slug } : { id }),
+    queryFn: ({ signal }) => {
+      if (slug) return fetchDemarcheBySlug(slug, signal);
+      return client.entities.Demarche.get(id);
+    },
     enabled: !!identifier
   });
 
-  // Safe unwrap: The API filter might return an array or { items: [] } depending on the implementation
+  // Safe unwrap: some endpoints may still return arrays or { items: [] }.
   const demarche = Array.isArray(queryData)
     ? queryData[0]
     : (queryData?.items ? queryData?.items[0] : queryData);
@@ -65,10 +103,36 @@ export default function DemarcheDetail() {
     }
   }, [demarche, slug, navigate]);
 
-  if (isLoading) {
+  if (isLoading || isFetching) {
     return (
       <div className="min-h-screen bg-slate-50 flex items-center justify-center">
         <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
+      </div>
+    );
+  }
+
+  if (error) {
+    /** @type {ApiError} */
+    const apiError = error;
+    const status = apiError?.status;
+    if (status === 404) return <NotFound />;
+
+    return (
+      <div className="min-h-screen bg-slate-50 flex items-center justify-center px-4 sm:px-6 py-12">
+        <div className="w-full max-w-md rounded-2xl border border-red-200 bg-red-50 p-6 text-red-900" role="alert">
+          <h1 className="text-lg font-semibold">Impossible de charger la démarche</h1>
+          <p className="mt-2 text-sm">Une erreur est survenue. Vous pouvez réessayer.</p>
+          <div className="mt-4 flex flex-wrap gap-3">
+            <Button type="button" variant="outline" onClick={() => refetch()}>
+              Réessayer
+            </Button>
+            <Link to={createPageUrl('Demarches')}>
+              <Button type="button" variant="ghost">
+                Retour aux démarches
+              </Button>
+            </Link>
+          </div>
+        </div>
       </div>
     );
   }
@@ -77,10 +141,39 @@ export default function DemarcheDetail() {
     return <NotFound />;
   }
 
+  const categorySlug = (() => {
+    const raw = demarche?.categorie || demarche?.category?.slug;
+    if (!raw) return null;
+    const value = String(raw).trim();
+    if (!value) return null;
+    return /^[A-Z_]+$/.test(value) ? value.toLowerCase() : value;
+  })();
+
+  const categoryLabel =
+    (categorySlug && CATEGORIE_LABELS[categorySlug]) ||
+    demarche?.category?.label ||
+    categorySlug ||
+    'Autre';
+
+  const canonicalPath = demarche.slug
+    ? `/demarches/${demarche.slug}`
+    : `/demarches/view?id=${encodeURIComponent(demarche.id)}`;
+
+  /** @type {string[]} */
+  const documentsNecessaires = Array.isArray(demarche.documents_necessaires)
+    ? demarche.documents_necessaires
+    : [];
+
+  /** @type {DemarcheStep[]} */
+  const steps = Array.isArray(demarche.etapes) ? demarche.etapes : [];
+
+  /** @type {DemarcheSource[]} */
+  const sources = Array.isArray(demarche.sources) ? demarche.sources : [];
+
   const breadcrumbs = [
     { name: 'Accueil', url: '/' },
     { name: 'Démarches', url: '/demarches' },
-    { name: demarche.titre, url: `/demarches/${demarche.slug}` }
+    { name: demarche.titre, url: canonicalPath }
   ];
 
   const schema = [
@@ -91,9 +184,9 @@ export default function DemarcheDetail() {
   return (
     <div className="min-h-screen bg-slate-50">
       <SEO
-        title={demarche.titre}
-        description={demarche.description_courte}
-        path={`/demarches/${demarche.slug}`}
+        title={`${demarche.titre} – Démarches`}
+        description={demarche.summary_falc || demarche.description_courte}
+        path={canonicalPath}
         schema={schema}
       />
       {/* Fil d'Ariane */}
@@ -123,7 +216,7 @@ export default function DemarcheDetail() {
         <Card className="mb-6">
           <CardContent className="p-6 md:p-8">
             <Badge className="bg-blue-100 text-blue-800 mb-4">
-              {CATEGORIE_LABELS[demarche.categorie] || demarche.categorie}
+              {categoryLabel}
             </Badge>
 
             <h1 className="text-2xl md:text-3xl font-bold text-slate-900 mb-4">
@@ -131,7 +224,7 @@ export default function DemarcheDetail() {
             </h1>
 
             <p className="text-lg text-slate-600 mb-6">
-              {demarche.description_courte}
+              {demarche.summary_falc || demarche.description_courte}
             </p>
 
             <div className="flex flex-wrap gap-4 text-sm text-slate-600">
@@ -174,7 +267,7 @@ export default function DemarcheDetail() {
             )}
 
             {/* Documents nécessaires */}
-            {demarche.documents_necessaires?.length > 0 && (
+            {documentsNecessaires.length > 0 && (
               <Card>
                 <CardContent className="p-6">
                   <h2 className="text-lg font-bold text-slate-900 mb-4 flex items-center gap-2">
@@ -182,7 +275,7 @@ export default function DemarcheDetail() {
                     Documents à préparer
                   </h2>
                   <ul className="space-y-3">
-                    {demarche.documents_necessaires.map((doc, idx) => (
+                    {documentsNecessaires.map((doc, idx) => (
                       <li key={idx} className="flex items-start gap-3">
                         <div className="w-6 h-6 rounded-full bg-blue-100 flex items-center justify-center flex-shrink-0 mt-0.5">
                           <CheckCircle2 className="h-4 w-4 text-blue-600" />
@@ -196,16 +289,16 @@ export default function DemarcheDetail() {
             )}
 
             {/* Étapes */}
-            {demarche.etapes?.length > 0 && (
+            {steps.length > 0 && (
               <Card>
                 <CardContent className="p-6">
                   <h2 className="text-lg font-bold text-slate-900 mb-6">
                     Les étapes à suivre
                   </h2>
                   <div className="space-y-6">
-                    {demarche.etapes.map((etape, idx) => (
+                    {steps.map((etape, idx) => (
                       <div key={idx} className="relative">
-                        {idx < demarche.etapes.length - 1 && (
+                        {idx < steps.length - 1 && (
                           <div className="absolute left-4 top-10 bottom-0 w-0.5 bg-slate-200" />
                         )}
                         <div className="flex gap-4">
@@ -253,12 +346,12 @@ export default function DemarcheDetail() {
             )}
 
             {/* Sources */}
-            {demarche.sources?.length > 0 && (
+            {sources.length > 0 && (
               <Card className="bg-slate-50">
                 <CardContent className="p-6">
                   <h2 className="text-lg font-bold text-slate-900 mb-3">Sources</h2>
                   <ul className="space-y-2">
-                    {demarche.sources.map((source, idx) => (
+                    {sources.map((source, idx) => (
                       <li key={idx}>
                         <a
                           href={source.url}
@@ -285,6 +378,7 @@ export default function DemarcheDetail() {
               retrieved_at={demarche.retrieved_at}
               last_checked_at={demarche.last_checked_at}
               source_last_modified={demarche.source_last_modified}
+              fetched_at={demarche.updatedAt}
             />
 
             {/* Actions */}
@@ -316,16 +410,16 @@ export default function DemarcheDetail() {
               <CardContent className="p-6">
                 <h3 className="font-bold text-slate-900 mb-3">En résumé</h3>
                 <div className="space-y-3 text-sm">
-                  {demarche.etapes?.length > 0 && (
+                  {steps.length > 0 && (
                     <div className="flex items-center gap-2">
                       <CheckCircle2 className="h-4 w-4 text-blue-600" />
-                      <span>{demarche.etapes.length} étapes</span>
+                      <span>{steps.length} étapes</span>
                     </div>
                   )}
-                  {demarche.documents_necessaires?.length > 0 && (
+                  {documentsNecessaires.length > 0 && (
                     <div className="flex items-center gap-2">
                       <FileText className="h-4 w-4 text-blue-600" />
-                      <span>{demarche.documents_necessaires.length} documents à préparer</span>
+                      <span>{documentsNecessaires.length} documents à préparer</span>
                     </div>
                   )}
                   {demarche.delai && (

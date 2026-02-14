@@ -1,28 +1,58 @@
-import { useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { client } from '@/api/client';
 import { useQuery } from '@tanstack/react-query';
+import { Search, RotateCcw, SlidersHorizontal } from 'lucide-react';
 import SEO from '@/components/SEO';
-import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import {
-  Search,
-  Loader2,
-  X,
-  Filter
-} from 'lucide-react';
+import { client } from '@/api/client';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Card, CardContent } from '@/components/ui/card';
+import { Skeleton } from '@/components/ui/skeleton';
 import EmptyState from '@/components/ui/EmptyState';
 import DemarcheCard from '@/components/cards/DemarcheCard';
+import { generateBreadcrumbSchema } from '@/utils/schema';
+
+/** @typedef {{ slug: string, label: string }} TaxonomyItem */
+/** @typedef {{ categories?: TaxonomyItem[], situations?: TaxonomyItem[] }} TaxonomyData */
+/** @typedef {{ slug?: string, label?: string }} CategoryRef */
+/** @typedef {{ id: string, slug?: string | null, titre?: string, description_courte?: string | null, summary_falc?: string | null, category?: CategoryRef | null }} DemarcheListItem */
+/** @typedef {{ total?: number, page?: number, limit?: number, pageSize?: number, totalPages?: number, hasNext?: boolean }} Pagination */
+
+const DEFAULT_LIMIT = 20;
+const LIMIT_OPTIONS = [10, 20, 50];
+
+/** @param {unknown} value */
+function parsePage(value) {
+  const parsed = Number.parseInt(String(value ?? '1'), 10);
+  if (!Number.isFinite(parsed) || parsed < 1) return 1;
+  return parsed;
+}
+
+/** @param {unknown} value */
+function parseLimit(value) {
+  const parsed = Number.parseInt(String(value ?? DEFAULT_LIMIT), 10);
+  if (!Number.isFinite(parsed)) return DEFAULT_LIMIT;
+  if (parsed < 1) return 1;
+  if (parsed > 50) return 50;
+  return parsed;
+}
 
 export default function Demarches() {
   const [searchParams, setSearchParams] = useSearchParams();
-  const [isFilterOpen, setIsFilterOpen] = useState(false);
+  const [isFiltersOpen, setIsFiltersOpen] = useState(false);
 
-  const q = searchParams.get('q') || '';
-  const category = searchParams.get('category') || '';
-  const situation = searchParams.get('situation') || '';
-  const page = searchParams.get('page') || '1';
+  const q = (searchParams.get('q') || '').trim();
+  const category = (searchParams.get('category') || searchParams.get('theme') || '').trim();
+  const situation = (searchParams.get('situation') || '').trim();
+  const page = parsePage(searchParams.get('page'));
+  const limit = parseLimit(searchParams.get('limit') || searchParams.get('pageSize'));
+  const sort = (searchParams.get('sort') || (q ? 'relevance' : 'quality')).trim();
+
+  const [queryInput, setQueryInput] = useState(q);
+
+  useEffect(() => {
+    setQueryInput(q);
+  }, [q]);
 
   // Fetch Taxonomy
   const { data: taxonomy } = useQuery({
@@ -30,21 +60,46 @@ export default function Demarches() {
     queryFn: () => client.taxonomy.get(),
   });
 
+  /** @type {TaxonomyData | undefined} */
+  const taxonomyData = taxonomy;
+
   // Fetch Demarches (Server-side)
-  const { data, isLoading } = useQuery({
-    queryKey: ['demarches', { q, category, situation, page }],
+  const {
+    data,
+    isLoading,
+    isFetching,
+    error,
+    refetch,
+  } = useQuery({
+    queryKey: ['demarches', { q, category, situation, sort, page, limit }],
     queryFn: () => client.entities.Demarche.filter({
       q,
       category,
       situation,
+      sort,
       page,
-      pageSize: 12
+      limit,
+      statut: 'publie',
     }),
   });
 
+  /** @type {DemarcheListItem[]} */
   const items = data?.items || [];
+  /** @type {Pagination} */
   const pagination = data?.pagination || {};
 
+  const liveMessage = useMemo(() => {
+    if (isLoading || isFetching) return 'Chargement des démarches...';
+    if (error) return "Erreur lors du chargement des démarches.";
+    if (!items.length) return 'Aucune démarche trouvée.';
+    const total = typeof pagination.total === 'number' ? pagination.total : items.length;
+    return `${total} démarche${total > 1 ? 's' : ''} trouvée${total > 1 ? 's' : ''}.`;
+  }, [isLoading, isFetching, error, items.length, pagination.total]);
+
+  /**
+   * @param {string} key
+   * @param {string} value
+   */
   const handleParamChange = (key, value) => {
     const newParams = new URLSearchParams(searchParams);
     if (value) {
@@ -52,180 +107,285 @@ export default function Demarches() {
     } else {
       newParams.delete(key);
     }
-    newParams.set('page', '1');
+    if (key !== 'page') {
+      newParams.set('page', '1');
+    }
     setSearchParams(newParams);
+  };
+
+  /** @param {import('react').FormEvent<HTMLFormElement>} event */
+  const handleSearchSubmit = (event) => {
+    event.preventDefault();
+    handleParamChange('q', queryInput.trim());
   };
 
   const clearFilters = () => {
     setSearchParams({});
+    setIsFiltersOpen(false);
   };
 
   const getTitle = () => {
-    if (category && taxonomy) {
-      const cat = taxonomy.categories.find(c => c.slug === category);
+    if (q) return `Démarches - ${q}`;
+    if (category && taxonomyData) {
+      const cat = taxonomyData.categories?.find((c) => c.slug === category);
       if (cat) return `Démarches - ${cat.label}`;
     }
-    if (situation && taxonomy) {
-      const sit = taxonomy.situations.find(s => s.slug === situation);
+    if (situation && taxonomyData) {
+      const sit = taxonomyData.situations?.find((s) => s.slug === situation);
       if (sit) return `Démarches pour : ${sit.label}`;
     }
     return 'Démarches administratives';
   };
 
   const getDescription = () => {
-    if (category && taxonomy) {
-      const cat = taxonomy.categories.find(c => c.slug === category);
+    if (q) return `Résultats pour la recherche "${q}" sur les démarches disponibles.`;
+    if (category && taxonomyData) {
+      const cat = taxonomyData.categories?.find((c) => c.slug === category);
       if (cat) return `Toutes les démarches administratives et guides pas à pas pour la catégorie ${cat.label}.`;
     }
-    if (situation && taxonomy) {
-      const sit = taxonomy.situations.find(s => s.slug === situation);
+    if (situation && taxonomyData) {
+      const sit = taxonomyData.situations?.find((s) => s.slug === situation);
       if (sit) return `Guides et démarches pour votre situation : ${sit.label}.`;
     }
     return 'Besoin d\'aide pour vos démarches ? Retrouvez nos guides pas à pas pour la CAF, le RSA, vos papiers d\'identité et plus encore.';
   };
 
-  const currentPath = category ? `/demarches?category=${category}` : (situation ? `/demarches?situation=${situation}` : '/demarches');
+  const schema = useMemo(() => {
+    return [
+      generateBreadcrumbSchema([
+        { name: 'Accueil', url: '/' },
+        { name: 'Démarches', url: '/demarches' },
+      ]),
+    ].filter(Boolean);
+  }, []);
 
   return (
     <div className="min-h-screen bg-slate-50">
       <SEO
         title={getTitle()}
         description={getDescription()}
-        path={currentPath}
+        path="/demarches"
+        schema={schema}
       />
+
+      <p className="sr-only" role="status" aria-live="polite">
+        {liveMessage}
+      </p>
 
       {/* Header */}
       <div className="bg-white border-b border-slate-200 py-6 sticky top-0 z-10 shadow-sm">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 flex flex-col md:flex-row md:items-center gap-4">
-          <h1 className="text-2xl font-bold text-slate-900 whitespace-nowrap hidden lg:block">
-            Démarches
-          </h1>
-          <div className="flex-1 relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-slate-400" />
-            <Input
-              placeholder="Rechercher une démarche (ex: passport, rsa...)"
-              defaultValue={q}
-              onBlur={(e) => handleParamChange('q', e.target.value)}
-              className="pl-10 h-11 bg-slate-50 border-slate-200 focus:bg-white transition-colors"
-            />
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 flex flex-col gap-4">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+            <div>
+              <h1 className="text-2xl font-bold text-slate-900">Démarches</h1>
+              <p className="text-slate-600 text-sm">
+                Trouvez une démarche, filtrez par catégorie ou situation, et accédez aux liens officiels.
+              </p>
+            </div>
+            <Button
+              type="button"
+              variant="outline"
+              className="gap-2"
+              onClick={() => setIsFiltersOpen((open) => !open)}
+              aria-expanded={isFiltersOpen}
+            >
+              <SlidersHorizontal className="h-4 w-4" aria-hidden="true" />
+              Filtres
+            </Button>
           </div>
-          <Button
-            variant="outline"
-            className="md:hidden"
-            onClick={() => setIsFilterOpen(!isFilterOpen)}
-          >
-            <Filter className="h-4 w-4 mr-2" />
-            Filtres
-          </Button>
+
+          {/* Search bar */}
+          <form onSubmit={handleSearchSubmit} className="flex flex-col sm:flex-row gap-3">
+            <div className="relative flex-1">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-slate-400" aria-hidden="true" />
+              <Input
+                value={queryInput}
+                onChange={(e) => setQueryInput(e.target.value)}
+                placeholder="Rechercher une démarche (ex: passeport, RSA...)"
+                aria-label="Rechercher une démarche"
+                className="pl-10 h-11 bg-slate-50 border-slate-200 focus:bg-white transition-colors"
+                data-testid="demarches-search-input"
+              />
+            </div>
+            <Button type="submit" className="h-11" data-testid="demarches-search-submit">
+              Rechercher
+            </Button>
+          </form>
+
+          {/* Filters */}
+          {isFiltersOpen && (
+            <Card>
+              <CardContent className="p-4">
+                <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+                  <div>
+                    <label htmlFor="demarches-category" className="block text-sm font-semibold text-slate-900 mb-1">
+                      Catégorie
+                    </label>
+                    <select
+                      id="demarches-category"
+                      className="w-full h-10 rounded-md border border-slate-200 bg-white px-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      value={category}
+                      onChange={(e) => handleParamChange('category', e.target.value)}
+                    >
+                      <option value="">Toutes</option>
+                      {(taxonomyData?.categories || []).map((cat) => (
+                        <option key={cat.slug} value={cat.slug}>
+                          {cat.label}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div>
+                    <label htmlFor="demarches-situation" className="block text-sm font-semibold text-slate-900 mb-1">
+                      Situation
+                    </label>
+                    <select
+                      id="demarches-situation"
+                      className="w-full h-10 rounded-md border border-slate-200 bg-white px-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      value={situation}
+                      onChange={(e) => handleParamChange('situation', e.target.value)}
+                    >
+                      <option value="">Toutes</option>
+                      {(taxonomyData?.situations || []).map((sit) => (
+                        <option key={sit.slug} value={sit.slug}>
+                          {sit.label}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div>
+                    <label htmlFor="demarches-sort" className="block text-sm font-semibold text-slate-900 mb-1">
+                      Trier
+                    </label>
+                    <select
+                      id="demarches-sort"
+                      className="w-full h-10 rounded-md border border-slate-200 bg-white px-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      value={sort}
+                      onChange={(e) => handleParamChange('sort', e.target.value)}
+                    >
+                      <option value="quality">Qualité</option>
+                      <option value="recent">Récents</option>
+                      <option value="relevance" disabled={!q}>
+                        Pertinence {q ? '' : '(nécessite une recherche)'}
+                      </option>
+                    </select>
+                  </div>
+
+                  <div>
+                    <label htmlFor="demarches-limit" className="block text-sm font-semibold text-slate-900 mb-1">
+                      Par page
+                    </label>
+                    <select
+                      id="demarches-limit"
+                      className="w-full h-10 rounded-md border border-slate-200 bg-white px-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      value={String(limit)}
+                      onChange={(e) => handleParamChange('limit', e.target.value)}
+                    >
+                      {LIMIT_OPTIONS.map((opt) => (
+                        <option key={opt} value={String(opt)}>
+                          {opt}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+
+                <div className="mt-4 flex flex-wrap items-center justify-between gap-3">
+                  <Button type="button" variant="ghost" onClick={clearFilters}>
+                    Réinitialiser
+                  </Button>
+                  <Button type="button" variant="outline" onClick={() => setIsFiltersOpen(false)}>
+                    Fermer
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          )}
         </div>
       </div>
 
+      {/* Results */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8">
-        <div className="flex gap-8">
-          {/* Sidebar Filters */}
-          <aside className={`
-            fixed inset-0 z-20 bg-white p-6 md:relative md:bg-transparent md:p-0 md:block w-72 shrink-0
-            ${isFilterOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'}
-            transition-transform duration-200 ease-in-out
-          `}>
-            <div className="flex items-center justify-between mb-6 md:hidden">
-              <h2 className="text-xl font-bold">Filtres</h2>
-              <Button variant="ghost" size="icon" onClick={() => setIsFilterOpen(false)}>
-                <X className="h-6 w-6" />
-              </Button>
+        {error && (
+          <div
+            className="rounded-2xl border border-red-200 bg-red-50 p-6 text-red-900"
+            role="alert"
+            data-testid="demarches-error-state"
+          >
+            <h2 className="text-lg font-semibold">Impossible de charger les démarches</h2>
+            <p className="mt-2 text-sm">
+              Une erreur est survenue. Vous pouvez réessayer.
+            </p>
+            <Button type="button" variant="outline" className="mt-4" onClick={() => refetch()}>
+              <RotateCcw className="mr-2 h-4 w-4" />
+              Réessayer
+            </Button>
+          </div>
+        )}
+
+        {(isLoading || isFetching) && !error && (
+          <div className="space-y-3" data-testid="demarches-loading-state">
+            {[1, 2, 3, 4, 5, 6].map((value) => (
+              <div key={value} className="rounded-xl border border-slate-200 bg-white p-5">
+                <Skeleton className="h-4 w-24" />
+                <Skeleton className="mt-3 h-5 w-3/4" />
+                <Skeleton className="mt-2 h-4 w-full" />
+                <Skeleton className="mt-2 h-4 w-2/3" />
+              </div>
+            ))}
+          </div>
+        )}
+
+        {!error && !isLoading && !isFetching && items.length === 0 && (
+          <div data-testid="demarches-empty-state">
+            <EmptyState
+              title="Aucune démarche trouvée"
+              message="Essayez une autre recherche ou ajustez les filtres."
+              actionLabel="Réinitialiser les filtres"
+              onAction={clearFilters}
+              type="search"
+            />
+          </div>
+        )}
+
+        {!error && items.length > 0 && (
+          <>
+            <p className="mb-4 text-sm text-slate-600" data-testid="demarches-success-state">
+              {pagination.total ?? items.length} démarche{(pagination.total ?? items.length) > 1 ? 's' : ''} trouvée{(pagination.total ?? items.length) > 1 ? 's' : ''}.
+            </p>
+            <div className="grid gap-6 md:grid-cols-2" data-testid="demarches-results-list">
+              {items.map((demarche) => (
+                <DemarcheCard key={demarche.id} demarche={demarche} />
+              ))}
             </div>
 
-            <div className="space-y-8">
-              <div>
-                <h3 className="text-sm font-semibold text-slate-900 uppercase tracking-wider mb-4">Catégories</h3>
-                <div className="space-y-1">
-                  <button
-                    onClick={() => handleParamChange('category', '')}
-                    className={`w-full text-left px-3 py-2 rounded-md transition-colors text-sm ${!category ? 'bg-blue-50 text-blue-700 font-medium' : 'text-slate-600 hover:bg-slate-100'}`}
-                  >
-                    Toutes les catégories
-                  </button>
-                  {taxonomy?.categories.map((cat) => (
-                    <button
-                      key={cat.slug}
-                      onClick={() => handleParamChange('category', cat.slug)}
-                      className={`w-full text-left px-3 py-2 rounded-md transition-colors text-sm flex justify-between items-center ${category === cat.slug ? 'bg-blue-50 text-blue-700 font-medium' : 'text-slate-600 hover:bg-slate-100'}`}
-                    >
-                      <span>{cat.label}</span>
-                      <span className="text-xs text-slate-400">{cat.demarchesCount}</span>
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              <div>
-                <h3 className="text-sm font-semibold text-slate-900 uppercase tracking-wider mb-4">Situations</h3>
-                <div className="space-y-1">
-                  <button
-                    onClick={() => handleParamChange('situation', '')}
-                    className={`w-full text-left px-3 py-2 rounded-md transition-colors text-sm ${!situation ? 'bg-blue-50 text-blue-700 font-medium' : 'text-slate-600 hover:bg-slate-100'}`}
-                  >
-                    Toutes les situations
-                  </button>
-                  {taxonomy?.situations.map((sit) => (
-                    <button
-                      key={sit.slug}
-                      onClick={() => handleParamChange('situation', sit.slug)}
-                      className={`w-full text-left px-3 py-2 rounded-md transition-colors text-sm flex justify-between items-center ${situation === sit.slug ? 'bg-blue-50 text-blue-700 font-medium' : 'text-slate-600 hover:bg-slate-100'}`}
-                    >
-                      <span>{sit.label}</span>
-                      <span className="text-xs text-slate-400">{sit.demarchesCount}</span>
-                    </button>
-                  ))}
-                </div>
-              </div>
-            </div>
-          </aside>
-
-          {/* Main Content */}
-          <main className="flex-1">
-            {(category || situation || q) && (
-              <div className="flex flex-wrap items-center gap-2 mb-6">
-                <span className="text-sm text-slate-500 mr-2">Filtres :</span>
-                {category && <Badge variant="secondary" className="pl-3 pr-2 py-1">Cat : {category} <X className="h-3 w-3 ml-2 cursor-pointer" onClick={() => handleParamChange('category', '')} /></Badge>}
-                {situation && <Badge variant="secondary" className="pl-3 pr-2 py-1">Sit : {situation} <X className="h-3 w-3 ml-2 cursor-pointer" onClick={() => handleParamChange('situation', '')} /></Badge>}
-                {q && <Badge variant="secondary" className="pl-3 pr-2 py-1">"{q}" <X className="h-3 w-3 ml-2 cursor-pointer" onClick={() => handleParamChange('q', '')} /></Badge>}
-                <Button variant="ghost" size="sm" onClick={clearFilters} className="text-xs text-blue-600">Tout effacer</Button>
+            {(pagination.totalPages || 1) > 1 && (
+              <div className="mt-10 flex flex-col sm:flex-row items-center justify-center gap-3">
+                <Button
+                  type="button"
+                  variant="outline"
+                  disabled={page <= 1}
+                  onClick={() => handleParamChange('page', String(page - 1))}
+                >
+                  Précédent
+                </Button>
+                <span className="text-sm text-slate-600">
+                  Page {page} sur {pagination.totalPages || 1}
+                </span>
+                <Button
+                  type="button"
+                  variant="outline"
+                  disabled={pagination.hasNext != null ? !pagination.hasNext : page >= (pagination.totalPages || 1)}
+                  onClick={() => handleParamChange('page', String(page + 1))}
+                >
+                  Suivant
+                </Button>
               </div>
             )}
-
-            {isLoading ? (
-              <div className="flex flex-col items-center justify-center py-20">
-                <Loader2 className="h-10 w-10 animate-spin text-blue-600 mb-4" />
-                <p className="text-slate-500">Chargement des démarches...</p>
-              </div>
-            ) : items.length > 0 ? (
-              <>
-                <div className="grid md:grid-cols-2 gap-6">
-                  {items.map((demarche) => (
-                    <DemarcheCard key={demarche.id} demarche={demarche} />
-                  ))}
-                </div>
-
-                {pagination.totalPages > 1 && (
-                  <div className="flex justify-center mt-12 gap-2">
-                    <Button variant="outline" size="sm" disabled={pagination.page <= 1} onClick={() => handleParamChange('page', pagination.page - 1)}> Précédent </Button>
-                    <span className="flex items-center px-4 text-sm font-medium"> {pagination.page} / {pagination.totalPages} </span>
-                    <Button variant="outline" size="sm" disabled={pagination.page >= pagination.totalPages} onClick={() => handleParamChange('page', pagination.page + 1)}> Suivant </Button>
-                  </div>
-                )}
-              </>
-            ) : (
-              <EmptyState
-                title="Aucun guide trouvé"
-                message="Désolé, nous n'avons pas encore de guide pour cette recherche ou ce filtre."
-                actionLabel="Voir toutes les démarches"
-                onAction={clearFilters}
-                type="search"
-              />
-            )}
-          </main>
-        </div>
+          </>
+        )}
       </div>
     </div>
   );

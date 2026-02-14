@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { client } from '@/api/client';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -38,7 +38,7 @@ export default function ChatWidget() {
           metadata: { name: 'Conversation utilisateur' }
         });
         setConversationId(conv.id);
-      } catch (error) {
+      } catch {
         console.log('Agent non disponible, utilisation du mode de secours');
       }
     };
@@ -88,7 +88,7 @@ export default function ChatWidget() {
         setMessages(prev => [...prev, { role: 'assistant', content: response }]);
         setIsLoading(false);
       }
-    } catch (error) {
+    } catch {
       setMessages(prev => [...prev, {
         role: 'assistant',
         content: "Je suis désolé, je n'ai pas pu traiter votre demande. Vous pouvez utiliser la recherche du site ou contacter une structure d'aide."

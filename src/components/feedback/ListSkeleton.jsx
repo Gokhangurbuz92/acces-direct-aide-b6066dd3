@@ -5,7 +5,6 @@
  * Provides consistent loading experience across Aides, Demarches, Annuaire, Actualites.
  */
 
-import React from 'react';
 import { Loader2 } from 'lucide-react';
 
 /**

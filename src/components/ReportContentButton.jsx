@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { Flag, X, Loader2 } from 'lucide-react';
+import { useState } from 'react';
+import { Flag, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   Dialog,

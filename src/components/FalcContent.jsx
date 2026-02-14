@@ -6,7 +6,7 @@
  * - Clear structure with headings
  * - Action steps when available
  */
-export default function FalcContent({ falcData, entityType = 'aide' }) {
+export default function FalcContent({ falcData }) {
   if (!falcData) {
     return (
       <div className="falc-content-empty" style={{ padding: '1rem', color: '#666' }}>

@@ -89,8 +89,24 @@ test.describe('Public Core Navigation', () => {
   });
 
   test('Demarches Flow: List -> Detail -> Refresh', async ({ page }) => {
-    // Mock List
-    await page.route('**/api/demarches*', async route => {
+    // Mock List + Detail
+    await page.route('**/api/demarches**', async route => {
+      const url = new URL(route.request().url());
+      const isDetail = url.pathname.endsWith('/api/demarches/demarche-test');
+
+      if (isDetail) {
+        await route.fulfill({
+          json: {
+            id: 'dem-1',
+            slug: 'demarche-test',
+            titre: 'Demarche Test',
+            description_courte: 'Full description',
+            category: { slug: 'sante', label: 'Santé' },
+          },
+        });
+        return;
+      }
+
       await route.fulfill({
         json: {
           items: [{
@@ -98,22 +114,10 @@ test.describe('Public Core Navigation', () => {
             slug: 'demarche-test',
             titre: 'Demarche Test',
             summary_falc: 'Summary',
-            categorie: 'sante'
+            category: { slug: 'sante', label: 'Santé' },
           }],
-          pagination: { page: 1, totalPages: 1 }
-        }
-      });
-    });
-
-    // Mock Detail
-    await page.route('**/api/demarches/demarche-test', async route => {
-      await route.fulfill({
-        json: {
-          id: 'dem-1',
-          slug: 'demarche-test',
-          titre: 'Demarche Test',
-          description: 'Full description'
-        }
+          pagination: { page: 1, totalPages: 1, total: 1, limit: 20, pageSize: 20, hasNext: false },
+        },
       });
     });
 

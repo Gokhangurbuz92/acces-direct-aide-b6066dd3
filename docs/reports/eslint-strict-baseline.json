@@ -1,0 +1,8 @@
+{
+  "generatedAt": "2026-02-14T06:41:00.385Z",
+  "config": "eslint.strict.config.js",
+  "total": 280,
+  "byRule": {
+    "no-unused-vars": 280
+  }
+}

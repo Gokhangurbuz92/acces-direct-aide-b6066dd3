@@ -75,6 +75,7 @@
 ./api/_handlers/reports.js
 ./api/_handlers/ressources.js
 ./api/_handlers/robots.js
+./api/_handlers/search.js
 ./api/_handlers/sentry-test.js
 ./api/_handlers/sitemap.js
 ./api/_handlers/structures.js
@@ -83,6 +84,7 @@
 ./api/_handlers/upload.js
 ./api/_handlers/version.js
 ./api/_utils/auth.js
+./api/_utils/build-info.js
 ./api/_utils/cache.js
 ./api/_utils/cachePolicy.js
 ./api/_utils/cronAuth.js
@@ -106,7 +108,9 @@
 ./api/index.js
 ./api/lib/crypto.js
 ./api/lib/falc-summarizer.js
+./api/lib/gemini-embedding.js
 ./api/lib/gemini.js
+./api/lib/hybrid-search.js
 ./api/lib/ingestion/AgefiphConnector.js
 ./api/lib/ingestion/GrandEstConnector.js
 ./api/lib/ingestion/SourceConnector.js
@@ -140,12 +144,14 @@
 ./docs/02-target-map-from-blueprint.md
 ./docs/03-delta-plan.md
 ./docs/ACCESSIBILITY_AUDIT.md
+./docs/ADMIN_GUIDE.md
 ./docs/API_CONTRACT.md
 ./docs/BACKUP_RESTORE.md
 ./docs/BRANDING.md
 ./docs/CI_PIPELINE.md
 ./docs/CRITICAL_PATHS.md
 ./docs/CRON_SECURITY.md
+./docs/DEV_DB_LOCAL.md
 ./docs/FALC_FIELDS_PRIORITY.md
 ./docs/FALC_GUIDE.md
 ./docs/GO-LIVE.md
@@ -174,7 +180,6 @@
 ./docs/VERCEL_MIGRATION_GUIDE.md
 ./docs/VERIFICATION_PROD.md
 ./docs/WALKTHROUGH_AIDES.md
-./docs/admin-guide.md
 ./docs/audit-report.md
 ./docs/audit/BASELINE.md
 ./docs/audit/INVENTORY.md
@@ -327,9 +332,12 @@
 ./prisma/migrations/20260207_p0_db_drift_fix/migration.sql
 ./prisma/migrations/20260208030304_add_content_report/migration.sql
 ./prisma/migrations/20260208031043_add_territory_fields/migration.sql
+./prisma/migrations/20260212161000_add_quality_score/migration.sql
+./prisma/migrations/20260212162500_add_quality_score_demarche/migration.sql
 ./prisma/migrations/20260228000000_ensure_unaccent/migration.sql
 ./prisma/migrations/20260228000001_add_fts_indexes/migration.sql
 ./prisma/migrations/20260228000002_add_missing_aide_fields/migration.sql
+./prisma/migrations/20260301000000_ai_foundation_search/migration.sql
 ./prisma/migrations/migration_lock.toml
 ./prisma/schema.prisma
 ./prisma/schema.prisma.backup
@@ -442,6 +450,7 @@
 ./scripts/debug-security.mjs
 ./scripts/dev-demo-setup.js
 ./scripts/diagnostic-env.js
+./scripts/doctor-env.mjs
 ./scripts/enable-unaccent.js
 ./scripts/final_verify.sh
 ./scripts/fix_extensions.py
@@ -617,6 +626,7 @@
 ./src/design/tokens.json
 ./src/hooks/use-mobile.jsx
 ./src/index.css
+./src/lib/gemini.ts
 ./src/lib/jsonld.js
 ./src/lib/queryClient.js
 ./src/lib/queryState.js
@@ -646,7 +656,9 @@
 ./src/pages/AideDetailBlueprintTrust.jsx
 ./src/pages/Aides.jsx
 ./src/pages/Annuaire.jsx
+./src/pages/AppointmentCancel.jsx
 ./src/pages/AppointmentRequest.jsx
+./src/pages/AppointmentReschedule.jsx
 ./src/pages/BeneficiaryMessages.jsx
 ./src/pages/BlueprintTrustDemo.jsx
 ./src/pages/Confidentialite.jsx
@@ -715,6 +727,7 @@
 ./tests/integration/pipeline_routing.test.js
 ./tests/integration/rateLimit.test.js
 ./tests/integration/ressources.test.js
+./tests/integration/search_api.test.js
 ./tests/integration/seo-technical.test.js
 ./tests/integration/url_consistency.test.js
 ./tests/setup-env.js

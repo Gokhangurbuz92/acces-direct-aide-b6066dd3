@@ -1,104 +1,88 @@
-# Routes API
+# API Routes
 
-Ce document recense l'ensemble des routes définies dans `api/routes.js`.
+Ce document liste les routes API définies dans `api/routes.js`.
+L'architecture est "Monolithic Serverless" : un seul point d'entrée `api/index.js` qui dispatch vers les handlers.
 
-Toutes les routes sont préfixées par `/api` (ex: `/api/health`).
+## Special / Root
 
-## 1. Routes Système & Utilitaires
-
-| Path | Handler | Auth | Description |
+| Method | Path | Handler | Description |
 |---|---|---|---|
-| `/health` | `_handlers/health.js` | None | Vérification de santé (status 200) |
-| `/healthz` | `_handlers/health.js` | None | Alias Health |
-| `/robots.txt` | `_handlers/robots.js` | None | Robots.txt dynamique |
-| `/robots` | `_handlers/robots.js` | None | Alias Robots |
-| `/sitemap.xml` | `_handlers/sitemap.js` | None | Sitemap XML dynamique |
-| `/sitemap` | `_handlers/sitemap.js` | None | Alias Sitemap |
-| `/search` | `_handlers/search.js` | None | Recherche hybride aides (POST) |
-| `/upload` | `_handlers/upload.js` | Admin/Pro | Upload de fichiers (mock ou stockage) |
-| `/download` | `_handlers/download.js` | Admin/Pro | Téléchargement / Export |
-| `/taxonomy` | `_handlers/taxonomy.js` | None | Référentiel (tags, catégories) |
-| `/login-pro-guard` | `_handlers/login-pro-guard.js` | None | Check Pro Login availability |
+| POST | `/api/upload` | `_handlers/upload.js` | Upload de fichiers (in-memory/storage) |
+| GET | `/api/download` | `_handlers/download.js` | Téléchargement de fichiers |
+| GET | `/api/health`, `/api/healthz` | `_handlers/health.js` | Healthcheck (k8s/uptime) |
+| GET | `/api/robots.txt`, `/api/robots` | `_handlers/robots.js` | SEO robots.txt |
+| GET | `/api/sitemap.xml`, `/api/sitemap` | `_handlers/sitemap.js` | SEO sitemap.xml |
+| GET | `/api/login-pro-guard` | `_handlers/login-pro-guard.js` | Guard check |
+| GET | `/api/taxonomy` | `_handlers/taxonomy.js` | Taxonomie (catégories, thèmes) |
 
-## 2. Authentification & Pro
+## Auth (Admin)
 
-| Path | Handler | Auth | Description |
+| Method | Path | Handler | Description |
 |---|---|---|---|
-| `/auth/login` | `_handlers/auth/login.js` | None | Login Admin |
-| `/auth/me` | `_handlers/auth/me.js` | Token | Profil Admin connecté |
-| `/pro/auth/login` | `_handlers/pro/auth/login.js` | None | Login Pro |
-| `/pro/auth/register` | `_handlers/pro/auth/register.js` | None | Inscription Pro |
-| `/pro/auth/forgot-password` | `_handlers/pro/auth/forgot-password.js` | None | Oubli mot de passe |
-| `/pro/auth/reset-password` | `_handlers/pro/auth/reset-password.js` | None | Reset mot de passe |
-| `/pro/me` | `_handlers/pro/me.js` | Pro | Profil Pro connecté |
-| `/pro/messages` | `_handlers/pro/messages.js` | Pro | Messagerie Pro |
-| `/pro/appointments` | `_handlers/pro/appointments/list.js` | Pro | Liste RDV Pro |
-| `/pro/appointments/cancel` | `_handlers/pro/appointments/cancel.js` | Pro | Annulation RDV par Pro |
-| `/pro/availability` | `_handlers/pro/availability.js` | Pro | Gestion disponibilités |
+| POST | `/api/auth/login` | `_handlers/auth/login.js` | Connexion Admin |
+| GET | `/api/auth/me` | `_handlers/auth/me.js` | Profil Admin |
 
-## 3. Contenu Public (Core Data)
+## Pro Module
 
-Ces routes gèrent le CRUD (Lecture publique, Écriture Admin).
-
-| Path | Handler | Auth | Description |
+| Method | Path | Handler | Description |
 |---|---|---|---|
-| `/aides` | `_handlers/aides.js` | None / Admin | Liste Aides, Détail (/:slug) |
-| `/structures` | `_handlers/structures.js` | None / Admin | Annuaire, Détail |
-| `/demarches` | `_handlers/demarches.js` | None / Admin | Liste Démarches, Détail |
-| `/actualites` | `_handlers/actualites.js` | None / Admin | Actualités |
-| `/guides` | `_handlers/guides.js` | None / Admin | Bonnes pratiques |
-| `/tools` | `_handlers/tools.js` | None / Admin | Outils |
-| `/dispositifs` | `_handlers/dispositifs/index.js` | None / Admin | Dispositifs |
-| `/ressources` | `_handlers/ressources.js` | None / Admin | Ressources (Générique) |
-| `/reports` | `_handlers/reports.js` | None / Admin | Signalements de contenu |
-| `/public/stats` | `_handlers/public/stats.js` | None | Statistiques publiques |
-| `/public/messages` | `_handlers/public/messages.js` | None | Envoi message (Contact) |
-| `/public/suggest-structure` | `_handlers/public/suggest-structure.js` | None | Suggestion ajout structure |
+| POST | `/api/pro/auth/login` | `_handlers/pro/auth/login.js` | Connexion Pro |
+| POST | `/api/pro/auth/register` | `_handlers/pro/auth/register.js` | Inscription Pro |
+| POST | `/api/pro/auth/forgot-password` | `_handlers/pro/auth/forgot-password.js` | Mot de passe oublié |
+| POST | `/api/pro/auth/reset-password` | `_handlers/pro/auth/reset-password.js` | Reset mot de passe |
+| GET | `/api/pro/me` | `_handlers/pro/me.js` | Profil Pro |
+| GET | `/api/pro/messages` | `_handlers/pro/messages.js` | Messagerie Pro |
+| GET | `/api/pro/appointments` | `_handlers/pro/appointments/list.js` | Liste RDV Pro |
+| POST | `/api/pro/appointments/cancel` | `_handlers/pro/appointments/cancel.js` | Annulation RDV Pro |
+| GET | `/api/pro/availability` | `_handlers/pro/availability.js` | Disponibilités Pro |
 
-## 4. Prise de Rendez-vous (Public)
+## Public Content & Interactive
 
-| Path | Handler | Auth | Description |
+| Method | Path | Handler | Description |
 |---|---|---|---|
-| `/public/availability` | `_handlers/public/availability.js` | None | Disponibilités publiques |
-| `/appointments` | `_handlers/public/appointments/create.js` | None | Création RDV |
-| `/appointments/cancel` | `_handlers/public/appointments/cancel.js` | Token | Annulation RDV (Bénéficiaire) |
+| POST | `/api/public/messages` | `_handlers/public/messages.js` | Envoi message public |
+| POST | `/api/public/suggest-structure` | `_handlers/public/suggest-structure.js` | Suggestion structure |
+| GET | `/api/public/stats` | `_handlers/public/stats.js` | Statistiques publiques |
+| GET | `/api/public/availability` | `_handlers/public/availability.js` | Disponibilité publique RDV |
+| POST | `/api/appointments` | `_handlers/public/appointments/create.js` | Prise de RDV |
+| POST | `/api/appointments/cancel` | `_handlers/public/appointments/cancel.js` | Annulation RDV (Public) |
 
-## 5. Administration & Cron
+## Core Data Resources
 
-| Path | Handler | Auth | Description |
-|---|---|---|---|
-| `/cron/pipeline` | `_handlers/cron/pipeline.js` | Cron Secret | Pipeline de synchro |
-| `/cron/ingest-structures` | `_handlers/cron/ingest-structures.js` | Cron Secret | Ingestion structures |
-| `/cron/ingest-aids` | `_handlers/cron/ingest-aids.js` | Cron Secret | Ingestion aides |
-| `/cron/purge` | `_handlers/cron/purge.js` | Cron Secret | Purge RGPD |
-| `/cron/link-check` | `_handlers/cron/link-check.js` | Cron Secret | Vérification liens morts |
-| `/admin/privacy/export` | `_handlers/admin/privacy/export.js` | Admin | Export données personnelles |
-| `/admin/privacy/delete` | `_handlers/admin/privacy/delete.js` | Admin | Suppression données |
-| `/admin/inbox` | `_handlers/admin/inbox.js` | Admin | Boîte réception admin |
-| `/admin/actions` | `_handlers/admin/actions.js` | Admin | Actions diverses (test sync) |
-| `/admin/runs` | `_handlers/admin/runs.js` | Admin | Historique Jobs/Runs |
-| `/admin/partnerships` | `_handlers/admin/partnerships.js` | Admin | Gestion Partenariats |
-| `/admin/link-checks` | `_handlers/admin/link-checks.js` | Admin | Rapport liens morts |
-| `/admin/validate-publication` | `_handlers/admin/validate-publication.js` | Admin | Validation contenu modéré |
+Ces routes gèrent souvent GET (list/detail) et parfois POST/PUT/DELETE (admin).
 
-## Conventions de Réponse
+| Path (Prefix) | Handler | Description |
+|---|---|---|
+| `/api/aides` | `_handlers/aides.js` | Aides (Listing, Détail, CRUD) |
+| `/api/search` | `_handlers/search.js` | Recherche globale |
+| `/api/structures` | `_handlers/structures.js` | Structures (Annuaire) |
+| `/api/demarches` | `_handlers/demarches.js` | Démarches |
+| `/api/actualites` | `_handlers/actualites.js` | Actualités |
+| `/api/guides` | `_handlers/guides.js` | Guides |
+| `/api/tools` | `_handlers/tools.js` | Outils |
+| `/api/dispositifs` | `_handlers/dispositifs/index.js` | Dispositifs |
+| `/api/ressources` | `_handlers/ressources.js` | Ressources documentaires |
+| `/api/reports` | `_handlers/reports.js` | Signalements / Rapports |
 
-```json
-{
-  "data": { ... },     // Objet ou Tableau de résultats
-  "meta": {            // Métadonnées (pagination, version)
-    "total": 100,
-    "page": 1
-  },
-  "error": null        // Présent si erreur (code, message)
-}
-```
+## Cron Jobs (Vercel)
 
-## Codes HTTP Standards
-- `200 OK` : Succès
-- `201 Created` : Création réussie
-- `400 Bad Request` : Erreur de validation
-- `401 Unauthorized` : Token manquant ou invalide
-- `403 Forbidden` : Droits insuffisants
-- `404 Not Found` : Ressource introuvable
-- `500 Internal Server Error` : Erreur serveur non gérée
+| Path | Handler | Schedule (vercel.json) |
+|---|---|---|
+| `/api/cron/pipeline` | `_handlers/cron/pipeline.js` | `0 * * * *` (Hourly) |
+| `/api/cron/ingest-structures` | `_handlers/cron/ingest-structures.js` | `0 2 * * 0` (Weekly) |
+| `/api/cron/ingest-aids` | `_handlers/cron/ingest-aids.js` | (Manuel / Triggered) |
+| `/api/cron/purge` | `_handlers/cron/purge.js` | (Manuel / Triggered) |
+| `/api/cron/link-check` | `_handlers/cron/link-check.js` | (Manuel / Triggered) |
+
+## Admin Utilities
+
+| Path | Handler | Description |
+|---|---|---|
+| `/api/admin/privacy/export` | `_handlers/admin/privacy/export.js` | Export RGPD |
+| `/api/admin/privacy/delete` | `_handlers/admin/privacy/delete.js` | Suppression RGPD |
+| `/api/admin/inbox` | `_handlers/admin/inbox.js` | Inbox Admin |
+| `/api/admin/actions` | `_handlers/admin/actions.js` | Actions en masse |
+| `/api/admin/runs` | `_handlers/admin/runs.js` | Historique Jobs |
+| `/api/admin/partnerships` | `_handlers/admin/partnerships.js` | Partenariats |
+| `/api/admin/link-checks` | `_handlers/admin/link-checks.js` | Vérification liens |
+| `/api/admin/validate-publication` | `_handlers/admin/validate-publication.js` | Validation publication |

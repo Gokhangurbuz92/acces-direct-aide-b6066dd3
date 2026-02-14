@@ -1,62 +1,65 @@
-# Contrat d'Interface API
+# API Contract
 
-Toutes les réponses de l'API (`/api/*`) suivent un format JSON standardisé.
+L'API AccesDirectAide suit une structure de réponse standardisée pour garantir la prévisibilité côté client.
+Tous les endpoints JSON (hors fichiers binaires) respectent ce format.
 
-## Format de Réponse
+## Format de Réponse (Enveloppe)
 
-Chaque réponse API est un objet JSON avec la structure suivante :
+Chaque réponse HTTP 200 (OK) contient une enveloppe JSON :
 
 ```json
 {
-  "data": <any | null>,
+  "data": <Any> | <Array>,
   "meta": {
-    "requestId": "req_123456",
-    "pagination": <PaginationObject | undefined>
+    "requestId": "string (UUID)",
+    "pagination": {             // Présent si liste paginée
+      "page": 1,
+      "limit": 10,
+      "totalItems": 100,
+      "totalPages": 10
+    }
   },
-  "error": <ErrorObject | null>
+  "error": null
 }
 ```
 
-### Champs
+### Cas particulier : Listes paginées
+Si le handler renvoie un objet `{ items: [...], pagination: {...} }`, l'enveloppe place `items` dans `data` et `pagination` dans `meta.pagination`.
 
-- **`data`** : Le résultat de l'opération. Peut être un objet, un tableau ou null. Présent en cas de succès.
-- **`meta`** : Métadonnées sur la requête.
-  - `requestId` : Identifiant unique de la requête (pour traçabilité/debug).
-  - `pagination` : (Optionnel) Détails de pagination pour les listes.
-- **`error`** : Détails de l'erreur. Présent uniquement si la requête a échoué.
+## Gestion des Erreurs
 
-### Objet Pagination
-
-Si la réponse est une liste d'éléments, `meta.pagination` contiendra :
+En cas d'erreur (4xx, 5xx), le corps de la réponse suit le même format, mais `data` est null et `error` est peuplé.
 
 ```json
 {
-  "page": 1,            // Numéro de page actuel
-  "pageSize": 20,       // Éléments par page
-  "total": 100,         // Nombre total d'éléments
-  "totalPages": 5       // Nombre total de pages
+  "data": null,
+  "meta": {
+    "requestId": "123e4567-e89b-12d3-a456-426614174000"
+  },
+  "error": {
+    "code": "VALIDATION_ERROR", // Code machine (enum)
+    "message": "Le champ email est invalide.", // Message humain
+    "details": [ ... ] // Détails optionnels (ex: champs Zod en erreur)
+  }
 }
 ```
 
-### Objet Erreur
+### Codes HTTP Standards
 
-```json
-{
-  "code": "RESOURCE_NOT_FOUND", // Code d'erreur machine
-  "message": "Ressource introuvable", // Message lisible pour l'humain
-  "details": null        // (Optionnel) Détails de validation
-}
-```
+| Code | Signification | Contexte |
+|---|---|---|
+| **200** | OK | Succès standard (GET, POST, PUT, DELETE). |
+| **201** | Created | Ressource créée (souvent retournée dans `data`). |
+| **204** | No Content | Succès sans contenu (rarement utilisé, on préfère 200 avec data null). |
+| **400** | Bad Request | Validation échouée (Zod), paramètres manquants. |
+| **401** | Unauthorized | Token manquant ou invalide. |
+| **403** | Forbidden | Token valide mais permissions insuffisantes (ex: Pro vs Admin). |
+| **404** | Not Found | Ressource non trouvée. |
+| **409** | Conflict | Ressource déjà existante (ex: email unique) ou double booking. |
+| **429** | Too Many Requests | Rate limit dépassé. |
+| **500** | Internal Server Error | Bug serveur non géré. |
 
-## Codes HTTP Standards
+## Headers Standards
 
-- **200 OK** : Succès.
-- **201 Created** : Création réussie.
-- **204 No Content** : Succès sans contenu.
-- **400 Bad Request** : Erreur de validation ou format invalide.
-- **401 Unauthorized** : Token manquant ou invalide.
-- **403 Forbidden** : Droits insuffisants.
-- **404 Not Found** : Ressource introuvable.
-- **409 Conflict** : Conflit d'état.
-- **429 Too Many Requests** : Rate limit dépassé.
-- **500 Internal Server Error** : Erreur serveur.
+- `X-Request-ID`: Identifiant unique de la requête (pour traçabilité logs/Sentry).
+- `Authorization`: `Bearer <token>` pour les routes authentifiées.

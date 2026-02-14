@@ -1,31 +1,24 @@
 # Release Checklist
 
-Ce document définit les étapes obligatoires avant toute mise en production (Release Gate).
+Ce document définit les étapes obligatoires pour valider une mise en production (Go-Live).
 
-## 1. Validation Automatique (CI)
-Le workflow GitHub Actions doit être au vert (✅).
-- `lint`: Pas d'erreurs de syntaxe ou style.
-- `typecheck`: Pas d'erreurs TypeScript (si applicable).
-- `build`: Le build Vite et l'API se compilent.
-- `test`: Tests unitaires passants.
-- `e2e`: Tests Playwright critiques (`booking.spec.js`, `public-core.spec.js`) passants.
+## 1. Pré-Release (Local)
+- [ ] **Tests E2E Core** : `npx playwright test e2e/booking.spec.js e2e/public-core.spec.js` passe sans erreur.
+- [ ] **Lint** : `npm run lint` est propre (0 erreurs).
+- [ ] **Build** : `npm run build` génère le bundle sans erreur.
+- [ ] **Routes** : Vérifier que les nouvelles routes sont documentées dans `docs/ROUTES_FRONT.md` et `docs/ROUTES_API.md`.
 
-## 2. Validation Manuelle (Review)
-- [ ] La PR a un titre clair ("feat:", "fix:", "chore:").
-- [ ] La description explique le "Pourquoi".
-- [ ] Les dépendances (`package.json`) sont minimales et justifiées.
-- [ ] Pas de secrets hardcodés (vérifier `.env.example`).
-- [ ] Pas de fichiers de debug oubliés (`console.log` abusifs, fichiers temporaires).
+## 2. CI (Automatique)
+- [ ] **Workflow GitHub** : Le job `build-and-test` est vert.
+- [ ] **Dépendances** : Pas de vulnérabilité critique (`npm audit`).
 
-## 3. Smoke Test (Pre-Prod / Preview)
-Sur l'environnement de Preview Vercel :
-- [ ] Page d'accueil charge sans erreur console.
-- [ ] Navigation vers `/aides`, `/demarches`, `/structures` fonctionne.
-- [ ] Une page de détail (ex: aide) s'affiche.
-- [ ] Le formulaire de contact ou RDV s'affiche.
+## 3. Déploiement (Vercel)
+- [ ] **Preview** : Vérifier l'URL de preview avant merge.
+- [ ] **Variables d'environnement** : Vérifier que les secrets (DATABASE_URL, ADA_ENCRYPTION_KEY, etc.) sont bien configurés sur l'environnement cible.
+- [ ] **Migrations DB** : Si changements de schéma, exécuter `prisma migrate deploy` post-déploiement (ou via script dédié).
 
-## 4. Rollback Plan
-En cas de pépin critique :
-1. Identifier la version précédente (commit SHA).
-2. Via Vercel Dashboard : "Promote" l'ancien déploiement.
-3. Revert la PR sur GitHub (`git revert`).
+## 4. Post-Release (Production)
+- [ ] **Smoke Test** : Vérifier manuellement les parcours critiques (Accueil -> Recherche -> Détail -> RDV).
+- [ ] **Logs** : Vérifier les logs Vercel pour détecter des erreurs 500 immédiates.
+- [ ] **Sentry** : Vérifier l'absence de nouveaux problèmes majeurs.
+- [ ] **Rollback Plan** : Si échec critique, re-déployer la version précédente via Vercel Dashboard (Instant Rollback).

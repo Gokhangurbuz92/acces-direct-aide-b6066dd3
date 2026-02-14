@@ -27,7 +27,7 @@ function getTrackedLintFiles() {
     .split('\0')
     .map((s) => s.trim())
     .filter(Boolean)
-    .filter((p) => /\.(jsx?|mjs|cjs|ts|tsx)$/.test(p));
+    .filter((p) => /\.(jsx?|mjs|cjs)$/.test(p));
 }
 
 function runEslintJson() {

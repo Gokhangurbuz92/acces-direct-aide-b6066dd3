@@ -95,7 +95,6 @@ export async function searchAides(prisma, params) {
 
   // Safe column mapping (whitelist only)
   const SAFE_SORT_COLUMNS = {
-    'pertinence': 'rank',
     'date': 'published_at',
     'alpha': 'titre',
     'created_date': 'updatedAt',
@@ -121,7 +120,7 @@ export async function searchAides(prisma, params) {
 
   // 4. Execution
   const itemsQuery = Prisma.sql`
-    SELECT * ${selectRank}
+    SELECT id ${selectRank}
     FROM "Aide"
     ${whereClause}
     ${orderBy}
@@ -234,7 +233,7 @@ export async function searchDemarches(prisma, params) {
     orderBy = Prisma.sql`ORDER BY published_at DESC, id ASC`;
   }
 
-  const itemsQuery = Prisma.sql`SELECT * ${selectRank} FROM "Demarche" ${whereClause} ${orderBy} LIMIT ${LIMIT} OFFSET ${OFFSET}`;
+  const itemsQuery = Prisma.sql`SELECT id ${selectRank} FROM "Demarche" ${whereClause} ${orderBy} LIMIT ${LIMIT} OFFSET ${OFFSET}`;
   const countQuery = Prisma.sql`SELECT count(*) as total FROM "Demarche" ${whereClause}`;
 
   const [items, countResult] = await Promise.all([
@@ -304,7 +303,7 @@ export async function searchStructures(prisma, params) {
     orderBy = Prisma.sql`ORDER BY nom ASC, id ASC`;
   }
 
-  const itemsQuery = Prisma.sql`SELECT * ${selectRank} FROM "Structure" ${whereClause} ${orderBy} LIMIT ${LIMIT} OFFSET ${OFFSET}`;
+  const itemsQuery = Prisma.sql`SELECT id ${selectRank} FROM "Structure" ${whereClause} ${orderBy} LIMIT ${LIMIT} OFFSET ${OFFSET}`;
   const countQuery = Prisma.sql`SELECT count(*) as total FROM "Structure" ${whereClause}`;
 
   const [items, countResult] = await Promise.all([

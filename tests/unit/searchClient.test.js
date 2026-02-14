@@ -63,6 +63,39 @@ describe('searchClient', () => {
     );
   });
 
+  it('includes optional situations and geoScope in payload', async () => {
+    const fetchMock = vi.fn().mockResolvedValue(
+      new Response(
+        JSON.stringify({
+          items: [],
+          total: 0,
+          message: 'not found',
+        }),
+        {
+          status: 200,
+          headers: { 'content-type': 'application/json' },
+        }
+      )
+    );
+
+    vi.stubGlobal('fetch', fetchMock);
+
+    await searchAides({
+      query: 'aide logement',
+      situations: [' etudiant ', 'senior'],
+      geoScope: '  NATIONAL  ',
+      limit: 10,
+    });
+
+    const [, options] = fetchMock.mock.calls[0];
+    expect(JSON.parse(options.body)).toEqual({
+      query: 'aide logement',
+      limit: 10,
+      situations: ['etudiant', 'senior'],
+      geoScope: 'NATIONAL',
+    });
+  });
+
   it('aborts the previous request when a new one starts', async () => {
     const fetchMock = vi
       .fn()

@@ -58,7 +58,7 @@ describe('Cron GDPR Purge Handler', () => {
 
     await handler(req, res);
 
-    expect(res.status).toHaveBeenCalledWith(401);
+    expect(res.status).toHaveBeenCalledWith(500);
   });
 
   it('should accept legacy ?key= when CRON_SECRET matches (backward compatible)', async () => {

@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeAll } from 'vitest';
+import { describe, it, expect, beforeAll, afterAll } from 'vitest';
 import { isCronAuthorized } from '../../api/_utils/cronAuth.js';
 
 describe('Cron Authorization (P1D)', () => {
@@ -32,14 +32,24 @@ describe('Cron Authorization (P1D)', () => {
         expect(isCronAuthorized(req)).toBe(true);
     });
 
-    it('should ACCEPT Vercel cron header', () => {
+    it('should ACCEPT valid x-cron-secret header', () => {
+        const req = {
+            headers: {
+                'x-cron-secret': 'test-cron-secret',
+            },
+            query: {}
+        };
+        expect(isCronAuthorized(req)).toBe(true);
+    });
+
+    it('should REJECT x-vercel-cron header (must require secret)', () => {
         const req = {
             headers: {
                 'x-vercel-cron': '1'
             },
             query: {}
         };
-        expect(isCronAuthorized(req)).toBe(true);
+        expect(isCronAuthorized(req)).toBe(false);
     });
 
     it('should REJECT invalid Bearer token', () => {

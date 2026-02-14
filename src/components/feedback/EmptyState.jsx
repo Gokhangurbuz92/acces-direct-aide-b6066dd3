@@ -1,5 +1,4 @@
 
-import React from 'react';
 import { Search, ArrowRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
@@ -9,7 +8,6 @@ export default function EmptyState({
     actionLabel = "Réinitialiser les filtres",
     onAction,
     icon: Icon = Search,
-    type = 'search'
 }) {
     const bgColor = 'bg-slate-50';
     const iconColor = 'text-slate-400';

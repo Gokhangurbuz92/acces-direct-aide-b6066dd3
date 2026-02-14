@@ -1,4 +1,3 @@
-import React from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { ExternalLink, Calendar, Link as LinkIcon, Clock } from 'lucide-react';
 
@@ -36,7 +35,7 @@ export default function SourceTraceability({
                 month: 'long',
                 day: 'numeric'
             });
-        } catch (e) {
+        } catch {
             return null;
         }
     };

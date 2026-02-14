@@ -1,4 +1,3 @@
-import * as React from "react";
 import { SearchInput } from "@/components/ui/SearchInput";
 
 export function Hero() {

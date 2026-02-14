@@ -1,4 +1,3 @@
-import * as React from "react";
 import { ShieldCheck } from "lucide-react";
 
 export function SourceProof({

@@ -47,9 +47,41 @@ export const searchAidesSchema = baseSearchSchema.extend({
 });
 
 export const searchDemarchesSchema = baseSearchSchema.extend({
+  // P3: cap listing page size for public /api/demarches
+  pageSize: z.coerce.number().int().min(1).max(50).default(20),
+  // Allow `limit=` (empty) without failing validation (compat with legacy list() calls).
+  limit: z.preprocess(
+    (value) => (value === '' || value == null ? undefined : value),
+    z.coerce.number().int().min(1).max(50).optional(),
+  ),
+  // Aliases (front/back compatibility)
+  theme: z.string().optional(), // alias for category
+  territoire: z.string().optional(), // alias for geo
+  territory: z.string().optional(), // english alias
+  // Basic filters
   category: z.string().optional(),
   situation: z.string().optional(),
   geo: z.string().optional(),
+  audience: z.string().optional(),
+  online: z.enum(['true', 'false', '1', '0']).optional(),
+  statut: z.string().default('publie'),
+  // Strict whitelist for sort to prevent SQL injection
+  sort: z.enum([
+    // External stable aliases
+    'relevance',
+    'recent',
+    '-recent',
+    'quality',
+    '-quality',
+    // Backward compatible aliases (admin/front)
+    'updated_date',
+    '-updated_date',
+    'pertinence', 'date', 'alpha',
+    'created_date', '-created_date',
+    'published_at', '-published_at',
+    'date_publication', '-date_publication',
+    'titre', '-titre'
+  ]).optional(),
 });
 
 export const searchStructuresSchema = baseSearchSchema.extend({

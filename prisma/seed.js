@@ -355,25 +355,40 @@ async function seedDemarches(categoryId) {
 async function seedStructures() {
   for (let i = 1; i <= 20; i += 1) {
     const siret = `000000000000${i.toString().padStart(2, '0')}`;
+    const slug = `structure-test-${i}`;
     await prisma.structure.upsert({
       where: { siret },
       update: {
         nom: `Structure Test ${i}`,
+        slug,
         statut: 'actif',
         status: 'actif',
         ville: 'Paris',
+        code_postal: '75001',
+        adresse: `${i} rue de Test`,
         departement: '75',
-        type_structure: 'Association',
+        type_structure: 'association',
+        description_courte: `Structure de test ${i} (seed).`,
+        accessibilite_pmr: i % 2 === 0,
+        horaires: 'Lun-Ven 09:00-17:00',
+        telephone: '0102030405',
         email: `contact@structure${i}.test`,
       },
       create: {
         nom: `Structure Test ${i}`,
+        slug,
         siret,
         statut: 'actif',
         status: 'actif',
         ville: 'Paris',
+        code_postal: '75001',
+        adresse: `${i} rue de Test`,
         departement: '75',
-        type_structure: 'Association',
+        type_structure: 'association',
+        description_courte: `Structure de test ${i} (seed).`,
+        accessibilite_pmr: i % 2 === 0,
+        horaires: 'Lun-Ven 09:00-17:00',
+        telephone: '0102030405',
         email: `contact@structure${i}.test`,
       },
     });

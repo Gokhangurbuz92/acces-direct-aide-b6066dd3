@@ -55,7 +55,7 @@ export default async function handler(req, res) {
 
         // 4. Check Availability & Double Booking (Concurrency)
         // Find existing booking
-        const existing = await prisma.appointment.findFirst({
+        await prisma.appointment.findFirst({
             where: {
                 structureId: structure.id,
                 // Overlap check

@@ -17,7 +17,8 @@ async function handler(req, res) {
         }
 
         // Return user + structure (scrub password)
-        const { password_hash, ...safeUser } = user;
+        const safeUser = { ...user };
+        delete safeUser.password_hash;
 
         return res.status(200).json({
             user: safeUser,

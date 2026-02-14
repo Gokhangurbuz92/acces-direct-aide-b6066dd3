@@ -1,107 +1,188 @@
 import { test, expect } from '@playwright/test';
 
-test.describe('Public Core Routes', () => {
-
-  // Mock Data
-  const mockAides = {
-    items: [{ id: 1, slug: 'aide-test', titre: 'Aide Test', resume: 'Resume Aide' }],
-    pagination: { total: 1, page: 1, limit: 10 }
-  };
-  const mockAideDetail = { id: 1, slug: 'aide-test', titre: 'Aide Test Detail', resume: 'Detail Resume' };
-
-  const mockDemarches = {
-    items: [{ id: 1, slug: 'demarche-test', titre: 'Demarche Test', resume: 'Resume Demarche' }],
-    pagination: { total: 1 }
-  };
-  const mockDemarcheDetail = { id: 1, slug: 'demarche-test', titre: 'Demarche Test Detail', resume: 'Detail Resume' };
-
-  const mockStructures = {
-    items: [{ id: 1, slug: 'structure-test', nom: 'Structure Test', ville: 'Paris' }],
-    pagination: { total: 1 }
-  };
-  const mockStructureDetail = { id: 1, slug: 'structure-test', nom: 'Structure Test Detail', ville: 'Paris' };
-
-  const mockActualites = {
-    items: [{ id: 1, slug: 'actu-test', titre: 'Actu Test', chapeau: 'Intro Actu', type_actu: 'info', date_publication: '2023-01-01' }],
-    pagination: { total: 1 }
-  };
-  const mockActualiteDetail = { id: 1, slug: 'actu-test', titre: 'Actu Test Detail', content: 'Contenu Actu', type_actu: 'info', date_publication: '2023-01-01' };
+test.describe('Public Core Navigation', () => {
 
   test.beforeEach(async ({ page }) => {
-    // General Mocking
-    await page.route('**/api/taxonomy', async route => route.fulfill({ json: { categories: [], situations: [] } }));
-
-    // Aides
-    await page.route('**/api/aides?*', async route => route.fulfill({ json: mockAides }));
-    await page.route('**/api/aides/aide-test*', async route => route.fulfill({ json: mockAideDetail }));
-
-    // Demarches
-    await page.route('**/api/demarches?*', async route => route.fulfill({ json: mockDemarches }));
-    await page.route('**/api/demarches/demarche-test*', async route => route.fulfill({ json: mockDemarcheDetail }));
-
-    // Structures
-    await page.route('**/api/structures?*', async route => route.fulfill({ json: mockStructures }));
-    await page.route('**/api/structures/structure-test*', async route => route.fulfill({ json: mockStructureDetail }));
-
-    // Actualites
-    await page.route('**/api/actualites?*', async route => route.fulfill({ json: mockActualites }));
-    await page.route('**/api/actualites/actu-test*', async route => route.fulfill({ json: mockActualiteDetail }));
+    // Mock Taxonomy
+    await page.route('**/api/taxonomy', async route => {
+      await route.fulfill({
+        json: {
+          categories: [{ slug: 'sante', label: 'Santé' }],
+          situations: []
+        }
+      });
+    });
   });
 
   test('Aides Flow: List -> Detail -> Refresh', async ({ page }) => {
+    // Mock List
+    await page.route('**/api/aides*', async route => {
+      await route.fulfill({
+        json: {
+          items: [{
+            id: 'aide-1',
+            slug: 'aide-test-slug',
+            titre: 'Aide Test Title',
+            cest_quoi: 'Summary of aide test',
+            categorie: 'sante'
+          }],
+          pagination: { page: 1, totalPages: 1 },
+          facets: {}
+        }
+      });
+    });
+
+    // Mock Detail
+    await page.route('**/api/aides/aide-test-slug', async route => {
+      await route.fulfill({
+        json: {
+          id: 'aide-1',
+          slug: 'aide-test-slug',
+          titre: 'Aide Test Title',
+          description: 'Full description',
+          categorie: 'sante'
+        }
+      });
+    });
+
+    // Go to list
     await page.goto('/aides');
-    // Ensure content is loaded
-    await expect(page.getByRole('heading', { name: 'Aide Test' }).first()).toBeVisible();
+    await expect(page.getByText('Aide Test Title').first()).toBeVisible();
 
-    // Click the card link (overlay)
-    await page.getByLabel("Voir l'aide Aide Test").click();
+    // Click result (assuming card has a link)
+    // We target the link that contains the slug
+    await page.getByRole('link', { name: /Aide Test Title/i }).first().click();
 
-    // Verify Detail
-    await expect(page).toHaveURL(/\/aides\/aide-test/);
-    await expect(page.getByRole('heading', { name: 'Aide Test' })).toBeVisible();
+    // Check URL
+    await expect(page).toHaveURL(/\/aides\/aide-test-slug/);
+    await expect(page.getByRole('heading', { level: 1 })).toContainText('Aide Test Title');
 
     // Refresh
     await page.reload();
-    await expect(page.getByRole('heading', { name: 'Aide Test' })).toBeVisible();
+    await expect(page.getByRole('heading', { level: 1 })).toContainText('Aide Test Title');
   });
 
   test('Demarches Flow: List -> Detail -> Refresh', async ({ page }) => {
+    // Mock List
+    await page.route('**/api/demarches*', async route => {
+      await route.fulfill({
+        json: {
+          items: [{
+            id: 'dem-1',
+            slug: 'demarche-test',
+            titre: 'Demarche Test',
+            summary_falc: 'Summary',
+            categorie: 'sante'
+          }],
+          pagination: { page: 1, totalPages: 1 }
+        }
+      });
+    });
+
+    // Mock Detail
+    await page.route('**/api/demarches/demarche-test', async route => {
+      await route.fulfill({
+        json: {
+          id: 'dem-1',
+          slug: 'demarche-test',
+          titre: 'Demarche Test',
+          description: 'Full description'
+        }
+      });
+    });
+
     await page.goto('/demarches');
-    await expect(page.getByRole('heading', { name: 'Demarche Test' }).first()).toBeVisible();
+    await expect(page.getByText('Demarche Test').first()).toBeVisible();
 
-    await page.getByLabel("Voir la démarche Demarche Test").click();
-
+    await page.getByRole('link', { name: /Demarche Test/i }).first().click();
     await expect(page).toHaveURL(/\/demarches\/demarche-test/);
-    await expect(page.getByRole('heading', { name: 'Demarche Test' })).toBeVisible();
+    await expect(page.getByRole('heading', { level: 1 })).toContainText('Demarche Test');
 
     await page.reload();
-    await expect(page.getByRole('heading', { name: 'Demarche Test' })).toBeVisible();
+    await expect(page.getByRole('heading', { level: 1 })).toContainText('Demarche Test');
   });
 
-  test('Structures Flow: List -> Detail -> Refresh', async ({ page }) => {
-    await page.goto('/annuaire'); // Note: /annuaire maps to Structures list
-    await expect(page.getByRole('heading', { name: 'Structure Test' }).first()).toBeVisible();
+  test('Structures (Annuaire) Flow: List -> Detail -> Refresh', async ({ page }) => {
+    // Mock List
+    await page.route('**/api/structures*', async route => {
+      await route.fulfill({
+        json: {
+          items: [{
+            id: 'struct-1',
+            slug: 'structure-test',
+            nom: 'Structure Test',
+            ville: 'Strasbourg'
+          }],
+          pagination: { page: 1, totalPages: 1 }
+        }
+      });
+    });
 
-    await page.getByLabel("Voir la fiche de Structure Test").click();
+    // Mock Detail
+    await page.route('**/api/structures/structure-test', async route => {
+      await route.fulfill({
+        json: {
+          id: 'struct-1',
+          slug: 'structure-test',
+          nom: 'Structure Test',
+          ville: 'Strasbourg',
+          adresse: '10 rue des tests'
+        }
+      });
+    });
 
+    await page.goto('/annuaire');
+    await expect(page.getByText('Structure Test').first()).toBeVisible();
+
+    await page.getByRole('link', { name: /Structure Test/i }).first().click();
     await expect(page).toHaveURL(/\/structures\/structure-test/);
-    await expect(page.getByRole('heading', { name: 'Structure Test' })).toBeVisible();
+    await expect(page.getByRole('heading', { level: 1 })).toContainText('Structure Test');
 
     await page.reload();
-    await expect(page.getByRole('heading', { name: 'Structure Test' })).toBeVisible();
+    await expect(page.getByRole('heading', { level: 1 })).toContainText('Structure Test');
   });
 
   test('Actualites Flow: List -> Detail -> Refresh', async ({ page }) => {
+     // Mock List
+    await page.route('**/api/actualites*', async route => {
+      await route.fulfill({
+        json: {
+          items: [{
+            id: 'actu-1',
+            slug: 'actu-test',
+            titre: 'Actu Test',
+            contenu: 'Summary',
+            type_actu: 'info',
+            date_publication: '2023-01-01'
+          }],
+          pagination: { page: 1, totalPages: 1 }
+        }
+      });
+    });
+
+    // Mock Detail
+    await page.route('**/api/actualites/actu-test', async route => {
+      await route.fulfill({
+        json: {
+          id: 'actu-1',
+          slug: 'actu-test',
+          titre: 'Actu Test',
+          contenu: 'Full content',
+          type_actu: 'info',
+          date_publication: '2023-01-01'
+        }
+      });
+    });
+
     await page.goto('/actualites');
-    await expect(page.getByRole('heading', { name: 'Actu Test' }).first()).toBeVisible();
+    await expect(page.getByText('Actu Test').first()).toBeVisible();
 
-    await page.getByLabel("Lire l'actualité Actu Test").click();
-
+    await page.getByRole('link', { name: /Actu Test/i }).first().click();
     await expect(page).toHaveURL(/\/actualites\/actu-test/);
-    await expect(page.getByRole('heading', { name: 'Actu Test' })).toBeVisible();
+    await expect(page.getByRole('heading', { level: 1 })).toContainText('Actu Test');
 
     await page.reload();
-    await expect(page.getByRole('heading', { name: 'Actu Test' })).toBeVisible();
+    await expect(page.getByRole('heading', { level: 1 })).toContainText('Actu Test');
   });
 
 });

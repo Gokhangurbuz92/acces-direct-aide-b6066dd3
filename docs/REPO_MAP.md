@@ -1,89 +1,72 @@
 # Cartographie du Répertoire (Repo Map)
 
-Ce document recense l'organisation officielle du projet AccesDirectAide.
-Il est généré et maintenu pour servir de source de vérité sur l'architecture.
+Ce document fournit la cartographie officielle du dépôt `AccesDirectAide`. Il est généré et maintenu pour servir de référence lors des maintenances et évolutions.
 
-**Inventaire technique** : Voir `docs/REPO_FILES.txt` (généré par `scripts/generate-repo-map.sh`).
+L'inventaire technique complet est disponible dans [REPO_FILES.txt](./REPO_FILES.txt).
 
 ## 1. Racine / Configuration
-**Chemin** : `./`
-**Rôle** : Configuration globale, dépendances, scripts de build et de déploiement.
-**Fichiers clés** :
-- `package.json` : Dépendances et scripts NPM.
-- `vercel.json` : Configuration du déploiement (headers, rewrites, crons).
-- `vite.config.js` : Build system du frontend.
-- `.env.example` : Modèle des variables d'environnement.
-**Owner** : Infra / Tech Lead
-**Risques** : Une mauvaise config ici casse le build ou le déploiement (Vercel).
 
-## 2. Frontend (SPA)
-**Chemin** : `src/`
-**Rôle** : Application React (Single Page Application).
-**Structure** :
-- `src/pages/` : Composants de page (routage).
-- `src/components/` : Composants UI réutilisables.
-- `src/api/` : Client API (voir `src/api/client.js`).
-- `src/utils/` : Utilitaires frontend purs.
-**Owner** : Frontend Team
-**Risques** : Régression UX, performance (bundle size), accessibilité.
+| Dossier / Fichiers | Rôle | Dépendances Clés | Owner | Risques Principaux |
+| ------------------ | ---- | ---------------- | ----- | ------------------ |
+| `.` (root) | Point d'entrée, conf CI/CD, conf env | Node.js, NPM | Tech Lead | Configuration Vercel incorrecte, variables d'env manquantes. |
+| `package.json` | Gestion des dépendances et scripts | npm | Tech Lead | Versions incompatibles, scripts obsolètes. |
+| `vercel.json` | Configuration du déploiement Vercel | Vercel CLI | Infra | Headers de sécurité manquants, CRONs qui échouent. |
+| `vite.config.js` | Build tool pour le frontend | Vite | Front | Problèmes de build prod vs dev, proxy API local. |
+| `.github/` | Workflows CI/CD (GitHub Actions) | Actions | Infra | Pipeline cassé bloquant les merges. |
 
-## 3. API (Serverless)
-**Chemin** : `api/`
-**Rôle** : Backend serverless hébergé sur Vercel Functions.
-**Structure** :
-- `api/index.js` : Point d'entrée unique.
-- `api/routes.js` : Définition centrale des routes et mapping vers handlers.
-- `api/_handlers/` : Logique métier par endpoint.
-- `api/_utils/` : Sécurité (Auth, RateLimit), Sentry, Helpers.
-- `api/lib/` : Services partagés (Ingestion, Crypto, FALC).
-**Owner** : Backend Team
-**Risques** : Sécurité (Auth bypass), Performance (Cold starts, DB connections), Intégrité données.
+## 2. Frontend (`src/`)
 
-## 4. Base de Données (Prisma)
-**Chemin** : `prisma/`
-**Rôle** : Définition du schéma de données et migrations.
-**Fichiers clés** :
-- `schema.prisma` : Modèle de données (Postgres).
-- `migrations/` : Historique des changements de schéma.
-**Owner** : Backend Team
-**Risques** : Perte de données, blocage déploiement (migration échouée).
+| Dossier | Rôle | Dépendances Clés | Owner | Risques Principaux |
+| ------- | ---- | ---------------- | ----- | ------------------ |
+| `src/pages/` | Pages de l'application (Router) | React Router | Front | Pages orphelines, logique métier dans les vues. |
+| `src/components/` | Composants UI réutilisables | Radix UI, Tailwind | Front | Accessibilité (A11y), composants non standards. |
+| `src/api/` | Client HTTP pour consommer l'API | fetch / axios | Front | Désynchronisation avec l'API Backend, duplication `client.js`/`.jsx`. |
+| `src/contexts/` | Gestion d'état global (ex: FALC) | React Context | Front | Rerenders inutiles. |
+| `src/lib/` & `src/utils/` | Utilitaires frontend | date-fns, etc. | Front | Duplication de logique avec le backend. |
 
-## 5. Scripts d'Exploitation
-**Chemin** : `scripts/`
-**Rôle** : Maintenance, ingestion, vérification, seeding.
-**Types** :
-- `verify-*.js` : Scripts de vérification post-déploiement.
-- `seed-*.js` : Peuplement de la base (dev/staging).
-- `fix_*.py` : Outils de maintenance ponctuels.
-**Owner** : DevOps / Backend
-**Risques** : Corruption de données en prod si mal utilisés.
+## 3. API Serverless (`api/`)
 
-## 6. Documentation
-**Chemin** : `docs/`
-**Rôle** : Documentation technique, fonctionnelle et opérationnelle.
-**Owner** : Tout le monde
-**Risques** : Obsolescence (la doc doit être tenue à jour).
+| Dossier | Rôle | Dépendances Clés | Owner | Risques Principaux |
+| ------- | ---- | ---------------- | ----- | ------------------ |
+| `api/index.js` | Point d'entrée Vercel Function | Vercel | API | Cold starts, timeout. |
+| `api/routes.js` | Définition centrale des routes | - | API | Shadowing de routes, ordre incorrect. |
+| `api/_handlers/` | Logique métier des endpoints | Prisma Client | API | Erreurs non catchées (500), validation manquante. |
+| `api/_utils/` | Sécurité, Auth, Rate Limit | JWT, Upstash | API | Failles de sécurité, bypass d'auth. |
+| `api/cron/` | Tâches planifiées (Ingest, Purge) | - | Backend | Échec silencieux, dépassement de temps d'exécution. |
+| `api/lib/` | Logique métier partagée (Ingestion) | - | Backend | Divergence de logique (ex: FALC). |
 
-## 7. Données Statiques
-**Chemin** : `data/`, `config/`
-**Rôle** : Fichiers CSV/JSON sources (taxonomy, RSS sources, seeds).
-**Owner** : Data Manager
-**Risques** : Données obsolètes embarquées.
+## 4. Base de Données (`prisma/`)
 
-## 8. Tests
-**Chemin** : `tests/` (Intégration/Unitaire), `e2e/` (Playwright)
-**Rôle** : Assurance qualité automatisée.
-**Owner** : QA / Dev
-**Risques** : Tests instables (flaky) bloquant la CI.
+| Dossier | Rôle | Dépendances Clés | Owner | Risques Principaux |
+| ------- | ---- | ---------------- | ----- | ------------------ |
+| `prisma/schema.prisma` | Définition du schéma DB | Prisma | DB | Migrations destructives, incohérence Types. |
+| `prisma/migrations/` | Historique des changements DB | SQL | DB | Conflits de migration, rollback difficile. |
+| `prisma/seed.js` | Données initiales / Test | - | DB | Données de seed obsolètes cassant le dev. |
 
----
-## 9. Pages Orphelines / Drafts
-Certains fichiers présents dans `src/pages/` ne sont pas routés (voir `docs/ROUTES_FRONT.md`). Ils sont conservés comme référence ou "draft" :
-- `src/pages/AideDetailBlueprintTrust.jsx`
-- `src/pages/BlueprintTrustDemo.jsx`
-- `src/pages/HomeBlueprintTrust.jsx`
-- `src/pages/admin/AdminReports.jsx`
+## 5. Scripts d'Exploitation (`scripts/`)
 
----
-**Note sur les fichiers ignorés** :
-Les dossiers `venv/`, `node_modules/`, `test-results/` et les fichiers `.env` sont strictement exclus du versionning pour des raisons de sécurité et de propreté.
+| Dossier | Rôle | Dépendances Clés | Owner | Risques Principaux |
+| ------- | ---- | ---------------- | ----- | ------------------ |
+| `scripts/` | Maintenance, Verification, Ingestion | Node, Python | Ops | Scripts non maintenus, dépendances locales (venv). |
+| `scripts/verify-*.js` | Scripts de "Quality Gate" | - | QA/Ops | Faux positifs donnant une fausse confiance. |
+
+## 6. Documentation (`docs/`)
+
+| Dossier | Rôle | Dépendances Clés | Owner | Risques Principaux |
+| ------- | ---- | ---------------- | ----- | ------------------ |
+| `docs/` | Documentation projet, API, Runbook | Markdown | All | Documentation obsolète induisant en erreur. |
+| `docs/reports/` | Rapports d'audit et d'exécution | - | Auto | Bruit dans le repo. |
+
+## 7. Données (`data/`, `config/`)
+
+| Dossier | Rôle | Dépendances Clés | Owner | Risques Principaux |
+| ------- | ---- | ---------------- | ----- | ------------------ |
+| `data/` | Fichiers CSV/JSON statiques | - | Data | Données sensibles committées par erreur. |
+| `config/` | Configuration métier (ex: sources RSS) | - | Product | Mauvaise config impactant la prod. |
+
+## 8. Tests (`tests/`, `e2e/`)
+
+| Dossier | Rôle | Dépendances Clés | Owner | Risques Principaux |
+| ------- | ---- | ---------------- | ----- | ------------------ |
+| `e2e/` | Tests bout-en-bout | Playwright | QA | Tests "flaky", couverture insuffisante. |
+| `tests/` | Tests unitaires / intégration API | Vitest | Dev | Tests cassés ignorés. |

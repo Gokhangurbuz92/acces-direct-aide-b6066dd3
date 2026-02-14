@@ -1,7 +1,5 @@
 
 // import fetch from 'node-fetch';
-
-const BASE_URL = 'http://localhost:3000'; // Assuming dev server running or we mock request
 // Actually we can't easily fetch localhost if dev server isn't running.
 // We can use the handler directly if we import it, but environment vars might be tricky.
 // Better to mock the request objects and call the handler functions directly?

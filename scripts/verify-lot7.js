@@ -9,7 +9,7 @@ function fetchJson(path) {
             res.on('end', () => {
                 try {
                     resolve({ status: res.statusCode, body: JSON.parse(data) });
-                } catch (e) {
+                } catch {
                     resolve({ status: res.statusCode, body: data });
                 }
             });

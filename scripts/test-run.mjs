@@ -99,7 +99,7 @@ async function ensureRequiredPgExtensions(env) {
 
   try {
     await client.connect();
-  } catch (error) {
+  } catch {
     safeExit(`[test-run] Cannot connect to DATABASE_URL_TEST (is your local Postgres running?).`);
   }
 
@@ -113,7 +113,7 @@ async function ensureRequiredPgExtensions(env) {
     await client.query('CREATE EXTENSION IF NOT EXISTS unaccent;');
     await client.query('CREATE EXTENSION IF NOT EXISTS pg_trgm;');
     await client.query('CREATE EXTENSION IF NOT EXISTS vector;');
-  } catch (error) {
+  } catch {
     safeExit(
       [
         '[test-run] Failed to reset test DB or install required extensions.',

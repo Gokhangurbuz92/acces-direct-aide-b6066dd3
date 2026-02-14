@@ -62,7 +62,6 @@ async function runDryRun() {
                 const cp = f.code_postal || f.cp;
                 const email = f.mail || f.email;
                 const tel = f.tel || f.telephone;
-                const site = f.url || f.site_internet;
 
                 // Dedupe Hash
                 const rawContent = `${nom}${adresse}${ville}`;

@@ -27,7 +27,7 @@ const req = http.request(
                     console.log(`   Password: ${json.proPassword}`);
                     console.log("---------------------------------------------------\n");
                     console.log("Instructions: Log in as Pro -> 'Mes rendez-vous' -> Select default appointment -> 'Messages' tab.");
-                } catch (e) {
+                } catch {
                     console.error("Invalid JSON:", data);
                 }
             } else {

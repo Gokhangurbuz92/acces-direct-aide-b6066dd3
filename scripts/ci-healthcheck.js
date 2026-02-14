@@ -70,7 +70,7 @@ async function checkUrl(item) {
                     console.error(`❌ [${item.name}] Invalid JSON response (missing sha/version)`);
                     itemPassed = false;
                 }
-            } catch (e) {
+            } catch {
                 console.error(`❌ [${item.name}] Failed to parse JSON`);
                 itemPassed = false;
             }
@@ -81,7 +81,7 @@ async function checkUrl(item) {
                     console.error(`❌ [${item.name}] Content missing "${item.checkText}"`);
                     itemPassed = false;
                 }
-            } catch (e) {
+            } catch {
                 console.error(`❌ [${item.name}] Failed to read text`);
                 itemPassed = false;
             }

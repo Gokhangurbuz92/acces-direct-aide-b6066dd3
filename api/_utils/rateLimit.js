@@ -5,8 +5,14 @@ import { Ratelimit } from '@upstash/ratelimit';
 
 // 1. Determine Backend Type
 // STRICT: Only use REST API (Upstash / Vercel KV)
-const envUrl = process.env.KV_REST_API_URL || process.env.UPSTASH_REDIS_REST_URL;
-const envToken = process.env.KV_REST_API_TOKEN || process.env.UPSTASH_REDIS_REST_TOKEN;
+const envUrl =
+    process.env.KV_REST_API_URL ||
+    process.env.UPSTASH_KV_KV_REST_API_URL ||
+    process.env.UPSTASH_REDIS_REST_URL;
+const envToken =
+    process.env.KV_REST_API_TOKEN ||
+    process.env.UPSTASH_KV_KV_REST_API_TOKEN ||
+    process.env.UPSTASH_REDIS_REST_TOKEN;
 
 // Robust check: must have URL starting with https:// and a token
 const hasHttpKv = !!(envUrl && envUrl.startsWith('https://') && envToken);

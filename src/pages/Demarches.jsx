@@ -1,20 +1,14 @@
-import React, { useState } from 'react';
-import { Link, useSearchParams } from 'react-router-dom';
-import { createPageUrl } from '@/utils';
+import { useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { client } from '@/api/client';
 import { useQuery } from '@tanstack/react-query';
 import SEO from '@/components/SEO';
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Card, CardContent } from "@/components/ui/card";
 import {
   Search,
-  ArrowRight,
-  FileText,
-  Clock,
   Loader2,
-  CheckCircle2,
   X,
   Filter
 } from 'lucide-react';

@@ -1,5 +1,4 @@
-import React, { useState, useEffect } from 'react';
-
+import { useState, useEffect } from 'react';
 export default function SentryTestPage() {
     const [dsnConfigured, setDsnConfigured] = useState(false);
 
@@ -24,7 +23,7 @@ export default function SentryTestPage() {
             } else {
                 alert(`🟢 SUCCÈS (Allowed)\nBackend Hint: ${data.backend_hint}`);
             }
-        } catch (e) {
+        } catch {
             alert("Erreur appel API");
         }
     };

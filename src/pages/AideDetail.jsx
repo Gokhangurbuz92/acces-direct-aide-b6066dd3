@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Link, useParams, useNavigate } from 'react-router-dom';
 import { createPageUrl } from '@/utils';
 import { client } from '@/api/client';
@@ -19,8 +19,7 @@ import {
   AlertCircle,
   CheckCircle2,
   ChevronRight,
-  Loader2,
-  Flag
+  Loader2
 } from 'lucide-react';
 import { generateBreadcrumbSchema, generateAideSchema } from '@/utils/schema';
 import SourceTraceability from '@/components/SourceTraceability';
@@ -52,7 +51,7 @@ export default function AideDetail() {
   const urlParams = new URLSearchParams(window.location.search);
   const aideId = urlParams.get('id');
 
-  const { data: queryData, isLoading, error } = useQuery({
+  const { data: queryData, isLoading } = useQuery({
     queryKey: ['aide', slug || aideId],
     queryFn: () => client.entities.Aide.filter(slug ? { slug } : { id: aideId }),
     enabled: !!slug || !!aideId

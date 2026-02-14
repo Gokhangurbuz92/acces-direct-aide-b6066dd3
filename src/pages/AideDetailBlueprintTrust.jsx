@@ -1,4 +1,4 @@
-import React from 'react';
+
 import { useParams } from 'react-router-dom';
 import SEO from '@/components/SEO';
 import { Header } from '@/components/layout/Header';

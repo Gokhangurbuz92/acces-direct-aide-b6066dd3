@@ -1,4 +1,4 @@
-import React from 'react';
+
 import { client } from '@/api/client';
 import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";

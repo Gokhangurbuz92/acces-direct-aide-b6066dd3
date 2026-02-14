@@ -1,6 +1,6 @@
 
-import React, { useState, useEffect } from 'react';
-import { useSearchParams, useNavigate, Link } from 'react-router-dom';
+import { useState } from 'react';
+import { useSearchParams, Link } from 'react-router-dom';
 import { useQuery, useMutation } from '@tanstack/react-query';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -8,7 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Loader2, ArrowLeft, Calendar, Clock, CheckCircle } from 'lucide-react';
 import { createPageUrl } from '@/utils';
-import { format, parseISO, isSameDay } from 'date-fns';
+import { format, parseISO } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { client } from '@/api/client';
 

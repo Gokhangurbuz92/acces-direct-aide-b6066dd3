@@ -1,7 +1,7 @@
 
-import React, { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { Loader2, ArrowLeft, Calendar, User, Video, MapPin } from 'lucide-react';
+import { Loader2, ArrowLeft, Calendar, User, Video } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
@@ -65,7 +65,7 @@ export default function ProAppointmentDetail() {
             } else {
                 alert("Erreur envoi message");
             }
-        } catch (e) {
+        } catch {
             alert("Erreur réseau");
         }
     };
@@ -103,7 +103,7 @@ export default function ProAppointmentDetail() {
                 const err = await res.json();
                 alert(`Erreur upload: ${err.error}`);
             }
-        } catch (e) {
+        } catch {
             alert("Erreur réseau upload");
         }
     };

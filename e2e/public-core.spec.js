@@ -1,5 +1,21 @@
 import { test, expect } from '@playwright/test';
 
+test('Dev server: /@vite/client is served as JavaScript (local only)', async ({ request }) => {
+  // Keep in sync with `playwright.config.js`.
+  const baseURL = process.env.PLAYWRIGHT_BASE_URL || process.env.BASE_URL || 'http://127.0.0.1:3000';
+
+  // This check only makes sense for local dev runs (Vite / vercel dev).
+  if (!baseURL || !/(localhost|127\.0\.0\.1)/.test(baseURL)) {
+    test.skip(true, 'Not running against a local dev server.');
+  }
+
+  const res = await request.get(`${baseURL}/@vite/client`);
+  expect(res.status()).toBe(200);
+
+  const ct = res.headers()['content-type'] || '';
+  expect(ct).toMatch(/javascript/i);
+});
+
 test.describe('Public Core Navigation', () => {
 
   test.beforeEach(async ({ page }) => {

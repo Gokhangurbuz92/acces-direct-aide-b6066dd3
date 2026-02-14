@@ -1,3 +1,5 @@
+import { env } from '../../_utils/env.js';
+
 /**
  * @param {import('../../_utils/http-types').ApiRequest} req
  * @param {import('../../_utils/http-types').ApiResponse} res
@@ -10,11 +12,11 @@ export default async function handler(req, res) {
     const { email, password } = req.body;
 
     // Hardcoded check against Environment Variables
-    const validEmail = process.env.ADMIN_EMAIL || 'admin@accesdirectaide.fr';
+    const validEmail = env.secrets.adminEmail || 'admin@accesdirectaide.fr';
     // If no password set in env, use a default secure-ish placeholder for logic to prevent crash, 
     // but in reality this should satisfy the condition only if env is set.
     // For Staging Audit, user just wants "Security P0".
-    const validPassword = process.env.ADMIN_PASSWORD;
+    const validPassword = env.secrets.adminPassword;
 
     if (!validPassword) {
         return res.status(500).json({ error: 'Server misconfiguration: ADMIN_PASSWORD missing' });
@@ -25,7 +27,7 @@ export default async function handler(req, res) {
         // In a real app we'd sign a JWT, but for this "P0 fix" we use the shared secret approach
         // as requested by the plan (Middleware Admin Token).
         // Ensure ADMIN_TOKEN exists
-        const token = process.env.ADMIN_TOKEN;
+        const token = env.secrets.adminToken;
 
         if (!token) {
             return res.status(500).json({ error: 'Server misconfiguration: ADMIN_TOKEN missing' });

@@ -1,15 +1,22 @@
 import handler from '../api/_handlers/cron/ingest-aids.js';
+import { env } from '../api/_utils/env.js';
 import dotenv from 'dotenv';
 
 // Load environment variables from .env file
 dotenv.config();
 
+const cronSecret = env.secrets.cronSecret;
+if (!cronSecret) {
+    console.error("ERREUR: CRON_SECRET non trouvée dans .env");
+    process.exit(1);
+}
+
 // Mock request and response objects
 const mockReq = {
-    query: {
-        // Ensure CRON_SECRET is loaded from your .env file
-        secret: process.env.CRON_SECRET
-    }
+    headers: {
+        'x-cron-secret': cronSecret
+    },
+    query: {}
 };
 
 const mockRes = {

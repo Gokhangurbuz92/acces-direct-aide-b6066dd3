@@ -1,13 +1,14 @@
 import * as Sentry from '@sentry/node';
+import { env } from '../_utils/env.js';
 
 // Initialize Sentry (Duplicate init is safe/noop if already done, 
 // but in Vercel functions, state might not be shared across files easily without a shared util.
 // For simplicity in this test file, re-init.)
-if (process.env.VITE_SENTRY_DSN) {
+if (env.sentry.dsn) {
     Sentry.init({
-        dsn: process.env.VITE_SENTRY_DSN,
+        dsn: env.sentry.dsn,
         tracesSampleRate: 1.0,
-        environment: process.env.VITE_ENV || process.env.VERCEL_ENV || 'development'
+        environment: env.sentry.environment
     });
 }
 /**
@@ -16,7 +17,7 @@ if (process.env.VITE_SENTRY_DSN) {
  */
 
 export default async function handler(req, res) {
-    if (process.env.VITE_PUBLIC_DIAGNOSTICS !== 'true') {
+    if (!env.flags.publicDiagnostics) {
         return res.status(404).send('Not Found');
     }
     try {

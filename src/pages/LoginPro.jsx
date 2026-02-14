@@ -7,6 +7,7 @@ import { useNavigate } from 'react-router-dom';
 import { Lock } from 'lucide-react';
 
 import SEO from '@/components/SEO';
+import { frontendEnv } from '@/config/env';
 
 export default function LoginPro() {
     const navigate = useNavigate();
@@ -17,7 +18,7 @@ export default function LoginPro() {
 
     // Redundant safety check: component shouldn't be rendered if route is conditional,
     // but good to have as double protection.
-    const isEnabled = import.meta.env.VITE_DEV_LOGIN_ENABLED === 'true';
+    const isEnabled = frontendEnv.flags.devLoginEnabled;
 
     useEffect(() => {
         if (!isEnabled) {

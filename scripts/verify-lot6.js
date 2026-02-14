@@ -1,13 +1,14 @@
 
 import prisma from '../api/_utils/prisma.js';
 import { hash, encrypt, decrypt, decryptBuffer } from '../api/lib/crypto.js';
+import { env } from '../api/_utils/env.js';
 import fs from 'fs';
 import path from 'path';
 
 
 const API_URL = 'http://localhost:3000/api';
 
-if (!process.env.ADA_ENCRYPTION_KEY) {
+if (!env.secrets.adaEncryptionKey) {
     console.error("⚠️ ADA_ENCRYPTION_KEY missing.");
     process.exit(1);
 }

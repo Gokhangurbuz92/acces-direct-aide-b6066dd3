@@ -3,6 +3,7 @@ import crypto from 'crypto';
 import { checkRateLimit } from '../../../_utils/rateLimit.js';
 import { logProAudit } from '../../../lib/pro-auth.js';
 import prisma from '../../../_utils/prisma.js';
+import { env } from '../../../_utils/env.js';
 /**
  * @param {import('../../../_utils/http-types').ApiRequest} req
  * @param {import('../../../_utils/http-types').ApiResponse} res
@@ -45,8 +46,10 @@ export default async function handler(req, res) {
         await kv.set(key, { userId: user.id, email: user.email }, { ex: 3600 });
 
         // Mock Email
-        const resetLink = `${process.env.APP_BASE_URL || process.env.VITE_BASE_URL || 'http://localhost:3000'}/pro/reset-password?token=${token}`;
-        console.log(`[MOCK EMAIL] To: ${email} | Subject: Reset Password | Link: ${resetLink}`);
+        const baseUrl = env.runtime.appBaseUrl || 'http://localhost:3000';
+        const resetLink = `${baseUrl}/pro/reset-password?token=${token}`;
+        // Avoid logging sensitive reset tokens.
+        console.log(`[MOCK EMAIL] To: ${email} | Subject: Reset Password | Link: [REDACTED]`);
 
         await logProAudit('RESET_REQUESTED', user.id, user.structureId, {}, ip);
 

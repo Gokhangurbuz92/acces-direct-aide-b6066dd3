@@ -1,36 +1,30 @@
-import fs from 'fs';
-import path from 'path';
+import dotenv from 'dotenv';
+import { env } from '../api/_utils/env.js';
 
-const envPath = path.join(process.cwd(), '.env.local');
+dotenv.config({ path: '.env.local', override: false, quiet: true });
+dotenv.config({ path: '.env', override: false, quiet: true });
 
 console.log("🚀 Triggering Data Ingestion Pipeline (Smart Mode)...");
 
-if (!fs.existsSync(envPath)) {
-    console.error("❌ .env.local file not found!");
-    process.exit(1);
-}
-
-// Read Secret
-const content = fs.readFileSync(envPath, 'utf8');
-let cronSecret = '';
-
-const match = content.match(/CRON_SECRET=["']?([^"'\n]+)["']?/);
-if (match) {
-    cronSecret = match[1].trim();
-}
+const baseUrl = env.runtime.publicBaseUrl || 'https://www.accesdirectaide.fr';
+const cronSecret = env.secrets.cronSecret;
 
 if (!cronSecret || cronSecret === '...') {
-    console.error("❌ CRON_SECRET not found or invalid in .env.local");
+    console.error("❌ CRON_SECRET not found or invalid in environment.");
     process.exit(1);
 }
 
 // Helper function
 async function triggerEndpoint(name, path) {
-    const url = `https://www.accesdirectaide.fr/api/${path}?secret=${cronSecret}`;
+    const url = `${baseUrl}/api/${path}`;
     console.log(`\n📡 Contacting: ${name} ...`);
 
     try {
-        const response = await fetch(url);
+        const response = await fetch(url, {
+            headers: {
+                'x-cron-secret': cronSecret
+            }
+        });
         const text = await response.text();
 
         if (response.ok) {

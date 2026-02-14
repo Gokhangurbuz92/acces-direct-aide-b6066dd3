@@ -1,10 +1,11 @@
 import { useState, useEffect } from 'react';
+import { frontendEnv } from '@/config/env';
 export default function SentryTestPage() {
     const [dsnConfigured, setDsnConfigured] = useState(false);
 
     useEffect(() => {
         // Check if DSN is set (non-empty string)
-        if (import.meta.env.VITE_SENTRY_DSN) {
+        if (frontendEnv.sentry.dsn) {
             setDsnConfigured(true);
         }
     }, []);

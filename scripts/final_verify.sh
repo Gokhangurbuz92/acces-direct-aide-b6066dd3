@@ -39,6 +39,7 @@ curl_args=(--silent --show-error --location --connect-timeout 10 --max-time 40)
 run() {
   local label="$1"
   local path="$2"
+  shift 2
   echo "=============================="
   echo "$label"
   echo "PATH: $path"
@@ -46,7 +47,7 @@ run() {
   vercel curl "$path" \
     --deployment "$DEPLOY_URL" \
     --protection-bypass "$BYPASS_SECRET" \
-    -- --include "${curl_args[@]}"
+    -- --include "${curl_args[@]}" "$@"
   echo
 }
 
@@ -54,7 +55,7 @@ run() {
 run "DEBUG ROUTER" "/api/cron/ingest-structures?debug=1"
 
 # 2) Ingestion réel (doit renvoyer created/updated/skipped/errors)
-run "INGEST STRUCTURES" "/api/cron/ingest-structures?secret=$CRON_SECRET"
+run "INGEST STRUCTURES" "/api/cron/ingest-structures" -H "x-cron-secret: $CRON_SECRET"
 
 # 3) Smoke tests API (on tronque juste visuellement si c’est énorme)
 run "TAXONOMY" "/api/taxonomy"

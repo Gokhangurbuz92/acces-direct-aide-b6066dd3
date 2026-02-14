@@ -19,7 +19,8 @@
 2. Vérifier l'env:
    - `npm run doctor`
 3. Démarrer le serveur:
-   - `vercel dev --listen 3000`
+   - Recommandé (stable, inclut `/api/*` via middleware Vite): `npm run dev -- --port 3000 --host 127.0.0.1`
+   - Optionnel (Vercel CLI, nécessite un `vercel link` préalable): `vercel dev --listen 3000`
 4. Vérifier l'API:
    - `curl -X POST http://localhost:3000/api/search -H "Content-Type: application/json" --data '{"query":"loyer étudiant Strasbourg","category":"LOGEMENT","limit":5}'`
 5. Lancer les tests:

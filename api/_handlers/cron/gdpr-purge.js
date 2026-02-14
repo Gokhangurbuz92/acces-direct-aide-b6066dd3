@@ -1,13 +1,16 @@
 import prisma from '../../_utils/prisma.js';
+import { isCronAuthorized } from '../../_utils/cronAuth.js';
 
-const CRON_SECRET = process.env.CRON_SECRET || 'dev-secret-key';
 const RETENTION_DAYS = 90;
 
 export default async function handler(req, res) {
     if (req.method !== 'GET') return res.status(405).json({ error: 'Method not allowed' });
 
-    const { key } = req.query;
-    if (key !== CRON_SECRET) return res.status(401).json({ error: 'Unauthorized' });
+    // Backward compatibility: this endpoint historically used `?key=...`.
+    // We now standardize on cronAuth (`Authorization: Bearer <CRON_SECRET>`, `?secret=...`, or `x-vercel-cron: 1`).
+    const secret = req.query?.secret ?? req.query?.key;
+    const authReq = { headers: req.headers, query: { secret }, url: req.url };
+    if (!isCronAuthorized(authReq)) return res.status(401).json({ error: 'Unauthorized' });
 
     const cutoff = new Date();
     cutoff.setDate(cutoff.getDate() - RETENTION_DAYS);

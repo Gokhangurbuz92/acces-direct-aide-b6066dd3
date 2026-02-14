@@ -40,7 +40,7 @@ test.describe('Aides Search MVP', () => {
   });
 
   test('searches aides and renders result list', async ({ page }) => {
-    await page.goto('/aides');
+    await page.goto('/recherche');
 
     await page.getByLabel('Recherche').fill('loyer étudiant Strasbourg');
     await page.getByLabel('Catégorie').selectOption('LOGEMENT');
@@ -69,8 +69,8 @@ test.describe('Aides Search MVP', () => {
     await expect(page.getByTestId('search-error-state')).not.toBeVisible();
   });
 
-  test('includes situation slug when browsing /situations/:slug', async ({ page }) => {
-    await page.goto('/situations/etudiant');
+  test('includes situation param when searching with ?situation=', async ({ page }) => {
+    await page.goto('/recherche?situation=etudiant');
 
     await page.getByLabel('Recherche').fill('with-situation');
     await page.getByRole('button', { name: 'Rechercher' }).click();
@@ -80,7 +80,7 @@ test.describe('Aides Search MVP', () => {
   });
 
   test('renders empty state when API returns no result', async ({ page }) => {
-    await page.goto('/aides');
+    await page.goto('/recherche');
 
     await page.getByLabel('Recherche').fill('force-empty');
     await page.getByRole('button', { name: 'Rechercher' }).click();

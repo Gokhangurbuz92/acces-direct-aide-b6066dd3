@@ -2,7 +2,7 @@
 
 ## Utilisation
 
-- Ouvrir `/aides`.
+- Ouvrir `/recherche`.
 - Saisir une requête (minimum 2 caractères), choisir une catégorie optionnelle, puis cliquer sur `Rechercher`.
 - Les paramètres sont persistés dans l'URL: `?q=...&cat=...&limit=...`.
 - États gérés:

@@ -1,271 +1,453 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { useLocation, useParams, useSearchParams } from 'react-router-dom';
-import { Search, RotateCcw } from 'lucide-react';
+import { Link, useLocation, useNavigate, useParams, useSearchParams } from 'react-router-dom';
+import { useQuery } from '@tanstack/react-query';
+import { Search, RotateCcw, SlidersHorizontal } from 'lucide-react';
 import SEO from '@/components/SEO';
+import { client } from '@/api/client';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Card, CardContent } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
-import AidesSearchForm from '@/components/search/AidesSearchForm';
-import SearchResultsList from '@/components/search/SearchResultsList';
-import { isAbortError, normalizeSearchCategory, searchAides } from '@/lib/searchClient';
+import EmptyState from '@/components/ui/EmptyState';
+import AideCard from '@/components/cards/AideCard';
+import { generateBreadcrumbSchema } from '@/utils/schema';
 
-const DEFAULT_LIMIT = 10;
-const EXAMPLE_SEARCHES = [
-  { query: 'loyer étudiant Strasbourg', category: 'LOGEMENT' },
-  { query: 'aide transport travail', category: 'MOBILITE' },
-  { query: 'complémentaire santé solidaire', category: 'SANTE' },
-];
+const DEFAULT_LIMIT = 20;
+const LIMIT_OPTIONS = [10, 20, 50];
+
+function parsePage(value) {
+  const parsed = Number.parseInt(String(value ?? '1'), 10);
+  if (!Number.isFinite(parsed) || parsed < 1) return 1;
+  return parsed;
+}
 
 function parseLimit(value) {
   const parsed = Number.parseInt(String(value ?? DEFAULT_LIMIT), 10);
   if (!Number.isFinite(parsed)) return DEFAULT_LIMIT;
   if (parsed < 1) return 1;
-  if (parsed > 30) return 30;
+  if (parsed > 50) return 50;
   return parsed;
 }
 
-function buildCanonicalSearchParams(query, category, limit) {
-  const params = new URLSearchParams();
-  const trimmedQuery = query.trim();
-  if (trimmedQuery) {
-    params.set('q', trimmedQuery);
-  }
-  if (category) {
-    params.set('cat', category);
-  }
-  params.set('limit', String(parseLimit(limit)));
-  return params;
-}
-
 export default function Aides() {
-  const { slug } = useParams();
   const location = useLocation();
+  const navigate = useNavigate();
+  const { slug } = useParams();
   const [searchParams, setSearchParams] = useSearchParams();
-  const [refreshKey, setRefreshKey] = useState(0);
+  const [isFiltersOpen, setIsFiltersOpen] = useState(false);
 
-  const queryFromUrl = (searchParams.get('q') || '').trim();
-  const situationFromUrl = (
-    searchParams.get('situation') ||
-    searchParams.get('situations') ||
-    (location.pathname.startsWith('/situations/') ? slug : '') ||
-    ''
-  ).trim();
-  const categoryFromUrl = normalizeSearchCategory(
-    searchParams.get('cat') ||
-    searchParams.get('category') ||
-    searchParams.get('categorie') ||
-    searchParams.get('theme') ||
-    (location.pathname.startsWith('/categories/') ? slug : '')
-  );
-  const limitFromUrl = parseLimit(searchParams.get('limit'));
-
-  const [queryInput, setQueryInput] = useState(queryFromUrl);
-  const [categoryInput, setCategoryInput] = useState(categoryFromUrl);
-  const [limitInput, setLimitInput] = useState(limitFromUrl);
-  const [status, setStatus] = useState('idle');
-  const [results, setResults] = useState([]);
-  const [meta, setMeta] = useState({ total: 0, message: null });
-  const [errorMessage, setErrorMessage] = useState('');
+  // Legacy pretty routes -> canonical query params
+  useEffect(() => {
+    if (location.pathname.startsWith('/categories/') && slug) {
+      const params = new URLSearchParams(searchParams);
+      if (!params.get('category') && !params.get('theme') && !params.get('cat')) {
+        params.set('category', slug);
+      }
+      params.set('page', '1');
+      navigate(`/aides?${params.toString()}`, { replace: true });
+    }
+  }, [location.pathname, slug, searchParams, navigate]);
 
   useEffect(() => {
-    setQueryInput(queryFromUrl);
-    setCategoryInput(categoryFromUrl);
-    setLimitInput(limitFromUrl);
-  }, [queryFromUrl, categoryFromUrl, limitFromUrl]);
+    if (location.pathname.startsWith('/situations/') && slug) {
+      const params = new URLSearchParams(searchParams);
+      if (!params.get('situation')) {
+        params.set('situation', slug);
+      }
+      params.set('page', '1');
+      navigate(`/aides?${params.toString()}`, { replace: true });
+    }
+  }, [location.pathname, slug, searchParams, navigate]);
+
+  const q = (searchParams.get('q') || '').trim();
+  const category = (searchParams.get('category') || searchParams.get('theme') || '').trim();
+  const situation = (searchParams.get('situation') || '').trim();
+  const territory = (searchParams.get('territory') || searchParams.get('territoire') || '').trim();
+  const page = parsePage(searchParams.get('page'));
+  const limit = parseLimit(searchParams.get('limit') || searchParams.get('pageSize'));
+  const sort = (searchParams.get('sort') || (q ? 'relevance' : 'quality')).trim();
+
+  const [queryInput, setQueryInput] = useState(q);
 
   useEffect(() => {
-    if (!queryFromUrl) {
-      setStatus('idle');
-      setResults([]);
-      setMeta({ total: 0, message: null });
-      setErrorMessage('');
-      return;
-    }
+    setQueryInput(q);
+  }, [q]);
 
-    if (queryFromUrl.length < 2) {
-      setStatus('error');
-      setResults([]);
-      setMeta({ total: 0, message: null });
-      setErrorMessage('Veuillez saisir au moins 2 caractères pour lancer la recherche.');
-      return;
-    }
+  const { data: taxonomy } = useQuery({
+    queryKey: ['taxonomy'],
+    queryFn: () => client.taxonomy.get(),
+  });
 
-    let isMounted = true;
-    setStatus('loading');
-    setErrorMessage('');
+  const {
+    data,
+    isLoading,
+    isFetching,
+    error,
+    refetch,
+  } = useQuery({
+    queryKey: ['aides', { q, category, situation, territory, sort, page, limit }],
+    queryFn: () => client.entities.Aide.filter({
+      q,
+      category,
+      situation,
+      territory,
+      sort,
+      page,
+      limit,
+      statut: 'publie',
+    }),
+  });
 
-    const controller = new AbortController();
-
-    searchAides({
-      query: queryFromUrl,
-      category: categoryFromUrl,
-      limit: limitFromUrl,
-      situations: situationFromUrl ? [situationFromUrl] : undefined,
-      signal: controller.signal,
-    })
-      .then((response) => {
-        if (!isMounted) return;
-
-        setResults(response.results);
-        setMeta(response.meta);
-        setStatus(response.results.length > 0 ? 'success' : 'empty');
-      })
-      .catch((error) => {
-        if (!isMounted || isAbortError(error)) return;
-        setResults([]);
-        setMeta({ total: 0, message: null });
-        setStatus('error');
-        setErrorMessage(error.message || 'La recherche est temporairement indisponible.');
-      });
-
-    return () => {
-      isMounted = false;
-      controller.abort();
-    };
-  }, [queryFromUrl, categoryFromUrl, limitFromUrl, situationFromUrl, refreshKey]);
+  const items = data?.items || [];
+  const pagination = data?.pagination || {};
+  const facets = data?.facets || {};
 
   const liveMessage = useMemo(() => {
-    if (status === 'loading') return 'Recherche en cours...';
-    if (status === 'success') return `${meta.total} résultat${meta.total > 1 ? 's' : ''} trouvé${meta.total > 1 ? 's' : ''}.`;
-    if (status === 'empty') return 'Aucun résultat trouvé.';
-    if (status === 'error') return `Erreur de recherche: ${errorMessage}`;
-    return 'Recherche prête.';
-  }, [status, meta.total, errorMessage]);
+    if (isLoading || isFetching) return 'Chargement des aides...';
+    if (error) return "Erreur lors du chargement des aides.";
+    if (!items.length) return 'Aucune aide trouvée.';
+    const total = typeof pagination.total === 'number' ? pagination.total : items.length;
+    return `${total} aide${total > 1 ? 's' : ''} trouvée${total > 1 ? 's' : ''}.`;
+  }, [isLoading, isFetching, error, items.length, pagination.total]);
 
-  const applySearch = (query, category, limit) => {
-    const normalizedCategory = normalizeSearchCategory(category);
-    const nextParams = buildCanonicalSearchParams(query, normalizedCategory, limit);
-    const currentParams = buildCanonicalSearchParams(queryFromUrl, categoryFromUrl, limitFromUrl);
-
-    setSearchParams(nextParams);
-    if (nextParams.toString() === currentParams.toString()) {
-      setRefreshKey((value) => value + 1);
+  const handleParamChange = (key, value) => {
+    const params = new URLSearchParams(searchParams);
+    if (value) {
+      params.set(key, value);
+    } else {
+      params.delete(key);
     }
+    params.set('page', '1');
+    setSearchParams(params);
   };
 
-  const handleSubmit = (event) => {
+  const handleSearchSubmit = (event) => {
     event.preventDefault();
-    applySearch(queryInput, categoryInput, limitInput);
+    handleParamChange('q', queryInput.trim());
   };
 
-  const handleRetry = () => {
-    setRefreshKey((value) => value + 1);
+  const clearFilters = () => {
+    setSearchParams({});
+    setIsFiltersOpen(false);
   };
 
-  const handleExampleClick = (example) => {
-    setQueryInput(example.query);
-    setCategoryInput(example.category);
-    applySearch(example.query, example.category, limitInput);
+  const handlePageChange = (nextPage) => {
+    const params = new URLSearchParams(searchParams);
+    params.set('page', String(nextPage));
+    setSearchParams(params);
   };
+
+  const getTitle = () => {
+    if (q) return `Aides - ${q}`;
+    if (category && taxonomy?.categories?.length) {
+      const found = taxonomy.categories.find((c) => c.slug === category);
+      if (found) return `Aides - ${found.label}`;
+    }
+    if (situation && taxonomy?.aidSituations?.length) {
+      const found = taxonomy.aidSituations.find((s) => s.code === situation || s.slug === situation);
+      if (found) return `Aides pour : ${found.label}`;
+    }
+    return 'Aides sociales';
+  };
+
+  const getDescription = () => {
+    if (q) return `Résultats pour la recherche "${q}" sur les aides disponibles.`;
+    if (category && taxonomy?.categories?.length) {
+      const found = taxonomy.categories.find((c) => c.slug === category);
+      if (found) return `Toutes les aides sociales de la catégorie ${found.label}.`;
+    }
+    if (situation && taxonomy?.aidSituations?.length) {
+      const found = taxonomy.aidSituations.find((s) => s.code === situation || s.slug === situation);
+      if (found) return `Toutes les aides sociales pour la situation : ${found.label}.`;
+    }
+    return "Retrouvez les aides sociales disponibles et filtrez par catégorie ou situation.";
+  };
+
+  const schema = useMemo(() => {
+    return [
+      generateBreadcrumbSchema([
+        { name: 'Accueil', url: '/' },
+        { name: 'Aides', url: '/aides' },
+      ]),
+    ].filter(Boolean);
+  }, []);
+
+  const territoryOptions = useMemo(() => {
+    const facetTerritories = facets?.territoires || {};
+    const keys = Object.keys(facetTerritories);
+    if (!keys.length) {
+      return [
+        { value: '', label: 'Tous les territoires' },
+        { value: 'national', label: 'France entière' },
+        { value: '67', label: 'Bas-Rhin (67)' },
+        { value: '68', label: 'Haut-Rhin (68)' },
+      ];
+    }
+    const sorted = keys
+      .filter((key) => key)
+      .sort((a, b) => String(a).localeCompare(String(b), 'fr'));
+    const formatted = sorted.map((key) => {
+      if (key === 'national') return { value: key, label: 'France entière' };
+      if (key === '67') return { value: key, label: 'Bas-Rhin (67)' };
+      if (key === '68') return { value: key, label: 'Haut-Rhin (68)' };
+      return { value: key, label: String(key) };
+    });
+    return [{ value: '', label: 'Tous les territoires' }, ...formatted];
+  }, [facets?.territoires]);
+
+  const hasNext = Boolean(pagination.hasNext);
+  const totalPages = pagination.totalPages || 1;
 
   return (
-    <main id="main-content" className="min-h-screen bg-slate-50 pb-12">
+    <div className="min-h-screen bg-slate-50">
       <SEO
-        title="Aides - Recherche intelligente"
-        description="Recherchez rapidement des aides sociales par mots-clés et catégorie."
+        title={getTitle()}
+        description={getDescription()}
         path="/aides"
+        schema={schema}
       />
 
-      <div className="mx-auto w-full max-w-6xl px-4 pt-8 sm:px-6 lg:pt-12">
-        <header className="mb-6">
-          <h1 className="text-3xl font-bold text-slate-900">Moteur de recherche des aides</h1>
-          <p className="mt-2 max-w-3xl text-slate-600">
-            Saisissez votre besoin pour trouver rapidement des aides pertinentes.
-          </p>
-        </header>
+      <p className="sr-only" role="status" aria-live="polite">
+        {liveMessage}
+      </p>
 
-        <AidesSearchForm
-          query={queryInput}
-          category={categoryInput}
-          limit={limitInput}
-          onQueryChange={setQueryInput}
-          onCategoryChange={setCategoryInput}
-          onLimitChange={setLimitInput}
-          onSubmit={handleSubmit}
-          isLoading={status === 'loading'}
-        />
-
-        <p className="sr-only" role="status" aria-live="polite">
-          {liveMessage}
-        </p>
-
-        <section className="mt-8">
-          {status === 'idle' && (
-            <div className="rounded-2xl border border-dashed border-slate-300 bg-white p-6" data-testid="search-idle-state">
-              <div className="mb-4 flex items-center gap-3">
-                <div className="rounded-full bg-blue-100 p-2 text-blue-700">
-                  <Search className="h-5 w-5" />
-                </div>
-                <p className="font-semibold text-slate-900">Exemples de recherche</p>
-              </div>
-              <p className="text-sm text-slate-600">
-                Lancez une requête avec une expression naturelle, puis affinez avec la catégorie.
+      {/* Header */}
+      <div className="bg-white border-b border-slate-200 py-6 sticky top-0 z-10 shadow-sm">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 flex flex-col gap-4">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+            <div>
+              <h1 className="text-2xl font-bold text-slate-900">Aides</h1>
+              <p className="text-slate-600 text-sm">
+                Filtrez par catégorie, situation ou territoire, ou lancez une recherche.
               </p>
-              <div className="mt-4 flex flex-wrap gap-2">
-                {EXAMPLE_SEARCHES.map((example) => (
-                  <Button
-                    key={`${example.query}-${example.category}`}
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    onClick={() => handleExampleClick(example)}
-                  >
-                    {example.query}
-                  </Button>
-                ))}
-              </div>
             </div>
-          )}
+            <div className="flex items-center gap-2">
+              <Link to="/recherche" className="text-sm font-semibold text-blue-700 hover:text-blue-800">
+                Recherche intelligente
+              </Link>
+              <Button
+                type="button"
+                variant="outline"
+                className="gap-2"
+                onClick={() => setIsFiltersOpen((open) => !open)}
+                aria-expanded={isFiltersOpen}
+              >
+                <SlidersHorizontal className="h-4 w-4" />
+                Filtres
+              </Button>
+            </div>
+          </div>
 
-          {status === 'loading' && (
-            <div className="space-y-3" data-testid="search-loading-state">
-              {[1, 2, 3].map((value) => (
-                <div key={value} className="rounded-xl border border-slate-200 bg-white p-5">
-                  <Skeleton className="h-4 w-24" />
-                  <Skeleton className="mt-3 h-5 w-3/4" />
-                  <Skeleton className="mt-2 h-4 w-full" />
-                  <Skeleton className="mt-2 h-4 w-2/3" />
+          {/* Search bar */}
+          <form onSubmit={handleSearchSubmit} className="flex flex-col sm:flex-row gap-3">
+            <div className="relative flex-1">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-slate-400" aria-hidden="true" />
+              <Input
+                value={queryInput}
+                onChange={(e) => setQueryInput(e.target.value)}
+                placeholder="Rechercher une aide (ex: APL, CSS, Visale...)"
+                aria-label="Rechercher une aide"
+                className="pl-10 h-11 bg-slate-50 border-slate-200 focus:bg-white transition-colors"
+              />
+            </div>
+            <Button type="submit" className="h-11">
+              Rechercher
+            </Button>
+          </form>
+
+          {/* Filters */}
+          {isFiltersOpen && (
+            <Card>
+              <CardContent className="p-4">
+                <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-5">
+                  <div>
+                    <label htmlFor="aides-category" className="block text-sm font-semibold text-slate-900 mb-1">
+                      Catégorie
+                    </label>
+                    <select
+                      id="aides-category"
+                      className="w-full h-10 rounded-md border border-slate-200 bg-white px-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      value={category}
+                      onChange={(e) => handleParamChange('category', e.target.value)}
+                    >
+                      <option value="">Toutes</option>
+                      {(taxonomy?.categories || []).map((cat) => (
+                        <option key={cat.slug} value={cat.slug}>
+                          {cat.label}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div>
+                    <label htmlFor="aides-situation" className="block text-sm font-semibold text-slate-900 mb-1">
+                      Situation
+                    </label>
+                    <select
+                      id="aides-situation"
+                      className="w-full h-10 rounded-md border border-slate-200 bg-white px-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      value={situation}
+                      onChange={(e) => handleParamChange('situation', e.target.value)}
+                    >
+                      <option value="">Toutes</option>
+                      {(taxonomy?.aidSituations || []).map((sit) => (
+                        <option key={sit.code} value={sit.code}>
+                          {sit.label}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div>
+                    <label htmlFor="aides-territory" className="block text-sm font-semibold text-slate-900 mb-1">
+                      Territoire
+                    </label>
+                    <select
+                      id="aides-territory"
+                      className="w-full h-10 rounded-md border border-slate-200 bg-white px-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      value={territory}
+                      onChange={(e) => handleParamChange('territory', e.target.value)}
+                    >
+                      {territoryOptions.map((opt) => (
+                        <option key={opt.value || 'all'} value={opt.value}>
+                          {opt.label}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div>
+                    <label htmlFor="aides-sort" className="block text-sm font-semibold text-slate-900 mb-1">
+                      Trier
+                    </label>
+                    <select
+                      id="aides-sort"
+                      className="w-full h-10 rounded-md border border-slate-200 bg-white px-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      value={sort}
+                      onChange={(e) => handleParamChange('sort', e.target.value)}
+                    >
+                      <option value="quality">Qualité</option>
+                      <option value="recent">Récents</option>
+                      <option value="relevance" disabled={!q}>
+                        Pertinence {q ? '' : '(nécessite une recherche)'}
+                      </option>
+                    </select>
+                  </div>
+
+                  <div>
+                    <label htmlFor="aides-limit" className="block text-sm font-semibold text-slate-900 mb-1">
+                      Par page
+                    </label>
+                    <select
+                      id="aides-limit"
+                      className="w-full h-10 rounded-md border border-slate-200 bg-white px-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      value={String(limit)}
+                      onChange={(e) => handleParamChange('limit', e.target.value)}
+                    >
+                      {LIMIT_OPTIONS.map((opt) => (
+                        <option key={opt} value={String(opt)}>
+                          {opt}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
                 </div>
+
+                <div className="mt-4 flex flex-wrap items-center justify-between gap-3">
+                  <Button type="button" variant="ghost" onClick={clearFilters}>
+                    Réinitialiser
+                  </Button>
+                  <Button type="button" variant="outline" onClick={() => setIsFiltersOpen(false)}>
+                    Fermer
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          )}
+        </div>
+      </div>
+
+      {/* Results */}
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8">
+        {error && (
+          <div
+            className="rounded-2xl border border-red-200 bg-red-50 p-6 text-red-900"
+            role="alert"
+            data-testid="aides-error-state"
+          >
+            <h2 className="text-lg font-semibold">Impossible de charger les aides</h2>
+            <p className="mt-2 text-sm">
+              Une erreur est survenue. Vous pouvez réessayer.
+            </p>
+            <Button type="button" variant="outline" className="mt-4" onClick={() => refetch()}>
+              <RotateCcw className="mr-2 h-4 w-4" />
+              Réessayer
+            </Button>
+          </div>
+        )}
+
+        {(isLoading || isFetching) && !error && (
+          <div className="space-y-3" data-testid="aides-loading-state">
+            {[1, 2, 3, 4, 5, 6].map((value) => (
+              <div key={value} className="rounded-xl border border-slate-200 bg-white p-5">
+                <Skeleton className="h-4 w-24" />
+                <Skeleton className="mt-3 h-5 w-3/4" />
+                <Skeleton className="mt-2 h-4 w-full" />
+                <Skeleton className="mt-2 h-4 w-2/3" />
+              </div>
+            ))}
+          </div>
+        )}
+
+        {!error && !isLoading && !isFetching && items.length === 0 && (
+          <div data-testid="aides-empty-state">
+            <EmptyState
+              title="Aucune aide trouvée"
+              message="Essayez une autre recherche ou ajustez les filtres."
+              actionLabel="Réinitialiser les filtres"
+              onAction={clearFilters}
+              type="search"
+            />
+          </div>
+        )}
+
+        {!error && items.length > 0 && (
+          <>
+            <p className="mb-4 text-sm text-slate-600" data-testid="aides-success-state">
+              {pagination.total ?? items.length} aide{(pagination.total ?? items.length) > 1 ? 's' : ''} trouvée{(pagination.total ?? items.length) > 1 ? 's' : ''}.
+            </p>
+            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3" data-testid="aides-results-list">
+              {items.map((aide) => (
+                <AideCard key={aide.id} aide={aide} />
               ))}
             </div>
-          )}
 
-          {status === 'error' && (
-            <div
-              className="rounded-2xl border border-red-200 bg-red-50 p-6 text-red-900"
-              role="alert"
-              data-testid="search-error-state"
-            >
-              <h2 className="text-lg font-semibold">La recherche a rencontré une erreur</h2>
-              <p className="mt-2 text-sm">{errorMessage}</p>
-              <Button type="button" variant="outline" className="mt-4" onClick={handleRetry}>
-                <RotateCcw className="mr-2 h-4 w-4" />
-                Réessayer
-              </Button>
-            </div>
-          )}
-
-          {status === 'empty' && (
-            <div className="rounded-2xl border border-slate-200 bg-white p-6" data-testid="search-empty-state">
-              <h2 className="text-lg font-semibold text-slate-900">Aucun résultat trouvé</h2>
-              <p className="mt-2 text-sm text-slate-600">
-                Essayez avec d&apos;autres mots-clés, une catégorie différente, ou une limite plus large.
-              </p>
-              <Button type="button" variant="outline" className="mt-4" onClick={handleRetry}>
-                Relancer la recherche
-              </Button>
-            </div>
-          )}
-
-          {status === 'success' && (
-            <>
-              <p className="mb-4 text-sm text-slate-600" data-testid="search-success-state">
-                {meta.total} résultat{meta.total > 1 ? 's' : ''} affiché{meta.total > 1 ? 's' : ''}.
-              </p>
-              <SearchResultsList results={results} />
-            </>
-          )}
-        </section>
+            {/* Pagination */}
+            {totalPages > 1 && (
+              <div className="flex justify-center mt-10 gap-2">
+                <Button
+                  variant="outline"
+                  disabled={page <= 1}
+                  onClick={() => handlePageChange(page - 1)}
+                >
+                  Précédent
+                </Button>
+                <span className="flex items-center px-4 text-sm font-medium">
+                  Page {page} / {totalPages}
+                </span>
+                <Button
+                  variant="outline"
+                  disabled={!hasNext}
+                  onClick={() => handlePageChange(page + 1)}
+                >
+                  Suivant
+                </Button>
+              </div>
+            )}
+          </>
+        )}
       </div>
-    </main>
+    </div>
   );
 }
+

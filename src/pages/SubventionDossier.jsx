@@ -1,6 +1,6 @@
 
 import SEO from '@/components/SEO';
-import { Download, Printer } from 'lucide-react';
+import { Printer } from 'lucide-react';
 
 export default function SubventionDossier() {
     const handlePrint = () => {

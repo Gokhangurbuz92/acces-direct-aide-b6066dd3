@@ -1,4 +1,3 @@
-import React, { useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { client } from '@/api/client';
 import { useQuery } from '@tanstack/react-query';
@@ -14,7 +13,6 @@ import {
   RefreshCw,
   Star,
   Loader2,
-  Newspaper,
   ArrowRight
 } from 'lucide-react';
 import NewsFallback from '@/components/news/NewsFallback';

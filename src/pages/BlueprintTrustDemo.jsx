@@ -1,4 +1,4 @@
-import React from 'react';
+
 import SEO from '@/components/SEO';
 import { Header } from '@/components/layout/Header';
 import { Hero } from '@/components/home/Hero';
@@ -8,7 +8,7 @@ import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/button';
 import { SourceProof } from '@/components/ui/SourceProof';
 import { SearchInput } from '@/components/ui/SearchInput';
-import { CheckCircle2, FileText, AlertCircle } from 'lucide-react';
+import { CheckCircle2, AlertCircle } from 'lucide-react';
 
 /**
  * Blueprint Trust Design System - Component Showcase

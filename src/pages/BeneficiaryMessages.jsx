@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useParams } from 'react-router-dom';
 import ChatWindow from '@/components/Messaging/ChatWindow';
 
@@ -82,7 +82,7 @@ export default function BeneficiaryMessages() {
             } else {
                 alert("Erreur lors de l'envoi.");
             }
-        } catch (e) {
+        } catch {
             alert("Erreur réseau.");
         }
     };
@@ -111,7 +111,7 @@ export default function BeneficiaryMessages() {
             } else {
                 alert(`Erreur envoi: ${json.error || 'Inconnue'}`);
             }
-        } catch (e) {
+        } catch {
             alert("Erreur envoi fichier.");
         }
     };

@@ -1,4 +1,3 @@
-import React, { useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { client } from '@/api/client';
 import { useQuery } from '@tanstack/react-query';
@@ -13,7 +12,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import StructureCard from '@/components/cards/StructureCard';
-import { Search, MapPin, Filter as FilterIcon, Loader2, X } from 'lucide-react';
+import { Search, Filter as FilterIcon, Loader2, X } from 'lucide-react';
 import EmptyState from '@/components/ui/EmptyState';
 import { Badge } from '@/components/ui/badge';
 
@@ -26,11 +25,6 @@ const TYPE_STRUCTURES = {
   mdph: 'MDPH',
   france_travail: 'France Travail',
   cpam: 'CPAM',
-};
-
-const DEPARTEMENTS = {
-  '67': 'Bas-Rhin (67)',
-  '68': 'Haut-Rhin (68)',
 };
 
 export default function Annuaire() {

@@ -5,7 +5,7 @@ import { BarChart, Users, FileText, CheckCircle } from 'lucide-react';
 
 export default function Impact() {
     const [stats, setStats] = useState(null);
-    const [loading, setLoading] = useState(true);
+    const [, setLoading] = useState(true);
 
     useEffect(() => {
         fetch('/api/public/stats')

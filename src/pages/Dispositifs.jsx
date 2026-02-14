@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import SEO from '@/components/SEO';
 import DispositifCard from '@/components/cards/DispositifCard';
 

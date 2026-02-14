@@ -1,11 +1,11 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { apiClient } from '@/api/client';
 import SEO from '@/components/SEO';
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Check, X, RefreshCw, FileText, ExternalLink } from 'lucide-react';
+import { Check, X, RefreshCw, ExternalLink } from 'lucide-react';
 import { toast } from "sonner";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
@@ -14,7 +14,7 @@ export default function AdminInbox() {
     const [items, setItems] = useState([]);
     const [loading, setLoading] = useState(true);
     const [statusFilter, setStatusFilter] = useState('brouillon');
-    const [page, setPage] = useState(1);
+    const [page] = useState(1);
     const [selectedIds, setSelectedIds] = useState([]);
 
     const fetchInbox = useCallback(async () => {
@@ -22,7 +22,7 @@ export default function AdminInbox() {
         try {
             const res = await apiClient.admin.getInbox(statusFilter, page);
             setItems(res.data);
-        } catch (err) {
+        } catch {
             toast.error("Erreur chargement Inbox");
         } finally {
             setLoading(false);
@@ -42,7 +42,7 @@ export default function AdminInbox() {
             toast.success(`Action ${action} effectuée`);
             fetchInbox();
             setSelectedIds([]);
-        } catch (err) {
+        } catch {
             toast.error("Erreur action");
         }
     };

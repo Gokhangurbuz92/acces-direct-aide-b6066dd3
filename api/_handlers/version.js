@@ -21,7 +21,7 @@ export default async function handler(req, res) {
             const host = parsed.hostname;
             // Show only first 2 chars of host or "lo...st"
             dbHost = host.length > 4 ? `${host.substring(0, 2)}...${host.substring(host.length - 2)}` : 'masked';
-        } catch (e) {
+        } catch {
             dbHost = 'invalid-url';
         }
     }
@@ -32,7 +32,7 @@ export default async function handler(req, res) {
         if (buildInfo.buildTime) {
             buildTime = buildInfo.buildTime;
         }
-    } catch (e) {
+    } catch {
         // Fallback to runtime time if build info missing
         console.warn("Could not load build-info.js");
     }

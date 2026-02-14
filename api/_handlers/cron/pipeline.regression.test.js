@@ -1,9 +1,7 @@
-import { vi, describe, it, expect, beforeEach, afterEach } from 'vitest';
+import { vi, describe, it, expect, beforeEach } from 'vitest';
 import handler from './pipeline.js';
 import * as ingestStructures from './ingest-structures.js';
-import * as ingestAids from './ingest-aids.js';
 import { isCronAuthorized } from '../../_utils/cronAuth.js';
-import crypto from 'crypto';
 
 // Mock Dependencies
 vi.mock('../../_utils/cronAuth.js');

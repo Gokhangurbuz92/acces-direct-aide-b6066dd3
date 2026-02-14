@@ -12,7 +12,7 @@ const bodySchema = z.object({
     name: z.string().optional()
 });
 
-const handler = async (req, res) => {
+const handler = async (req) => {
     if (req.method !== 'POST') {
          throw createError(405, errorCodes.BAD_REQUEST, 'Method not allowed');
     }

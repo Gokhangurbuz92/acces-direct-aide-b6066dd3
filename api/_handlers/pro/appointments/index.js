@@ -1,7 +1,7 @@
 
 import prisma from '../../../_utils/prisma.js';
 import { verifyProToken, ROLE } from '../../../lib/pro-auth.js';
-import { decrypt, hash } from '../../../lib/crypto.js';
+import { decrypt } from '../../../lib/crypto.js';
 
 export default async function handler(req, res) {
     if (req.method !== 'GET') {
@@ -18,7 +18,7 @@ export default async function handler(req, res) {
         return res.status(401).json({ error: "Invalid token" });
     }
 
-    const { structureId, role, userId } = decoded;
+    const { structureId, role } = decoded;
 
     // Filters
     const { start_date, end_date, search_hash, id, limit, page } = req.query;

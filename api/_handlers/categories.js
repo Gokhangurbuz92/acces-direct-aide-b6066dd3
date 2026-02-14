@@ -7,7 +7,7 @@ export default async function handler(req, res) {
     const PAGE_SIZE = Math.min(parseInt(pageSize) || 50, 100);
     const OFFSET = (parseInt(page) - 1) * PAGE_SIZE;
 
-    const isAdmin = verifyAdmin(req);
+    verifyAdmin(req);
 
     // CRUD
     if (req.method === 'POST') return createEntity(req, res, prisma.aidCategory);

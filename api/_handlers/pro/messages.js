@@ -1,5 +1,5 @@
 import prisma from '../../_utils/prisma.js';
-import { verifyProToken, checkRateLimit, requireAuth } from '../../lib/pro-auth.js';
+import { requireAuth } from '../../lib/pro-auth.js';
 import { encrypt, decrypt, generateAttachmentToken } from '../../lib/crypto.js';
 import { storage } from '../../lib/storage.js';
 

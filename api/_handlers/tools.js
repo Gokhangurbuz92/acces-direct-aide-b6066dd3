@@ -12,7 +12,7 @@ function isAdmin(req) {
         const token = authHeader.split(' ')[1];
         const decoded = jwt.verify(token, process.env.JWT_SECRET);
         return decoded && ALLOWED_ADMIN_ROLES.includes(decoded.role);
-    } catch (e) { return false; }
+    } catch { return false; }
 }
 
 export default async function handler(req, res) {
@@ -34,7 +34,7 @@ export default async function handler(req, res) {
     }
 
     const query = req.query || Object.fromEntries(new URL(req.url, `http://${req.headers.host || 'localhost'}`).searchParams);
-    const { categorie, type, public: publicFilter, id, statut } = query;
+    const { categorie, type, public: publicFilter, statut } = query;
 
     try {
         if (method === 'GET') {

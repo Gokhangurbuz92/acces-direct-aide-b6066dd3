@@ -37,7 +37,7 @@ export default async function handler(req, res) {
                 where: { createdAt: { lt: cutoff } }
             });
             deletedAudit = auditRes.count;
-        } catch (e) { /* Might not exist yet */ }
+        } catch { /* Might not exist yet */ }
 
         const summary = {
             versions_deleted: deletedVersions.count,

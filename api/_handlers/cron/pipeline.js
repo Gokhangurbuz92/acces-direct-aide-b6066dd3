@@ -6,10 +6,9 @@ import Parser from 'rss-parser';
 import crypto from 'crypto';
 import fs from 'fs';
 import path from 'path';
-import { summarizeToFalc } from '../../lib/falc-summarizer.js';
 import { ensureSlug } from '../../lib/slug.js';
-import ingestStructures, { runIngestStructures } from './ingest-structures.js';
-import ingestAids, { runIngestAids } from './ingest-aids.js';
+import { runIngestStructures } from './ingest-structures.js';
+import { runIngestAids } from './ingest-aids.js';
 
 const parser = new Parser();
 
@@ -26,15 +25,6 @@ function slugify(text) {
         .replace(/^-+/, '')
         .replace(/-+$/, '');
 }
-
-// Helper: Make Sub Request
-const makeSubReq = (req, queryOverride = {}) => ({
-    ...req,
-    method: req.method || "POST",
-    headers: req.headers,
-    url: req.url,
-    query: { ...(req.query || {}), ...queryOverride },
-});
 
 export default async function handler(req, res) {
     // SENTINEL: Logic Entry
@@ -143,7 +133,7 @@ export default async function handler(req, res) {
                         });
                     }
                 }
-            } catch (e) {/* ignore */ }
+            } catch { /* ignore */ }
 
             const sources = await prisma.rssSource.findMany({ where: { enabled: true } });
 
@@ -239,7 +229,7 @@ export default async function handler(req, res) {
                     duration_ms: Date.now() - startTime
                 }
             });
-        } catch (e) { /* ignore */ }
+        } catch { /* ignore */ }
     };
 
     try {
@@ -263,7 +253,7 @@ export default async function handler(req, res) {
                     duration_ms: Date.now() - startTime
                 }
             });
-        } catch (e) { /* ignore */ }
+        } catch { /* ignore */ }
 
         // If headers already sent by sub-handler, we can't do anything but log
         if (res.writableEnded || res.headersSent) return;

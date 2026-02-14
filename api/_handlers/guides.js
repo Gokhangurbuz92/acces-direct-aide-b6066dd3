@@ -17,7 +17,7 @@ function isAdmin(req) {
         const token = authHeader.split(' ')[1];
         const decoded = jwt.verify(token, process.env.JWT_SECRET);
         return decoded && ALLOWED_ADMIN_ROLES.includes(decoded.role);
-    } catch (e) {
+    } catch {
         return false;
     }
 }
@@ -42,7 +42,7 @@ export default async function handler(req, res) {
 
     // Polyfill req.query for local dev-server (raw node http)
     const query = req.query || Object.fromEntries(urlObj.searchParams);
-    const { categorie, public: publicFilter, id, statut } = query;
+    const { categorie, public: publicFilter, statut } = query;
 
     try {
         // --- PUBLIC GET ---

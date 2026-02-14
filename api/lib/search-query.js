@@ -260,18 +260,35 @@ export async function searchAides(prisma, params) {
  * @param {any} params
  */
 export async function searchDemarches(prisma, params) {
-  const { q, category, situation, geo, page, pageSize } = params;
+  const {
+    q,
+    category,
+    theme,
+    situation,
+    geo,
+    territoire,
+    territory,
+    audience,
+    online,
+    statut = 'publie',
+    sort,
+    page,
+    pageSize,
+  } = params;
+
+  const effectiveCategory = theme || category;
+  const effectiveGeo = geo || territoire || territory;
   const LIMIT = pageSize;
   const OFFSET = (page - 1) * LIMIT;
 
-  const conditions = [Prisma.sql`statut = 'publie'`];
+  const conditions = [Prisma.sql`statut = ${statut}`];
 
   if (q) {
     conditions.push(Prisma.sql`"search_vector" @@ plainto_tsquery('french', unaccent(${q}))`);
   }
 
-  if (category) {
-    conditions.push(Prisma.sql`("categoryId" = ${category} OR EXISTS (SELECT 1 FROM "AidCategory" c WHERE c.id = "Demarche"."categoryId" AND c.slug = ${category}))`);
+  if (effectiveCategory) {
+    conditions.push(Prisma.sql`("categoryId" = ${effectiveCategory} OR EXISTS (SELECT 1 FROM "AidCategory" c WHERE c.id = "Demarche"."categoryId" AND c.slug = ${effectiveCategory}))`);
   }
 
   if (situation) {
@@ -282,8 +299,16 @@ export async function searchDemarches(prisma, params) {
     )`);
   }
 
-  if (geo) {
-    conditions.push(Prisma.sql`${geo} = ANY("departements")`);
+  if (effectiveGeo) {
+    conditions.push(Prisma.sql`${effectiveGeo} = ANY("departements")`);
+  }
+
+  if (audience) {
+    conditions.push(Prisma.sql`${audience} = ANY("audiences")`);
+  }
+
+  if (online === 'true' || online === '1') {
+    conditions.push(Prisma.sql`("lien_officiel" IS NOT NULL AND "lien_officiel" <> '')`);
   }
 
   const whereClause = conditions.length > 0
@@ -293,11 +318,56 @@ export async function searchDemarches(prisma, params) {
   let orderBy;
   let selectRank = Prisma.empty;
 
-  if (q) {
+  /** @type {Record<string, string>} */
+  const sortAliases = {
+    relevance: 'pertinence',
+    recent: '-published_at',
+    '-recent': 'published_at',
+    quality: '-quality_score',
+    '-quality': 'quality_score',
+  };
+
+  const effectiveSort = sortAliases[sort] || sort;
+  const sortDirection = effectiveSort?.startsWith('-') ? 'DESC' : 'ASC';
+  const sortField = effectiveSort?.startsWith('-') ? effectiveSort.substring(1) : effectiveSort;
+
+  /** @type {Record<string, string>} */
+  const SAFE_SORT_COLUMNS = {
+    'date': 'published_at',
+    'alpha': 'titre',
+    'created_date': 'updatedAt',
+    'updated_date': 'updatedAt',
+    'published_at': 'published_at',
+    'date_publication': 'published_at',
+    'titre': 'titre',
+    'quality_score': 'quality_score',
+  };
+
+  if (q && (effectiveSort === 'pertinence' || sortField === 'pertinence')) {
     selectRank = Prisma.sql`, ts_rank_cd("search_vector", plainto_tsquery('french', unaccent(${q}))) as rank`;
-    orderBy = Prisma.sql`ORDER BY rank DESC, published_at DESC`;
-  } else {
+    orderBy = Prisma.sql`ORDER BY rank DESC, published_at DESC, id ASC`;
+  } else if (sortField === 'pertinence') {
+    // Relevance sorting requires q. Without q we fallback to date.
     orderBy = Prisma.sql`ORDER BY published_at DESC, id ASC`;
+  } else if (sortField && SAFE_SORT_COLUMNS[sortField]) {
+    const dbColumn = SAFE_SORT_COLUMNS[sortField];
+    const safeColumn = Prisma.raw(`"${dbColumn}"`);
+
+    if (dbColumn === 'quality_score') {
+      orderBy = sortDirection === 'DESC'
+        ? Prisma.sql`ORDER BY ${safeColumn} DESC, published_at DESC, id ASC`
+        : Prisma.sql`ORDER BY ${safeColumn} ASC, published_at DESC, id ASC`;
+    } else {
+      orderBy = sortDirection === 'DESC'
+        ? Prisma.sql`ORDER BY ${safeColumn} DESC, id ASC`
+        : Prisma.sql`ORDER BY ${safeColumn} ASC, id ASC`;
+    }
+  } else if (q) {
+    selectRank = Prisma.sql`, ts_rank_cd("search_vector", plainto_tsquery('french', unaccent(${q}))) as rank`;
+    orderBy = Prisma.sql`ORDER BY rank DESC, published_at DESC, id ASC`;
+  } else {
+    // Default without q: quality first, then recent.
+    orderBy = Prisma.sql`ORDER BY "quality_score" DESC, published_at DESC, id ASC`;
   }
 
   const itemsQuery = Prisma.sql`SELECT id ${selectRank} FROM "Demarche" ${whereClause} ${orderBy} LIMIT ${LIMIT} OFFSET ${OFFSET}`;
@@ -311,9 +381,31 @@ export async function searchDemarches(prisma, params) {
   const itemIds = items.map((/** @type {{ id: string }} */ i) => i.id);
   let enrichedItems = [];
   if (itemIds.length > 0) {
+    // Keep the listing payload lightweight; detail endpoints fetch full objects separately.
+    const listSelect = {
+      id: true,
+      slug: true,
+      titre: true,
+      categorie: true,
+      description_courte: true,
+      summary_falc: true,
+      delai: true,
+      lien_officiel: true,
+      quality_score: true,
+      published_at: true,
+      updatedAt: true,
+      category: {
+        select: {
+          id: true,
+          slug: true,
+          label: true,
+        },
+      },
+    };
+
     const fullItems = await prisma.demarche.findMany({
       where: { id: { in: itemIds } },
-      include: { category: true, situations: true }
+      select: listSelect,
     });
     const itemMap = new Map(fullItems.map((/** @type {{ id: string }} */ i) => [i.id, i]));
     enrichedItems = items.map((/** @type {{ id: string, rank?: number }} */ raw) => {

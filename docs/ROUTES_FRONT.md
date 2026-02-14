@@ -29,8 +29,8 @@ Ce document liste les routes définies dans `src/pages/index.jsx` (Router princi
 | `/contact` | `Contact` | |
 | `/cookies` | `Cookies` | |
 | `/demarches/view` | `DemarcheDetail` | |
-| `/demarches/:slug` | `DemarcheDetail` | |
-| `/demarches` | `Demarches` | |
+| `/demarches/:slug` | `DemarcheDetail` | Détail (API `/api/demarches/:slug`) |
+| `/demarches` | `Demarches` | Listing + filtres (API `/api/demarches`) |
 | `/orientation` | `Orientation` | |
 | `/home` | `Navigate` | Redirects to `/` |
 | `/mentions-legales` | `MentionsLegales` | |

@@ -29,7 +29,7 @@ export default function AdminReview() {
         },
         onSuccess: () => {
             toast.success("Contenu publié !");
-            queryClient.invalidateQueries(['admin-review-aides']);
+            queryClient.invalidateQueries({ queryKey: ['admin-review-aides'] });
         }
     });
 
@@ -39,7 +39,7 @@ export default function AdminReview() {
         },
         onSuccess: () => {
             toast.success("Contenu renvoyé en brouillon.");
-            queryClient.invalidateQueries(['admin-review-aides']);
+            queryClient.invalidateQueries({ queryKey: ['admin-review-aides'] });
         }
     });
 

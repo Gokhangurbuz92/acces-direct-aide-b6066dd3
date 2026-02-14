@@ -129,7 +129,7 @@ export default function AdminReports() {
       return response.json();
     },
     onSuccess: () => {
-      queryClient.invalidateQueries(['reports']);
+      queryClient.invalidateQueries({ queryKey: ['reports'] });
       toast.success('Statut mis à jour');
     },
     onError: (error) => {

@@ -8,9 +8,19 @@
 const BASE_URL = 'https://www.accesdirectaide.fr';
 const SITE_NAME = 'Accès Direct Aide';
 
+/** @typedef {{ title: string, description: string, path: string, datePublished?: string, dateModified?: string }} WebPageSchemaOptions */
+/** @typedef {{ titre: string, summary_falc?: string, contenu?: string, date_publication?: string, date_modification?: string, source_nom?: string, slug?: string }} ActualiteLike */
+/** @typedef {{ type?: string, nom?: string, description?: string, resume_falc?: string, slug?: string, adresse?: string, ville?: string, code_postal?: string, telephone?: string, email?: string, site_web?: string }} StructureLike */
+/** @typedef {{ titre?: string, summary_falc?: string, description?: string, theme?: string, organisme?: string, slug?: string, territoire?: string, public_cible?: string }} AideLike */
+/** @typedef {{ titre?: string, description?: string, contenu?: string }} DemarcheStepLike */
+/** @typedef {{ titre?: string, summary_falc?: string, description?: string, slug?: string, etapes?: DemarcheStepLike[] }} DemarcheLike */
+/** @typedef {{ question: string, answer: string }} FaqItem */
+/** @typedef {{ titre?: string, nom?: string, slug?: string }} ItemListEntry */
+/** @typedef {{ name: string, description: string, items: ItemListEntry[], path: string }} ItemListSchemaOptions */
+
 /**
  * Generate WebPage schema
- * @param {Object} options - Page options
+ * @param {WebPageSchemaOptions} options - Page options
  * @returns {Object} JSON-LD schema
  */
 export function generateWebPageSchema({ title, description, path, datePublished, dateModified }) {
@@ -33,7 +43,7 @@ export function generateWebPageSchema({ title, description, path, datePublished,
 
 /**
  * Generate Article schema (for Actualites)
- * @param {Object} actualite - Actualite data
+ * @param {ActualiteLike} actualite - Actualite data
  * @returns {Object} JSON-LD schema
  */
 export function generateArticleSchema(actualite) {
@@ -60,7 +70,7 @@ export function generateArticleSchema(actualite) {
 
 /**
  * Generate Organization schema (for Structure detail pages)
- * @param {Object} structure - Structure data
+ * @param {StructureLike} structure - Structure data
  * @returns {Object} JSON-LD schema
  */
 export function generateOrganizationSchema(structure) {
@@ -99,7 +109,7 @@ export function generateOrganizationSchema(structure) {
 
 /**
  * Generate GovernmentService schema (for Aide detail pages)
- * @param {Object} aide - Aide data
+ * @param {AideLike} aide - Aide data
  * @returns {Object} JSON-LD schema
  */
 export function generateGovernmentServiceSchema(aide) {
@@ -127,7 +137,7 @@ export function generateGovernmentServiceSchema(aide) {
 
 /**
  * Generate HowTo schema (for Demarche detail pages)
- * @param {Object} demarche - Demarche data
+ * @param {DemarcheLike} demarche - Demarche data
  * @returns {Object} JSON-LD schema
  */
 export function generateHowToSchema(demarche) {
@@ -154,7 +164,7 @@ export function generateHowToSchema(demarche) {
 
 /**
  * Generate FAQPage schema
- * @param {Array} faqs - Array of {question, answer}
+ * @param {FaqItem[]} faqs - Array of {question, answer}
  * @returns {Object} JSON-LD schema
  */
 export function generateFAQSchema(faqs) {
@@ -174,7 +184,7 @@ export function generateFAQSchema(faqs) {
 
 /**
  * Generate ItemList schema (for list pages)
- * @param {Object} options - List options
+ * @param {ItemListSchemaOptions} options - List options
  * @returns {Object} JSON-LD schema
  */
 export function generateItemListSchema({ name, description, items, path }) {

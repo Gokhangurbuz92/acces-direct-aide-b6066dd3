@@ -1,4 +1,5 @@
 import { chatWithRulePack } from '../api/lib/gemini.js';
+import { env } from '../api/_utils/env.js';
 import dotenv from 'dotenv';
 dotenv.config();
 
@@ -17,8 +18,8 @@ async function runScenario(name, questions) {
 }
 
 // Note: Requires GEMINI_API_KEY in .env
-if (!process.env.GEMINI_API_KEY) {
-    console.error("ERREUR: GEMINI_API_KEY non trouvée dans .env");
+if (!env.ai.geminiKey) {
+    console.error("ERREUR: GEMINI_API_KEY (ou GOOGLE_API_KEY) non trouvée dans .env");
     process.exit(1);
 }
 

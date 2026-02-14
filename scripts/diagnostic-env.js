@@ -194,7 +194,7 @@ async function checkCronConfiguration() {
     
     log(`\n💡 Pour tester manuellement:`, 'cyan');
     log(`   curl -i "${baseUrl}/api/cron/pipeline" \\`, 'cyan');
-    log(`     -H "Authorization: Bearer ${cronSecret.slice(0, 10)}..."`, 'cyan');
+    log(`     -H "x-cron-secret: <CRON_SECRET>"`, 'cyan');
   }
   
   return true;

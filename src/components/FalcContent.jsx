@@ -6,7 +6,12 @@
  * - Clear structure with headings
  * - Action steps when available
  */
-export default function FalcContent({ falcData }) {
+/**
+ * @param {{ falcData: any, entityType?: string }} props
+ */
+export default function FalcContent({ falcData, entityType }) {
+  // Kept for compatibility: some pages pass this prop and strict TS checkJs infers component props from destructuring.
+  void entityType;
   if (!falcData) {
     return (
       <div className="falc-content-empty" style={{ padding: '1rem', color: '#666' }}>

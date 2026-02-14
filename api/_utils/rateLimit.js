@@ -127,7 +127,8 @@ async function checkRateLimitKV(action, identifier) {
 }
 
 export function getClientIp(req) {
-    const xForwardedFor = req.headers['x-forwarded-for'];
+    const headers = req?.headers || {};
+    const xForwardedFor = headers['x-forwarded-for'] || headers['X-Forwarded-For'];
     if (xForwardedFor) {
         // x-forwarded-for: client, proxy1, proxy2
         return xForwardedFor.split(',')[0].trim();

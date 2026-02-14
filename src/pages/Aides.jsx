@@ -43,6 +43,12 @@ export default function Aides() {
   const [refreshKey, setRefreshKey] = useState(0);
 
   const queryFromUrl = (searchParams.get('q') || '').trim();
+  const situationFromUrl = (
+    searchParams.get('situation') ||
+    searchParams.get('situations') ||
+    (location.pathname.startsWith('/situations/') ? slug : '') ||
+    ''
+  ).trim();
   const categoryFromUrl = normalizeSearchCategory(
     searchParams.get('cat') ||
     searchParams.get('category') ||
@@ -87,10 +93,14 @@ export default function Aides() {
     setStatus('loading');
     setErrorMessage('');
 
+    const controller = new AbortController();
+
     searchAides({
       query: queryFromUrl,
       category: categoryFromUrl,
       limit: limitFromUrl,
+      situations: situationFromUrl ? [situationFromUrl] : undefined,
+      signal: controller.signal,
     })
       .then((response) => {
         if (!isMounted) return;
@@ -109,8 +119,9 @@ export default function Aides() {
 
     return () => {
       isMounted = false;
+      controller.abort();
     };
-  }, [queryFromUrl, categoryFromUrl, limitFromUrl, refreshKey]);
+  }, [queryFromUrl, categoryFromUrl, limitFromUrl, situationFromUrl, refreshKey]);
 
   const liveMessage = useMemo(() => {
     if (status === 'loading') return 'Recherche en cours...';

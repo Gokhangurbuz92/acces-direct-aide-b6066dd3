@@ -7,18 +7,104 @@ const CAPABILITY_CACHE_TTL_MS = 5 * 60 * 1000;
 
 let capabilityCache = {
   checkedAt: 0,
-  semanticReady: false,
+  hasEmbeddingColumn: false,
+  hasVectorExtension: false,
+  hasTsContentColumn: false,
+  hasSearchVectorColumn: false,
+  hasUnaccentExtension: false,
 };
 
 function toVectorLiteral(values) {
   return `[${values.map((value) => Number(value).toFixed(8)).join(',')}]`;
 }
 
+async function getSearchCapabilities(prisma) {
+  const now = Date.now();
+  if (now - capabilityCache.checkedAt < CAPABILITY_CACHE_TTL_MS) {
+    return capabilityCache;
+  }
+
+  try {
+    const rows = await prisma.$queryRaw`
+      SELECT
+        EXISTS (
+          SELECT 1
+          FROM information_schema.columns
+          WHERE table_name = 'Aide'
+            AND column_name = 'embedding'
+        ) AS has_embedding_column,
+        EXISTS (
+          SELECT 1
+          FROM pg_extension
+          WHERE extname = 'vector'
+        ) AS has_vector_extension,
+        EXISTS (
+          SELECT 1
+          FROM information_schema.columns
+          WHERE table_name = 'Aide'
+            AND column_name = 'ts_content'
+        ) AS has_ts_content_column,
+        EXISTS (
+          SELECT 1
+          FROM information_schema.columns
+          WHERE table_name = 'Aide'
+            AND column_name = 'search_vector'
+        ) AS has_search_vector_column,
+        EXISTS (
+          SELECT 1
+          FROM pg_extension
+          WHERE extname = 'unaccent'
+        ) AS has_unaccent_extension
+    `;
+
+    const row = rows?.[0] || {};
+    capabilityCache = {
+      checkedAt: now,
+      hasEmbeddingColumn: Boolean(row.has_embedding_column),
+      hasVectorExtension: Boolean(row.has_vector_extension),
+      hasTsContentColumn: Boolean(row.has_ts_content_column),
+      hasSearchVectorColumn: Boolean(row.has_search_vector_column),
+      hasUnaccentExtension: Boolean(row.has_unaccent_extension),
+    };
+  } catch {
+    capabilityCache = {
+      checkedAt: now,
+      hasEmbeddingColumn: false,
+      hasVectorExtension: false,
+      hasTsContentColumn: false,
+      hasSearchVectorColumn: false,
+      hasUnaccentExtension: false,
+    };
+  }
+
+  return capabilityCache;
+}
+
 function buildAideFilters({ category, situations, geoScope }) {
-  const filters = [Prisma.sql`a."status_code" = 'PUBLISHED'::"AidStatus"`];
+  const filters = [
+    Prisma.sql`
+      (
+        a."status_code" = 'PUBLISHED'::"AidStatus"
+        OR (a."status_code" = 'DRAFT'::"AidStatus" AND a."statut" = 'publie')
+      )
+    `,
+  ];
 
   if (category) {
-    filters.push(Prisma.sql`a."category_code" = CAST(${category} AS "AidCategoryCode")`);
+    const categorySlug = String(category).toLowerCase();
+    filters.push(Prisma.sql`
+      (
+        a."category_code" = CAST(${category} AS "AidCategoryCode")
+        OR a."theme" = ${categorySlug}
+        OR a."categorie" = ${categorySlug}
+        OR EXISTS (
+          SELECT 1
+          FROM "AidCategory" category
+          WHERE category.id = a."categoryId"
+            AND category.slug = ${categorySlug}
+        )
+      )
+    `);
   }
 
   if (geoScope) {
@@ -27,12 +113,21 @@ function buildAideFilters({ category, situations, geoScope }) {
 
   if (situations && situations.length > 0) {
     filters.push(Prisma.sql`
-      EXISTS (
-        SELECT 1
-        FROM "AidSituation" relation
-        JOIN "Situation" situation ON situation.id = relation."situationId"
-        WHERE relation."aidId" = a.id
-          AND situation.code IN (${Prisma.join(situations)})
+      (
+        EXISTS (
+          SELECT 1
+          FROM "AidSituation" relation
+          JOIN "Situation" situation ON situation.id = relation."situationId"
+          WHERE relation."aidId" = a.id
+            AND situation.code IN (${Prisma.join(situations)})
+        )
+        OR EXISTS (
+          SELECT 1
+          FROM "_AideToLifeSituation" relation
+          JOIN "LifeSituation" situation ON situation.id = relation."B"
+          WHERE relation."A" = a.id
+            AND situation.slug IN (${Prisma.join(situations)})
+        )
       )
     `);
   }
@@ -55,43 +150,6 @@ function normalizeRows(rows) {
   }));
 }
 
-async function canRunSemanticSearch(prisma) {
-  const now = Date.now();
-  if (now - capabilityCache.checkedAt < CAPABILITY_CACHE_TTL_MS) {
-    return capabilityCache.semanticReady;
-  }
-
-  try {
-    const rows = await prisma.$queryRaw`
-      SELECT
-        EXISTS (
-          SELECT 1
-          FROM information_schema.columns
-          WHERE table_name = 'Aide'
-            AND column_name = 'embedding'
-        ) AS has_embedding_column,
-        EXISTS (
-          SELECT 1
-          FROM pg_extension
-          WHERE extname = 'vector'
-        ) AS has_vector_extension
-    `;
-
-    const row = rows?.[0] || {};
-    capabilityCache = {
-      checkedAt: now,
-      semanticReady: Boolean(row.has_embedding_column && row.has_vector_extension),
-    };
-  } catch {
-    capabilityCache = {
-      checkedAt: now,
-      semanticReady: false,
-    };
-  }
-
-  return capabilityCache.semanticReady;
-}
-
 export async function searchAidesHybrid(prisma, params) {
   const { query, category, situations = [], geoScope, limit = 10, embedding = null } = params;
   const lexicalLimit = Math.max(limit * LEXICAL_CANDIDATE_MULTIPLIER, limit);
@@ -99,22 +157,56 @@ export async function searchAidesHybrid(prisma, params) {
   const filters = buildAideFilters({ category, situations, geoScope });
   const vectorLiteral = Array.isArray(embedding) && embedding.length > 0 ? toVectorLiteral(embedding) : null;
 
-  const lexicalCte = Prisma.sql`
-    lexical AS (
-      SELECT
-        a.id,
-        ts_rank_cd(a."ts_content", websearch_to_tsquery('french', unaccent(${query}))) AS lexical_score,
-        ROW_NUMBER() OVER (
-          ORDER BY ts_rank_cd(a."ts_content", websearch_to_tsquery('french', unaccent(${query}))) DESC, a.id ASC
-        ) AS lexical_rank
-      FROM "Aide" a
-      WHERE ${filters}
-        AND a."ts_content" @@ websearch_to_tsquery('french', unaccent(${query}))
-      LIMIT ${lexicalLimit}
-    )
-  `;
+  const capabilities = await getSearchCapabilities(prisma);
+  const semanticReady = vectorLiteral
+    ? capabilities.hasEmbeddingColumn && capabilities.hasVectorExtension
+    : false;
 
-  const semanticReady = vectorLiteral ? await canRunSemanticSearch(prisma) : false;
+  const tsQuery = capabilities.hasUnaccentExtension
+    ? Prisma.sql`websearch_to_tsquery('french', unaccent(${query}))`
+    : Prisma.sql`websearch_to_tsquery('french', ${query})`;
+
+  const canUseTsContent = capabilities.hasTsContentColumn;
+  const canUseSearchVector = capabilities.hasSearchVectorColumn;
+
+  const lexicalVector = canUseTsContent && canUseSearchVector
+    ? Prisma.sql`(COALESCE(a."ts_content", to_tsvector('french', '')) || COALESCE(a."search_vector", to_tsvector('french', '')))`
+    : canUseTsContent
+      ? Prisma.sql`COALESCE(a."ts_content", to_tsvector('french', ''))`
+      : canUseSearchVector
+        ? Prisma.sql`COALESCE(a."search_vector", to_tsvector('french', ''))`
+        : null;
+
+  const lexicalCte = lexicalVector
+    ? Prisma.sql`
+      lexical AS (
+        SELECT
+          a.id,
+          ts_rank_cd(${lexicalVector}, ${tsQuery}) AS lexical_score,
+          ROW_NUMBER() OVER (
+            ORDER BY ts_rank_cd(${lexicalVector}, ${tsQuery}) DESC, a.id ASC
+          ) AS lexical_rank
+        FROM "Aide" a
+        WHERE ${filters}
+          AND ${lexicalVector} @@ ${tsQuery}
+        LIMIT ${lexicalLimit}
+      )
+    `
+    : Prisma.sql`
+      lexical AS (
+        SELECT
+          a.id,
+          1.0 AS lexical_score,
+          ROW_NUMBER() OVER (ORDER BY a.id ASC) AS lexical_rank
+        FROM "Aide" a
+        WHERE ${filters}
+          AND (
+            COALESCE(a."title", a.titre) ILIKE ${`%${query}%`}
+            OR COALESCE(a."description", a.cest_quoi, a.summary_falc) ILIKE ${`%${query}%`}
+          )
+        LIMIT ${lexicalLimit}
+      )
+    `;
 
   const semanticCte = semanticReady
     ? Prisma.sql`

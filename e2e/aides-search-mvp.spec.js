@@ -14,6 +14,10 @@ test.describe('Aides Search MVP', () => {
         return;
       }
 
+      if (body.query === 'with-situation') {
+        expect(body.situations).toEqual(['etudiant']);
+      }
+
       await route.fulfill({
         status: 200,
         contentType: 'application/json',
@@ -63,6 +67,16 @@ test.describe('Aides Search MVP', () => {
     }
 
     await expect(page.getByTestId('search-error-state')).not.toBeVisible();
+  });
+
+  test('includes situation slug when browsing /situations/:slug', async ({ page }) => {
+    await page.goto('/situations/etudiant');
+
+    await page.getByLabel('Recherche').fill('with-situation');
+    await page.getByRole('button', { name: 'Rechercher' }).click();
+
+    await expect(page).toHaveURL(/q=with-situation/);
+    await expect(page.getByTestId('search-results-list')).toBeVisible();
   });
 
   test('renders empty state when API returns no result', async ({ page }) => {

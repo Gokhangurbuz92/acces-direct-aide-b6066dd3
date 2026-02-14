@@ -38,7 +38,12 @@ const LEGACY_CATEGORY_MAP = {
   autre: 'AUTRE',
 };
 
-let activeController = null;
+const activeControllers = new Map();
+
+function normalizeScope(scope) {
+  if (!scope) return 'default';
+  return String(scope);
+}
 
 function clampLimit(limit) {
   const parsed = Number.parseInt(String(limit ?? DEFAULT_LIMIT), 10);
@@ -153,18 +158,26 @@ export function isAbortError(error) {
   return error instanceof Error && error.name === 'AbortError';
 }
 
-export async function searchAides({ query, category, limit = DEFAULT_LIMIT, signal } = {}) {
+export async function searchAides({
+  query,
+  category,
+  situations,
+  geoScope,
+  limit = DEFAULT_LIMIT,
+  signal,
+  scope = 'aides-search',
+} = {}) {
   const normalizedQuery = typeof query === 'string' ? query.trim() : '';
   if (normalizedQuery.length < MIN_QUERY_LENGTH) {
     throw new Error(`Veuillez saisir au moins ${MIN_QUERY_LENGTH} caractères.`);
   }
 
-  if (activeController) {
-    activeController.abort();
-  }
+  const normalizedScope = normalizeScope(scope);
+  const activeController = activeControllers.get(normalizedScope);
+  if (activeController) activeController.abort();
 
   const controller = new AbortController();
-  activeController = controller;
+  activeControllers.set(normalizedScope, controller);
   const detachAbortListener = linkAbortSignal(signal, controller);
 
   const payload = {
@@ -175,6 +188,26 @@ export async function searchAides({ query, category, limit = DEFAULT_LIMIT, sign
   const normalizedCategory = normalizeSearchCategory(category);
   if (normalizedCategory) {
     payload.category = normalizedCategory;
+  }
+
+  const normalizedSituations = Array.isArray(situations)
+    ? situations
+    : situations
+      ? [situations]
+      : [];
+
+  const cleanedSituations = normalizedSituations
+    .map((value) => (value == null ? '' : String(value).trim()))
+    .filter(Boolean)
+    .slice(0, 20);
+
+  if (cleanedSituations.length > 0) {
+    payload.situations = cleanedSituations;
+  }
+
+  const normalizedGeoScope = typeof geoScope === 'string' ? geoScope.trim() : '';
+  if (normalizedGeoScope) {
+    payload.geoScope = normalizedGeoScope;
   }
 
   try {
@@ -204,15 +237,15 @@ export async function searchAides({ query, category, limit = DEFAULT_LIMIT, sign
     throw new Error('La recherche est temporairement indisponible.');
   } finally {
     detachAbortListener();
-    if (activeController === controller) {
-      activeController = null;
+    if (activeControllers.get(normalizedScope) === controller) {
+      activeControllers.delete(normalizedScope);
     }
   }
 }
 
 export function __resetSearchClientForTests() {
-  if (activeController) {
-    activeController.abort();
-    activeController = null;
+  for (const controller of activeControllers.values()) {
+    controller.abort();
   }
+  activeControllers.clear();
 }

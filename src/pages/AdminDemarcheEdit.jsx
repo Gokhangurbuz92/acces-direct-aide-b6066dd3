@@ -8,7 +8,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Loader2, Save, ArrowLeft, Plus, X } from 'lucide-react';
-import { Link, useSearchParams, useNavigate } from 'react-router-dom';
+import { Link, useSearchParams, useNavigate, useParams } from 'react-router-dom';
 import { createPageUrl } from '@/utils';
 import { useToast } from "@/components/ui/use-toast";
 
@@ -19,8 +19,10 @@ const CATEGORIES = [
 ];
 
 export default function AdminDemarcheEdit() {
+    const { id: routeId } = useParams();
     const [searchParams] = useSearchParams();
-    const id = searchParams.get('id');
+    const queryId = searchParams.get('id');
+    const id = routeId && routeId !== 'new' ? routeId : queryId;
     const navigate = useNavigate();
     const queryClient = useQueryClient();
     const { toast } = useToast();

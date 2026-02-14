@@ -39,6 +39,19 @@ export default async function handler(req, res) {
             }
         });
 
+        // P2: situations (Aides V2) stored in `Situation` table and linked via `AidSituation`.
+        // We keep legacy `lifeSituation` in `situations` for Demarches compatibility.
+        const aidSituations = await prisma.situation.findMany({
+            orderBy: { label: 'asc' },
+            include: {
+                _count: {
+                    select: {
+                        aidRelations: { where: { aid: { statut: 'publie' } } }
+                    }
+                }
+            }
+        });
+
         return res.status(200).json({
             categories: categories.map(c => ({
                 id: c.id,
@@ -55,6 +68,13 @@ export default async function handler(req, res) {
                 count: s._count.aides + s._count.demarches,
                 aidesCount: s._count.aides,
                 demarchesCount: s._count.demarches
+            })),
+            aidSituations: aidSituations.map(s => ({
+                id: s.id,
+                code: s.code,
+                slug: s.code, // convenience alias
+                label: s.label,
+                count: s._count.aidRelations
             }))
         });
     } catch (error) {

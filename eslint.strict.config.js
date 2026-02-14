@@ -6,7 +6,8 @@ export default [
   ...base,
   {
     files: [
-      '**/*.{js,jsx,mjs,cjs,ts,tsx}',
+      // JS only for now (the repo does not include a TS ESLint parser yet).
+      '**/*.{js,jsx,mjs,cjs}',
     ],
     rules: {
       // Re-enable core rules that are currently relaxed in `eslint.config.js`.
@@ -15,4 +16,3 @@ export default [
     },
   },
 ];
-

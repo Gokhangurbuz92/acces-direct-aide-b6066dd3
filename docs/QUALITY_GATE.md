@@ -22,6 +22,10 @@ These jobs:
 - Compare results to a committed baseline snapshot in `docs/reports/`.
 - **Fail only if the strict error count increases** (per rule / per TS error code).
 
+Notes:
+
+- `lint:strict*` currently targets JS/JSX only. TS/TSX is handled via `typecheck:strict*`.
+
 ## Local Usage
 
 ### See the strict errors (expected to fail today)
@@ -49,4 +53,3 @@ Baseline files:
 2. Fix it and re-run strict checks.
 3. Update baselines only when the strict totals decrease.
 4. Repeat until strict jobs can be turned into hard gates (no baseline).
-

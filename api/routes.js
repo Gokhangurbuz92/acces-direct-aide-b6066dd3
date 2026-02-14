@@ -47,6 +47,7 @@ import reports from './_handlers/reports.js';
 
 // --- Cron ---
 import cronPipeline from './_handlers/cron/pipeline.js';
+import cronActualites from './_handlers/cron/actualites.js';
 import cronIngestStructures from './_handlers/cron/ingest-structures.js';
 import cronIngestAids from './_handlers/cron/ingest-aids.js';
 import cronPurge from './_handlers/cron/purge.js';
@@ -112,6 +113,7 @@ export const routes = [
 
     // --- Cron ---
     { path: 'cron/pipeline', match: 'exact', handler: cronPipeline },
+    { path: 'cron/actualites', match: 'exact', handler: cronActualites },
     { path: 'cron/ingest-structures', match: 'exact', handler: cronIngestStructures },
     { path: 'cron/ingest-aids', match: 'exact', handler: cronIngestAids },
     { path: 'cron/purge', match: 'exact', handler: cronPurge },

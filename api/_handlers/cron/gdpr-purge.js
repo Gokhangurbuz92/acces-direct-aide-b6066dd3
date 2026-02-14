@@ -1,5 +1,5 @@
 import prisma from '../../_utils/prisma.js';
-import { isCronAuthorized } from '../../_utils/cronAuth.js';
+import { getCronAuth } from '../../_utils/cronAuth.js';
 
 const RETENTION_DAYS = 90;
 /**
@@ -11,10 +11,16 @@ export default async function handler(req, res) {
     if (req.method !== 'GET') return res.status(405).json({ error: 'Method not allowed' });
 
     // Backward compatibility: this endpoint historically used `?key=...`.
-    // We now standardize on cronAuth (`Authorization: Bearer <CRON_SECRET>`, `?secret=...`, or `x-vercel-cron: 1`).
+    // We now standardize on cronAuth (`x-cron-secret: <CRON_SECRET>`, `Authorization: Bearer <CRON_SECRET>`, or `?secret=...`).
     const secret = req.query?.secret ?? req.query?.key;
     const authReq = { headers: req.headers, query: { secret }, url: req.url };
-    if (!isCronAuthorized(authReq)) return res.status(401).json({ error: 'Unauthorized' });
+    const auth = getCronAuth(authReq);
+    if (!auth.ok) {
+        if (auth.reason === 'missing_secret') {
+            return res.status(500).json({ error: 'CRON_SECRET is not configured' });
+        }
+        return res.status(401).json({ error: 'Unauthorized' });
+    }
 
     const cutoff = new Date();
     cutoff.setDate(cutoff.getDate() - RETENTION_DAYS);

@@ -4,6 +4,30 @@ import logger from './_utils/logger.js';
 import { randomUUID } from 'crypto';
 import { attachNoStoreOnError } from "./_utils/cache.js";
 import { applyCachePolicy } from "./_utils/cachePolicy.js";
+
+/**
+ * Avoid leaking secrets in logs.
+ * We redact common sensitive query keys (exact or substring match).
+ *
+ * @param {URLSearchParams} searchParams
+ * @returns {Record<string, string>}
+ */
+function redactQueryParams(searchParams) {
+    /** @type {Record<string, string>} */
+    const out = {};
+    for (const [key, value] of searchParams.entries()) {
+        const k = String(key || '').toLowerCase();
+        const isSensitive =
+            k.includes('secret') ||
+            k.includes('token') ||
+            k.includes('password') ||
+            k === 'key' ||
+            k.includes('auth');
+
+        out[key] = isSensitive ? '[REDACTED]' : value;
+    }
+    return out;
+}
 /**
  * @param {import('./_utils/http-types').ApiRequest} req
  * @param {import('./_utils/http-types').ApiResponse} res
@@ -27,7 +51,7 @@ export default async function handler(req, res) {
         // 2. CORS Headers
         res.setHeader('Access-Control-Allow-Origin', '*');
         res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
-        res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+        res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, x-cron-secret');
         res.setHeader('x-request-id', requestId);
 
         if (process.env.VERCEL_GIT_COMMIT_SHA) {
@@ -51,7 +75,7 @@ export default async function handler(req, res) {
             msg: "Incoming Request",
             method: req.method,
             path: path,
-            query: Object.fromEntries(urlObj.searchParams),
+            query: redactQueryParams(urlObj.searchParams),
             userAgent: req.headers['user-agent']
         });
 

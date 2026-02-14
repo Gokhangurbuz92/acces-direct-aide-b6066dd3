@@ -133,38 +133,60 @@ test.describe('Public Core Navigation', () => {
   });
 
   test('Structures (Annuaire) Flow: List -> Detail -> Refresh', async ({ page }) => {
-    // Mock List
-    await page.route('**/api/structures*', async route => {
+    // Mock List + Detail (supports both /api/structures?slug=... and /api/structures/:slug)
+    await page.route('**/api/structures**', async (route) => {
+      const url = new URL(route.request().url());
+      const slugParam = url.searchParams.get('slug');
+      const isDetailPath = url.pathname.endsWith('/api/structures/structure-test');
+      const isDetail = isDetailPath || slugParam === 'structure-test';
+
+      if (isDetail) {
+        await route.fulfill({
+          json: {
+            id: 'struct-1',
+            slug: 'structure-test',
+            nom: 'Structure Test',
+            ville: 'Strasbourg',
+            departement: '67',
+            type_structure: 'association',
+            statut: 'actif',
+            accessibilite_pmr: true,
+            description_courte: 'Courte description',
+            adresse: '10 rue des tests',
+            code_postal: '67000',
+          },
+        });
+        return;
+      }
+
       await route.fulfill({
         json: {
           items: [{
             id: 'struct-1',
             slug: 'structure-test',
             nom: 'Structure Test',
-            ville: 'Strasbourg'
+            ville: 'Strasbourg',
+            departement: '67',
+            type_structure: 'association',
+            accessibilite_pmr: true,
+            description_courte: 'Courte description',
+            adresse: '10 rue des tests',
+            code_postal: '67000',
           }],
-          pagination: { page: 1, totalPages: 1 }
-        }
-      });
-    });
-
-    // Mock Detail
-    await page.route('**/api/structures/structure-test', async route => {
-      await route.fulfill({
-        json: {
-          id: 'struct-1',
-          slug: 'structure-test',
-          nom: 'Structure Test',
-          ville: 'Strasbourg',
-          adresse: '10 rue des tests'
+          pagination: { page: 1, totalPages: 1, total: 1, limit: 12, pageSize: 12, hasNext: false }
         }
       });
     });
 
     await page.goto('/annuaire');
+    await expect(page.getByTestId('structures-results-list')).toBeVisible();
     await expect(page.getByText('Structure Test').first()).toBeVisible();
 
-    await page.getByRole('link', { name: /Structure Test/i }).first().click();
+    // Interaction: submit search
+    await page.getByTestId('structures-search-input').fill('Structure Test');
+    await page.getByTestId('structures-search-submit').click();
+
+    await page.getByRole('link', { name: /Voir la fiche de Structure Test/i }).first().click();
     await expect(page).toHaveURL(/\/structures\/structure-test/);
     await expect(page.getByRole('heading', { level: 1 })).toContainText('Structure Test');
 

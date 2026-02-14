@@ -25,6 +25,10 @@
     "test:db:dev": "node scripts/test-db-development.cjs",
     "verify:env": "node scripts/verify-env-consistency.cjs",
     "security:secrets": "node scripts/security-secrets-scan.mjs",
+    "security:scan": "npm run security:secrets",
+    "security:scan:git": "gitleaks detect --redact --source .",
+    "secrets:scan": "npm run security:scan",
+    "secrets:scan:git": "npm run security:scan:git",
     "vercel:env:check": "node scripts/vercel-env-sync.mjs"
   },
   "dependencies": {

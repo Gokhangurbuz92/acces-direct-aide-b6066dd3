@@ -3,7 +3,7 @@ import prisma from '../../_utils/prisma.js';
 import { subDays } from 'date-fns';
 import { storage } from '../../lib/storage.js';
 import { logger } from '../../lib/logger.js';
-import { isCronAuthorized } from '../../_utils/cronAuth.js';
+import { getCronAuth } from '../../_utils/cronAuth.js';
 /**
  * @param {import('../../_utils/http-types').ApiRequest} req
  * @param {import('../../_utils/http-types').ApiResponse} res
@@ -11,7 +11,11 @@ import { isCronAuthorized } from '../../_utils/cronAuth.js';
 
 export default async function handler(req, res) {
     // Cron security check
-    if (!isCronAuthorized(req)) {
+    const auth = getCronAuth(req);
+    if (!auth.ok) {
+        if (auth.reason === 'missing_secret') {
+            return res.status(500).json({ error: 'CRON_SECRET is not configured' });
+        }
         logger.warn('Unauthorized purge attempt');
         return res.status(401).json({ error: 'Unauthorized' });
     }

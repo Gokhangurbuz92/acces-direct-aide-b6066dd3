@@ -1,5 +1,5 @@
 
-import { isCronAuthorized } from '../../_utils/cronAuth.js';
+import { getCronAuth } from '../../_utils/cronAuth.js';
 import prisma from '../../_utils/prisma.js';
 import crypto from 'crypto';
 import { runIngestStructures } from './ingest-structures.js';
@@ -18,7 +18,11 @@ export default async function handler(req, res) {
     console.log(`PIPELINE_LOGIC_ENTER source=${sourceLog} runId=${runId}`);
 
     // 1. Authorization
-    if (!isCronAuthorized(req)) {
+    const auth = getCronAuth(req);
+    if (!auth.ok) {
+        if (auth.reason === 'missing_secret') {
+            return res.status(500).json({ error: 'CRON_SECRET is not configured' });
+        }
         console.warn("Unauthorized Pipeline Attempt");
         return res.status(401).json({ error: 'Unauthorized' });
     }

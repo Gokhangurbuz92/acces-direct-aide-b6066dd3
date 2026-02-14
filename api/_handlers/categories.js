@@ -1,6 +1,10 @@
 import prisma from '../_utils/prisma.js';
 import { verifyAdmin } from '../_utils/auth.js';
 import { createEntity, updateEntity, deleteEntity } from '../_utils/crud.js';
+/**
+ * @param {import('../_utils/http-types').ApiRequest} req
+ * @param {import('../_utils/http-types').ApiResponse} res
+ */
 
 export default async function handler(req, res) {
     const { id, slug, page = 1, pageSize = 50 } = req.query; // Larger page size for cats

@@ -3,6 +3,10 @@
 import prisma from '../_utils/prisma.js';
 import { verifyAttachmentToken, decrypt, decryptBuffer } from '../lib/crypto.js';
 import { storage } from '../lib/storage.js';
+/**
+ * @param {import('../_utils/http-types').ApiRequest} req
+ * @param {import('../_utils/http-types').ApiResponse} res
+ */
 
 export default async function handler(req, res) {
     if (req.method !== 'GET') return res.status(405).json({ error: "Method not allowed" });

@@ -1,6 +1,9 @@
 import { verifyAdmin } from './auth.js';
 import { ZodError } from 'zod';
 
+/** @typedef {import('./http-types').ApiRequest} ApiRequest */
+/** @typedef {import('./http-types').ApiResponse} ApiResponse */
+
 /**
  * Standardized CRUD operations for Admin.
  * Handles:
@@ -10,7 +13,19 @@ import { ZodError } from 'zod';
  * - Standard Responses
  */
 
-export async function handleAdminCreate(req, res, prismaDelegate, schema, transformData = (d) => d) {
+/** @param {any} d */
+function identity(d) {
+    return d;
+}
+
+/**
+ * @param {ApiRequest} req
+ * @param {ApiResponse} res
+ * @param {any} prismaDelegate
+ * @param {any=} schema
+ * @param {(d: any) => any=} transformData
+ */
+export async function handleAdminCreate(req, res, prismaDelegate, schema, transformData = identity) {
     if (!verifyAdmin(req)) {
         return res.status(401).json({ error: "Unauthorized" });
     }
@@ -32,7 +47,15 @@ export async function handleAdminCreate(req, res, prismaDelegate, schema, transf
     }
 }
 
-export async function handleAdminUpdate(req, res, prismaDelegate, id, schema, transformData = (d) => d) {
+/**
+ * @param {ApiRequest} req
+ * @param {ApiResponse} res
+ * @param {any} prismaDelegate
+ * @param {string} id
+ * @param {any=} schema
+ * @param {(d: any) => any=} transformData
+ */
+export async function handleAdminUpdate(req, res, prismaDelegate, id, schema, transformData = identity) {
     if (!verifyAdmin(req)) {
         return res.status(401).json({ error: "Unauthorized" });
     }
@@ -57,6 +80,12 @@ export async function handleAdminUpdate(req, res, prismaDelegate, id, schema, tr
     }
 }
 
+/**
+ * @param {ApiRequest} req
+ * @param {ApiResponse} res
+ * @param {any} prismaDelegate
+ * @param {string} id
+ */
 export async function handleAdminDelete(req, res, prismaDelegate, id) {
     if (!verifyAdmin(req)) {
         return res.status(401).json({ error: "Unauthorized" });

@@ -2,6 +2,10 @@ import prisma from '../_utils/prisma.js';
 import { verifyAdmin } from '../_utils/auth.js';
 import { handleAdminCreate, handleAdminUpdate, handleAdminDelete } from '../_utils/crud.js';
 import { logger } from '../lib/logger.js'; // Ensure logger is imported
+/**
+ * @param {import('../_utils/http-types').ApiRequest} req
+ * @param {import('../_utils/http-types').ApiResponse} res
+ */
 
 async function handler(req, res) {
     const { id, slug, limit, sort, statut } = req.query;

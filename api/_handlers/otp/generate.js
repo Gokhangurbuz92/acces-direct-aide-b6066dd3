@@ -1,4 +1,8 @@
 import { checkRateLimit } from '../_utils/rateLimit.js';
+/**
+ * @param {import('../../_utils/http-types').ApiRequest} req
+ * @param {import('../../_utils/http-types').ApiResponse} res
+ */
 
 export default function handler(req, res) {
     // Simulate getting IP or User ID

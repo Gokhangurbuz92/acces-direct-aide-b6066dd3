@@ -266,6 +266,10 @@ export async function runIngestAids({ limit, runId, wipe = false }) {
 
     return stats;
 }
+/**
+ * @param {import('../../_utils/http-types').ApiRequest} req
+ * @param {import('../../_utils/http-types').ApiResponse} res
+ */
 
 export default async function handler(req, res) {
     if (!isCronAuthorized(req)) {

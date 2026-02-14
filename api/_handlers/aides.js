@@ -30,6 +30,10 @@ function normalizeCategoryLikeParam(value) {
     if (/^[A-Z_]+$/.test(raw)) return raw.toLowerCase();
     return raw;
 }
+/**
+ * @param {import('../_utils/http-types').ApiRequest} req
+ * @param {import('../_utils/http-types').ApiResponse} res
+ */
 
 async function handler(req, res) {
     const requestId = crypto.randomUUID();

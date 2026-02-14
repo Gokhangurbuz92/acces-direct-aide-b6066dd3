@@ -1,6 +1,10 @@
 import prisma from '../../_utils/prisma.js';
 import { getAuthenticatedUser } from '../_utils/auth.js';
 import { restoreVersion } from '../_utils/snapshot.js';
+/**
+ * @param {import('../../_utils/http-types').ApiRequest} req
+ * @param {import('../../_utils/http-types').ApiResponse} res
+ */
 
 export default async function handler(req, res) {
     const user = await getAuthenticatedUser(req);

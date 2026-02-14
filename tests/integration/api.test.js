@@ -67,6 +67,7 @@ vi.mock('@prisma/client', () => {
         }
       },
       sql: vi.fn(),
+      raw: vi.fn((value) => value),
       join: vi.fn(),
       empty: Symbol('Prisma.empty')
     }

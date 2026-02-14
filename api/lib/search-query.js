@@ -57,10 +57,22 @@ export async function searchAides(prisma, params) {
   }
 
   if (situation) {
-    conditions.push(Prisma.sql`EXISTS (
-      SELECT 1 FROM "_AideToLifeSituation" j
-      JOIN "LifeSituation" s ON s.id = j."B"
-      WHERE j."A" = "Aide".id AND s.slug = ${situation}
+    // Support both new AidSituation/Situation mapping and legacy LifeSituation mapping.
+    conditions.push(Prisma.sql`(
+      EXISTS (
+        SELECT 1
+        FROM "AidSituation" relation
+        JOIN "Situation" situation ON situation.id = relation."situationId"
+        WHERE relation."aidId" = "Aide".id
+          AND situation.code = ${situation}
+      )
+      OR EXISTS (
+        SELECT 1
+        FROM "_AideToLifeSituation" relation
+        JOIN "LifeSituation" situation ON situation.id = relation."B"
+        WHERE relation."A" = "Aide".id
+          AND situation.slug = ${situation}
+      )
     )`);
   }
 
@@ -89,21 +101,34 @@ export async function searchAides(prisma, params) {
   let orderBy;
   let selectRank = Prisma.empty;
 
+  // P2: external sort aliases (stable contract) -> internal implementation
+  const sortAliases = {
+    relevance: 'pertinence',
+    recent: '-published_at',
+    '-recent': 'published_at',
+    quality: '-quality_score',
+    '-quality': 'quality_score',
+  };
+
+  const effectiveSort = sortAliases[sort] || sort;
+
   // Parse sort parameter (handle prefix "-" for DESC)
-  const sortDirection = sort?.startsWith('-') ? 'DESC' : 'ASC';
-  const sortField = sort?.startsWith('-') ? sort.substring(1) : sort;
+  const sortDirection = effectiveSort?.startsWith('-') ? 'DESC' : 'ASC';
+  const sortField = effectiveSort?.startsWith('-') ? effectiveSort.substring(1) : effectiveSort;
 
   // Safe column mapping (whitelist only)
   const SAFE_SORT_COLUMNS = {
     'date': 'published_at',
     'alpha': 'titre',
     'created_date': 'updatedAt',
+    'updated_date': 'updatedAt',
     'published_at': 'published_at',
     'date_publication': 'published_at',
-    'titre': 'titre'
+    'titre': 'titre',
+    'quality_score': 'quality_score',
   };
 
-  if (q && (sort === 'pertinence' || sortField === 'pertinence')) {
+  if (q && (effectiveSort === 'pertinence' || sortField === 'pertinence')) {
     selectRank = Prisma.sql`, ts_rank_cd("search_vector", plainto_tsquery('french', unaccent(${q}))) as rank`;
     orderBy = Prisma.sql`ORDER BY rank DESC, published_at DESC`;
   } else if (sortField === 'pertinence') {
@@ -111,10 +136,17 @@ export async function searchAides(prisma, params) {
     orderBy = Prisma.sql`ORDER BY published_at DESC, id ASC`;
   } else if (sortField && SAFE_SORT_COLUMNS[sortField]) {
     const dbColumn = SAFE_SORT_COLUMNS[sortField];
-    if (sortDirection === 'DESC') {
-      orderBy = Prisma.sql`ORDER BY ${Prisma.raw(`"${dbColumn}"`)} DESC, id ASC`;
+    const safeColumn = Prisma.raw(`"${dbColumn}"`);
+
+    // P2: quality sort should remain stable and useful, even when many scores are equal.
+    if (dbColumn === 'quality_score') {
+      orderBy = sortDirection === 'DESC'
+        ? Prisma.sql`ORDER BY ${safeColumn} DESC, published_at DESC, id ASC`
+        : Prisma.sql`ORDER BY ${safeColumn} ASC, published_at DESC, id ASC`;
     } else {
-      orderBy = Prisma.sql`ORDER BY ${Prisma.raw(`"${dbColumn}"`)} ASC, id ASC`;
+      orderBy = sortDirection === 'DESC'
+        ? Prisma.sql`ORDER BY ${safeColumn} DESC, id ASC`
+        : Prisma.sql`ORDER BY ${safeColumn} ASC, id ASC`;
     }
   } else {
     // Default fallback
@@ -163,9 +195,31 @@ export async function searchAides(prisma, params) {
   const itemIds = items.map(i => i.id);
   let enrichedItems = [];
   if (itemIds.length > 0) {
+    // Keep the listing payload lightweight; detail endpoints fetch full objects separately.
+    const listSelect = {
+      id: true,
+      slug: true,
+      titre: true,
+      categorie: true,
+      theme: true,
+      sub_theme: true,
+      cest_quoi: true,
+      summary_falc: true,
+      est_urgent: true,
+      territoires: true,
+      date_verification: true,
+      quality_score: true,
+      published_at: true,
+      updatedAt: true,
+      providerName: true,
+      source_name: true,
+      source_org: true,
+      source_url: true,
+    };
+
     const fullItems = await prisma.aide.findMany({
       where: { id: { in: itemIds } },
-      include: { category: true, situations: true }
+      select: listSelect,
     });
 
     const itemMap = new Map(fullItems.map(i => [i.id, i]));

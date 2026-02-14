@@ -1,0 +1,18 @@
+title = "AccesDirectAide gitleaks config"
+
+# Extend the default ruleset shipped in the gitleaks binary.
+[extend]
+useDefault = true
+
+# We rely on the default ruleset and only tune false-positives.
+#
+# This fixture is a deterministic dataset (no secrets) but can trip the
+# `generic-api-key` heuristic. We allowlist the file path for that rule only.
+[[rules]]
+id = "generic-api-key"
+
+  [[rules.allowlists]]
+  description = "False-positive: CSV fixture content"
+  paths = [
+    '''data/demarches-alsace\.csv$''',
+  ]

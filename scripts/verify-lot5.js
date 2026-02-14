@@ -1,13 +1,14 @@
 
 import prisma from '../api/_utils/prisma.js';
 import { encrypt, decrypt, hash } from '../api/lib/crypto.js';
+import { env } from '../api/_utils/env.js';
 
 
 const API_URL = 'http://localhost:3000/api';
 
 // MOCK ENVS if not set (for local script execution without explicit env vars)
 // Ideally loaded from .env
-if (!process.env.ADA_ENCRYPTION_KEY) {
+if (!env.secrets.adaEncryptionKey) {
     console.error("⚠️ ADA_ENCRYPTION_KEY missing. Please run with env vars.");
     process.exit(1);
 }

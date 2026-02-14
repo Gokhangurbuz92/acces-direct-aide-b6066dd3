@@ -54,9 +54,29 @@ import deleteHandler from './delete.js';
 describe('GDPR Endpoints', () => {
     const mockRes = () => {
         const res = {};
+        res.statusCode = 200;
+        res.getHeader = vi.fn();
+        res.setHeader = vi.fn();
+        res.set = vi.fn();
+        res.writeHead = vi.fn();
+        res.end = vi.fn();
         res.status = vi.fn().mockReturnThis();
         res.json = vi.fn().mockReturnThis();
+        res.send = vi.fn().mockReturnThis();
+        res.redirect = vi.fn().mockReturnThis();
         return res;
+    };
+
+    const mockReq = (overrides = {}) => {
+        return {
+            method: 'GET',
+            url: 'http://localhost/api/admin/privacy',
+            headers: {},
+            query: {},
+            body: {},
+            cookies: {},
+            ...overrides,
+        };
     };
 
     beforeEach(() => {
@@ -65,14 +85,14 @@ describe('GDPR Endpoints', () => {
 
     describe('Export Handler', () => {
         it('should return 400 if no email', async () => {
-            const req = { method: 'GET', query: {} };
+            const req = mockReq({ method: 'GET', query: {} });
             const res = mockRes();
             await exportHandler(req, res);
             expect(res.status).toHaveBeenCalledWith(400);
         });
 
         it('should return data if email provided', async () => {
-            const req = { method: 'GET', query: { email: 'test@example.com' } };
+            const req = mockReq({ method: 'GET', query: { email: 'test@example.com' } });
             const res = mockRes();
 
             mocks.prisma.proUser.findFirst.mockResolvedValue({ id: 'pro1', email: 'test@example.com' });
@@ -94,19 +114,19 @@ describe('GDPR Endpoints', () => {
 
     describe('Delete Handler', () => {
         it('should return 400 if no email', async () => {
-            const req = { method: 'POST', body: {} };
+            const req = mockReq({ method: 'POST', body: {} });
             const res = mockRes();
             await deleteHandler(req, res);
             expect(res.status).toHaveBeenCalledWith(400);
         });
 
         it('should delete and anonymize data', async () => {
-            const req = {
+            const req = mockReq({
                 method: 'POST',
                 body: { email: 'test@example.com' },
                 headers: {}, // Fix: Provide headers to avoid crash
                 socket: { remoteAddress: '127.0.0.1' } // Fix: Provide socket for IP fallback
-            };
+            });
             const res = mockRes();
 
             mocks.prisma.proUser.deleteMany.mockResolvedValue({ count: 1 });

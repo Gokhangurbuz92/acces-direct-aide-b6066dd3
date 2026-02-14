@@ -4,6 +4,10 @@ import crypto from 'crypto';
 import { hash } from '../../../lib/crypto.js';
 
 import { checkRateLimit } from '../../../lib/pro-auth.js';
+/**
+ * @param {import('../../../_utils/http-types').ApiRequest} req
+ * @param {import('../../../_utils/http-types').ApiResponse} res
+ */
 
 export default async function handler(req, res) {
     if (req.method !== 'POST') {

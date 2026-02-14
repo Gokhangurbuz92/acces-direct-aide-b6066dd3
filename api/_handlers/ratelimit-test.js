@@ -1,4 +1,8 @@
 import { checkRateLimit } from '../_utils/rateLimit.js';
+/**
+ * @param {import('../_utils/http-types').ApiRequest} req
+ * @param {import('../_utils/http-types').ApiResponse} res
+ */
 
 export default async function handler(req, res) {
     if (process.env.VITE_PUBLIC_DIAGNOSTICS !== 'true') {

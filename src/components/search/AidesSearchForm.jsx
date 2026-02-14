@@ -5,16 +5,29 @@ import { SEARCH_CATEGORY_OPTIONS } from '@/lib/searchClient';
 
 const LIMIT_OPTIONS = [5, 10, 20];
 
-export default function AidesSearchForm({
-  query,
-  category,
-  limit,
-  onQueryChange,
-  onCategoryChange,
-  onLimitChange,
-  onSubmit,
-  isLoading = false,
-}) {
+/**
+ * @param {{
+ *  query: string,
+ *  category: string,
+ *  limit: number,
+ *  onQueryChange: (value: string) => void,
+ *  onCategoryChange: (value: string) => void,
+ *  onLimitChange: (value: number) => void,
+ *  onSubmit: (event: any) => void,
+ *  isLoading?: boolean,
+ * }} props
+ */
+export default function AidesSearchForm(props) {
+  const {
+    query,
+    category,
+    limit,
+    onQueryChange,
+    onCategoryChange,
+    onLimitChange,
+    onSubmit,
+    isLoading = false,
+  } = props;
   return (
     <form onSubmit={onSubmit} className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm md:p-6">
       <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_220px_120px_auto]">

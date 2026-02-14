@@ -18,11 +18,13 @@ class ValidationResult {
     this.warnings = [];
   }
 
+  /** @param {string} field @param {string} message */
   addError(field, message) {
     this.errors.push({ field, message });
     this.canPublish = false;
   }
 
+  /** @param {string} field @param {string} message */
   addWarning(field, message) {
     this.warnings.push({ field, message });
   }
@@ -35,6 +37,7 @@ class ValidationResult {
 /**
  * Validate required fields for publication
  */
+/** @param {any} content @param {string} contentType */
 function validateRequiredFields(content, contentType) {
   const result = new ValidationResult();
 
@@ -95,6 +98,7 @@ function validateRequiredFields(content, contentType) {
 /**
  * Validate content freshness
  */
+/** @param {any} content */
 function validateFreshness(content) {
   const result = new ValidationResult();
   const now = Date.now();
@@ -128,6 +132,7 @@ function validateFreshness(content) {
 /**
  * Validate source URL accessibility
  */
+/** @param {any} content */
 function validateSourceUrl(content) {
   const result = new ValidationResult();
 
@@ -169,6 +174,7 @@ function validateSourceUrl(content) {
 /**
  * Validate content completeness (quality score)
  */
+/** @param {any} content @param {string} contentType */
 function validateCompleteness(content, contentType) {
   const result = new ValidationResult();
   let missingFields = 0;
@@ -213,6 +219,7 @@ function validateCompleteness(content, contentType) {
 /**
  * Validate territory scope consistency
  */
+/** @param {any} content */
 function validateTerritoryScope(content) {
   const result = new ValidationResult();
 
@@ -288,6 +295,7 @@ export function validateForPublication(content, contentType) {
 /**
  * Generate a human-readable validation report
  */
+/** @param {ValidationResult} validationResult */
 export function generateValidationReport(validationResult) {
   const lines = [];
 
@@ -299,14 +307,14 @@ export function generateValidationReport(validationResult) {
 
   if (validationResult.errors.length > 0) {
     lines.push('\n🚫 ERREURS (bloquantes) :');
-    validationResult.errors.forEach((error) => {
+    validationResult.errors.forEach((/** @type {{ field: string, message: string }} */ error) => {
       lines.push(`   - [${error.field}] ${error.message}`);
     });
   }
 
   if (validationResult.warnings.length > 0) {
     lines.push('\n⚠️  AVERTISSEMENTS (non bloquants) :');
-    validationResult.warnings.forEach((warning) => {
+    validationResult.warnings.forEach((/** @type {{ field: string, message: string }} */ warning) => {
       lines.push(`   - [${warning.field}] ${warning.message}`);
     });
   }

@@ -11,6 +11,8 @@ const actionTypes = {
   REMOVE_TOAST: "REMOVE_TOAST",
 };
 
+/** @typedef {{ toasts: any[] }} ToastState */
+
 let count = 0;
 
 function genId() {
@@ -20,6 +22,7 @@ function genId() {
 
 const toastTimeouts = new Map();
 
+/** @param {string} toastId */
 const addToRemoveQueue = (toastId) => {
   if (toastTimeouts.has(toastId)) {
     return;
@@ -36,6 +39,7 @@ const addToRemoveQueue = (toastId) => {
   toastTimeouts.set(toastId, timeout);
 };
 
+/** @param {ToastState} state @param {any} action */
 export const reducer = (state, action) => {
   switch (action.type) {
     case actionTypes.ADD_TOAST:
@@ -88,13 +92,17 @@ export const reducer = (state, action) => {
         ...state,
         toasts: state.toasts.filter((t) => t.id !== action.toastId),
       };
+    default:
+      return state;
   }
 };
 
 const listeners = [];
 
+/** @type {ToastState} */
 let memoryState = { toasts: [] };
 
+/** @param {any} action */
 function dispatch(action) {
   memoryState = reducer(memoryState, action);
   listeners.forEach((listener) => {
@@ -102,9 +110,11 @@ function dispatch(action) {
   });
 }
 
-function toast({ ...props }) {
+/** @param {Record<string, any>} props */
+function toast(props) {
   const id = genId();
 
+  /** @param {Record<string, any>} props */
   const update = (props) =>
     dispatch({
       type: actionTypes.UPDATE_TOAST,
@@ -120,7 +130,7 @@ function toast({ ...props }) {
       ...props,
       id,
       open: true,
-      onOpenChange: (open) => {
+      onOpenChange: (/** @type {boolean} */ open) => {
         if (!open) dismiss();
       },
     },
@@ -149,7 +159,7 @@ function useToast() {
   return {
     ...state,
     toast,
-    dismiss: (toastId) => dispatch({ type: actionTypes.DISMISS_TOAST, toastId }),
+    dismiss: (/** @type {string} */ toastId) => dispatch({ type: actionTypes.DISMISS_TOAST, toastId }),
   };
 }
 

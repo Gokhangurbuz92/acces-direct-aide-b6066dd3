@@ -10,6 +10,10 @@ function slugify(text) {
         .replace(/^-+/, '')             // Trim - from start
         .replace(/-+$/, '');            // Trim - from end
 }
+/**
+ * @param {import('../../../_utils/http-types').ApiRequest} req
+ * @param {import('../../../_utils/http-types').ApiResponse} res
+ */
 
 export default async function handler(req, res) {
     if (req.method !== 'POST') {

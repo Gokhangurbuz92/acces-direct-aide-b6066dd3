@@ -10,6 +10,10 @@ if (process.env.VITE_SENTRY_DSN) {
         environment: process.env.VITE_ENV || process.env.VERCEL_ENV || 'development'
     });
 }
+/**
+ * @param {import('../_utils/http-types').ApiRequest} req
+ * @param {import('../_utils/http-types').ApiResponse} res
+ */
 
 export default async function handler(req, res) {
     if (process.env.VITE_PUBLIC_DIAGNOSTICS !== 'true') {

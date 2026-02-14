@@ -2,6 +2,10 @@ import prisma from '../_utils/prisma.js';
 import { searchDemarchesSchema } from '../_utils/validators.js';
 import { searchDemarches } from '../lib/search-query.js';
 import { verifyAdmin } from '../_utils/auth.js';
+/**
+ * @param {import('../_utils/http-types').ApiRequest} req
+ * @param {import('../_utils/http-types').ApiResponse} res
+ */
 
 export default async function handler(req, res) {
     const isAdmin = verifyAdmin(req);

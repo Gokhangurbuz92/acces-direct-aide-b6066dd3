@@ -16,6 +16,10 @@ function isAdmin(req) {
         return false;
     }
 }
+/**
+ * @param {import('../../_utils/http-types').ApiRequest} req
+ * @param {import('../../_utils/http-types').ApiResponse} res
+ */
 
 export default async function handler(req, res) {
     if (!isAdmin(req)) {

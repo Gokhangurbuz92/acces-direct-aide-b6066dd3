@@ -22,15 +22,44 @@ vi.mock('../_utils/rateLimit.js', () => ({
 import { requireAuth, ROLE, signProToken } from '../lib/pro-auth.js';
 
 describe('RBAC Middleware', () => {
+    /** @typedef {import('../_utils/http-types').ApiRequest} ApiRequest */
+    /** @typedef {import('../_utils/http-types').ApiResponse} ApiResponse */
+
+    /** @returns {ApiRequest} */
+    const mockReq = (overrides = {}) => {
+        return {
+            method: 'GET',
+            url: 'http://localhost/api/tests/rbac',
+            headers: {},
+            query: {},
+            body: {},
+            cookies: {},
+            ...overrides,
+        };
+    };
+
+    /** @returns {ApiResponse} */
+    const mockRes = () => {
+        const res = {};
+        res.statusCode = 200;
+        res.getHeader = vi.fn();
+        res.setHeader = vi.fn();
+        res.set = vi.fn();
+        res.writeHead = vi.fn();
+        res.end = vi.fn();
+        res.status = vi.fn().mockReturnThis();
+        res.json = vi.fn().mockReturnThis();
+        res.send = vi.fn().mockReturnThis();
+        res.redirect = vi.fn().mockReturnThis();
+        return res;
+    };
+
     it('should block requests without token', async () => {
         const handler = vi.fn();
         const wrapped = requireAuth(handler);
 
-        const req = { headers: {} };
-        const res = {
-            status: vi.fn().mockReturnThis(),
-            json: vi.fn()
-        };
+        const req = mockReq({ headers: {} });
+        const res = mockRes();
 
         await wrapped(req, res);
 
@@ -45,11 +74,8 @@ describe('RBAC Middleware', () => {
         const user = { id: '123', email: 'test@test.com', structureId: 's1', role: ROLE.PRO };
         const token = signProToken(user);
 
-        const req = { headers: { authorization: `Bearer ${token}` } };
-        const res = {
-            status: vi.fn().mockReturnThis(),
-            json: vi.fn()
-        };
+        const req = mockReq({ headers: { authorization: `Bearer ${token}` } });
+        const res = mockRes();
 
         await wrapped(req, res);
 
@@ -65,11 +91,8 @@ describe('RBAC Middleware', () => {
         const user = { id: '123', role: ROLE.PRO };
         const token = signProToken(user);
 
-        const req = { headers: { authorization: `Bearer ${token}` } };
-        const res = {
-            status: vi.fn().mockReturnThis(),
-            json: vi.fn()
-        };
+        const req = mockReq({ headers: { authorization: `Bearer ${token}` } });
+        const res = mockRes();
 
         await wrapped(req, res);
 
@@ -84,11 +107,8 @@ describe('RBAC Middleware', () => {
         const user = { id: 'admin', role: ROLE.SUPERADMIN };
         const token = signProToken(user);
 
-        const req = { headers: { authorization: `Bearer ${token}` } };
-        const res = {
-            status: vi.fn().mockReturnThis(),
-            json: vi.fn()
-        };
+        const req = mockReq({ headers: { authorization: `Bearer ${token}` } });
+        const res = mockRes();
 
         await wrapped(req, res);
 

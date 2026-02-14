@@ -4,6 +4,10 @@ import logger from './_utils/logger.js';
 import { randomUUID } from 'crypto';
 import { attachNoStoreOnError } from "./_utils/cache.js";
 import { applyCachePolicy } from "./_utils/cachePolicy.js";
+/**
+ * @param {import('./_utils/http-types').ApiRequest} req
+ * @param {import('./_utils/http-types').ApiResponse} res
+ */
 
 export default async function handler(req, res) {
     let requestId = "init-" + Math.random().toString(36).substring(7);

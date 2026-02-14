@@ -1,3 +1,7 @@
+/**
+ * @param {import('../_utils/http-types').ApiRequest} req
+ * @param {import('../_utils/http-types').ApiResponse} res
+ */
 export default function handler(req, res) {
     // STRICT HTTP GUARD
     // If variable is not explicitly "true", we return 404 immediately.

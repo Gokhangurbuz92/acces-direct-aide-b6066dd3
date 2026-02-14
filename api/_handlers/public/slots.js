@@ -1,6 +1,10 @@
 
 import prisma from '../../_utils/prisma.js';
 import { startOfDay, endOfDay, addDays, format, parse, addMinutes, isBefore, isAfter } from 'date-fns';
+/**
+ * @param {import('../../_utils/http-types').ApiRequest} req
+ * @param {import('../../_utils/http-types').ApiResponse} res
+ */
 
 export default async function handler(req, res) {
     if (req.method !== 'GET') {

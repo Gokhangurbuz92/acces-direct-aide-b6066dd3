@@ -65,6 +65,33 @@ vi.mock('fs', async () => {
 
 import handler from './pipeline.js';
 
+function mockReq(overrides = {}) {
+  return {
+    method: 'GET',
+    url: 'http://localhost/api/cron/pipeline',
+    headers: {},
+    query: {},
+    body: {},
+    cookies: {},
+    ...overrides,
+  };
+}
+
+function mockRes() {
+  return {
+    statusCode: 200,
+    getHeader: vi.fn(),
+    setHeader: vi.fn(),
+    set: vi.fn(),
+    writeHead: vi.fn(),
+    end: vi.fn(),
+    status: vi.fn().mockReturnThis(),
+    json: vi.fn().mockReturnThis(),
+    send: vi.fn().mockReturnThis(),
+    redirect: vi.fn().mockReturnThis(),
+  };
+}
+
 describe('News Pipeline', () => {
   beforeEach(() => {
     vi.clearAllMocks();
@@ -72,14 +99,11 @@ describe('News Pipeline', () => {
   });
 
   it('should unauthorized if no secret', async () => {
-    const req = {
+    const req = mockReq({
       url: 'http://localhost/api/cron/pipeline',
       headers: { get: () => null }
-    };
-    const resMock = {
-      status: vi.fn().mockReturnThis(),
-      json: vi.fn()
-    };
+    });
+    const resMock = mockRes();
     await handler(req, resMock);
     expect(resMock.status).toHaveBeenCalledWith(401);
   });
@@ -108,7 +132,7 @@ describe('News Pipeline', () => {
       }]
     });
 
-    const req = {
+    const req = mockReq({
       // IMPORTANT: mettre source dans l'URL aussi pour new URL()
       url: 'http://localhost/api/cron/pipeline?source=actualites&mode=smoke&secret=test-secret',
       query: {
@@ -124,12 +148,9 @@ describe('News Pipeline', () => {
         authorization: 'Bearer test-secret',
         host: 'localhost'
       }
-    };
+    });
 
-    const resMock = {
-      status: vi.fn().mockReturnThis(),
-      json: vi.fn()
-    };
+    const resMock = mockRes();
     await handler(req, resMock);
     expect(resMock.status).toHaveBeenCalledWith(200);
 

@@ -1,6 +1,10 @@
 
 import prisma from '../../../_utils/prisma.js';
 import { hash } from '../../../lib/crypto.js';
+/**
+ * @param {import('../../../_utils/http-types').ApiRequest} req
+ * @param {import('../../../_utils/http-types').ApiResponse} res
+ */
 
 export default async function handler(req, res) {
     if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });

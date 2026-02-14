@@ -16,6 +16,10 @@ function cleanUpRateLimit() {
     }
 }
 setInterval(cleanUpRateLimit, RATE_LIMIT_WINDOW);
+/**
+ * @param {import('../../_utils/http-types').ApiRequest} req
+ * @param {import('../../_utils/http-types').ApiResponse} res
+ */
 
 export default async function handler(req, res) {
     if (req.method !== 'POST') {

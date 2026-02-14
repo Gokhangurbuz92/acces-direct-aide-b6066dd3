@@ -1,3 +1,7 @@
+/** @typedef {import('./http-types').ApiRequest} ApiRequest */
+/** @typedef {import('./http-types').ApiResponse} ApiResponse */
+
+/** @param {ApiResponse} res @param {string} key */
 export function getHeader(res, key) {
     try {
         if (typeof res.getHeader === "function") return res.getHeader(key);
@@ -7,6 +11,7 @@ export function getHeader(res, key) {
     return undefined;
 }
 
+/** @param {ApiResponse} res @param {string} key @param {any} value */
 export function setHeader(res, key, value) {
     try {
         if (typeof res.setHeader === "function") return res.setHeader(key, value);
@@ -16,6 +21,7 @@ export function setHeader(res, key, value) {
     }
 }
 
+/** @param {ApiResponse} res @param {string} value */
 export function setCachePolicyTag(res, value) {
     // Only send debug headers if explicitly enabled or not in production
     // (Defaults to hidden in prod for cleanliness)
@@ -32,22 +38,26 @@ export function setCachePolicyTag(res, value) {
     }
 }
 
+/** @param {ApiRequest} req */
 export function hasAuthHeader(req) {
     const h = req?.headers || {};
     return Boolean(h.authorization || h.Authorization);
 }
 
+/** @param {ApiResponse} res */
 export function setNoStore(res) {
     // private prevents shared caches from storing
     setHeader(res, "Cache-Control", "private, no-store, max-age=0, must-revalidate");
     setHeader(res, "Pragma", "no-cache");
 }
 
+/** @param {ApiResponse} res @param {{ sMaxage?: number, swr?: number }=} policy */
 export function setPublicCache(res, { sMaxage = 600, swr = 86400 } = {}) {
     setHeader(res, "Cache-Control", `public, max-age=0, s-maxage=${sMaxage}, stale-while-revalidate=${swr}`);
 }
 
 // Safety: if request is authorized, never public-cache it.
+/** @param {ApiRequest} req @param {ApiResponse} res @param {{ sMaxage?: number, swr?: number }=} policy */
 export function setAnonymousPublicCache(req, res, policy) {
     if (hasAuthHeader(req)) {
         setNoStore(res);
@@ -58,6 +68,7 @@ export function setAnonymousPublicCache(req, res, policy) {
 }
 
 // Guard: if handler returns 4xx/5xx, force no-store (avoid caching errors).
+/** @param {ApiResponse} res */
 export function attachNoStoreOnError(res) {
     // Wrap writeHead (Node)
     if (typeof res.writeHead === "function") {

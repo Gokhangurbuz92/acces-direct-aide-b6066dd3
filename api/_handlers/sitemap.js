@@ -1,6 +1,10 @@
 import prisma from '../_utils/prisma.js';
 import { getCanonicalBaseUrl, isIndexable } from '../_utils/seo.js';
 import crypto from 'crypto';
+/**
+ * @param {import('../_utils/http-types').ApiRequest} req
+ * @param {import('../_utils/http-types').ApiResponse} res
+ */
 
 export default async function handler(req, res) {
     if (req.method !== 'GET' && req.method !== 'HEAD') {
@@ -12,7 +16,23 @@ export default async function handler(req, res) {
         const BASE_URL = getCanonicalBaseUrl(req);
 
         // Fetch published content with fallback on error
-        let aides = [], demarches = [], structures = [], dispositifs = [], ressources = [], guides = [], tools = [], actualites = [];
+        /** @typedef {{ slug: string, updatedAt: Date }} SlugUpdatedAt */
+        /** @type {SlugUpdatedAt[]} */
+        let aides = [];
+        /** @type {SlugUpdatedAt[]} */
+        let demarches = [];
+        /** @type {SlugUpdatedAt[]} */
+        let structures = [];
+        /** @type {SlugUpdatedAt[]} */
+        let dispositifs = [];
+        /** @type {SlugUpdatedAt[]} */
+        let ressources = [];
+        /** @type {SlugUpdatedAt[]} */
+        let guides = [];
+        /** @type {SlugUpdatedAt[]} */
+        let tools = [];
+        /** @type {SlugUpdatedAt[]} */
+        let actualites = [];
         
         try {
             [aides, demarches, structures, dispositifs, ressources, guides, tools, actualites] = await Promise.all([

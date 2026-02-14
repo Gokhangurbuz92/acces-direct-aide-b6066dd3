@@ -10,6 +10,10 @@ const searchRessourcesSchema = z.object({
     page: z.coerce.number().int().positive().default(1),
     pageSize: z.coerce.number().int().positive().max(100).default(12)
 });
+/**
+ * @param {import('../_utils/http-types').ApiRequest} req
+ * @param {import('../_utils/http-types').ApiResponse} res
+ */
 
 async function handler(req, res) {
     try {

@@ -1,6 +1,10 @@
 
 import prisma from '../../_utils/prisma.js';
 import { verifyProToken, ROLE, logProAudit } from '../../lib/pro-auth.js';
+/**
+ * @param {import('../../_utils/http-types').ApiRequest} req
+ * @param {import('../../_utils/http-types').ApiResponse} res
+ */
 
 export default async function handler(req, res) {
     if (req.method !== 'PUT') {

@@ -4,6 +4,9 @@ import prisma from '../_utils/prisma.js';
 import crypto from 'crypto';
 import { checkRateLimit as checkRateLimitUtil } from '../_utils/rateLimit.js';
 
+/** @typedef {import('../_utils/http-types').ApiRequest} ApiRequest */
+/** @typedef {import('../_utils/http-types').ApiResponse} ApiResponse */
+
 function getJwtSecret() {
     return process.env.JWT_SECRET;
 }
@@ -17,6 +20,7 @@ export const ROLE = {
 /**
  * Sign a JWT token for a Pro user
  */
+/** @param {any} user */
 export function signProToken(user) {
     const JWT_SECRET = getJwtSecret();
     if (!JWT_SECRET) {
@@ -42,6 +46,7 @@ export function signProToken(user) {
  * Verify a JWT token
  * Hardened: Enforce HS256 to prevent algorithm confusion attacks
  */
+/** @param {string} token */
 export function verifyProToken(token) {
     const JWT_SECRET = getJwtSecret();
     if (!JWT_SECRET) return null;
@@ -59,6 +64,7 @@ export function verifyProToken(token) {
  * Rate limit helper (Backwards Compatibility Wrapper)
  * Uses the consolidated rate limiter in api/_utils/rateLimit.js
  */
+/** @param {string} identifier */
 export async function checkRateLimit(identifier) {
     const result = await checkRateLimitUtil('LOGIN_PRO', identifier);
     if (!result.allowed) {
@@ -67,6 +73,7 @@ export async function checkRateLimit(identifier) {
     return { allowed: true, remaining: 1 };
 }
 
+/** @param {string} ip */
 function hashIp(ip) {
     if (!ip) return 'unknown';
     return crypto.createHash('sha256').update(ip).digest('hex').substring(0, 16);
@@ -75,6 +82,7 @@ function hashIp(ip) {
 /**
  * Log audit event
  */
+/** @param {string} action @param {string} actorId @param {string} structureId @param {any} details @param {string} ip */
 export async function logProAudit(action, actorId, structureId, details, ip) {
     try {
         await prisma.auditLog.create({
@@ -96,8 +104,10 @@ export async function logProAudit(action, actorId, structureId, details, ip) {
 /**
  * HOF for RBAC
  */
+/** @param {(req: ApiRequest, res: ApiResponse) => any} handler @param {string[]=} allowedRoles */
 export function requireAuth(handler, allowedRoles = []) {
-    return async (req, res) => {
+    /** @param {ApiRequest} req @param {ApiResponse} res */
+    async function wrapped(req, res) {
         let token = null;
         const authHeader = req.headers?.authorization || "";
         const match = authHeader.match(/^Bearer\s+(.+)$/i);
@@ -120,5 +130,7 @@ export function requireAuth(handler, allowedRoles = []) {
 
         req.user = user;
         return handler(req, res);
-    };
+    }
+
+    return wrapped;
 }

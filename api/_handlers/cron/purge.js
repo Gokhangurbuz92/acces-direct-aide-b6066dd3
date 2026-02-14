@@ -4,6 +4,10 @@ import { subDays } from 'date-fns';
 import { storage } from '../../lib/storage.js';
 import { logger } from '../../lib/logger.js';
 import { isCronAuthorized } from '../../_utils/cronAuth.js';
+/**
+ * @param {import('../../_utils/http-types').ApiRequest} req
+ * @param {import('../../_utils/http-types').ApiResponse} res
+ */
 
 export default async function handler(req, res) {
     // Cron security check

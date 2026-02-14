@@ -2,6 +2,15 @@
 // Final build-safe version for Vite & Vercel
 // No JSX, no advanced syntax that confuses Rollup parser
 
+/**
+ * @typedef {Object} ApiRequestOptions
+ * @property {string=} method
+ * @property {Record<string, string>=} headers
+ * @property {any=} body
+ * @property {AbortSignal=} signal
+ * @property {boolean=} auth
+ */
+
 var getToken = function () {
     if (typeof window !== 'undefined') {
         return sessionStorage.getItem('access_token');
@@ -9,6 +18,10 @@ var getToken = function () {
     return null;
 };
 
+/**
+ * @param {string} path
+ * @param {ApiRequestOptions=} opt
+ */
 var shouldAttachAuth = function (path, opt) {
     if (opt && opt.auth === false) return false;
     if (opt && opt.auth === true) return true;
@@ -16,9 +29,15 @@ var shouldAttachAuth = function (path, opt) {
     return /^\/api\/(admin|auth|pro)\b/.test(path);
 };
 
+/**
+ * @param {string} path
+ * @param {ApiRequestOptions=} options
+ * @returns {Promise<any>}
+ */
 var apiRequest = async function (path, options) {
     var opt = options || {};
 
+    /** @type {Record<string, string>} */
     var headers = {
         "Content-Type": "application/json",
         ...(opt.headers || {}),
@@ -56,30 +75,37 @@ var apiRequest = async function (path, options) {
     return payload;
 };
 
+/** @param {string} endpoint */
 var createEntityClient = function (endpoint) {
     return {
+        /** @param {string=} sort @param {number | string=} limit */
         list: function (sort, limit) {
             return apiRequest('/api/' + endpoint + '?sort=' + (sort || '') + '&limit=' + (limit || ''));
         },
+        /** @param {any} id */
         get: function (id) {
             return apiRequest('/api/' + endpoint + '?id=' + id);
         },
+        /** @param {any} data */
         create: function (data) {
             return apiRequest('/api/' + endpoint, { method: 'POST', body: data });
         },
+        /** @param {any} id @param {any} data */
         update: function (id, data) {
             return apiRequest('/api/' + endpoint + '?id=' + id, { method: 'PUT', body: data });
         },
+        /** @param {any} id */
         delete: function (id) {
             return apiRequest('/api/' + endpoint + '?id=' + id, { method: 'DELETE' });
         },
+        /** @param {Record<string, any>} query @param {string=} sort @param {number | string=} limit */
         filter: function (query, sort, limit) {
             var params = new URLSearchParams();
             Object.keys(query).forEach(function (k) {
                 if (query[k] != null) params.append(k, query[k]);
             });
             if (sort) params.append('sort', sort);
-            if (limit) params.append('limit', limit);
+            if (limit) params.append('limit', String(limit));
             return apiRequest('/api/' + endpoint + '?' + params.toString());
         }
     };
@@ -97,6 +123,7 @@ export const apiClient = {
         }
     },
     auth: {
+        /** @param {string} email @param {string} password */
         login: async function (email, password) {
             var data = await apiRequest('/api/auth/login', {
                 method: 'POST',
@@ -122,9 +149,11 @@ export const apiClient = {
         }
     },
     admin: {
+        /** @param {string=} status @param {number=} page */
         getInbox: function (status, page) {
             return apiRequest('/api/admin/inbox?status=' + (status || 'brouillon') + '&page=' + (page || 1));
         },
+        /** @param {string} action @param {string[]} ids */
         performAction: function (action, ids) {
             return apiRequest('/api/admin/actions', {
                 method: 'POST',
@@ -146,7 +175,14 @@ export const apiClient = {
     },
     integrations: {
         Core: {
-            InvokeLLM: function (prompt) {
+            /** @param {string | { prompt: string }} input */
+            InvokeLLM: function (input) {
+                var prompt =
+                    typeof input === 'string'
+                        ? input
+                        : (input && typeof input === 'object' && 'prompt' in input)
+                            ? input.prompt
+                            : '';
                 return apiRequest('/api/integrations/core/invoke', {
                     method: 'POST',
                     body: { prompt: prompt }

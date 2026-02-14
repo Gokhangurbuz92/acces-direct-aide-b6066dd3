@@ -7,6 +7,10 @@ import crypto from 'crypto';
  * Link Check Cron Job
  * Checks source_url for all content modules and stores results
  */
+/**
+ * @param {import('../../_utils/http-types').ApiRequest} req
+ * @param {import('../../_utils/http-types').ApiResponse} res
+ */
 export default async function handler(req, res) {
     if (!isCronAuthorized(req)) {
         logger.warn('Unauthorized link-check attempt');

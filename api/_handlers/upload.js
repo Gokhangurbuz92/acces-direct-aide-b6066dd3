@@ -11,6 +11,10 @@ export const config = {
         bodyParser: false,
     },
 };
+/**
+ * @param {import('../_utils/http-types').ApiRequest} req
+ * @param {import('../_utils/http-types').ApiResponse} res
+ */
 
 export default async function handler(req, res) {
     if (req.method !== 'POST') return res.status(405).json({ error: "Method not allowed" });
@@ -67,8 +71,10 @@ export default async function handler(req, res) {
                 let senderRole = null;
 
                 // 1. Try Pro Auth
-                // verifyProToken reads 'authorization' header (Bearer ...)
-                const proAuth = await verifyProToken(req);
+                const authHeader = req.headers?.authorization || req.headers?.Authorization || '';
+                const match = String(authHeader || '').match(/^Bearer\s+(.+)$/i);
+                const token = match ? match[1] : null;
+                const proAuth = token ? verifyProToken(token) : null;
                 if (proAuth) {
                     if (appointment.structureId !== proAuth.structureId) {
                         return resolve(res.status(403).json({ error: "Forbidden: Different Structure" }));

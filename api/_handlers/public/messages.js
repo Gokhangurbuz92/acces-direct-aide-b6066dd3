@@ -1,6 +1,10 @@
 
 import prisma from '../../_utils/prisma.js';
 import { hash, encrypt, decrypt, generateAttachmentToken } from '../../lib/crypto.js';
+/**
+ * @param {import('../../_utils/http-types').ApiRequest} req
+ * @param {import('../../_utils/http-types').ApiResponse} res
+ */
 
 export default async function handler(req, res) {
     try {

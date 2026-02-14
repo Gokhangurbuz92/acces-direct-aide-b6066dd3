@@ -1,6 +1,10 @@
 import prisma from '../_utils/prisma.js';
 import { logger } from '../lib/logger.js';
 import { kv } from '@vercel/kv';
+/**
+ * @param {import('../_utils/http-types').ApiRequest} req
+ * @param {import('../_utils/http-types').ApiResponse} res
+ */
 
 export default async function handler(req, res) {
     const startTime = Date.now();

@@ -79,13 +79,12 @@ La seule solution sûre est de **révoquer et régénérer** tous les secrets ex
 Pour vérifier qu'aucun secret n'est présent :
 
 ```bash
-# Vérifier PostgreSQL
-grep -r "npg_xXADTwi7o4RC" . --exclude-dir=node_modules --exclude-dir=.git
+# Exemple: vérifier qu'un fragment de secret n'est pas commité (ne jamais mettre le secret complet)
+grep -r "<FRAGMENT_SECRET>" . --exclude-dir=node_modules --exclude-dir=.git
 # Résultat attendu: 0 occurrences
 
-# Vérifier Upstash
-grep -r "Ae1WAAIncD" . --exclude-dir=node_modules --exclude-dir=.git
-# Résultat attendu: 0 occurrences
+# Recherche de patterns typiques (peut générer des faux positifs)
+git grep -nE "postgresql://|KV_REST_API_TOKEN=|STORAGE_SECRET_ACCESS_KEY=|SENTRY_AUTH_TOKEN=" -- . ':!.env.example' || true
 ```
 
 ---

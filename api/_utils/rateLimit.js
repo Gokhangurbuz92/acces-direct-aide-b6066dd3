@@ -5,8 +5,14 @@ import { Ratelimit } from '@upstash/ratelimit';
 
 // 1. Determine Backend Type
 // STRICT: Only use REST API (Upstash / Vercel KV)
-const envUrl = process.env.KV_REST_API_URL || process.env.UPSTASH_REDIS_REST_URL;
-const envToken = process.env.KV_REST_API_TOKEN || process.env.UPSTASH_REDIS_REST_TOKEN;
+const envUrl =
+    process.env.KV_REST_API_URL ||
+    process.env.UPSTASH_KV_KV_REST_API_URL ||
+    process.env.UPSTASH_REDIS_REST_URL;
+const envToken =
+    process.env.KV_REST_API_TOKEN ||
+    process.env.UPSTASH_KV_KV_REST_API_TOKEN ||
+    process.env.UPSTASH_REDIS_REST_TOKEN;
 
 // Robust check: must have URL starting with https:// and a token
 const hasHttpKv = !!(envUrl && envUrl.startsWith('https://') && envToken);
@@ -127,7 +133,8 @@ async function checkRateLimitKV(action, identifier) {
 }
 
 export function getClientIp(req) {
-    const xForwardedFor = req.headers['x-forwarded-for'];
+    const headers = req?.headers || {};
+    const xForwardedFor = headers['x-forwarded-for'] || headers['X-Forwarded-For'];
     if (xForwardedFor) {
         // x-forwarded-for: client, proxy1, proxy2
         return xForwardedFor.split(',')[0].trim();

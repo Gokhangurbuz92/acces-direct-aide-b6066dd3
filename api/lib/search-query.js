@@ -4,6 +4,10 @@ import { expandQueryWithSynonyms, normalizeSearchTerm } from './search-utils.js'
 /**
  * Builds and executes a search query for Aides.
  */
+/**
+ * @param {any} prisma
+ * @param {any} params
+ */
 export async function searchAides(prisma, params) {
   const {
     q,
@@ -102,6 +106,7 @@ export async function searchAides(prisma, params) {
   let selectRank = Prisma.empty;
 
   // P2: external sort aliases (stable contract) -> internal implementation
+  /** @type {Record<string, string>} */
   const sortAliases = {
     relevance: 'pertinence',
     recent: '-published_at',
@@ -117,6 +122,7 @@ export async function searchAides(prisma, params) {
   const sortField = effectiveSort?.startsWith('-') ? effectiveSort.substring(1) : effectiveSort;
 
   // Safe column mapping (whitelist only)
+  /** @type {Record<string, string>} */
   const SAFE_SORT_COLUMNS = {
     'date': 'published_at',
     'alpha': 'titre',
@@ -192,7 +198,7 @@ export async function searchAides(prisma, params) {
   ]);
 
   // Enrich items
-  const itemIds = items.map(i => i.id);
+  const itemIds = items.map((/** @type {{ id: string }} */ i) => i.id);
   let enrichedItems = [];
   if (itemIds.length > 0) {
     // Keep the listing payload lightweight; detail endpoints fetch full objects separately.
@@ -222,8 +228,8 @@ export async function searchAides(prisma, params) {
       select: listSelect,
     });
 
-    const itemMap = new Map(fullItems.map(i => [i.id, i]));
-    enrichedItems = items.map(raw => {
+    const itemMap = new Map(fullItems.map((/** @type {{ id: string }} */ i) => [i.id, i]));
+    enrichedItems = items.map((/** @type {{ id: string, rank?: number }} */ raw) => {
         const full = itemMap.get(raw.id);
         if (q) {
             return { ...full, rank: raw.rank };
@@ -248,6 +254,10 @@ export async function searchAides(prisma, params) {
 
 /**
  * Builds and executes a search query for Demarches.
+ */
+/**
+ * @param {any} prisma
+ * @param {any} params
  */
 export async function searchDemarches(prisma, params) {
   const { q, category, situation, geo, page, pageSize } = params;
@@ -298,15 +308,15 @@ export async function searchDemarches(prisma, params) {
     prisma.$queryRaw(countQuery)
   ]);
 
-  const itemIds = items.map(i => i.id);
+  const itemIds = items.map((/** @type {{ id: string }} */ i) => i.id);
   let enrichedItems = [];
   if (itemIds.length > 0) {
     const fullItems = await prisma.demarche.findMany({
       where: { id: { in: itemIds } },
       include: { category: true, situations: true }
     });
-    const itemMap = new Map(fullItems.map(i => [i.id, i]));
-    enrichedItems = items.map(raw => {
+    const itemMap = new Map(fullItems.map((/** @type {{ id: string }} */ i) => [i.id, i]));
+    enrichedItems = items.map((/** @type {{ id: string, rank?: number }} */ raw) => {
         const full = itemMap.get(raw.id);
         if (q) return { ...full, rank: raw.rank };
         return full;
@@ -321,6 +331,10 @@ export async function searchDemarches(prisma, params) {
 
 /**
  * Builds and executes a search query for Structures.
+ */
+/**
+ * @param {any} prisma
+ * @param {any} params
  */
 export async function searchStructures(prisma, params) {
   const { q, city, zip, type, page, pageSize } = params;
@@ -370,15 +384,15 @@ export async function searchStructures(prisma, params) {
 
   // Structures usually don't need heavy relation fetching, but let's check current implementation.
   // It included `proServices: true`.
-  const itemIds = items.map(i => i.id);
+  const itemIds = items.map((/** @type {{ id: string }} */ i) => i.id);
   let enrichedItems = [];
   if (itemIds.length > 0) {
     const fullItems = await prisma.structure.findMany({
       where: { id: { in: itemIds } },
       include: { proServices: true }
     });
-    const itemMap = new Map(fullItems.map(i => [i.id, i]));
-    enrichedItems = items.map(raw => {
+    const itemMap = new Map(fullItems.map((/** @type {{ id: string }} */ i) => [i.id, i]));
+    enrichedItems = items.map((/** @type {{ id: string, rank?: number }} */ raw) => {
         const full = itemMap.get(raw.id);
         if (q) return { ...full, rank: raw.rank };
         return full;

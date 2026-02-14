@@ -5,6 +5,10 @@ import { verifyAdmin } from '../../_utils/auth.js';
  * Admin endpoint to view link check results
  * GET /api/admin/link-checks?is_broken=true
  */
+/**
+ * @param {import('../../_utils/http-types').ApiRequest} req
+ * @param {import('../../_utils/http-types').ApiResponse} res
+ */
 export default async function handler(req, res) {
     if (!verifyAdmin(req)) {
         return res.status(401).json({ error: 'Unauthorized' });

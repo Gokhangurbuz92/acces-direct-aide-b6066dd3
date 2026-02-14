@@ -3,6 +3,10 @@ import crypto from 'crypto';
 import { checkRateLimit } from '../../../_utils/rateLimit.js';
 import { logProAudit } from '../../../lib/pro-auth.js';
 import prisma from '../../../_utils/prisma.js';
+/**
+ * @param {import('../../../_utils/http-types').ApiRequest} req
+ * @param {import('../../../_utils/http-types').ApiResponse} res
+ */
 
 export default async function handler(req, res) {
     if (req.method !== 'POST') {

@@ -1,3 +1,7 @@
+/**
+ * @param {import('../_utils/http-types').ApiRequest} req
+ * @param {import('../_utils/http-types').ApiResponse} res
+ */
 export default async function handler(req, res) {
     const debugToken = process.env.DEBUG_TOKEN;
     const requestToken = req.headers['x-debug-token'];

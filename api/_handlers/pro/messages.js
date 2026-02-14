@@ -2,6 +2,10 @@ import prisma from '../../_utils/prisma.js';
 import { requireAuth } from '../../lib/pro-auth.js';
 import { encrypt, decrypt, generateAttachmentToken } from '../../lib/crypto.js';
 import { storage } from '../../lib/storage.js';
+/**
+ * @param {import('../../_utils/http-types').ApiRequest} req
+ * @param {import('../../_utils/http-types').ApiResponse} res
+ */
 
 async function handler(req, res) {
     // Auth handled by requireAuth wrapper

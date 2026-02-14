@@ -1,5 +1,9 @@
 import prisma from '../../../_utils/prisma.js';
 import { requireAuth } from '../../../lib/pro-auth.js';
+/**
+ * @param {import('../../../_utils/http-types').ApiRequest} req
+ * @param {import('../../../_utils/http-types').ApiResponse} res
+ */
 
 async function handler(req, res) {
     if (req.method !== 'POST') {

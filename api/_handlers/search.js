@@ -3,6 +3,10 @@ import { checkRateLimit, getClientIp } from '../_utils/rateLimit.js';
 import { hybridSearchSchema } from '../_utils/validators.js';
 import { searchAidesHybrid } from '../lib/hybrid-search.js';
 import { generateEmbedding } from '../lib/gemini-embedding.js';
+/**
+ * @param {import('../_utils/http-types').ApiRequest} req
+ * @param {import('../_utils/http-types').ApiResponse} res
+ */
 
 export default async function handler(req, res) {
   try {

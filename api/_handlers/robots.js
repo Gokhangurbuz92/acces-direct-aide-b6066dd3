@@ -1,4 +1,8 @@
 import { isIndexable, getCanonicalBaseUrl } from '../_utils/seo.js';
+/**
+ * @param {import('../_utils/http-types').ApiRequest} req
+ * @param {import('../_utils/http-types').ApiResponse} res
+ */
 
 export default async function handler(req, res) {
     const indexable = isIndexable(req);

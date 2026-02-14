@@ -14,6 +14,10 @@ const VALID_STATUSES = ['NEW', 'IN_PROGRESS', 'FIXED', 'REJECTED'];
  * GET /api/reports - List reports (admin only)
  * PUT /api/reports/:id - Update report status (admin only)
  */
+/**
+ * @param {import('../_utils/http-types').ApiRequest} req
+ * @param {import('../_utils/http-types').ApiResponse} res
+ */
 export default async function handler(req, res) {
     const log = logger.child({ handler: 'reports' });
 

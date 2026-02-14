@@ -3,6 +3,10 @@ import prisma from '../../../_utils/prisma.js';
 import { verifyAdmin } from '../../../_utils/auth.js';
 import { hash } from '../../../lib/crypto.js';
 import { logger } from '../../../lib/logger.js';
+/**
+ * @param {import('../../../_utils/http-types').ApiRequest} req
+ * @param {import('../../../_utils/http-types').ApiResponse} res
+ */
 
 export default async function handler(req, res) {
     if (req.method !== 'GET' && req.method !== 'POST') {

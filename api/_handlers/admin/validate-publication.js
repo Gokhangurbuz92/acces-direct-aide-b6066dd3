@@ -23,6 +23,10 @@ const ENTITY_MODELS = {
  *
  * Returns validation result with errors and warnings
  */
+/**
+ * @param {import('../../_utils/http-types').ApiRequest} req
+ * @param {import('../../_utils/http-types').ApiResponse} res
+ */
 export default async function handler(req, res) {
   const log = logger.child({ handler: 'validate-publication' });
 

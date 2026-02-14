@@ -21,10 +21,10 @@ Ce document liste les routes définies dans `src/pages/index.jsx` (Router princi
 | `/recherche` | `Recherche` | Recherche intelligente (API `/api/search`) |
 | `/categories/:slug` | `Aides` | |
 | `/situations/:slug` | `Aides` | |
-| `/annuaire` | `Annuaire` | |
+| `/annuaire` | `Annuaire` | Listing + filtres (API `/api/structures`) |
 | `/structures` | `Navigate` | Redirects to `/annuaire` |
 | `/structures/view` | `StructureDetail` | |
-| `/structures/:slug` | `StructureDetail` | |
+| `/structures/:slug` | `StructureDetail` | Détail (API `/api/structures/:slug`) |
 | `/confidentialite` | `Confidentialite` | |
 | `/contact` | `Contact` | |
 | `/cookies` | `Cookies` | |

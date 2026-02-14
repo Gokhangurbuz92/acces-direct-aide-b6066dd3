@@ -10,9 +10,32 @@ function getBin(name) {
   return path.join('node_modules', '.bin', bin);
 }
 
+function runCapture(cmd, args) {
+  const res = spawnSync(cmd, args, { encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] });
+  if (res.error) throw res.error;
+  if (res.status !== 0) {
+    const msg = (res.stderr || res.stdout || '').trim();
+    throw new Error(`${cmd} failed (${res.status}). ${msg}`);
+  }
+  return res.stdout || '';
+}
+
+function getTrackedLintFiles() {
+  // Deterministic: only lint tracked files so CI/local don't diverge due to generated artifacts.
+  const out = runCapture('git', ['ls-files', '-z']);
+  return out
+    .split('\0')
+    .map((s) => s.trim())
+    .filter(Boolean)
+    .filter((p) => /\.(jsx?|mjs|cjs|ts|tsx)$/.test(p));
+}
+
 function runEslintJson() {
   const eslintBin = getBin('eslint');
-  const res = spawnSync(eslintBin, ['.', '--config', STRICT_CONFIG, '--format', 'json'], {
+  const files = getTrackedLintFiles();
+  if (files.length === 0) return [];
+
+  const res = spawnSync(eslintBin, ['--config', STRICT_CONFIG, '--format', 'json', ...files], {
     encoding: 'utf8',
     maxBuffer: 20 * 1024 * 1024,
   });
@@ -148,4 +171,3 @@ try {
   console.error(`[lint:strict] failed: ${message}`);
   process.exit(2);
 }
-

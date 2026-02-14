@@ -36,6 +36,7 @@ const TYPE_COLORS = {
 
 export default function StructureCard({ structure, compact = false }) {
   const targetUrl = structure.slug ? `/structures/${structure.slug}` : `/structures/view?id=${structure.id}`;
+  const isPmrAccessible = Boolean(structure.accessibilite_pmr || structure.accessibility_info?.pmr);
 
   return (
     <Card className="group hover:shadow-lg transition-all duration-300 border-slate-200 hover:border-blue-300 bg-white relative" data-testid="structure-card">
@@ -66,13 +67,13 @@ export default function StructureCard({ structure, compact = false }) {
                   Open data local
                 </Badge>
               )}
-              {structure.coverage === 'SUGGESTED_NEEDS_REVIEW' && (
-                <Badge variant="outline" className="text-orange-700 border-orange-300">
-                  À vérifier
-                </Badge>
-              )}
-            </div>
-            {structure.accessibility_info?.pmr && (
+            {structure.coverage === 'SUGGESTED_NEEDS_REVIEW' && (
+              <Badge variant="outline" className="text-orange-700 border-orange-300">
+                À vérifier
+              </Badge>
+            )}
+          </div>
+            {isPmrAccessible && (
               <Badge variant="outline" className="text-blue-700 border-blue-300 flex items-center gap-1">
                 <Accessibility className="h-3 w-3" />
                 Accessible PMR

@@ -184,12 +184,18 @@ const GOLDEN_AIDS = [
   },
 ];
 
+function seedNow() {
+  // Make seeds deterministic for test runs (used by CI + local test DB resets).
+  if (process.env.NODE_ENV === 'test') return new Date('2025-01-01T00:00:00.000Z');
+  return new Date();
+}
+
 function citationsFor(aid) {
   return [
     {
       source: aid.sourceOrg,
       url: aid.sourceUrl,
-      checkedAt: new Date().toISOString(),
+      checkedAt: seedNow().toISOString(),
       note: 'Placeholder citation for initial grounding',
     },
   ];
@@ -235,7 +241,7 @@ async function seedTaxonomy() {
 
 async function seedGoldenAids(categoryMap, situationMap) {
   for (const aid of GOLDEN_AIDS) {
-    const now = new Date();
+    const now = seedNow();
     const category = categoryMap.get(aid.categoryCode) || null;
     const sourceHash = stableHash(`${aid.slug}:${aid.sourceUrl}`);
 
@@ -324,12 +330,13 @@ async function seedGoldenAids(categoryMap, situationMap) {
 async function seedDemarches(categoryId) {
   for (let i = 1; i <= 10; i += 1) {
     const slug = `demarche-test-${i}`;
+    const now = seedNow();
     await prisma.demarche.upsert({
       where: { slug },
       update: {
         titre: `Démarche Test ${i}`,
         statut: 'publie',
-        published_at: new Date(),
+        published_at: now,
         categoryId,
         description_courte: `Courte description de la démarche ${i}`,
       },
@@ -337,7 +344,7 @@ async function seedDemarches(categoryId) {
         slug,
         titre: `Démarche Test ${i}`,
         statut: 'publie',
-        published_at: new Date(),
+        published_at: now,
         categoryId,
         description_courte: `Courte description de la démarche ${i}`,
       },
@@ -376,13 +383,14 @@ async function seedStructures() {
 async function seedActualites() {
   for (let i = 1; i <= 10; i += 1) {
     const slug = `actu-test-${i}`;
+    const now = seedNow();
     await prisma.actualite.upsert({
       where: { slug },
       update: {
         titre: `Actualité Test ${i}`,
         statut: 'publie',
-        published_at: new Date(),
-        date_publication: new Date(),
+        published_at: now,
+        date_publication: now,
         contenu: 'Ceci est une actualité de test.',
         type_actu: 'info',
         source_name: 'Test Source',
@@ -391,8 +399,8 @@ async function seedActualites() {
         slug,
         titre: `Actualité Test ${i}`,
         statut: 'publie',
-        published_at: new Date(),
-        date_publication: new Date(),
+        published_at: now,
+        date_publication: now,
         contenu: 'Ceci est une actualité de test.',
         type_actu: 'info',
         source_name: 'Test Source',

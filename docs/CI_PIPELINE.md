@@ -16,32 +16,51 @@ The AccesDirectAide project uses GitHub Actions for continuous integration and V
 
 **Jobs:**
 
-#### `validate` Job
+#### `unit-tests` Job
+Runs on: `ubuntu-latest`  
+Node version: 20  
+DB: Postgres service container (pgvector enabled)
+
+**Steps:**
+1. **Checkout** - Clone repository
+2. **Setup Node.js** - Install Node 20 with npm cache
+3. **Install Dependencies** - `npm ci`
+4. **Unit/Integration Tests (repeat)** - `npm run test:repeat` (runs `npm test` 3x)
+
+#### `build-and-test` Job
 Runs on: `ubuntu-latest`  
 Node version: 20
 
 **Steps:**
 1. **Checkout** - Clone repository
 2. **Setup Node.js** - Install Node 20 with npm cache
-3. **Install Dependencies** - `npm ci` (clean install)
-4. **Lint** - `npm run lint` (ESLint)
-5. **Typecheck** - `npm run typecheck` (TypeScript strict mode)
-6. **Build** - `npm run build` (Vite production build)
-7. **Unit Tests** - `npm run test` (Vitest)
-8. **Install Playwright** - Install browsers for E2E tests
-9. **E2E Tests** - Start preview server and run Playwright tests
+3. **Install Dependencies** - `npm ci`
+4. **Lint** - `npm run lint`
+5. **Build** - `npm run build`
+6. **Install Playwright** - Install browsers for E2E tests
+7. **E2E Tests** - `npx playwright test e2e/booking.spec.js e2e/public-core.spec.js`
 
-**Environment Variables:**
+**Environment Variables (CI):**
 ```yaml
-DATABASE_URL: "postgresql://localhost:5432/db"  # Dummy for Prisma generate (no password in docs)
-ADA_ENCRYPTION_KEY: "0123...abcdef"  # 64-char hex (32 bytes)
-JWT_SECRET: "dummy_jwt_secret"
-VITE_API_URL: "http://localhost:3000"
+# Dedicated test DB for `npm test` (never an external DB)
+DATABASE_URL_TEST: "postgresql://postgres:postgres@localhost:5432/acces_direct_aide_test?schema=public"
+
+# Safe dummy secrets (tests only)
+ADA_ENCRYPTION_KEY: "0000000000000000000000000000000000000000000000000000000000000000"
+JWT_SECRET: "test-jwt-secret"
+CRON_SECRET: "test-cron-secret"
+ADMIN_TOKEN: "test-admin-token"
+BYPASS_SECRET: "test-bypass-secret"
+
+# Stable flags
+TZ: "UTC"
+NODE_ENV: "test"
+VERCEL_ENV: "test"
 ```
 
 **Duration:** ~3-5 minutes
 
-**Status:** ✅ All checks passing
+**Status:** ✅ All checks passing (expected)
 
 ---
 
@@ -77,7 +96,7 @@ npm run build       # Production build
 **Expected Results:**
 - Lint: 0 errors, 0 warnings
 - Typecheck: 0 errors
-- Tests: All passing (currently 126/126)
+- Tests: All passing (`npm test`)
 - Build: Success with 0 warnings
 
 ---
@@ -95,7 +114,7 @@ npm run build       # Production build
 - Pipeline tests
 
 **Command:** `npm test`  
-**Current:** 126 tests passing
+**Current:** See `vitest` output (count may evolve; suite must be stable).
 
 ---
 

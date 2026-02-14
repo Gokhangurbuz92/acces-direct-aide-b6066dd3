@@ -10,6 +10,7 @@ Ce document définit les étapes obligatoires pour valider une mise en productio
 
 ## 2. CI (Automatique)
 - [ ] **Workflow GitHub** : Le job `build-and-test` est vert.
+- [ ] **Secrets scan** : Le workflow `secrets-scan` est vert.
 - [ ] **Dépendances** : Pas de vulnérabilité critique (`npm audit`).
 
 ## 3. Déploiement (Vercel)

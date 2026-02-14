@@ -1,8 +1,10 @@
 
 import crypto from 'crypto';
+import { env } from './env.js';
 
 export function verifyAdmin(req) {
-    if (!process.env.ADMIN_TOKEN) {
+    const adminToken = env.secrets.adminToken;
+    if (!adminToken) {
         console.error("FATAL: ADMIN_TOKEN is not set.");
         return false;
     }
@@ -15,7 +17,7 @@ export function verifyAdmin(req) {
 
     // Constant-time comparison to prevent timing attacks
     const tokenBuffer = Buffer.from(token);
-    const adminTokenBuffer = Buffer.from(process.env.ADMIN_TOKEN);
+    const adminTokenBuffer = Buffer.from(adminToken);
 
     if (tokenBuffer.length !== adminTokenBuffer.length) return false;
 

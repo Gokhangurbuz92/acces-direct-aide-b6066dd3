@@ -1,10 +1,11 @@
 import pino from 'pino';
+import { env } from './env.js';
 
-const environment = process.env.VERCEL_ENV || process.env.VITE_ENV || 'development';
-const release = process.env.VERCEL_GIT_COMMIT_SHA || process.env.VITE_GIT_COMMIT_SHA || 'dev';
+const environment = env.runtime.vercelEnv;
+const release = env.sentry.release;
 
 const logger = pino({
-    level: process.env.LOG_LEVEL || 'info',
+    level: env.runtime.logLevel,
     base: {
         env: environment,
         service: 'api',

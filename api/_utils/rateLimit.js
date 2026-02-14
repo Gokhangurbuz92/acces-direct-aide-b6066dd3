@@ -2,24 +2,19 @@
 import crypto from 'crypto';
 import { Redis } from '@upstash/redis';
 import { Ratelimit } from '@upstash/ratelimit';
+import { env } from './env.js';
 
 // 1. Determine Backend Type
 // STRICT: Only use REST API (Upstash / Vercel KV)
-const envUrl =
-    process.env.KV_REST_API_URL ||
-    process.env.UPSTASH_KV_KV_REST_API_URL ||
-    process.env.UPSTASH_REDIS_REST_URL;
-const envToken =
-    process.env.KV_REST_API_TOKEN ||
-    process.env.UPSTASH_KV_KV_REST_API_TOKEN ||
-    process.env.UPSTASH_REDIS_REST_TOKEN;
+const envUrl = env.kv.url;
+const envToken = env.kv.token;
 
 // Robust check: must have URL starting with https:// and a token
 const hasHttpKv = !!(envUrl && envUrl.startsWith('https://') && envToken);
 const BACKEND_NAME = hasHttpKv ? "KV_REST_API" : "MEMORY";
-const IS_PRODUCTION = process.env.VERCEL_ENV === 'production';
+const IS_PRODUCTION = env.runtime.vercelEnv === 'production';
 
-console.log(`[RateLimit] Init: Backend=${BACKEND_NAME} Env=${process.env.VERCEL_ENV}`);
+console.log(`[RateLimit] Init: Backend=${BACKEND_NAME} Env=${env.runtime.vercelEnv}`);
 
 // 2. Initialize Clients
 let redisClient = null; // Module-level singleton

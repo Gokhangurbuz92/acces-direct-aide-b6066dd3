@@ -1,6 +1,7 @@
 
 
 import crypto from 'crypto';
+import { env } from '../_utils/env.js';
 
 // Encryption Algorithm
 // Encryption Algorithm
@@ -9,7 +10,7 @@ const IV_LENGTH = 16; // AES block size
 const AUTH_TAG_LENGTH = 16;
 
 // Key Management
-const KEY_HEX = process.env.ADA_ENCRYPTION_KEY;
+const KEY_HEX = env.secrets.adaEncryptionKey;
 
 const KEY = KEY_HEX ? Buffer.from(KEY_HEX, 'hex') : null;
 

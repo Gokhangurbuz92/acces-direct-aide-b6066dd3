@@ -1,5 +1,6 @@
 import { Helmet } from 'react-helmet-async';
 import PropTypes from 'prop-types';
+import { frontendEnv } from '@/config/env';
 
 const DEFAULT_IMAGE = '/og-image.png';
 const SITE_NAME = 'Accès Direct Aide';
@@ -39,7 +40,7 @@ export default function SEO({
     const normalizedPath = cleanPath && !cleanPath.startsWith('/') ? `/${cleanPath}` : cleanPath;
 
     // P0.6: Canonical is emitted ONLY in production and must equal PUBLIC_BASE_URL
-    const isProduction = import.meta.env.VITE_VERCEL_ENV === 'production';
+    const isProduction = frontendEnv.runtime.vercelEnv === 'production';
     const canonicalBase = isProduction ? 'https://www.accesdirectaide.fr' : null;
     const canonicalUrl = canonicalBase ? `${canonicalBase}${normalizedPath}` : null;
 

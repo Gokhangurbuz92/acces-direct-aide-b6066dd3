@@ -1,5 +1,6 @@
 
 import { createClient } from '@vercel/kv';
+import { env } from './env.js';
 
 
 
@@ -7,10 +8,10 @@ const memoryStore = new Map();
 
 let kvClient;
 
-if (process.env.KV_REST_API_URL && process.env.KV_REST_API_TOKEN) {
+if (env.kv.url && env.kv.token) {
     kvClient = createClient({
-        url: process.env.KV_REST_API_URL,
-        token: process.env.KV_REST_API_TOKEN
+        url: env.kv.url,
+        token: env.kv.token
     });
 } else {
     console.warn("[KV] Missing Credentials - Using Memory Store (Dev Mode)");

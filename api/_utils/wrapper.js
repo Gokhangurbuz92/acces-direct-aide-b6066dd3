@@ -3,6 +3,7 @@ import { Prisma } from '@prisma/client';
 import SentryClient from './sentry.js';
 import { AppError, errorCodes } from './errors.js';
 import crypto from 'crypto';
+import { env } from './env.js';
 
 export function createHandler(handler, schemas = {}) {
   return async (req, res) => {
@@ -98,7 +99,7 @@ export function createHandler(handler, schemas = {}) {
           errorResponse.message = "Ressource non trouvée.";
         } else {
              // Other Prisma errors
-             if (process.env.VERCEL_ENV !== 'production') {
+             if (env.runtime.vercelEnv !== 'production') {
                  errorResponse.details = err.code;
              }
         }
@@ -107,7 +108,7 @@ export function createHandler(handler, schemas = {}) {
       else {
          // Report to Sentry
          SentryClient.captureException(err);
-         if (process.env.VERCEL_ENV !== 'production') {
+         if (env.runtime.vercelEnv !== 'production') {
              errorResponse.details = err.message;
          }
       }

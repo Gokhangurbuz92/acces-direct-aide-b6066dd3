@@ -1,11 +1,12 @@
 import { checkRateLimit } from '../_utils/rateLimit.js';
+import { env } from '../_utils/env.js';
 /**
  * @param {import('../_utils/http-types').ApiRequest} req
  * @param {import('../_utils/http-types').ApiResponse} res
  */
 
 export default async function handler(req, res) {
-    if (process.env.VITE_PUBLIC_DIAGNOSTICS !== 'true') {
+    if (!env.flags.publicDiagnostics) {
         return res.status(404).send('Not Found');
     }
     const identifier = 'stress-test-user-' + Math.floor(Date.now() / 60000); // Unique per minute to allow "reset" wait
@@ -20,7 +21,7 @@ export default async function handler(req, res) {
         return res.status(200).json({
             status: 'ok',
             message: 'Request allowed.',
-            backend_hint: process.env.KV_REST_API_URL || process.env.STORAGE_REST_API_URL ? 'KV_REST_API' : 'MEMORY'
+            backend_hint: env.kv.url && env.kv.token ? 'KV_REST_API' : 'MEMORY'
         });
     } catch (error) {
         console.error("Rate Limit Test Error:", error);

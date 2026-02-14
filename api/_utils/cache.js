@@ -1,6 +1,8 @@
 /** @typedef {import('./http-types').ApiRequest} ApiRequest */
 /** @typedef {import('./http-types').ApiResponse} ApiResponse */
 
+import { getEnv } from './env.js';
+
 /** @param {ApiResponse} res @param {string} key */
 export function getHeader(res, key) {
     try {
@@ -25,8 +27,8 @@ export function setHeader(res, key, value) {
 export function setCachePolicyTag(res, value) {
     // Only send debug headers if explicitly enabled or not in production
     // (Defaults to hidden in prod for cleanliness)
-    const showDebug = process.env.CACHE_DEBUG_HEADERS === 'true' ||
-        (process.env.VERCEL_ENV && process.env.VERCEL_ENV !== 'production');
+    const vercelEnv = getEnv('VERCEL_ENV') || getEnv('VITE_ENV');
+    const showDebug = getEnv('CACHE_DEBUG_HEADERS') === 'true' || (vercelEnv && vercelEnv !== 'production');
 
     if (!showDebug) return;
 

@@ -68,7 +68,8 @@ Ces routes gèrent souvent GET (list/detail) et parfois POST/PUT/DELETE (admin).
 
 | Path | Handler | Schedule (vercel.json) |
 |---|---|---|
-| `/api/cron/pipeline` | `_handlers/cron/pipeline.js` | `0 * * * *` (Hourly) |
+| `/api/cron/actualites` | `_handlers/cron/actualites.js` | `0 * * * *` (Hourly) |
+| `/api/cron/pipeline` | `_handlers/cron/pipeline.js` | (Manuel / Triggered) |
 | `/api/cron/ingest-structures` | `_handlers/cron/ingest-structures.js` | `0 2 * * 0` (Weekly) |
 | `/api/cron/ingest-aids` | `_handlers/cron/ingest-aids.js` | (Manuel / Triggered) |
 | `/api/cron/purge` | `_handlers/cron/purge.js` | (Manuel / Triggered) |

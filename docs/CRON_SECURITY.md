@@ -8,21 +8,27 @@ All cron endpoints are protected by authentication to prevent unauthorized execu
 
 The cron authentication system (`api/_utils/cronAuth.js`) supports three methods:
 
-### 1. Bearer Token (Recommended for Manual Testing)
+### 1. `x-cron-secret` Header (Preferred)
+
+Keeps the secret out of URLs and works reliably across proxies.
+
+```bash
+curl -H "x-cron-secret: $CRON_SECRET" "https://your-domain.com/api/cron/actualites" # gitleaks:allow
+```
+
+### 2. Bearer Token (Fallback)
 
 ```bash
 curl -H "Authorization: Bearer $CRON_SECRET" "https://your-domain.com/api/cron/ingest-structures" # gitleaks:allow
 ```
 
-### 2. Query Parameter (Fallback)
+### 3. Query Parameter (Legacy Fallback)
+
+Avoid in production because query params can appear in logs.
 
 ```bash
 curl "https://your-domain.com/api/cron/ingest-structures?secret=YOUR_CRON_SECRET"
 ```
-
-### 3. Vercel Cron Header (Automatic)
-
-When Vercel executes scheduled cron jobs, it automatically adds the `x-vercel-cron: 1` header. No additional configuration needed.
 
 ## Environment Variables
 
@@ -38,16 +44,18 @@ CRON_SECRET="your-secure-random-string-min-32-chars"
 
 ## Vercel Cron Configuration
 
-Cron jobs are configured in `vercel.ts`:
+Cron jobs are configured in `vercel.json`:
 
 ```javascript
 {
   crons: [
-    { path: "/api/cron/pipeline", schedule: "0 * * * *" },
+    { path: "/api/cron/actualites", schedule: "0 * * * *" },
     { path: "/api/cron/ingest-structures", schedule: "0 2 * * 0" },
   ]
 }
 ```
+
+Vercel Cron Jobs will call your endpoint and include an `Authorization: Bearer <CRON_SECRET>` header when you configure the cron secret in Vercel. (The implementation also supports `x-cron-secret` for manual triggers.)
 
 ### Schedule Format
 

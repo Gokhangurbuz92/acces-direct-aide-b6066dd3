@@ -279,9 +279,9 @@ Répertoire `src/components/` (non détaillé ici, voir INVENTORY.md).
 
 ```env
 # Database
-DATABASE_URL=postgresql://user:password@host:5432/dbname
-POSTGRES_PRISMA_URL=postgresql://user:password@host:5432/dbname?pgbouncer=true
-POSTGRES_URL_NON_POOLING=postgresql://user:password@host:5432/dbname
+DATABASE_URL=postgresql://USER@HOST:5432/DBNAME
+POSTGRES_PRISMA_URL=postgresql://USER@HOST:5432/DBNAME?pgbouncer=true
+POSTGRES_URL_NON_POOLING=postgresql://USER@HOST:5432/DBNAME
 
 # Security
 ADA_ENCRYPTION_KEY=your-64-char-hex-key-here
@@ -290,7 +290,7 @@ CRON_SECRET=your-cron-secret-here
 
 # Admin
 ADMIN_EMAIL=admin@example.com
-ADMIN_PASSWORD=secure-password-here
+ADMIN_PASSWORD=CHANGE_ME
 ADMIN_TOKEN=your-admin-token-here
 
 # Vercel

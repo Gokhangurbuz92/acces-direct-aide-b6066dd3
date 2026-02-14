@@ -24,7 +24,7 @@ Les fichiers suivants contenaient des credentials hardcodés :
 ### Types de Secrets Exposés
 
 - ✅ **PostgreSQL Credentials** (mot de passe masqué - RÉVOQUÉ)
-- ✅ **Upstash Redis Credentials** (token : `Ae1WAA****` - RÉVOQUÉ)
+- ✅ **Upstash Redis Credentials** (token : `REDACTED` - RÉVOQUÉ)
 - ✅ **JWT_SECRET**
 - ✅ **CRON_SECRET**
 - ✅ **ADA_ENCRYPTION_KEY**
@@ -39,7 +39,7 @@ Les scripts de test ont été modifiés pour utiliser les variables d'environnem
 
 **Avant (❌ DANGEREUX)** :
 ```javascript
-const PROD_URL = 'postgresql://neondb_owner:PASSWORD_HARDCODED@ep-summer-cloud...';
+const PROD_URL = 'postgresql://USER@HOST/DB';
 ```
 
 **Après (✅ SÉCURISÉ)** :
@@ -98,7 +98,7 @@ const dbUrl = process.env.DATABASE_URL;
 const jwtSecret = process.env.JWT_SECRET;
 
 // ❌ MAUVAIS
-const dbUrl = 'postgresql://user:password@host/db';
+const dbUrl = 'postgresql://USER@HOST/DB';
 const jwtSecret = 'mon-secret-en-dur';
 ```
 
@@ -111,8 +111,8 @@ const jwtSecret = 'mon-secret-en-dur';
 **Exemple de `.env.example`** :
 ```bash
 # Database
-DATABASE_URL=postgresql://user:password@host:5432/dbname
-POSTGRES_URL_NON_POOLING=postgresql://user:password@host:5432/dbname
+DATABASE_URL=postgresql://USER@HOST:5432/DBNAME
+POSTGRES_URL_NON_POOLING=postgresql://USER@HOST:5432/DBNAME
 
 # Authentication
 JWT_SECRET=your-jwt-secret-here
@@ -139,7 +139,7 @@ VITE_SENTRY_DSN=https://your-sentry-dsn@sentry.io/project-id
 
 ```markdown
 <!-- ❌ MAUVAIS -->
-Connexion DB : postgresql://user:HARDCODED_PASSWORD@host/db
+Connexion DB : postgresql://USER@HOST/DB
 
 <!-- ✅ BON -->
 Connexion DB : Utiliser la variable d'environnement DATABASE_URL
@@ -158,7 +158,7 @@ const client = new Client({
 
 // ❌ MAUVAIS
 const client = new Client({
-  connectionString: 'postgresql://user:password@host/db',
+  connectionString: 'postgresql://USER@HOST/DB',
   ssl: { rejectUnauthorized: false }
 });
 ```

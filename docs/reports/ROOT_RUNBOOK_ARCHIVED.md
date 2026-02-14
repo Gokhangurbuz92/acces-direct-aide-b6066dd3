@@ -18,8 +18,8 @@
 
 #### Database
 ```bash
-DATABASE_URL="postgresql://user:password@host:5432/db?schema=public"
-POSTGRES_URL_NON_POOLING="postgresql://user:password@host:5432/db?schema=public"
+DATABASE_URL="postgresql://USER@HOST:5432/DB?schema=public"
+POSTGRES_URL_NON_POOLING="postgresql://USER@HOST:5432/DB?schema=public"
 ```
 
 #### Security

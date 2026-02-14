@@ -149,7 +149,7 @@ SELECT statut, COUNT(*) FROM "Aide" GROUP BY statut;
 
 ```bash
 curl -i "https://www.accesdirectaide.fr/api/cron/pipeline" \
-  -H "Authorization: Bearer VOTRE_CRON_SECRET"
+  -H "Authorization: Bearer $CRON_SECRET" # gitleaks:allow
 ```
 
 **Réponses attendues** :

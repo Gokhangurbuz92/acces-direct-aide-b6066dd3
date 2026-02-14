@@ -40,7 +40,7 @@
 2. **Copier la connection string COMPLÈTE**
    - Cliquer sur "Copy"
    - Vérifier qu'il n'y a PAS d'espace dans le mot de passe
-   - Format attendu: `postgresql://neondb_owner:PASSWORD@ep-summer-cloud-ag14ucwz.eu-central-1.aws.neon.tech/neondb?sslmode=require`
+   - Format attendu (exemple, password omis dans la doc): `postgresql://<DB_USER>@<DB_HOST>/<DB_NAME>?sslmode=require`
 
 3. **Tester depuis votre Mac**
    ```bash

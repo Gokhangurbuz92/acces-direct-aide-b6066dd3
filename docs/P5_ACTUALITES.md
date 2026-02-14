@@ -52,10 +52,11 @@ Commande:
 
 Le script ingere les items RSS/Atom des sources `enabled` vers la table `Actualite` avec deduplication par URL canonique.
 
-### Cron pipeline
+### Cron
 
-- `GET /api/cron/pipeline?source=actualites` (alias -> `rss`)
-- la branche RSS utilise la meme logique d'ingestion que le script local.
+- Recommande: `GET /api/cron/actualites`
+- Legacy/manual: `GET /api/cron/pipeline?source=actualites` (alias -> `rss`)
+- La branche RSS utilise la meme logique d'ingestion que le script local.
 
 ## SEO + JSON-LD
 
@@ -70,4 +71,3 @@ Le script ingere les items RSS/Atom des sources `enabled` vers la table `Actuali
 - Integration (mock): `tests/integration/actualites.test.js`
 - Integration (DB-backed, seed): `tests/integration/p5-actualites-api.test.js`
 - E2E: `e2e/public-core.spec.js` (flow listing -> detail)
-

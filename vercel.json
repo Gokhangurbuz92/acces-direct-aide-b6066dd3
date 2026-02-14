@@ -49,7 +49,7 @@
       "destination": "/api"
     },
     {
-      "source": "/((?!api/|.*\\..*).*)",
+      "source": "/((?!api/|@vite/|@react-refresh|@fs/|@id/|__vite_ping|.*\\..*).*)",
       "destination": "/index.html"
     }
   ],

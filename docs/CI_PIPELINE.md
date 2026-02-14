@@ -43,7 +43,7 @@ Node version: 20
 **Environment Variables (CI):**
 ```yaml
 # Dedicated test DB for `npm test` (never an external DB)
-DATABASE_URL_TEST: "postgresql://postgres:postgres@localhost:5432/acces_direct_aide_test?schema=public"
+DATABASE_URL_TEST: "postgresql://postgres@localhost:5432/acces_direct_aide_test?schema=public" # password omitted (CI uses trust auth)
 
 # Safe dummy secrets (tests only)
 ADA_ENCRYPTION_KEY: "0000000000000000000000000000000000000000000000000000000000000000"
@@ -77,6 +77,16 @@ VERCEL_ENV: "test"
 **Purpose:** Automatically merge approved PRs
 
 **Status:** ⚠️ Need to verify configuration
+
+---
+
+### 4. Secrets Scan Workflow (`.github/workflows/secrets-scan.yml`)
+
+**Purpose:** Prevent new secret leaks on PRs and `main` using `gitleaks` (redacted output).
+
+**Notes:**
+- Scans the current workspace only (`--no-git`) to avoid blocking CI on historical leaks.
+- Local equivalent: `npm run security:scan`
 
 ---
 

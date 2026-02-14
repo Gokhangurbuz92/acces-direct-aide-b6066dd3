@@ -413,8 +413,8 @@ BLACKBOX_API_KEY=your-blackbox-api-key
 
 ```yaml
 # .github/workflows/ci.yml
-env:
-  DATABASE_URL: "postgresql://user:pass@localhost:5432/db" # Dummy
+  env:
+    DATABASE_URL: "postgresql://user@localhost:5432/db" # Dummy (password omitted in docs)
 ```
 
 **Impact**:

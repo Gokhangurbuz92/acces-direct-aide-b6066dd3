@@ -24,8 +24,6 @@ async function verifyRDV() {
         }
 
         // 1. Mock Booking Request
-        const contact = "test-rdv@example.com";
-        const contactHash = hash(contact);
         const cancelToken = crypto.randomBytes(32).toString('hex');
         const accessToken = crypto.randomBytes(32).toString('hex');
 

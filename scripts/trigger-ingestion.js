@@ -1,9 +1,6 @@
 import fs from 'fs';
 import path from 'path';
-import { fileURLToPath } from 'url';
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
 const envPath = path.join(process.cwd(), '.env.local');
 
 console.log("🚀 Triggering Data Ingestion Pipeline (Smart Mode)...");
@@ -41,7 +38,7 @@ async function triggerEndpoint(name, path) {
             try {
                 const json = JSON.parse(text);
                 console.log("Stats:", JSON.stringify(json, null, 2));
-            } catch (e) {
+            } catch {
                 console.log("Response:", text.substring(0, 100));
             }
         } else {

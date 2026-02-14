@@ -22,7 +22,7 @@ let buildTime = process.env.BUILD_TIME || new Date().toISOString();
 if (commitSha === 'dev') {
     try {
         commitSha = execSync('git rev-parse HEAD', { encoding: 'utf-8' }).trim();
-    } catch (e) {
+    } catch {
         // Git not available or not a repo, keep 'dev'
     }
 }

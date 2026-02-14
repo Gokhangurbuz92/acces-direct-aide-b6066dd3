@@ -131,17 +131,6 @@ async function main() {
     // Give it a moment? No, usually instant but async.
     await new Promise(r => setTimeout(r, 1000));
 
-    const log = await prisma.auditLog.findFirst({
-        where: {
-            action: 'LOGIN_FAILED',
-            details: {
-                path: ['email'],
-                equals: badEmail
-            }
-        },
-        orderBy: { timestamp: 'desc' }
-    });
-
     // Prisma JSON filter syntax depends on DB. 
     // Usually 'details' is Json. 
     // If it's Postgres, path syntax works. If basic JSON, equals might work on the whole object or verify in code.

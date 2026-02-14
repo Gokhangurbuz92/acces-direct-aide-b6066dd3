@@ -1,5 +1,3 @@
-import { spawn } from 'child_process';
-
 const API_URL = 'http://localhost:3000';
 
 async function checkEndpoint(name, url) {
@@ -26,7 +24,6 @@ async function run() {
     const aides = await checkEndpoint('Aides List', `${API_URL}/api/aides`);
     if (aides && aides.items && aides.items.length > 0) {
         const first = aides.items[0];
-        const identifier = first.slug || first.id;
         // Check Detail by Slug or ID
         // Note: API handler now supports id or slug.
         // If slug is present, let's try ?slug=...

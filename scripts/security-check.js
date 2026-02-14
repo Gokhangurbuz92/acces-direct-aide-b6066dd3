@@ -1,6 +1,5 @@
 
 import aidesHandler from '../api/_handlers/aides.js';
-import structuresHandler from '../api/_handlers/structures.js';
 import taxonomyHandler from '../api/_handlers/taxonomy.js';
 import indexHandler from '../api/index.js';
 
@@ -49,7 +48,7 @@ async function runTests() {
         // BUT it should NOT return { pathname: ... } which was the debug response.
         try {
             await indexHandler(req, res);
-        } catch (e) {
+        } catch {
             // Ignore execution errors, just check if it returned the debug json
         }
 
@@ -72,7 +71,7 @@ async function runTests() {
         const res = new MockRes();
         try {
             await aidesHandler(req, res);
-        } catch (e) {
+        } catch {
             // DB errors expected
         }
 
@@ -103,7 +102,7 @@ async function runTests() {
         const res = new MockRes();
         try {
             await taxonomyHandler(req, res);
-        } catch (e) {
+        } catch {
             // DB errors expected
         }
 

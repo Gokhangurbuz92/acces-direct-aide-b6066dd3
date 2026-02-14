@@ -89,7 +89,7 @@ scripts/check-db-extensions.cjs
 
 ### Avant (❌ DANGEREUX)
 ```javascript
-const PROD_URL = 'postgresql://neondb_owner:PASSWORD@host/db';
+const PROD_URL = 'postgresql://USER@HOST/DB';
 ```
 
 ### Après (✅ SÉCURISÉ)

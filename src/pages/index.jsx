@@ -2,6 +2,7 @@ import { Suspense, lazy } from "react";
 import Layout from "./Layout.jsx";
 import { BrowserRouter as Router, Route, Routes, useLocation, Navigate, useParams } from 'react-router-dom';
 import AdminGuard from "@/components/AdminGuard";
+import { frontendEnv } from "@/config/env";
 
 // [LAZY LOADED PAGES]
 // Public
@@ -133,7 +134,7 @@ function PagesContent() {
 
     // LOT SENTRY: Special standalone route that bypasses Layout (and thus Base44 auth imports)
     // LOT 5.1: Production Hardening - Only available if VITE_PUBLIC_DIAGNOSTICS is true
-    if (location.pathname === '/__sentry_test' && import.meta.env.VITE_PUBLIC_DIAGNOSTICS === 'true') {
+    if (location.pathname === '/__sentry_test' && frontendEnv.flags.publicDiagnostics) {
         return (
             <Suspense fallback={<PageLoader />}>
                 <Routes>
@@ -229,7 +230,7 @@ function PagesContent() {
                     <Route path="/demarches/:slug" element={<DemarcheDetail />} />
 
                     {/* Conditional Route */}
-                    {import.meta.env.VITE_DEV_LOGIN_ENABLED === 'true' && (
+                    {frontendEnv.flags.devLoginEnabled && (
                         <Route path="/login/pro" element={<LoginPro />} />
                     )}
 

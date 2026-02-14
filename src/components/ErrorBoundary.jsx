@@ -3,6 +3,7 @@ import { sentryRef } from '@/observability/sentryRef';
 import { AlertTriangle, RefreshCw, Home } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
+import { frontendEnv } from '@/config/env';
 
 /**
  * ErrorBoundary Fallback Component
@@ -11,7 +12,7 @@ import { Card, CardContent } from '@/components/ui/card';
  * Does not expose technical details to end users.
  */
 function ErrorFallback({ error, resetError }) {
-  const isDevelopment = import.meta.env.DEV;
+  const isDevelopment = frontendEnv.runtime.isDev;
 
   return (
     <div className="min-h-screen bg-slate-50 flex items-center justify-center p-4">
@@ -128,7 +129,7 @@ class ErrorBoundary extends React.Component {
     }
 
     // Log to console in development
-    if (import.meta.env.DEV) {
+    if (frontendEnv.runtime.isDev) {
       console.error('ErrorBoundary caught an error:', error, errorInfo);
     }
   }

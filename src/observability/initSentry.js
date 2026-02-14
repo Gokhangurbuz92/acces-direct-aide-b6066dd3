@@ -1,12 +1,13 @@
 import { sentryRef } from "./sentryRef";
+import { frontendEnv } from "@/config/env";
 
 export async function initSentry() {
-  const dsn = import.meta.env.VITE_SENTRY_DSN;
+  const dsn = frontendEnv.sentry.dsn;
   if (!dsn) return;
 
   // STRICT: Prod only (Vercel Preview builds are technically "production" mode in Vite)
   // We rely on VITE_DEPLOY_ENV (injected) or fallback to MODE.
-  const DEPLOY_ENV = import.meta.env.VITE_DEPLOY_ENV || import.meta.env.MODE;
+  const DEPLOY_ENV = frontendEnv.runtime.deployEnv;
 
   if (DEPLOY_ENV !== 'production') return;
 
@@ -15,7 +16,7 @@ export async function initSentry() {
 
     Sentry.init({
       dsn,
-      release: import.meta.env.VITE_GIT_COMMIT_SHA,
+      release: frontendEnv.runtime.gitCommitSha,
       environment: DEPLOY_ENV,
       
       integrations: [

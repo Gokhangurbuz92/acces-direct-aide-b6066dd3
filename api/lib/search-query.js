@@ -429,7 +429,7 @@ export async function searchDemarches(prisma, params) {
  * @param {any} params
  */
 export async function searchStructures(prisma, params) {
-  const { q, city, zip, type, page, pageSize } = params;
+  const { q, city, zip, type, departement, pmr, sort, page, pageSize } = params;
   const LIMIT = pageSize;
   const OFFSET = (page - 1) * LIMIT;
 
@@ -448,8 +448,18 @@ export async function searchStructures(prisma, params) {
     conditions.push(Prisma.sql`"code_postal" = ${zip}`);
   }
 
+  if (departement) {
+    conditions.push(Prisma.sql`"departement" = ${departement}`);
+  }
+
   if (type && type !== '_all') {
-    conditions.push(Prisma.sql`"type_structure" = ${type}`);
+    // Handle legacy values like "Association" vs "association"
+    conditions.push(Prisma.sql`LOWER("type_structure") = LOWER(${type})`);
+  }
+
+  const wantsPmr = pmr === 'true' || pmr === '1';
+  if (wantsPmr) {
+    conditions.push(Prisma.sql`"accessibilite_pmr" = true`);
   }
 
   const whereClause = conditions.length > 0
@@ -459,11 +469,55 @@ export async function searchStructures(prisma, params) {
   let orderBy;
   let selectRank = Prisma.empty;
 
-  if (q) {
+  // P4: external sort aliases (stable contract) -> internal implementation
+  /** @type {Record<string, string>} */
+  const sortAliases = {
+    relevance: 'pertinence',
+    recent: '-updated_date',
+    '-recent': 'updated_date',
+    quality: '-quality_score',
+    '-quality': 'quality_score',
+    alpha: 'nom',
+    '-alpha': '-nom',
+  };
+
+  const effectiveSort = sortAliases[sort] || sort;
+  const sortDirection = effectiveSort?.startsWith('-') ? 'DESC' : 'ASC';
+  const sortField = effectiveSort?.startsWith('-') ? effectiveSort.substring(1) : effectiveSort;
+
+  /** @type {Record<string, string>} */
+  const SAFE_SORT_COLUMNS = {
+    updated_date: 'updatedAt',
+    nom: 'nom',
+    quality_score: 'quality_score',
+  };
+
+  if (q && (effectiveSort === 'pertinence' || sortField === 'pertinence')) {
     selectRank = Prisma.sql`, ts_rank_cd("search_vector", plainto_tsquery('french', unaccent(${q}))) as rank`;
-    orderBy = Prisma.sql`ORDER BY rank DESC, nom ASC`;
+    orderBy = Prisma.sql`ORDER BY rank DESC, quality_score DESC, nom ASC, id ASC`;
+  } else if (sortField === 'pertinence') {
+    // Relevance sorting requires q. Without q we fallback to quality.
+    orderBy = Prisma.sql`ORDER BY quality_score DESC, "updatedAt" DESC, id ASC`;
+  } else if (sortField && SAFE_SORT_COLUMNS[sortField]) {
+    const dbColumn = SAFE_SORT_COLUMNS[sortField];
+    const safeColumn = Prisma.raw(`"${dbColumn}"`);
+
+    if (dbColumn === 'quality_score') {
+      orderBy = sortDirection === 'DESC'
+        ? Prisma.sql`ORDER BY ${safeColumn} DESC, "updatedAt" DESC, nom ASC, id ASC`
+        : Prisma.sql`ORDER BY ${safeColumn} ASC, "updatedAt" DESC, nom ASC, id ASC`;
+    } else if (dbColumn === 'updatedAt') {
+      orderBy = sortDirection === 'DESC'
+        ? Prisma.sql`ORDER BY ${safeColumn} DESC, id ASC`
+        : Prisma.sql`ORDER BY ${safeColumn} ASC, id ASC`;
+    } else {
+      orderBy = sortDirection === 'DESC'
+        ? Prisma.sql`ORDER BY ${safeColumn} DESC, id ASC`
+        : Prisma.sql`ORDER BY ${safeColumn} ASC, id ASC`;
+    }
   } else {
-    orderBy = Prisma.sql`ORDER BY nom ASC, id ASC`;
+    // Default fallback (stable & useful): quality first, then most recent
+    orderBy = Prisma.sql`ORDER BY quality_score DESC, "updatedAt" DESC, id ASC`;
   }
 
   const itemsQuery = Prisma.sql`SELECT id ${selectRank} FROM "Structure" ${whereClause} ${orderBy} LIMIT ${LIMIT} OFFSET ${OFFSET}`;
@@ -474,14 +528,36 @@ export async function searchStructures(prisma, params) {
     prisma.$queryRaw(countQuery)
   ]);
 
-  // Structures usually don't need heavy relation fetching, but let's check current implementation.
-  // It included `proServices: true`.
+  // Keep the listing payload lightweight; detail endpoints fetch full objects separately.
   const itemIds = items.map((/** @type {{ id: string }} */ i) => i.id);
   let enrichedItems = [];
   if (itemIds.length > 0) {
+    const listSelect = {
+      id: true,
+      slug: true,
+      nom: true,
+      type_structure: true,
+      accessibilite_pmr: true,
+      description_courte: true,
+      adresse: true,
+      code_postal: true,
+      ville: true,
+      departement: true,
+      telephone: true,
+      email: true,
+      site_web: true,
+      horaires: true,
+      updatedAt: true,
+      published_at: true,
+      quality_score: true,
+      statut: true,
+      status: true,
+      is_pro_enabled: true,
+    };
+
     const fullItems = await prisma.structure.findMany({
       where: { id: { in: itemIds } },
-      include: { proServices: true }
+      select: listSelect,
     });
     const itemMap = new Map(fullItems.map((/** @type {{ id: string }} */ i) => [i.id, i]));
     enrichedItems = items.map((/** @type {{ id: string, rank?: number }} */ raw) => {

@@ -6,6 +6,17 @@ import { attachNoStoreOnError } from "./_utils/cache.js";
 import { applyCachePolicy } from "./_utils/cachePolicy.js";
 import { env, getEnv } from './_utils/env.js';
 
+/** @param {unknown} value */
+function normalizeRequestId(value) {
+    const raw = Array.isArray(value) ? value[0] : value;
+    if (typeof raw !== 'string') return null;
+    const trimmed = raw.trim();
+    if (!trimmed) return null;
+    if (trimmed.length > 64) return null;
+    if (!/^[a-zA-Z0-9._-]+$/.test(trimmed)) return null;
+    return trimmed;
+}
+
 /**
  * Avoid leaking secrets in logs.
  * We redact common sensitive query keys (exact or substring match).
@@ -25,7 +36,10 @@ function redactQueryParams(searchParams) {
             k === 'key' ||
             k.includes('auth');
 
-        out[key] = isSensitive ? '[REDACTED]' : value;
+        const s = String(value || '');
+        const truncated = s.length > 80 ? `${s.slice(0, 80)}...` : s;
+
+        out[key] = isSensitive ? '[REDACTED]' : truncated;
     }
     return out;
 }
@@ -36,17 +50,20 @@ function redactQueryParams(searchParams) {
 
 export default async function handler(req, res) {
     let requestId = "init-" + Math.random().toString(36).substring(7);
-    let log = console; // Default fallback
+    let log = logger; // Default fallback
 
     try {
-        requestId = randomUUID();
         const startTime = Date.now();
+
+        requestId = normalizeRequestId(req.headers?.['x-request-id']) || randomUUID();
+        req.requestId = requestId;
 
         // 1. Initialize Logger with Fallback
         try {
             log = logger.child({ requestId });
         } catch (e) {
-            console.error("Logger init failed, using console fallback:", e);
+            console.error("Logger init failed, using root logger fallback:", e);
+            log = logger;
         }
 
         // 2. CORS Headers
@@ -130,12 +147,44 @@ export default async function handler(req, res) {
             console.log(`PIPELINE_ROUTE_ENTER source=${source} runId=${runId}`);
         }
 
-        await routeHandler(req, res);
+        await Sentry.withScope(async (scope) => {
+            try {
+                scope.setTag('request_id', requestId);
+                scope.setTag('route', path);
+                scope.setTag('vercel_env', env.runtime.vercelEnv);
+                scope.setTag('release', env.sentry.release);
+
+                await routeHandler(req, res);
+            } catch (routeError) {
+                const message = routeError instanceof Error ? routeError.message : String(routeError);
+                log.error({ msg: 'Handler crashed', error: message }, 'Unhandled handler error');
+
+                try {
+                    Sentry.captureException(routeError, {
+                        tags: { requestId, route: path, phase: 'handler' },
+                    });
+                    await Sentry.flush(2000);
+                } catch {
+                    // best-effort
+                }
+
+                if (!res.headersSent) {
+                    res.setHeader("Cache-Control", "private, no-store, max-age=0, must-revalidate");
+                    res.setHeader("x-error-source", "handler-guard");
+                    res.status(500).json({
+                        error: "Internal Server Error",
+                        requestId,
+                        message: env.runtime.nodeEnv === 'production' ? "Internal Error" : String(message),
+                    });
+                }
+            }
+        });
 
     } catch (bootError) {
         // GLOBAL CATCH: Catches errors before the handler specific try/catch or if it bubble up
         // This prevents "FUNCTION_INVOCATION_FAILED" generic errors
         console.error("CRITICAL HANDLER CRASH:", bootError);
+        const bootMessage = bootError instanceof Error ? bootError.message : String(bootError);
 
         if (!res.headersSent) {
             try {
@@ -144,7 +193,7 @@ export default async function handler(req, res) {
                 res.status(500).json({
                     error: "Server Boot Error",
                     requestId,
-                    message: env.runtime.nodeEnv === 'production' ? "Internal Error" : String(bootError.message)
+                    message: env.runtime.nodeEnv === 'production' ? "Internal Error" : bootMessage
                 });
             } catch (inner) {
                 console.error("Error sending 500 response:", inner);

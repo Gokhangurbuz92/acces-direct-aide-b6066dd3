@@ -1,86 +1,35 @@
-import prisma from '../_utils/prisma.js';
-import { logger } from '../lib/logger.js';
-import { kv } from '@vercel/kv';
+import { randomUUID } from 'crypto';
 import { env, getEnv } from '../_utils/env.js';
+
 /**
+ * Public minimal health endpoint (no dependency checks, no leaks).
+ *
  * @param {import('../_utils/http-types').ApiRequest} req
  * @param {import('../_utils/http-types').ApiResponse} res
  */
-
 export default async function handler(req, res) {
-    const startTime = Date.now();
-    const requestId = crypto.randomUUID();
-    
-    // Log incoming health check
-    logger.info({
-        requestId,
-        path: '/api/health',
-        method: req.method,
-        userAgent: req.headers['user-agent']
-    }, 'Health check started');
+  if (req.method !== 'GET' && req.method !== 'HEAD') {
+    return res.status(405).json({ error: 'Method not allowed' });
+  }
 
-    let dbStatus = 'disconnected';
-    let dbError = null;
-    try {
-        await prisma.$queryRaw`SELECT 1`;
-        dbStatus = 'connected';
-    } catch (e) {
-        dbError = e.message;
-        logger.error({ requestId, error: e.message }, 'Health DB Error');
-    }
+  const requestId = typeof req.requestId === 'string' ? req.requestId : randomUUID();
+  res.setHeader('x-request-id', requestId);
+  res.setHeader('Cache-Control', 'no-store');
 
-    let kvStatus = 'unknown';
-    let kvError = null;
-    try {
-        // Test KV with a simple set/get/del
-        const testKey = `health:test:${requestId}`;
-        await kv.set(testKey, 'ok', { ex: 10 });
-        const testValue = await kv.get(testKey);
-        await kv.del(testKey);
-        kvStatus = testValue === 'ok' ? 'connected' : 'error';
-    } catch (e) {
-        kvStatus = 'error';
-        kvError = e.message;
-        logger.error({ requestId, error: e.message }, 'Health KV Error');
-    }
+  const release = getEnv('VERCEL_GIT_COMMIT_SHA') || null;
+  const vercelEnv = getEnv('VERCEL_ENV') || getEnv('NODE_ENV') || env.runtime.vercelEnv;
 
-    const duration = Date.now() - startTime;
-    const overallStatus = (dbStatus === 'connected' && kvStatus === 'connected') ? 'ok' : 'degraded';
+  if (req.method === 'HEAD') {
+    res.status(200).end();
+    return;
+  }
 
-    const info = {
-        status: overallStatus,
-        timestamp: new Date().toISOString(),
-        requestId,
-        version: getEnv('npm_package_version') || '0.0.0',
-        commitSha: env.sentry.release,
-        environment: env.runtime.vercelEnv,
-        checks: {
-            database: {
-                status: dbStatus,
-                error: dbError
-            },
-            kv: {
-                status: kvStatus,
-                error: kvError
-            }
-        },
-        duration_ms: duration
-    };
-
-    // Log completion
-    logger.info({
-        requestId,
-        path: '/api/health',
-        status: overallStatus,
-        duration_ms: duration,
-        dbStatus,
-        kvStatus
-    }, 'Health check completed');
-
-    // Return 503 if any critical service is down
-    if (dbStatus !== 'connected') {
-        return res.status(503).json(info);
-    }
-
-    return res.status(200).json(info);
+  return res.status(200).json({
+    ok: true,
+    service: 'acces-direct-aide',
+    time: new Date().toISOString(),
+    vercelEnv,
+    release,
+    requestId,
+  });
 }

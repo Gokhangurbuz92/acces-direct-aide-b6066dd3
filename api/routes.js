@@ -5,6 +5,7 @@
 import upload from './_handlers/upload.js';
 import download from './_handlers/download.js';
 import health from './_handlers/health.js';
+import healthDeep from './_handlers/health-deep.js';
 import robots from './_handlers/robots.js';
 import sitemap from './_handlers/sitemap.js';
 import loginProGuard from './_handlers/login-pro-guard.js';
@@ -59,6 +60,7 @@ import adminPrivacyDelete from './_handlers/admin/privacy/delete.js';
 import adminInbox from './_handlers/admin/inbox.js';
 import adminActions from './_handlers/admin/actions.js';
 import adminRuns from './_handlers/admin/runs.js';
+import adminCronRuns from './_handlers/admin/cron-runs.js';
 import adminPartnerships from './_handlers/admin/partnerships.js';
 import adminLinkChecks from './_handlers/admin/link-checks.js';
 import adminValidatePublication from './_handlers/admin/validate-publication.js';
@@ -68,6 +70,7 @@ export const routes = [
     { path: 'upload', match: 'exact', handler: upload },
     { path: 'download', match: 'exact', handler: download },
     { path: 'health', match: 'exact', handler: health },
+    { path: 'health/deep', match: 'exact', handler: healthDeep },
     { path: 'healthz', match: 'exact', handler: health },
     { path: 'robots.txt', match: 'exact', handler: robots },
     { path: 'robots', match: 'exact', handler: robots },
@@ -125,6 +128,7 @@ export const routes = [
     { path: 'admin/inbox', match: 'exact', handler: adminInbox },
     { path: 'admin/actions', match: 'exact', handler: adminActions },
     { path: 'admin/runs', match: 'exact', handler: adminRuns },
+    { path: 'admin/cron-runs', match: 'prefix', handler: adminCronRuns },
     { path: 'admin/partnerships', match: 'exact', handler: adminPartnerships },
     { path: 'admin/link-checks', match: 'exact', handler: adminLinkChecks },
     { path: 'admin/validate-publication', match: 'exact', handler: adminValidatePublication },

@@ -22,8 +22,22 @@ export const kv = {
         if (kvClient) return kvClient.set(key, value, opts);
 
         // Memory fallback (Dev only)
-        // opts: { ex: seconds }
-        memoryStore.set(key, { value, expires: opts?.ex ? Date.now() + opts.ex * 1000 : null });
+        // opts: { ex: seconds, nx?: boolean }
+        const now = Date.now();
+
+        // Best-effort support for NX semantics used by cron locks / rate limiting.
+        if (opts?.nx) {
+            const existing = memoryStore.get(key);
+            if (existing) {
+                if (!existing.expires || now <= existing.expires) {
+                    return null;
+                }
+                // Existing expired => treat as missing.
+                memoryStore.delete(key);
+            }
+        }
+
+        memoryStore.set(key, { value, expires: opts?.ex ? now + opts.ex * 1000 : null });
         return 'OK';
     },
     async get(key) {

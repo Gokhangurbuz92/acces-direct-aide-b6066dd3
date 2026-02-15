@@ -120,6 +120,9 @@ export const apiClient = {
     health: {
         check: function () {
             return apiRequest('/api/healthz');
+        },
+        deep: function () {
+            return apiRequest('/api/health/deep', { auth: true });
         }
     },
     auth: {
@@ -162,6 +165,17 @@ export const apiClient = {
         },
         getRuns: function () {
             return apiRequest('/api/admin/runs');
+        },
+        /** @param {string=} job @param {number | string=} limit */
+        getCronRuns: function (job, limit) {
+            var params = new URLSearchParams();
+            if (job) params.append('job', job);
+            if (limit != null) params.append('limit', String(limit));
+            return apiRequest('/api/admin/cron-runs?' + params.toString());
+        },
+        /** @param {string} id */
+        getCronRun: function (id) {
+            return apiRequest('/api/admin/cron-runs/' + encodeURIComponent(id));
         }
     },
     entities: {

@@ -11,6 +11,12 @@ const mocks = vi.hoisted(() => ({
     errors: [],
     durationByStage: { fetchMs: 1, processingMs: 1 },
   }),
+  prisma: {
+    cronRun: {
+      create: vi.fn().mockResolvedValue({ id: 'cron-run-id' }),
+      update: vi.fn().mockResolvedValue({}),
+    },
+  },
 }));
 
 vi.mock('../../_utils/pipelineLock.js', () => ({
@@ -19,6 +25,10 @@ vi.mock('../../_utils/pipelineLock.js', () => ({
 
 vi.mock('./ingest-actualites-rss.js', () => ({
   runIngestActualitesRss: mocks.runIngestActualitesRss,
+}));
+
+vi.mock('../../_utils/prisma.js', () => ({
+  default: mocks.prisma,
 }));
 
 import handler from './actualites.js';
@@ -93,9 +103,10 @@ describe('Cron Actualites Handler', () => {
     await handler(req, res);
 
     expect(res.status).toHaveBeenCalledWith(200);
+    expect(mocks.prisma.cronRun.create).toHaveBeenCalled();
+    expect(mocks.prisma.cronRun.update).toHaveBeenCalled();
     expect(mocks.runIngestActualitesRss).toHaveBeenCalledWith(
       expect.objectContaining({ runId: expect.any(String) }),
     );
   });
 });
-

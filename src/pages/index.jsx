@@ -52,6 +52,7 @@ const AdminLogin = lazy(() => import("./AdminLogin.jsx"));
 const AdminHealth = lazy(() => import("./admin/Health.jsx"));
 const AdminInbox = lazy(() => import("./admin/Inbox.jsx"));
 const AdminRuns = lazy(() => import("./admin/Runs.jsx"));
+const AdminObservability = lazy(() => import("./admin/Observability.jsx"));
 const AdminAideEdit = lazy(() => import("./AdminAideEdit.jsx"));
 const AdminAides = lazy(() => import("./AdminAides.jsx"));
 const AdminAppointments = lazy(() => import("./AdminAppointments.jsx"));
@@ -94,7 +95,7 @@ const PAGES = {
     AideDetail, Aides, Annuaire, Confidentialite, Contact, Cookies,
     DemarcheDetail, DispositifDetail, LoginPro, Demarches, Home, Orientation,
     MentionsLegales, SourcesMethode, SentryTest, StructureDetail,
-    AdminInbox, AdminRuns, AppointmentRequest, AppointmentCancel, AppointmentReschedule, AdminStructures,
+    AdminInbox, AdminRuns, AdminObservability, AppointmentRequest, AppointmentCancel, AppointmentReschedule, AdminStructures,
     AdminDemarches, AdminDemarcheEdit, AdminAppointments, AdminReview
 };
 
@@ -182,6 +183,7 @@ function PagesContent() {
 
                     <Route path="/admin/login" element={<AdminLogin />} />
                     <Route path="/admin/health" element={<AdminGuard><AdminHealth /></AdminGuard>} />
+                    <Route path="/admin/observability" element={<AdminGuard><AdminObservability /></AdminGuard>} />
                     <Route path="/admin/inbox" element={<AdminGuard><AdminInbox /></AdminGuard>} />
                     <Route path="/admin/runs" element={<AdminGuard><AdminRuns /></AdminGuard>} />
                     <Route path="/admin/aides/:id" element={<AdminGuard><AdminAideEdit /></AdminGuard>} />

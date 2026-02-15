@@ -9,7 +9,8 @@ L'architecture est "Monolithic Serverless" : un seul point d'entrée `api/index.
 |---|---|---|---|
 | POST | `/api/upload` | `_handlers/upload.js` | Upload de fichiers (in-memory/storage) |
 | GET | `/api/download` | `_handlers/download.js` | Téléchargement de fichiers |
-| GET | `/api/health`, `/api/healthz` | `_handlers/health.js` | Healthcheck (k8s/uptime) |
+| GET | `/api/health`, `/api/healthz` | `_handlers/health.js` | Healthcheck public minimal (uptime, no-store) |
+| GET | `/api/health/deep` | `_handlers/health-deep.js` | Healthcheck deep (protégé Admin/Cron) : DB/KV/Storage + diagnostics |
 | GET | `/api/robots.txt`, `/api/robots` | `_handlers/robots.js` | SEO robots.txt |
 | GET | `/api/sitemap.xml`, `/api/sitemap` | `_handlers/sitemap.js` | SEO sitemap.xml |
 | GET | `/api/login-pro-guard` | `_handlers/login-pro-guard.js` | Guard check |
@@ -84,6 +85,7 @@ Ces routes gèrent souvent GET (list/detail) et parfois POST/PUT/DELETE (admin).
 | `/api/admin/inbox` | `_handlers/admin/inbox.js` | Inbox Admin |
 | `/api/admin/actions` | `_handlers/admin/actions.js` | Actions en masse |
 | `/api/admin/runs` | `_handlers/admin/runs.js` | Historique Jobs |
+| `/api/admin/cron-runs` | `_handlers/admin/cron-runs.js` | Historique des runs cron (CronRun) |
 | `/api/admin/partnerships` | `_handlers/admin/partnerships.js` | Partenariats |
 | `/api/admin/link-checks` | `_handlers/admin/link-checks.js` | Vérification liens |
 | `/api/admin/validate-publication` | `_handlers/admin/validate-publication.js` | Validation publication |

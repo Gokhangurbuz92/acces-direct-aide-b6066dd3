@@ -6,6 +6,7 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build",
+    "vercel-build": "node scripts/vercel-build.mjs",
     "db:deploy": "prisma migrate deploy",
     "db:migrate": "prisma migrate deploy",
     "db:seed": "prisma db seed",
@@ -23,6 +24,7 @@
     "test:api": "node scripts/test-run.mjs tests/integration",
     "test:repeat": "node scripts/test-repeat.mjs",
     "test:e2e": "playwright test",
+    "smoke:prod": "node scripts/smoke-prod.mjs",
     "verify": "node scripts/verify-lot9a-routes.js && node scripts/verify-rdv.js && node scripts/verify-actualites.js && node scripts/verify-sitemap.js && node scripts/verify-robots.js",
     "guard:prisma": "node scripts/guard-prisma.js",
     "preview": "vite preview",

@@ -1,4 +1,4 @@
-import { afterEach, describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import { env, envAliases, getEnv, requireEnv } from '../../api/_utils/env.js';
 
 function snapshotEnv(keys) {
@@ -19,8 +19,12 @@ const MUTATED_KEYS = [
   'TEST_TRIM',
   'REQ_A',
   'REQ_B',
+  'TEST_ALIAS',
+  'TEST_ALIAS_ALIAS',
   'KV_REST_API_URL',
   'KV_REST_API_TOKEN',
+  'UPSTASH_KV_REST_API_URL',
+  'UPSTASH_KV_REST_API_TOKEN',
   'UPSTASH_KV_KV_REST_API_URL',
   'UPSTASH_KV_KV_REST_API_TOKEN',
   'UPSTASH_REDIS_REST_URL',
@@ -54,8 +58,26 @@ describe('api/_utils/env.js', () => {
 
   it('envAliases returns canonical value when set', () => {
     process.env.KV_REST_API_URL = 'https://canonical.example';
-    process.env.UPSTASH_KV_KV_REST_API_URL = 'https://alias.example';
+    process.env.UPSTASH_KV_KV_REST_API_URL = 'https://canonical.example';
     expect(envAliases('KV_REST_API_URL', ['UPSTASH_KV_KV_REST_API_URL'])).toBe('https://canonical.example');
+  });
+
+  it('getEnv warns names-only when canonical and alias are both set with different values', () => {
+    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+
+    process.env.TEST_ALIAS = 'VALUE_A_DO_NOT_PRINT';
+    process.env.TEST_ALIAS_ALIAS = 'VALUE_B_DO_NOT_PRINT';
+
+    expect(getEnv('TEST_ALIAS', { aliases: ['TEST_ALIAS_ALIAS'] })).toBe('VALUE_A_DO_NOT_PRINT');
+
+    expect(warnSpy).toHaveBeenCalledTimes(1);
+    const msg = String(warnSpy.mock.calls[0]?.[0] || '');
+    expect(msg).toContain('TEST_ALIAS');
+    expect(msg).toContain('TEST_ALIAS_ALIAS');
+    expect(msg).not.toContain('VALUE_A_DO_NOT_PRINT');
+    expect(msg).not.toContain('VALUE_B_DO_NOT_PRINT');
+
+    warnSpy.mockRestore();
   });
 
   it('env.kv falls back to supported aliases', () => {

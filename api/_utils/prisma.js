@@ -109,9 +109,8 @@ loadDevEnvFiles();
 if (isDevRuntime) {
     const target = parseDbTarget();
     if (target) {
-        console.info(
-            `[prisma][dev] datasource=${target.source} user=${target.user} host=${target.host} db=${target.dbname}`,
-        );
+        // Never print env-derived connection details (user/host/db). Names-only for safety.
+        console.info(`[prisma][dev] datasource=${target.source} (connection details redacted)`);
         if (isPlaceholderConnection(target)) {
             console.warn(
                 '[prisma][dev] placeholder-like DB target detected. Verify DATABASE_URL/POSTGRES_URL_NON_POOLING in .env.local.',

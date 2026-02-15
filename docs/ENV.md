@@ -7,6 +7,7 @@ This repo enforces a strict separation between **server** and **frontend** envir
 - Local template (with placeholders): `.env.example`
 - Vercel names-only list: `.env.template`
 - Vercel setup instructions: `docs/ENV_VERCEL_SETUP.md`
+- Contract table: `docs/ENVIRONMENT.md`
 
 ## Frontend (Vite) Rules
 
@@ -44,6 +45,8 @@ Canonical names:
 
 Supported aliases (fallback):
 
+- `UPSTASH_KV_REST_API_URL`
+- `UPSTASH_KV_REST_API_TOKEN`
 - `UPSTASH_KV_KV_REST_API_URL`
 - `UPSTASH_KV_KV_REST_API_TOKEN`
 - `UPSTASH_REDIS_REST_URL`
@@ -54,4 +57,3 @@ Supported aliases (fallback):
 - Never commit `.env.local` or any `.env*` with real values (only `.env.example` is allowed).
 - Never print secret values in logs, scripts output, issues, or PR descriptions.
 - Prefer passing cron secrets via headers (`x-cron-secret`) instead of query params.
-

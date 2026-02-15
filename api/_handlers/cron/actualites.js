@@ -1,10 +1,48 @@
 import crypto from 'crypto';
-import { getCronAuth } from '../../_utils/cronAuth.js';
+import { getCronAuth, getHeader } from '../../_utils/cronAuth.js';
 import { withLock } from '../../_utils/pipelineLock.js';
 import prisma from '../../_utils/prisma.js';
 import { env } from '../../_utils/env.js';
 import Sentry from '../../_utils/sentry.js';
+import { kv } from '../../_utils/kv.js';
 import { runIngestActualitesRss } from './ingest-actualites-rss.js';
+
+const CRON_LOCK_KEY = 'cron:actualites:lock';
+const CRON_LOCK_TTL_SECONDS = 15 * 60; // 15 minutes
+const CRON_COOLDOWN_MS = 10 * 60 * 1000; // 10 minutes
+
+/**
+ * Vercel Cron jobs cannot send custom Authorization headers. We accept the
+ * default Vercel Cron user-agent in production only, and rely on KV + DB
+ * throttling to make spoofing non-impactful.
+ *
+ * @param {import('../../_utils/http-types').ApiRequest} req
+ */
+function isAuthorizedByVercelCronUA(req) {
+  if (env.runtime.vercelEnv !== 'production') return false;
+  const ua = String(getHeader(req, 'user-agent') || '');
+  return ua.startsWith('vercel-cron/');
+}
+
+/**
+ * Attempt to acquire a coarse throttle lock to prevent endpoint flooding.
+ *
+ * Returns:
+ * - true: acquired
+ * - false: already locked
+ * - null: KV unavailable (best-effort fallback)
+ *
+ * @param {string} runId
+ * @returns {Promise<true | false | null>}
+ */
+async function tryAcquireCronLock(runId) {
+  try {
+    const result = await kv.set(CRON_LOCK_KEY, runId, { nx: true, ex: CRON_LOCK_TTL_SECONDS });
+    return result != null;
+  } catch {
+    return null;
+  }
+}
 
 /**
  * Stable cron endpoint for RSS/Atom news ingestion.
@@ -20,15 +58,36 @@ export default async function handler(req, res) {
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
+  const runId = crypto.randomUUID();
+
   const auth = getCronAuth(req);
-  if (!auth.ok) {
-    if (auth.reason === 'missing_secret') {
-      return res.status(500).json({ error: 'CRON_SECRET is not configured' });
-    }
+  if (!auth.ok && auth.reason === 'missing_secret') {
+    return res.status(500).json({ error: 'CRON_SECRET is not configured' });
+  }
+
+  const vercelCronOk = isAuthorizedByVercelCronUA(req);
+  if (!auth.ok && !vercelCronOk) {
     return res.status(401).json({ error: 'Unauthorized' });
   }
 
-  const runId = crypto.randomUUID();
+  const requestId = typeof req.requestId === 'string' ? req.requestId : null;
+
+  const lockState = await tryAcquireCronLock(runId);
+  if (lockState === false) {
+    return res.status(202).json({ ok: true, skipped: true, reason: 'locked', runId, requestId });
+  }
+  if (lockState === null) {
+    try {
+      Sentry.captureMessage('cron.lock.unavailable', {
+        level: 'warning',
+        tags: { cron: 'actualites', requestId: requestId ?? undefined },
+      });
+      await Sentry.flush(500);
+    } catch {
+      // best-effort
+    }
+  }
+
   const mode = req.query?.mode;
   const limitParam = req.query?.limit;
   const limit = limitParam
@@ -38,9 +97,27 @@ export default async function handler(req, res) {
       : undefined;
 
   const startTime = Date.now();
-  const requestId = typeof req.requestId === 'string' ? req.requestId : null;
 
   try {
+    // Defense-in-depth: if KV is unavailable or the lock is manually cleared,
+    // still avoid thrashing the ingestion pipeline too frequently.
+    try {
+      const lastSuccess = await prisma.cronRun.findFirst({
+        where: { job: 'actualites', status: 'success' },
+        orderBy: { startedAt: 'desc' },
+        select: { startedAt: true },
+      });
+
+      if (lastSuccess) {
+        const ageMs = Date.now() - lastSuccess.startedAt.getTime();
+        if (ageMs >= 0 && ageMs < CRON_COOLDOWN_MS) {
+          return res.status(202).json({ ok: true, skipped: true, reason: 'cooldown', runId, requestId });
+        }
+      }
+    } catch {
+      // best-effort; the cron will fail later anyway if DB is down.
+    }
+
     /** @type {string | null} */
     let cronRunId = null;
 

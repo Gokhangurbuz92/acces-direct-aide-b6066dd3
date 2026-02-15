@@ -108,6 +108,7 @@ describe('P6 Cron Actualites (secure + idempotent)', () => {
 
     await prisma.actualite.deleteMany({ where: { canonical_url: CANONICAL_URL } });
     await prisma.rssSource.deleteMany({ where: { feed_url: FEED_URL } });
+    await prisma.cronRun.deleteMany({ where: { job: 'actualites' } });
   });
 
   it('does not duplicate items when executed twice', async () => {
@@ -123,6 +124,7 @@ describe('P6 Cron Actualites (secure + idempotent)', () => {
 
     await handler(req1, res1);
     expect(res1.statusCode).toBe(200);
+    expect(res1.body?.cronRunId).toBeTruthy();
 
     const req2 = createMockReq({
       url: '/api/cron/actualites?limit=1',
@@ -133,9 +135,13 @@ describe('P6 Cron Actualites (secure + idempotent)', () => {
 
     await handler(req2, res2);
     expect(res2.statusCode).toBe(200);
+    expect(res2.body?.cronRunId).toBeTruthy();
 
     const count = await prisma.actualite.count({ where: { canonical_url: CANONICAL_URL } });
     expect(count).toBe(1);
+
+    const runs = await prisma.cronRun.findMany({ where: { job: 'actualites' }, orderBy: { startedAt: 'asc' } });
+    expect(runs).toHaveLength(2);
+    expect(runs.every((run) => run.status === 'success')).toBe(true);
   });
 });
-

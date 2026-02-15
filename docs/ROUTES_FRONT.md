@@ -66,7 +66,8 @@ Ce document liste les routes définies dans `src/pages/index.jsx` (Router princi
 | Route | Page Component |
 |---|---|
 | `/admin/login` | `AdminLogin` |
-| `/admin/health` | `AdminHealth` |
+| `/admin/health` | `AdminHealth` (redirects to `/admin/observability`) |
+| `/admin/observability` | `AdminObservability` |
 | `/admin/inbox` | `AdminInbox` |
 | `/admin/runs` | `AdminRuns` |
 | `/admin/aides/:id` | `AdminAideEdit` |

@@ -1,12 +1,11 @@
 #!/usr/bin/env node
 
-import fs from 'node:fs';
 import path from 'node:path';
 import net from 'node:net';
 import { config as dotenvConfig } from 'dotenv';
+import { checkEnvContract } from './env-check.mjs';
 
 const rootDir = process.cwd();
-const schemaPath = path.join(rootDir, 'prisma', 'schema.prisma');
 
 dotenvConfig({ path: path.join(rootDir, '.env.local'), override: false, quiet: true });
 dotenvConfig({ path: path.join(rootDir, '.env'), override: false, quiet: true });
@@ -19,16 +18,17 @@ function addLine(text = '') {
   lines.push(text);
 }
 
-function maskUrlPassword(raw) {
-  try {
-    const parsed = new URL(raw);
-    if (parsed.password) {
-      parsed.password = '***';
-    }
-    return parsed.toString();
-  } catch {
-    return raw;
+/**
+ * @param {string} name
+ * @param {string[]=} aliases
+ */
+function hasEnv(name, aliases = []) {
+  const keys = [name, ...aliases];
+  for (const key of keys) {
+    const raw = process.env[key];
+    if (typeof raw === 'string' && raw.trim() !== '') return true;
   }
+  return false;
 }
 
 function isLikelyPlaceholderToken(value, expected) {
@@ -49,14 +49,6 @@ function isLikelyPlaceholderToken(value, expected) {
   return byExpected.includes(normalized);
 }
 
-function inferSslMode(parsedUrl) {
-  const explicit = parsedUrl.searchParams.get('sslmode');
-  if (explicit) return explicit;
-
-  const isLocalhost = parsedUrl.hostname === 'localhost' || parsedUrl.hostname === '127.0.0.1';
-  return isLocalhost ? 'disable' : 'require';
-}
-
 function parseDbUrl(varName, rawValue) {
   if (!rawValue) {
     issues.push(`${varName} is missing.`);
@@ -70,8 +62,8 @@ function parseDbUrl(varName, rawValue) {
   let parsed;
   try {
     parsed = new URL(rawValue);
-  } catch (error) {
-    issues.push(`${varName} is not a valid URL (${error.message}).`);
+  } catch {
+    issues.push(`${varName} is not a valid URL.`);
     addLine(`- ${varName}: invalid URL`);
     return null;
   }
@@ -85,20 +77,19 @@ function parseDbUrl(varName, rawValue) {
   const host = parsed.hostname || '';
   const port = parsed.port || '5432';
   const dbname = parsed.pathname.replace(/^\//, '');
-  const sslmode = parsed.searchParams.get('sslmode') || '(not set)';
   const hasUser = Boolean(username);
 
   if (!hasUser) {
     issues.push(`${varName} has no database user in URL.`);
   }
   if (isLikelyPlaceholderToken(username, 'user')) {
-    issues.push(`${varName} has a placeholder user ("${username}").`);
+    issues.push(`${varName} has a placeholder user.`);
   }
   if (isLikelyPlaceholderToken(password, 'password')) {
     issues.push(`${varName} has a placeholder password.`);
   }
   if (isLikelyPlaceholderToken(host, 'host')) {
-    issues.push(`${varName} has a placeholder host ("${host}").`);
+    issues.push(`${varName} has a placeholder host.`);
   }
   if (!dbname) {
     issues.push(`${varName} has no dbname in URL path.`);
@@ -112,32 +103,36 @@ function parseDbUrl(varName, rawValue) {
     warnings.push(`${varName} has no sslmode; for managed Postgres set sslmode=require.`);
   }
 
-  addLine(`- ${varName}`);
-  addLine(`  source: ${maskUrlPassword(rawValue)}`);
-  addLine(`  parsed: hasUser=${hasUser} host=${host || '(empty)'} port=${port} dbname=${dbname || '(empty)'} sslmode=${sslmode}`);
-
-  const psqlSslMode = inferSslMode(parsed);
-  const safeUser = username || '<missing-user>';
-  addLine(`  psql : psql "host=${host || '<missing-host>'} port=${port} dbname=${dbname || '<missing-db>'} user=${safeUser} sslmode=${psqlSslMode}" -c "select current_user, current_database();"`);
+  // Never print raw URL / host / db / user. Diagnostics are names-only.
+  addLine(`- ${varName}: parsed`);
 
   return { varName, host, port: Number(port) };
 }
 
-function checkRequiredEnv(schemaContent) {
-  const usesDirectUrl = /env\(\s*["']DIRECT_URL["']\s*\)/.test(schemaContent);
-
+function checkRequiredEnv() {
   const envChecks = [
     { name: 'DATABASE_URL', required: true, warnOnly: false },
-    { name: 'POSTGRES_URL_NON_POOLING', required: true, warnOnly: false },
-    { name: 'DIRECT_URL', required: usesDirectUrl, warnOnly: false },
+    { name: 'POSTGRES_URL_NON_POOLING', aliases: ['DATABASE_URL_UNPOOLED'], required: true, warnOnly: false },
+    { name: 'JWT_SECRET', required: true, warnOnly: false },
     { name: 'ADA_ENCRYPTION_KEY', required: true, warnOnly: false },
+
+    // Optional in local: enable extra features (cron/admin/kv/storage/sentry/ai)
+    { name: 'ADMIN_TOKEN', required: false, warnOnly: true },
+    { name: 'CRON_SECRET', required: false, warnOnly: true },
+    { name: 'KV_REST_API_URL', required: false, warnOnly: true },
+    { name: 'KV_REST_API_TOKEN', required: false, warnOnly: true },
+    { name: 'STORAGE_ENDPOINT', required: false, warnOnly: true },
+    { name: 'STORAGE_BUCKET', required: false, warnOnly: true },
+    { name: 'STORAGE_ACCESS_KEY_ID', required: false, warnOnly: true },
+    { name: 'STORAGE_SECRET_ACCESS_KEY', required: false, warnOnly: true },
+    { name: 'SENTRY_DSN', required: false, warnOnly: true },
+    { name: 'VITE_SENTRY_DSN', required: false, warnOnly: true },
     { name: 'GEMINI_API_KEY', required: false, warnOnly: true },
   ];
 
   addLine('Required variables');
   for (const item of envChecks) {
-    const value = process.env[item.name];
-    const hasValue = Boolean(value && value.trim() !== '');
+    const hasValue = hasEnv(item.name, item.aliases || []);
     let status = 'present';
     if (!hasValue && item.required) status = 'missing';
     if (!hasValue && !item.required && item.warnOnly) status = 'warn-missing';
@@ -149,35 +144,18 @@ function checkRequiredEnv(schemaContent) {
       issues.push(`${item.name} is required but missing.`);
     }
     if (item.warnOnly && !hasValue) {
-      warnings.push(
-        `${item.name} is missing. Lexical-only search still works; embeddings are disabled until key is set.`,
-      );
-    }
-
-    if (hasValue && (value.includes('...') || value.includes('<') || value.toLowerCase().includes('your-'))) {
-      if (item.warnOnly) {
-        warnings.push(`${item.name} looks like a placeholder value.`);
-      } else {
-        issues.push(`${item.name} looks like a placeholder value.`);
-      }
+      warnings.push(`${item.name} is missing.`);
     }
   }
 
   if (!process.env.GEMINI_API_KEY && process.env.GOOGLE_API_KEY) {
     warnings.push('GEMINI_API_KEY is missing but GOOGLE_API_KEY is present. This is acceptable if code falls back to GOOGLE_API_KEY.');
   }
-}
 
-function uniqueEndpoints(parsedUrls) {
-  const map = new Map();
-  for (const endpoint of parsedUrls) {
-    if (!endpoint) continue;
-    const key = `${endpoint.host}:${endpoint.port}`;
-    if (!map.has(key)) {
-      map.set(key, endpoint);
-    }
+  const contract = checkEnvContract('local');
+  for (const warning of contract.warnings) {
+    warnings.push(warning);
   }
-  return [...map.values()];
 }
 
 function checkTcp(endpoint) {
@@ -208,23 +186,33 @@ function checkTcp(endpoint) {
 
     socket.on('connect', () => finish({ ok: true }));
     socket.on('timeout', () => finish({ ok: false, error: 'timeout' }));
-    socket.on('error', (error) => finish({ ok: false, error: error.code || error.message }));
+    socket.on('error', (error) => finish({ ok: false, error: error.code || 'error' }));
   });
 }
 
 async function main() {
-  const schemaContent = fs.existsSync(schemaPath) ? fs.readFileSync(schemaPath, 'utf8') : '';
-
   addLine('AccesDirectAide local environment doctor');
   addLine('');
-  checkRequiredEnv(schemaContent);
+  checkRequiredEnv();
 
   addLine('');
   addLine('Database URL diagnostics');
-  const urlVarNames = ['DATABASE_URL', 'POSTGRES_URL_NON_POOLING', 'DIRECT_URL'];
-  const parsed = urlVarNames
-    .filter((name) => process.env[name])
-    .map((name) => parseDbUrl(name, process.env[name]));
+  const dbUrls = [
+    { name: 'DATABASE_URL', aliases: [] },
+    { name: 'POSTGRES_URL_NON_POOLING', aliases: ['DATABASE_URL_UNPOOLED'] },
+  ];
+  const parsed = dbUrls
+    .map((item) => {
+      const keys = [item.name, ...(item.aliases || [])];
+      for (const key of keys) {
+        const raw = process.env[key];
+        if (typeof raw === 'string' && raw.trim() !== '') {
+          return parseDbUrl(item.name, raw.trim());
+        }
+      }
+      return null;
+    })
+    .filter(Boolean);
 
   if (!parsed.length) {
     issues.push('No database URL found. Define DATABASE_URL and POSTGRES_URL_NON_POOLING.');
@@ -233,20 +221,18 @@ async function main() {
 
   addLine('');
   addLine('TCP connectivity');
-  const endpoints = uniqueEndpoints(parsed.filter(Boolean));
-  if (!endpoints.length) {
+  if (!parsed.length) {
     addLine('- skipped: no valid endpoints');
   } else {
-    for (const endpoint of endpoints) {
+    for (const endpoint of parsed) {
       const result = await checkTcp(endpoint);
-      const label = `${endpoint.host}:${endpoint.port}`;
       if (result.ok) {
-        addLine(`- ${label}: reachable`);
+        addLine(`- ${endpoint.varName}: reachable`);
       } else if (result.skipped) {
-        addLine(`- ${label}: ${result.reason}`);
+        addLine(`- ${endpoint.varName}: ${result.reason}`);
       } else {
-        addLine(`- ${label}: not reachable (${result.error})`);
-        issues.push(`TCP connectivity failed for ${label}: ${result.error}.`);
+        addLine(`- ${endpoint.varName}: not reachable (${result.error})`);
+        issues.push(`TCP connectivity failed for ${endpoint.varName}: ${result.error}.`);
       }
     }
   }
@@ -267,6 +253,7 @@ async function main() {
       addLine(`- ${issue}`);
     }
     addLine('- Run: vercel env pull .env.local');
+    addLine('- Run: npm run env:check');
     addLine('- Re-run: npm run doctor');
     console.log(lines.join('\n'));
     process.exit(1);

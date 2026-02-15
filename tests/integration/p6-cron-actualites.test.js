@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import prisma from '../../api/_utils/prisma.js';
+import { kv } from '../../api/_utils/kv.js';
 
 const FEED_URL = 'http://example.test/rss-p6-cron';
 const CANONICAL_URL = 'http://example.test/article-p6-cron-1';
@@ -106,12 +107,13 @@ describe('P6 Cron Actualites (secure + idempotent)', () => {
     process.env.CRON_SECRET = ORIGINAL_CRON_SECRET;
     global.fetch = originalFetch;
 
+    await kv.del('cron:actualites:lock');
     await prisma.actualite.deleteMany({ where: { canonical_url: CANONICAL_URL } });
     await prisma.rssSource.deleteMany({ where: { feed_url: FEED_URL } });
     await prisma.cronRun.deleteMany({ where: { job: 'actualites' } });
   });
 
-  it('does not duplicate items when executed twice', async () => {
+  it('prevents flooding via lock and remains idempotent across runs', async () => {
     // Import after fs mock is applied.
     const { default: handler } = await import('../../api/_handlers/cron/actualites.js');
 
@@ -134,8 +136,27 @@ describe('P6 Cron Actualites (secure + idempotent)', () => {
     const res2 = createMockRes();
 
     await handler(req2, res2);
-    expect(res2.statusCode).toBe(200);
-    expect(res2.body?.cronRunId).toBeTruthy();
+    expect(res2.statusCode).toBe(202);
+    expect(res2.body?.skipped).toBe(true);
+    expect(res2.body?.reason).toBe('locked');
+
+    // Simulate lock expiry + cooldown window passing (no waiting in tests).
+    await kv.del('cron:actualites:lock');
+    await prisma.cronRun.updateMany({
+      where: { job: 'actualites' },
+      data: { startedAt: new Date(Date.now() - 11 * 60 * 1000) },
+    });
+
+    const req3 = createMockReq({
+      url: '/api/cron/actualites?limit=1',
+      query: { limit: '1' },
+      headers: { 'x-cron-secret': 'test-cron-secret' },
+    });
+    const res3 = createMockRes();
+
+    await handler(req3, res3);
+    expect(res3.statusCode).toBe(200);
+    expect(res3.body?.cronRunId).toBeTruthy();
 
     const count = await prisma.actualite.count({ where: { canonical_url: CANONICAL_URL } });
     expect(count).toBe(1);

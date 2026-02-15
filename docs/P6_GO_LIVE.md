@@ -29,12 +29,14 @@ Dans Vercel (Project Settings):
 
 ## Securite (CRON_SECRET)
 
-Le endpoint refuse toute execution sans secret.
+Le endpoint accepte 2 modes d'auth (sans jamais exposer de secret):
 
 Variables:
 - `CRON_SECRET` (requis)
 
-Headers supportes (ordre):
+### Mode 1: Manuel / Externe (secret)
+
+Headers supportes (ordre, recommandes):
 1. `x-cron-secret: <CRON_SECRET>` (preferred)
 2. `Authorization: Bearer <CRON_SECRET>` (fallback)
 
@@ -42,12 +44,41 @@ Comportement:
 - `500` si `CRON_SECRET` n'est pas configure cote serveur
 - `401` si le secret est absent ou invalide
 
+### Mode 2: Vercel Cron (prod uniquement)
+
+Vercel Cron Jobs declenche un `GET` sur `path` mais ne permet pas d'ajouter un header Authorization custom depuis `vercel.json`.
+
+En production uniquement (`VERCEL_ENV=production`), le handler accepte aussi les requetes dont:
+- `User-Agent` commence par `vercel-cron/` (ex: `vercel-cron/1.0`)
+
+Ce mode est refuse en preview/dev.
+
 ## Scheduling Vercel
 
 Le scheduling est defini dans `vercel.json`:
-- Hourly: `/api/cron/actualites` a `0 * * * *`
+- Toutes les 6h (UTC): `/api/cron/actualites` a `0 */6 * * *`
 
-Sur Vercel, configurez la "cron secret" (ou equivalent) pour que les executions planifiees envoient `Authorization: Bearer <CRON_SECRET>`.
+### Timezone (UTC -> France)
+
+Le cron Vercel est interprete en UTC.
+
+Pour `0 */6 * * *`:
+- UTC: 00:00, 06:00, 12:00, 18:00
+- France (hiver, CET = UTC+1): 01:00, 07:00, 13:00, 19:00
+- France (ete, CEST = UTC+2): 02:00, 08:00, 14:00, 20:00
+
+## Anti-flood (verrou KV + cooldown DB)
+
+Pour limiter le risque de spoofing du User-Agent et eviter les doubles executions:
+
+1. Verrou KV (throttle):
+   - cle: `cron:actualites:lock`
+   - acquisition: `NX` + `TTL=15min`
+   - si lock deja present => `202` `{ ok:true, skipped:true, reason:"locked" }`
+2. Cooldown DB (defense-in-depth):
+   - si le dernier `CronRun` `success` pour `job=actualites` est < 10 minutes => skip `reason:"cooldown"`
+
+Le pipeline garde aussi son lock interne pour prevenir les executions concurrentes.
 
 ## Observabilite / Incidents
 
@@ -61,14 +92,26 @@ Sur Vercel, configurez la "cron secret" (ou equivalent) pour que les executions 
    - Variable env manquante
    - Ajouter `CRON_SECRET` dans Vercel (prod/preview/dev)
 
-3. `409 Pipeline already running`
+3. `202 skipped locked` / `202 skipped cooldown`
+   - Anti-flood actif (lock ou cooldown)
+   - Attendre (TTL lock: 15 minutes) ou verifier les derniers runs en admin
+
+4. `409 Pipeline already running`
    - Lock actif (prevention des executions concurrentes)
    - Attendre la fin du run (TTL lock: 20 minutes)
    - Si besoin: verifier le backend KV (Upstash) ou redemarrer la stack
 
-4. `500 CronRun table missing` / Prisma "table does not exist"
+5. `500 CronRun table missing` / Prisma "table does not exist"
    - Cause: migrations Prisma pas appliquees en prod
    - Fix: executer `npx prisma migrate deploy` sur la DB prod (voir `docs/RUNBOOK_MIGRATIONS.md`)
+
+### Verifier que le cron tourne vraiment
+
+Verifier les derniers runs dans l'admin:
+- `GET /api/admin/cron-runs?job=actualites&limit=20` (auth: `ADMIN_TOKEN`)
+
+Ou utiliser le smoke local:
+- `npm run smoke:prod` (utilise `CRON_SECRET` + `ADMIN_TOKEN` depuis ton terminal)
 
 ### Execution manuelle (debug)
 

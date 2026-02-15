@@ -1,6 +1,9 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 
 const mocks = vi.hoisted(() => ({
+  kv: {
+    set: vi.fn().mockResolvedValue('OK'),
+  },
   withLock: vi.fn(async (_name, fn) => await fn()),
   runIngestActualitesRss: vi.fn().mockResolvedValue({
     fetched: 1,
@@ -13,6 +16,7 @@ const mocks = vi.hoisted(() => ({
   }),
   prisma: {
     cronRun: {
+      findFirst: vi.fn().mockResolvedValue(null),
       create: vi.fn().mockResolvedValue({ id: 'cron-run-id' }),
       update: vi.fn().mockResolvedValue({}),
     },
@@ -21,6 +25,10 @@ const mocks = vi.hoisted(() => ({
 
 vi.mock('../../_utils/pipelineLock.js', () => ({
   withLock: mocks.withLock,
+}));
+
+vi.mock('../../_utils/kv.js', () => ({
+  kv: mocks.kv,
 }));
 
 vi.mock('./ingest-actualites-rss.js', () => ({
@@ -62,14 +70,17 @@ function mockRes() {
 
 describe('Cron Actualites Handler', () => {
   const ORIGINAL_CRON_SECRET = process.env.CRON_SECRET;
+  const ORIGINAL_VERCEL_ENV = process.env.VERCEL_ENV;
 
   beforeEach(() => {
     vi.clearAllMocks();
     process.env.CRON_SECRET = 'test-cron-secret';
+    process.env.VERCEL_ENV = 'development';
   });
 
   afterEach(() => {
     process.env.CRON_SECRET = ORIGINAL_CRON_SECRET;
+    process.env.VERCEL_ENV = ORIGINAL_VERCEL_ENV;
   });
 
   it('returns 500 when CRON_SECRET is missing (fail closed)', async () => {
@@ -92,6 +103,58 @@ describe('Cron Actualites Handler', () => {
     await handler(req, res);
 
     expect(res.status).toHaveBeenCalledWith(401);
+  });
+
+  it('authorizes Vercel Cron user-agent in production (no secret header)', async () => {
+    process.env.VERCEL_ENV = 'production';
+
+    const req = mockReq({
+      headers: { 'user-agent': 'vercel-cron/1.0' },
+    });
+    const res = mockRes();
+
+    await handler(req, res);
+
+    expect(res.status).toHaveBeenCalledWith(200);
+    expect(mocks.runIngestActualitesRss).toHaveBeenCalled();
+  });
+
+  it('rejects Vercel Cron user-agent outside production', async () => {
+    process.env.VERCEL_ENV = 'preview';
+
+    const req = mockReq({
+      headers: { 'user-agent': 'vercel-cron/1.0' },
+    });
+    const res = mockRes();
+
+    await handler(req, res);
+
+    expect(res.status).toHaveBeenCalledWith(401);
+  });
+
+  it('returns 202 when cron lock is already held (anti-flood)', async () => {
+    mocks.kv.set.mockResolvedValueOnce('OK').mockResolvedValueOnce(null);
+
+    const res1 = mockRes();
+    await handler(
+      mockReq({
+        headers: { 'x-cron-secret': 'test-cron-secret' },
+      }),
+      res1,
+    );
+    expect(res1.status).toHaveBeenCalledWith(200);
+
+    const res2 = mockRes();
+    await handler(
+      mockReq({
+        headers: { 'x-cron-secret': 'test-cron-secret' },
+      }),
+      res2,
+    );
+
+    expect(res2.status).toHaveBeenCalledWith(202);
+    expect(mocks.runIngestActualitesRss).toHaveBeenCalledTimes(1);
+    expect(mocks.prisma.cronRun.create).toHaveBeenCalledTimes(1);
   });
 
   it('returns 200 when authorized and triggers ingestion', async () => {

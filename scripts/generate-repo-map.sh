@@ -1,23 +1,19 @@
 #!/bin/bash
-# Generates a map of the repository files, excluding build artifacts and temporary files.
+# Generate docs/REPO_FILES.txt
 
-OUTPUT_FILE="docs/REPO_FILES.txt"
-
-echo "Generating repository map to $OUTPUT_FILE..."
-
-find . \
-  -path "./node_modules" -prune -o \
-  -path "./dist" -prune -o \
-  -path "./.git" -prune -o \
-  -path "./.vercel" -prune -o \
-  -path "./coverage" -prune -o \
-  -path "./test-results" -prune -o \
-  -path "./venv" -prune -o \
-  -path "./uploads_mock" -prune -o \
-  -name ".env*" -not -name ".env.example" -prune -o \
-  -name "cookies*.txt" -prune -o \
-  -name "test-img*.jpg" -prune -o \
-  -path "./api/_utils/build-info.js" -prune -o \
-  -print | sort > "$OUTPUT_FILE"
-
-echo "Done."
+find . -type f \
+  -not -path '*/.git/*' \
+  -not -path '*/node_modules/*' \
+  -not -path '*/dist/*' \
+  -not -path '*/coverage/*' \
+  -not -path '*/test-results/*' \
+  -not -path '*/venv/*' \
+  -not -path '*/.vercel/*' \
+  -not -path '*/uploads_mock/*' \
+  -not -name 'package-lock.json' \
+  -not -name '.DS_Store' \
+  -not -name 'cookies*.txt' \
+  -not -name 'test-img*.jpg' \
+  -not -path './api/_utils/build-info.js' \
+  \( ! -name ".env*" -or -name ".env.example" \) \
+  | sort > docs/REPO_FILES.txt

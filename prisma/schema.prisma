@@ -354,6 +354,25 @@ model ImportLog {
   @@index([source_name, createdAt])
 }
 
+model CronRun {
+  id          String   @id @default(cuid())
+  job         String
+  status      String // "running" | "success" | "failed"
+  startedAt   DateTime @default(now())
+  finishedAt  DateTime?
+  durationMs  Int?
+  requestId   String?
+  vercelEnv   String?
+  release     String?
+  metrics     Json?
+  errorSample String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([job, startedAt])
+  @@index([status, startedAt])
+}
+
 model RssSource {
   id            String    @id @default(uuid())
   name          String

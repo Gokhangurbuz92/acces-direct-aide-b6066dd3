@@ -11,6 +11,7 @@ import {
   FileText,
   MapPin,
   Newspaper,
+  Activity,
   Info,
   Calendar,
   ChevronDown
@@ -42,6 +43,7 @@ const NAV_ITEMS = [
   { label: 'Rendez-vous', page: 'AdminAppointments', icon: Calendar, adminOnly: true },
   { label: 'Structures', page: 'AdminStructures', icon: MapPin, adminOnly: true },
   { label: 'Démarches', page: 'AdminDemarches', icon: FileText, adminOnly: true },
+  { label: 'Observabilité', page: 'AdminObservability', icon: Activity, adminOnly: true },
   { label: 'Admin', page: 'AdminSync', icon: Info, adminOnly: true },
 ];
 

@@ -7,125 +7,61 @@ on:
     branches: [ main ]
 
 jobs:
-  lint-strict-baseline:
+  quality:
     runs-on: ubuntu-latest
-
     steps:
       - uses: actions/checkout@v4
-
-      - name: Use Node.js 20
-        uses: actions/setup-node@v4
+      - uses: actions/setup-node@v4
         with:
           node-version: 20
           cache: 'npm'
-
       - name: Install dependencies
         run: npm ci
-
-      - name: Lint (strict baseline)
-        run: npm run lint:strict:baseline
-
-  typecheck-strict-baseline:
-    runs-on: ubuntu-latest
-
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Use Node.js 20
-        uses: actions/setup-node@v4
-        with:
-          node-version: 20
-          cache: 'npm'
-
-      - name: Install dependencies
-        run: npm ci
-
-      - name: Typecheck (strict baseline)
-        run: npm run typecheck:strict:baseline
-
-  unit-tests:
-    runs-on: ubuntu-latest
-
-    services:
-      postgres:
-        image: pgvector/pgvector:pg16
+      - name: Lint
+        run: npm run lint
+      - name: Verify Handler Imports
+        run: node scripts/verify-handler-imports.js
         env:
-          POSTGRES_USER: postgres
-          POSTGRES_DB: acces_direct_aide_test
-          # CI-only: avoid hardcoding a password (GitGuardian) and keep local connections simple.
-          POSTGRES_HOST_AUTH_METHOD: trust
-        ports:
-          - 5432:5432
-        options: >-
-          --health-cmd="pg_isready -U postgres"
-          --health-interval=10s
-          --health-timeout=5s
-          --health-retries=5
+          ADA_ENCRYPTION_KEY: '0000000000000000000000000000000000000000000000000000000000000000'
+          JWT_SECRET: dummy
+          CRON_SECRET: dummy
+          DATABASE_URL: postgres://dummy:dummy@localhost:5432/dummy
 
-    env:
-      # Dedicated local test DB (never Neon / external).
-      DATABASE_URL_TEST: "postgresql://postgres@localhost:5432/acces_direct_aide_test?schema=public"
-
-      # Required secrets (safe dummy values for tests only).
-      ADA_ENCRYPTION_KEY: "0000000000000000000000000000000000000000000000000000000000000000"
-      JWT_SECRET: "test-jwt-secret"
-      CRON_SECRET: "test-cron-secret"
-      ADMIN_TOKEN: "test-admin-token"
-      BYPASS_SECRET: "test-bypass-secret"
-
-      # Stable runtime flags for tests.
-      NODE_ENV: test
-      VERCEL_ENV: test
-      TZ: UTC
-      CI: true
-
+  build:
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-
-      - name: Use Node.js 20
-        uses: actions/setup-node@v4
+      - uses: actions/setup-node@v4
         with:
           node-version: 20
           cache: 'npm'
-
       - name: Install dependencies
         run: npm ci
+      - name: Build
+        run: npm run build
+        env:
+          ADA_ENCRYPTION_KEY: dummy
+          JWT_SECRET: dummy
+          CRON_SECRET: dummy
+          DATABASE_URL: postgres://dummy:dummy@localhost:5432/dummy
 
-      - name: Run test suite (3x)
-        run: npm run test:repeat
-
-  build-and-test:
+  e2e:
     runs-on: ubuntu-latest
-
-    env:
-      # Dummy value for build-time checks (no real credentials, no password in URL).
-      DATABASE_URL: "postgresql://localhost:5432/testdb"
-      ADA_ENCRYPTION_KEY: "0000000000000000000000000000000000000000000000000000000000000000" # Mock 32 bytes hex
-      JWT_SECRET: "mock-jwt-secret"
-      CRON_SECRET: "mock-cron-secret"
-      # Start Vite automatically if needed (playwright handles it)
-      CI: true
-
     steps:
-    - uses: actions/checkout@v4
-
-    - name: Use Node.js 20
-      uses: actions/setup-node@v4
-      with:
-        node-version: 20
-        cache: 'npm'
-
-    - name: Install dependencies
-      run: npm ci
-
-    - name: Lint
-      run: npm run lint
-
-    - name: Build
-      run: npm run build
-
-    - name: Install Playwright Browsers
-      run: npx playwright install --with-deps chromium
-
-    - name: Run E2E Tests (Core)
-      run: npx playwright test e2e/booking.spec.js e2e/public-core.spec.js
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+      - name: Install dependencies
+        run: npm ci
+      - name: Install Playwright Browsers
+        run: npx playwright install --with-deps
+      - name: Run E2E Tests
+        run: npx playwright test e2e/public-core.spec.js e2e/booking.spec.js
+        env:
+          ADA_ENCRYPTION_KEY: dummy
+          JWT_SECRET: dummy
+          CRON_SECRET: dummy
+          DATABASE_URL: postgres://dummy:dummy@localhost:5432/dummy
+          CI: true

@@ -337,6 +337,7 @@
 ./index.html
 ./jsconfig.json
 ./middleware.js
+./package-lock.json
 ./package.json
 ./playwright.config.js
 ./postcss.config.js

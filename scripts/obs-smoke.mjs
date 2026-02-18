@@ -85,6 +85,9 @@ async function getJson(url, timeoutMs) {
 async function main() {
   const prodUrl = getEnvOrDefault('PROD_URL', 'https://www.accesdirectaide.fr');
   const timeoutMs = getIntEnvOrDefault('TIMEOUT_MS', 8000);
+  const cronSecret = typeof process.env.CRON_SECRET === 'string' && process.env.CRON_SECRET.trim()
+    ? process.env.CRON_SECRET.trim()
+    : null;
   /** @type {string[]} */
   const failures = [];
 
@@ -140,8 +143,60 @@ async function main() {
     fail(failures, '/api/health requête impossible');
   }
 
-  // 4) noindex headers for technical endpoints
-  const noIndexTargets = [`${prodUrl}/api/monitor/core`, `${prodUrl}/api/health`];
+  // 4) data quality monitor (200 or 503 acceptable)
+  try {
+    const { response, json } = await getJson(`${prodUrl}/api/monitor/data-quality`, timeoutMs);
+    if (response.status !== 200 && response.status !== 503) {
+      fail(failures, `/api/monitor/data-quality status inattendu HTTP=${response.status}`);
+    } else if (
+      !json ||
+      typeof json !== 'object' ||
+      typeof json.ok !== 'boolean' ||
+      typeof json.requestId !== 'string' ||
+      !json.metrics ||
+      !json.thresholds
+    ) {
+      fail(failures, '/api/monitor/data-quality payload invalide');
+    } else if (response.status === 200) {
+      ok('/api/monitor/data-quality healthy (HTTP=200)');
+    } else {
+      warn('/api/monitor/data-quality degraded (HTTP=503)');
+    }
+  } catch {
+    fail(failures, '/api/monitor/data-quality requête impossible');
+  }
+
+  // 5) ingestion freshness monitor (200 or 503 acceptable)
+  try {
+    const { response, json } = await getJson(`${prodUrl}/api/monitor/ingestion-freshness`, timeoutMs);
+    if (response.status !== 200 && response.status !== 503) {
+      fail(failures, `/api/monitor/ingestion-freshness status inattendu HTTP=${response.status}`);
+    } else if (
+      !json ||
+      typeof json !== 'object' ||
+      typeof json.ok !== 'boolean' ||
+      typeof json.requestId !== 'string' ||
+      !('latestFetchedAt' in json) ||
+      !('ageHours' in json) ||
+      typeof json.thresholdHours !== 'number'
+    ) {
+      fail(failures, '/api/monitor/ingestion-freshness payload invalide');
+    } else if (response.status === 200) {
+      ok('/api/monitor/ingestion-freshness healthy (HTTP=200)');
+    } else {
+      warn('/api/monitor/ingestion-freshness degraded (HTTP=503)');
+    }
+  } catch {
+    fail(failures, '/api/monitor/ingestion-freshness requête impossible');
+  }
+
+  // 6) noindex headers for technical endpoints
+  const noIndexTargets = [
+    `${prodUrl}/api/monitor/core`,
+    `${prodUrl}/api/monitor/data-quality`,
+    `${prodUrl}/api/monitor/ingestion-freshness`,
+    `${prodUrl}/api/health`,
+  ];
   for (const url of noIndexTargets) {
     try {
       const response = await fetch(url, {
@@ -156,6 +211,47 @@ async function main() {
       }
     } catch {
       fail(failures, `${url} requête impossible`);
+    }
+  }
+
+  // 7) cron review queue scan (optional, requires CRON_SECRET in terminal)
+  if (!cronSecret) {
+    warn('CRON_SECRET absent: skip /api/cron/review-queue/scan');
+  } else {
+    try {
+      const response = await fetch(`${prodUrl}/api/cron/review-queue/scan`, {
+        method: 'POST',
+        headers: {
+          authorization: `Bearer ${cronSecret}`,
+          'content-type': 'application/json',
+        },
+        body: JSON.stringify({ limitPerType: 25 }),
+        signal: AbortSignal.timeout(timeoutMs),
+      });
+
+      let json = null;
+      try {
+        json = await response.json();
+      } catch {
+        // best-effort only
+      }
+
+      if (response.status !== 200) {
+        fail(failures, `/api/cron/review-queue/scan attendu HTTP=200, recu HTTP=${response.status}`);
+      } else if (
+        !json ||
+        typeof json !== 'object' ||
+        json.ok !== true ||
+        typeof json.requestId !== 'string' ||
+        !json.summary ||
+        typeof json.summary !== 'object'
+      ) {
+        fail(failures, '/api/cron/review-queue/scan payload invalide');
+      } else {
+        ok('/api/cron/review-queue/scan HTTP=200');
+      }
+    } catch {
+      fail(failures, '/api/cron/review-queue/scan requête impossible');
     }
   }
 

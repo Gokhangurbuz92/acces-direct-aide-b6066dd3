@@ -259,6 +259,16 @@ export const env = {
     get reviewScanLimitPerType() {
       return toPositiveInt(getEnv('DATA_REVIEW_SCAN_LIMIT_PER_TYPE', { default: '200' }), 200);
     },
+    get reviewScanCronLimitPerType() {
+      const fallback = String(env.dataQuality.reviewScanLimitPerType);
+      return toPositiveInt(
+        getEnv('DATA_REVIEW_SCAN_CRON_LIMIT_PER_TYPE', { default: fallback }),
+        env.dataQuality.reviewScanLimitPerType,
+      );
+    },
+    get reviewScanCronEnabled() {
+      return getEnv('DATA_REVIEW_SCAN_CRON_ENABLED', { default: '1' }) !== '0';
+    },
   },
 
   ingestion: {
@@ -270,6 +280,18 @@ export const env = {
     },
     get maxItemsPerRun() {
       return toPositiveInt(getEnv('INGESTION_MAX_ITEMS_PER_RUN', { default: '200' }), 200);
+    },
+  },
+
+  monitor: {
+    get reviewQueueOpenTotalMax() {
+      return toPositiveInt(getEnv('MONITOR_DQ_OPEN_TOTAL_MAX', { default: '500' }), 500);
+    },
+    get reviewQueueOpenP0Max() {
+      return toPositiveInt(getEnv('MONITOR_DQ_OPEN_P0_MAX', { default: '25' }), 25);
+    },
+    get ingestionFreshnessMaxAgeHours() {
+      return toPositiveInt(getEnv('MONITOR_INGEST_FRESHNESS_MAX_AGE_HOURS', { default: '48' }), 48);
     },
   },
 

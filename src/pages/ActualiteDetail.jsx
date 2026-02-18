@@ -4,6 +4,8 @@ import { createPageUrl } from '@/utils';
 import { client } from '@/api/client';
 import { useQuery } from '@tanstack/react-query';
 import SEO from '@/components/SEO';
+import NotFound from './NotFound';
+import Gone from './Gone';
 import { generateActualiteSchema, generateBreadcrumbSchema } from '@/utils/schema';
 import SourceTraceability from '@/components/SourceTraceability';
 import FalcSummary from '@/components/FalcSummary';
@@ -49,6 +51,8 @@ const CATEGORIES = {
   general: 'Général',
 };
 
+/** @typedef {Error & { status?: number }} ApiError */
+
 export default function ActualiteDetail() {
   const { slug } = useParams();
   const [searchParams] = useSearchParams();
@@ -64,8 +68,12 @@ export default function ActualiteDetail() {
       // Prefer the canonical endpoint for slug-based routes.
       if (slug) {
         const res = await fetch(`/api/actualites/${encodeURIComponent(slug)}`);
-        if (res.status === 404) return null;
-        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        if (!res.ok) {
+          /** @type {ApiError} */
+          const apiError = new Error(`HTTP ${res.status}`);
+          apiError.status = res.status;
+          throw apiError;
+        }
         return await res.json();
       }
 
@@ -73,8 +81,10 @@ export default function ActualiteDetail() {
       try {
         return await client.entities.Actualite.get(id);
       } catch (e) {
-        if (e?.status === 404) return null;
-        throw e;
+        /** @type {ApiError} */
+        const apiError = e;
+        if (apiError?.status === 404 || apiError?.status === 410) throw apiError;
+        throw apiError;
       }
     },
     enabled: !!identifier,
@@ -96,6 +106,12 @@ export default function ActualiteDetail() {
   }
 
   if (error) {
+    /** @type {ApiError} */
+    const apiError = error;
+    const status = apiError?.status;
+    if (status === 410) return <Gone />;
+    if (status === 404) return <NotFound />;
+
     return (
       <div className="min-h-screen bg-slate-50 flex items-center justify-center">
         <div className="text-center max-w-md px-4">
@@ -112,16 +128,7 @@ export default function ActualiteDetail() {
   }
 
   if (!actu) {
-    return (
-      <div className="min-h-screen bg-slate-50 flex items-center justify-center">
-        <div className="text-center">
-          <p className="text-slate-600 mb-4">Cette actualité n'existe pas ou a été supprimée.</p>
-          <Link to={createPageUrl('Actualites')}>
-            <Button>Retour aux actualités</Button>
-          </Link>
-        </div>
-      </div>
-    );
+    return <NotFound />;
   }
 
   const TypeIcon = TYPE_ICONS[actu.type_actu] || Info;

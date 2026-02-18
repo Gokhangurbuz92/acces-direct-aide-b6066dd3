@@ -54,6 +54,112 @@ function normalizeWhitespace(value) {
     .trim();
 }
 
+/**
+ * @param {string} url
+ * @returns {string}
+ */
+function createAbsoluteRootPrefix(url) {
+  const normalized = trimTrailingSlash(url);
+  return `${normalized}/`;
+}
+
+/**
+ * @param {string} prodUrl
+ * @param {string[]} failures
+ */
+async function runBrowserChecks(prodUrl, failures) {
+  let chromium;
+  try {
+    ({ chromium } = await import('playwright'));
+  } catch {
+    fail(failures, 'Playwright indisponible pour les checks runtime SEO (installer les navigateurs Playwright).');
+    return;
+  }
+
+  let browser;
+  try {
+    browser = await chromium.launch({ headless: true });
+    const page = await browser.newPage();
+    const rootPrefix = createAbsoluteRootPrefix(prodUrl);
+
+    // Home OG defaults
+    await page.goto(`${prodUrl}/`, { waitUntil: 'domcontentloaded', timeout: 20_000 });
+    await page.waitForLoadState('networkidle', { timeout: 10_000 }).catch(() => {});
+    const homeMeta = await page.evaluate(() => {
+      const bySelector = (selector, attribute) => {
+        const node = document.querySelector(selector);
+        return node ? node.getAttribute(attribute) : null;
+      };
+
+      return {
+        ogImage: bySelector('meta[property="og:image"]', 'content'),
+        ogImageAlt: bySelector('meta[property="og:image:alt"]', 'content'),
+        twitterImage: bySelector('meta[name="twitter:image"]', 'content'),
+        twitterCard: bySelector('meta[name="twitter:card"]', 'content'),
+      };
+    });
+
+    if (!homeMeta.ogImage || !homeMeta.ogImage.startsWith(rootPrefix)) {
+      fail(failures, `Home og:image invalide (attendu absolu sur ${rootPrefix})`);
+    } else if (!homeMeta.twitterImage || homeMeta.twitterImage !== homeMeta.ogImage) {
+      fail(failures, 'Home twitter:image absent ou incoherent avec og:image');
+    } else if (!homeMeta.ogImageAlt) {
+      fail(failures, 'Home og:image:alt manquant');
+    } else if (String(homeMeta.twitterCard || '').toLowerCase() !== 'summary_large_image') {
+      fail(failures, 'Home twitter:card doit etre summary_large_image');
+    } else {
+      pass('Home OG/Twitter defaults OK');
+    }
+
+    // Unknown route => noindex
+    await page.goto(`${prodUrl}/route-qui-nexiste-pas-123`, {
+      waitUntil: 'domcontentloaded',
+      timeout: 20_000,
+    });
+    await page.waitForLoadState('networkidle', { timeout: 10_000 }).catch(() => {});
+    const unknownMeta = await page.evaluate(() => ({
+      title: document.title || '',
+      robots: document.querySelector('meta[name="robots"]')?.getAttribute('content') || '',
+      canonical: document.querySelector('link[rel="canonical"]')?.getAttribute('href') || '',
+      heading: document.querySelector('h1')?.textContent || '',
+    }));
+
+    if (!/noindex/i.test(unknownMeta.robots)) {
+      fail(failures, 'Route inconnue: meta robots noindex non detecte');
+    } else if (!unknownMeta.canonical.startsWith(rootPrefix)) {
+      fail(failures, 'Route inconnue: canonical manquant ou non absolu');
+    } else if (!/introuvable/i.test(`${unknownMeta.title} ${unknownMeta.heading}`)) {
+      fail(failures, "Route inconnue: titre/heading 'introuvable' non detecte");
+    } else {
+      pass('Route inconnue: noindex/canonical/titre OK');
+    }
+
+    // Missing aide slug => noindex
+    await page.goto(`${prodUrl}/aides/slug-inexistant-123`, {
+      waitUntil: 'domcontentloaded',
+      timeout: 20_000,
+    });
+    await page.waitForLoadState('networkidle', { timeout: 10_000 }).catch(() => {});
+    const aideMissingMeta = await page.evaluate(() => ({
+      title: document.title || '',
+      robots: document.querySelector('meta[name="robots"]')?.getAttribute('content') || '',
+      heading: document.querySelector('h1')?.textContent || '',
+    }));
+
+    if (!/noindex/i.test(aideMissingMeta.robots)) {
+      fail(failures, 'Aide inexistante: meta robots noindex non detecte');
+    } else if (!/introuvable/i.test(`${aideMissingMeta.title} ${aideMissingMeta.heading}`)) {
+      fail(failures, "Aide inexistante: titre/heading 'introuvable' non detecte");
+    } else {
+      pass('Aide inexistante: noindex + titre OK');
+    }
+  } catch {
+    fail(failures, 'Checks runtime SEO (Playwright) impossibles');
+  } finally {
+    if (browser) await browser.close();
+  }
+}
+
 async function main() {
   const prodUrl = getEnvOrDefault('PROD_URL', 'https://www.accesdirectaide.fr');
   const apexUrl = getEnvOrDefault('APEX_URL', 'https://accesdirectaide.fr');
@@ -175,6 +281,9 @@ async function main() {
     warn('/admin meta robots: check best-effort non exécutable.');
   }
 
+  // 6) Runtime checks via browser (OG defaults + error noindex)
+  await runBrowserChecks(prodUrl, failures);
+
   if (failures.length > 0) {
     console.error(`[seo-smoke] FAILED (${failures.length} vérification(s) critique(s))`);
     process.exit(1);
@@ -187,4 +296,3 @@ main().catch(() => {
   console.error('[seo-smoke] FAILED (unexpected error)');
   process.exit(1);
 });
-

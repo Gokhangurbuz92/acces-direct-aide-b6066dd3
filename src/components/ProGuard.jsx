@@ -7,7 +7,7 @@ export default function ProGuard({ children }) {
 
     if (!token) {
         const next = encodeURIComponent(location.pathname + location.search);
-        return <Navigate to={`/pro/login?next=${next}`} replace />;
+        return <Navigate to={`/login?mode=pro&next=${next}`} replace />;
     }
 
     return children;

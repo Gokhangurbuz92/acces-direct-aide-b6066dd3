@@ -1,16 +1,19 @@
 import prisma from '../../_utils/prisma.js';
-import { requireAuth } from '../../lib/pro-auth.js';
+import { requireProAuth, requireProStructureContext } from '../../_utils/auth.js';
 /**
  * @param {import('../../_utils/http-types').ApiRequest} req
  * @param {import('../../_utils/http-types').ApiResponse} res
  */
 
 async function handler(req, res) {
+    const proCtx = requireProStructureContext(req, res);
+    if (!proCtx) return;
+
     // GET: Fetch availability
     if (req.method === 'GET') {
         try {
             const availability = await prisma.availability.findUnique({
-                where: { structureId_proId: { structureId: req.user.structureId, proId: req.user.userId } }
+                where: { structureId_proId: { structureId: proCtx.structureId, proId: proCtx.userId } }
             });
 
             // If not found, return defaults
@@ -42,14 +45,14 @@ async function handler(req, res) {
         const { slots_json, exceptions_json } = req.body;
         try {
             const availability = await prisma.availability.upsert({
-                where: { structureId_proId: { structureId: req.user.structureId, proId: req.user.userId } },
+                where: { structureId_proId: { structureId: proCtx.structureId, proId: proCtx.userId } },
                 update: {
                     slots_json: slots_json,
                     exceptions_json: exceptions_json || []
                 },
                 create: {
-                    structureId: req.user.structureId,
-                    proId: req.user.userId,
+                    structureId: proCtx.structureId,
+                    proId: proCtx.userId,
                     slots_json: slots_json,
                     exceptions_json: exceptions_json || []
                 }
@@ -64,4 +67,4 @@ async function handler(req, res) {
     return res.status(405).json({ error: 'Method not allowed' });
 }
 
-export default requireAuth(handler);
+export default requireProAuth(handler);

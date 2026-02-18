@@ -1,4 +1,4 @@
-import { requireAuth } from '../../lib/pro-auth.js';
+import { requireProAuth, requireProStructureContext } from '../../_utils/auth.js';
 import prisma from '../../_utils/prisma.js';
 /**
  * @param {import('../../_utils/http-types').ApiRequest} req
@@ -11,8 +11,14 @@ async function handler(req, res) {
     }
 
     try {
-        const user = await prisma.proUser.findUnique({
-            where: { id: req.user.userId },
+        const proCtx = requireProStructureContext(req, res);
+        if (!proCtx) return;
+
+        const user = await prisma.proUser.findFirst({
+            where: {
+                id: proCtx.userId,
+                structureId: proCtx.structureId,
+            },
             include: { structure: true }
         });
 
@@ -35,4 +41,4 @@ async function handler(req, res) {
     }
 }
 
-export default requireAuth(handler);
+export default requireProAuth(handler);

@@ -17,6 +17,11 @@ export default async function handler(req, res) {
 
     if (auth.authType === 'pro_jwt') {
         return res.status(200).json({
+            session: {
+                kind: 'pro',
+                authType: auth.authType,
+                role: auth.role,
+            },
             user: {
                 id: auth.userId || null,
                 email: auth.email || null,
@@ -28,6 +33,11 @@ export default async function handler(req, res) {
     }
 
     return res.status(200).json({
+        session: {
+            kind: 'admin',
+            authType: auth.authType,
+            role: auth.role,
+        },
         user: {
             id: 'admin',
             email: auth.email || env.secrets.adminEmail || 'admin@accesdirectaide.fr',

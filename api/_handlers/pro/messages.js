@@ -1,5 +1,5 @@
 import prisma from '../../_utils/prisma.js';
-import { requireAuth } from '../../lib/pro-auth.js';
+import { requireProAuth, requireProStructureContext } from '../../_utils/auth.js';
 import { encrypt, decrypt, generateAttachmentToken } from '../../lib/crypto.js';
 import { storage } from '../../lib/storage.js';
 /**
@@ -8,8 +8,10 @@ import { storage } from '../../lib/storage.js';
  */
 
 async function handler(req, res) {
-    // Auth handled by requireAuth wrapper
+    // Auth handled by requireProAuth wrapper
     // req.user is populated
+    const proCtx = requireProStructureContext(req, res);
+    if (!proCtx) return;
 
     const { appointmentId, page = 1, pageSize = 50 } = req.query;
     if (!appointmentId) return res.status(400).json({ error: "Missing appointmentId" });
@@ -20,7 +22,7 @@ async function handler(req, res) {
     });
 
     if (!appointment) return res.status(404).json({ error: "Not found" });
-    if (appointment.structureId !== req.user.structureId) {
+    if (appointment.structureId !== proCtx.structureId) {
         return res.status(403).json({ error: "Forbidden: Different Structure" });
     }
 
@@ -124,4 +126,4 @@ async function handler(req, res) {
     return res.status(405).json({ error: "Method not allowed" });
 }
 
-export default requireAuth(handler);
+export default requireProAuth(handler);

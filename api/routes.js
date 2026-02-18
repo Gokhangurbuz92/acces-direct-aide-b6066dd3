@@ -6,6 +6,7 @@ import upload from './_handlers/upload.js';
 import download from './_handlers/download.js';
 import health from './_handlers/health.js';
 import healthDeep from './_handlers/health-deep.js';
+import monitorCronActualites from './_handlers/monitor/cron-actualites.js';
 import robots from './_handlers/robots.js';
 import sitemap from './_handlers/sitemap.js';
 import loginProGuard from './_handlers/login-pro-guard.js';
@@ -71,6 +72,7 @@ export const routes = [
     { path: 'download', match: 'exact', handler: download },
     { path: 'health', match: 'exact', handler: health },
     { path: 'health/deep', match: 'exact', handler: healthDeep },
+    { path: 'monitor/cron/actualites', match: 'exact', handler: monitorCronActualites },
     { path: 'healthz', match: 'exact', handler: health },
     { path: 'robots.txt', match: 'exact', handler: robots },
     { path: 'robots', match: 'exact', handler: robots },

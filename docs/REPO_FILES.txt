@@ -53,6 +53,7 @@
 ./api/_handlers/health-deep.js
 ./api/_handlers/health.js
 ./api/_handlers/login-pro-guard.js
+./api/_handlers/monitor/cron-actualites.js
 ./api/_handlers/otp/generate.js
 ./api/_handlers/otp/verify.js
 ./api/_handlers/pro/appointments/cancel.js
@@ -95,6 +96,7 @@
 ./api/_utils/auth.js
 ./api/_utils/cache.js
 ./api/_utils/cachePolicy.js
+./api/_utils/cron-freshness.js
 ./api/_utils/cronAuth.js
 ./api/_utils/crud.js
 ./api/_utils/env.js
@@ -137,9 +139,11 @@
 ./api/lib/storage.js
 ./api/lib/synonyms.json
 ./api/lib/territory-filter.js
+./api/monitor/cron/actualites.js
 ./api/robots.js
 ./api/routes.js
 ./api/sitemap.js
+./api/sitemap.xml.js
 ./api/tests/admin-security.test.js
 ./api/tests/rbac.test.js
 ./components.json
@@ -192,7 +196,6 @@
 ./docs/RELEASE_GATE.md
 ./docs/RELEASE_P0_PROOF.md
 ./docs/RELEASE_PROCESS.md
-./docs/REPO_FILES.tmp
 ./docs/REPO_FILES.txt
 ./docs/REPO_MAP.md
 ./docs/ROTATE_SECRETS.md
@@ -203,6 +206,7 @@
 ./docs/SECRETS_HYGIENE.md
 ./docs/SECURITY_MODEL.md
 ./docs/SECURITY_SECRETS_HYGIENE.md
+./docs/SEO.md
 ./docs/STATUS.md
 ./docs/TEST_DB_LOCAL.md
 ./docs/TRACEABILITY.md
@@ -375,6 +379,7 @@
 ./prisma/migrations/20260228000002_add_missing_aide_fields/migration.sql
 ./prisma/migrations/20260301000000_ai_foundation_search/migration.sql
 ./prisma/migrations/20260301000001_add_cron_run/migration.sql
+./prisma/migrations/20260301000002_add_cronrun_skipped_trigger/migration.sql
 ./prisma/migrations/migration_lock.toml
 ./prisma/schema.prisma
 ./prisma/schema.prisma.backup
@@ -420,6 +425,7 @@
 ./public/logo.svg
 ./public/manifest.json
 ./public/og-image.png
+./public/robots.txt
 ./release/v1.0.0/RELEASE_CHECKLIST.md
 ./release/v1.0.0/proofs/00-mapping/endpoints-api.txt
 ./release/v1.0.0/proofs/00-mapping/env-usage.txt
@@ -784,6 +790,8 @@
 ./tests/integration/p6-cron-actualites.test.js
 ./tests/integration/p6b-admin-cron-runs.test.js
 ./tests/integration/p6b-health.test.js
+./tests/integration/p6g-monitor-actualites.test.js
+./tests/integration/p7a-seo-plumbing.test.js
 ./tests/integration/pipeline_routing.test.js
 ./tests/integration/rateLimit.test.js
 ./tests/integration/ressources.test.js

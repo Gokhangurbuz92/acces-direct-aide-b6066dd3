@@ -1,77 +1,76 @@
-# Carte du Dépôt (Repository Map)
+# Cartographie du dépôt (Repo Map)
 
-Cette documentation décrit la structure du dépôt `AccesDirectAide`, les rôles de chaque dossier, et les propriétaires techniques.
+Ce document est la source de vérité sur l'organisation des fichiers et dossiers du dépôt `AccesDirectAide`.
+Il est généré/maintenu manuellement, mais s'appuie sur `docs/REPO_FILES.txt` (généré automatiquement) pour l'inventaire technique.
 
-Fichier généré automatiquement associé : `docs/REPO_FILES.txt` (inventaire exhaustif).
+## 1. Racine & Configuration
 
-| Chemin | Rôle | Propriétaire | Risques Principaux |
-|---|---|---|---|
-| `README.md` | Point d'entrée projet | Ops | Doit refléter scripts & archi réelle |
-| `package.json`, `package-lock.json` | Scripts + dépendances | Ops | Versions strictes (Node 20) |
-| `vite.config.js`, `index.html` | Build Frontend (Vite) | Front | Configuration rewrites SPA |
-| `postcss.config.js`, `tailwind.config.js` | Configuration CSS | Front | Performance build CSS |
-| `vercel.json` | Configuration Vercel | Ops | Routes API, Headers, Crons |
-| `eslint.config.js` | Configuration Linting | Dev | Règles strictes (CI gate) |
-| `.env.example` | Modèle variables d'environnement | Ops | Secrets manquants en prod |
-| `.gitignore` | Exclusion Git | Ops | Fuite de secrets |
+| Dossier / Fichier | Rôle | Dépendances | Owner | Risques Principaux |
+| :--- | :--- | :--- | :--- | :--- |
+| `package.json` | Manifeste du projet, scripts NPM, dépendances | N/A | Tech Lead | Scripts de build/test fragiles si modifiés sans test |
+| `vercel.json` | Configuration de déploiement Vercel (rewrites, cron, headers) | Vercel | DevOps | Une erreur ici casse tout le routing ou les crons |
+| `vite.config.js` | Configuration du bundler Vite (React) | Vite | Front | Problèmes de build ou de proxy dev |
+| `.env.example` | Modèle des variables d'environnement requises | N/A | Tech Lead | Manque de secrets en prod si mal suivi |
+| `eslint.config.js` | Configuration du linter ESLint | ESLint | Tech Lead | Bruit dans la CI si trop strict |
+| `.gitignore` | Exclusions Git | Git | Tech Lead | Fuite de secrets ou artefacts |
 
 ## 2. Frontend (`src/`)
 
-| Chemin | Rôle | Propriétaire | Risques Principaux |
-|---|---|---|---|
-| `src/main.jsx` | Point d'entrée React | Front | Hydration errors |
-| `src/App.jsx` | Composant racine | Front | Providers manquants |
-| `src/pages/index.jsx` | Routeur principal | Front | Routes orphelines, redirects |
-| `src/pages/` | Pages de l'application | Front | Performance (Code splitting) |
-| `src/components/` | Composants réutilisables | Front | Accessibilité (A11y) |
-| `src/api/client.js` | Client API Frontend (Unique source) | Front | Alignement avec API backend |
-| `src/utils/` | Utilitaires Frontend | Front | Logique dupliquée |
-| `src/styles/` | Styles globaux et tokens | Front | Conflits CSS |
+L'application React (SPA).
+
+| Dossier | Rôle | Dépendances | Owner | Risques Principaux |
+| :--- | :--- | :--- | :--- | :--- |
+| `src/pages/` | Composants Page et routeur (`index.jsx`) | React Router | Front | Lazy loading cassé, routes orphelines |
+| `src/components/` | Composants UI réutilisables | UI Lib (Radix/Shadcn) | Front | Régression visuelle globale |
+| `src/api/` | Client API front (`client.js`) | Fetch | Front | Désynchronisation avec l'API Backend |
+| `src/lib/` | Utilitaires purement front | N/A | Front | Duplication de logique avec l'API |
+| `src/assets/` | Images, styles globaux | N/A | Front | Poids du bundle |
 
 ## 3. API (`api/`)
 
-| Chemin | Rôle | Propriétaire | Risques Principaux |
-|---|---|---|---|
-| `api/index.js` | Point d'entrée Serverless | Backend | Cold starts |
-| `api/routes.js` | Mapping Routes -> Handlers | Backend | Sécurité, Auth bypass |
-| `api/_handlers/` | Handlers métier | Backend | Validation inputs, Error handling |
-| `api/_utils/` | Utilitaires transverses | Backend | Fuite données (Logs), Auth |
-| `api/lib/falc-summarizer.js` | Moteur FALC (Unique source) | Backend | Qualité génération |
-| `api/cron/` | Scripts planifiés | Backend | Timeout, Mémoire, Doublons |
+Le backend Node.js Serverless (Vercel Functions).
+
+| Dossier | Rôle | Dépendances | Owner | Risques Principaux |
+| :--- | :--- | :--- | :--- | :--- |
+| `api/index.js` | Point d'entrée Vercel | Vercel | API | Erreur 500 globale |
+| `api/routes.js` | Routeur central API (mappage path -> handler) | N/A | API | Shadowing de routes, 404 inattendues |
+| `api/_handlers/` | Logique métier (endpoints) | Prisma | API | Failles de sécu, validation manquante |
+| `api/_utils/` | Sécurité, Auth, Rate Limit, Sentry | JWT, Redis | API | Contournement sécu, crash DB |
+| `api/lib/` | Services (FALC, Storage, Ingestion) | Ext. Services | API | Coûts API, pannes externes |
 
 ## 4. Base de Données (`prisma/`)
 
-| Chemin | Rôle | Propriétaire | Risques Principaux |
-|---|---|---|---|
-| `prisma/schema.prisma` | Modèle de données | DB | Intégrité, Migrations destructives |
-| `prisma/migrations/` | Historique migrations | DB | Conflits, Rollback impossible |
-| `prisma/seed.js` | Données initiales | DB | Données obsolètes |
+| Dossier | Rôle | Dépendances | Owner | Risques Principaux |
+| :--- | :--- | :--- | :--- | :--- |
+| `prisma/schema.prisma` | Définition des modèles de données | Prisma | DB | Migrations destructives, perte de données |
+| `prisma/migrations/` | Historique des changements SQL | Postgres | DB | Conflits de migration, downtime |
+| `prisma/seed.js` | Données initiales | N/A | DB | Données de dev en prod |
 
-## 5. Scripts et Données (`scripts/`, `data/`)
+## 5. Scripts Ops (`scripts/`)
 
-| Chemin | Rôle | Propriétaire | Risques Principaux |
-|---|---|---|---|
-| `scripts/` | Scripts maintenance/vérification | Ops | Effets de bord prod |
-| `data/` | Sources statiques (CSV/JSON) | Data | Format invalide, Encodage |
-| `config/` | Configuration métier (RSS, etc.) | Data | Sources mortes |
+Outils de maintenance, vérification et CI.
+
+| Dossier | Rôle | Dépendances | Owner | Risques Principaux |
+| :--- | :--- | :--- | :--- | :--- |
+| `scripts/verify-*.js` | Scripts de vérification (smoke tests, sanity checks) | Node | DevOps | Faux positifs/négatifs en CI |
+| `scripts/generate-repo-map.sh`| Génération de l'inventaire | Bash | DevOps | Inventaire obsolète |
 
 ## 6. Documentation (`docs/`)
 
-| Chemin | Rôle | Propriétaire | Risques Principaux |
-|---|---|---|---|
-| `docs/REPO_MAP.md` | Cartographie officielle | Ops | Obsolescence |
-| `docs/REPO_FILES.txt` | Inventaire technique auto-généré | Ops | |
-| `docs/ROUTES_FRONT.md` | Documentation routes Front | Front | Désynchro code |
-| `docs/ROUTES_API.md` | Documentation routes API | Backend | Désynchro code |
-| `docs/ADMIN_GUIDE.md` | Guide administrateur (Unique) | Produit | |
-| `docs/RUNBOOK.md` | Procédures d'exploitation | Ops | Procédures non testées |
+| Dossier | Rôle | Dépendances | Owner | Risques Principaux |
+| :--- | :--- | :--- | :--- | :--- |
+| `docs/REPO_FILES.txt` | Liste automatique des fichiers | Script | DevOps | - |
+| `docs/REPO_MAP.md` | Ce document | - | DevOps | Obsolescence |
 
-## 7. Tests (`tests/`, `e2e/`)
+## 7. Données (`data/`)
 
-| Chemin | Rôle | Propriétaire | Risques Principaux |
-|---|---|---|---|
-| `e2e/` | Tests End-to-End (Playwright) | QA | Flaky tests, faux positifs |
-| `tests/` | Tests d'intégration / Unitaires | Dev | Couverture insuffisante |
+| Dossier | Rôle | Dépendances | Owner | Risques Principaux |
+| :--- | :--- | :--- | :--- | :--- |
+| `data/taxonomy.json` | Source de vérité pour les catégories | - | Product | Incohérence Front/Back |
 
----
-*Généré par `scripts/generate-repo-map.sh` et maintenu par l'équipe technique.*
+## 8. Tests (`tests/`, `e2e/`)
+
+| Dossier | Rôle | Dépendances | Owner | Risques Principaux |
+| :--- | :--- | :--- | :--- | :--- |
+| `e2e/` | Tests bout-en-bout (Playwright) | Playwright | QA | Tests flaky, temps d'exécution long |
+| `tests/` | Tests unitaires/intégration | Vitest | Dev | Couverture insuffisante |

@@ -5,6 +5,7 @@ import { client } from '@/api/client';
 import { useQuery } from '@tanstack/react-query';
 import SEO from '@/components/SEO';
 import NotFound from "./NotFound";
+import Gone from "./Gone";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
@@ -27,6 +28,8 @@ import FalcSummary from '@/components/FalcSummary';
 import FalcToggle from '@/components/FalcToggle';
 import FalcContent from '@/components/FalcContent';
 import ReportContentButton from '@/components/ReportContentButton';
+
+/** @typedef {Error & { status?: number, payload?: unknown }} ApiError */
 
 const CATEGORIE_LABELS = {
   logement: 'Logement',
@@ -51,9 +54,29 @@ export default function AideDetail() {
   const urlParams = new URLSearchParams(window.location.search);
   const aideId = urlParams.get('id');
 
-  const { data: queryData, isLoading } = useQuery({
+  const { data: queryData, isLoading, error } = useQuery({
     queryKey: ['aide', slug || aideId],
-    queryFn: () => client.entities.Aide.filter(slug ? { slug } : { id: aideId }),
+    queryFn: async ({ signal }) => {
+      if (slug) {
+        const res = await fetch(`/api/aides/${encodeURIComponent(slug)}`, { signal });
+        const contentType = res.headers.get('content-type') || '';
+        const payload = contentType.includes('application/json')
+          ? await res.json().catch(() => null)
+          : await res.text().catch(() => null);
+
+        if (!res.ok) {
+          /** @type {ApiError} */
+          const apiError = new Error(`API Error: ${res.status}`);
+          apiError.status = res.status;
+          apiError.payload = payload;
+          throw apiError;
+        }
+
+        return payload;
+      }
+
+      return client.entities.Aide.filter({ id: aideId });
+    },
     enabled: !!slug || !!aideId
   });
 
@@ -113,6 +136,13 @@ export default function AideDetail() {
         </div>
       </>
     );
+  }
+
+  if (error) {
+    /** @type {ApiError} */
+    const apiError = error;
+    if (apiError?.status === 410) return <Gone />;
+    if (apiError?.status === 404) return <NotFound />;
   }
 
   if (!aide) {

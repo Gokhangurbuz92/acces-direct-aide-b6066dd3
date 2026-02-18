@@ -7,7 +7,8 @@ import {
     getCurrentPathname,
 } from '@/lib/seo';
 
-const DEFAULT_IMAGE = '/og-image.png';
+const DEFAULT_IMAGE = '/og-default.png';
+const DEFAULT_IMAGE_ALT = 'Accès Direct Aide - Informations sociales officielles';
 const SITE_NAME = 'Accès Direct Aide';
 
 /**
@@ -21,6 +22,7 @@ const SITE_NAME = 'Accès Direct Aide';
  * @property {string} description
  * @property {string=} path
  * @property {string=} image
+ * @property {string=} imageAlt
  * @property {boolean=} noindex
  * @property {string=} ogType
  * @property {SchemaValue=} schema
@@ -32,6 +34,7 @@ export default function SEO({
     description = 'Vos droits et démarches sociales, simplement.',
     path = '',
     image = DEFAULT_IMAGE,
+    imageAlt = DEFAULT_IMAGE_ALT,
     noindex = false,
     ogType = 'website',
     schema = null
@@ -40,6 +43,7 @@ export default function SEO({
     const activePath = path || getCurrentPathname();
     const canonicalUrl = buildCanonicalUrl(activePath);
     const imageUrl = buildAbsoluteImageUrl(image);
+    const hasImage = Boolean(imageUrl);
     const isProduction = frontendEnv.runtime.vercelEnv === 'production';
 
     return (
@@ -69,13 +73,15 @@ export default function SEO({
             <meta property="og:description" content={description} />
             <meta property="og:url" content={canonicalUrl} />
             <meta property="og:image" content={imageUrl} />
+            <meta property="og:image:alt" content={imageAlt} />
             <meta property="og:locale" content="fr_FR" />
 
             {/* Twitter Card */}
-            <meta name="twitter:card" content="summary_large_image" />
+            <meta name="twitter:card" content={hasImage ? 'summary_large_image' : 'summary'} />
             <meta name="twitter:title" content={pageTitle} />
             <meta name="twitter:description" content={description} />
             <meta name="twitter:image" content={imageUrl} />
+            <meta name="twitter:image:alt" content={imageAlt} />
 
             {/* Schema.org */}
             {schema && (
@@ -92,6 +98,7 @@ SEO.propTypes = {
     description: PropTypes.string,
     path: PropTypes.string,
     image: PropTypes.string,
+    imageAlt: PropTypes.string,
     noindex: PropTypes.bool,
     ogType: PropTypes.string,
     schema: PropTypes.oneOfType([

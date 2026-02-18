@@ -2,6 +2,7 @@ import { useEffect } from 'react';
 import { Link, useParams, useSearchParams, useNavigate } from 'react-router-dom';
 import SEO from '@/components/SEO';
 import NotFound from "./NotFound";
+import Gone from "./Gone";
 import { createPageUrl } from '@/utils';
 import { client } from '@/api/client';
 import { useQuery } from '@tanstack/react-query';
@@ -115,6 +116,7 @@ export default function DemarcheDetail() {
     /** @type {ApiError} */
     const apiError = error;
     const status = apiError?.status;
+    if (status === 410) return <Gone />;
     if (status === 404) return <NotFound />;
 
     return (

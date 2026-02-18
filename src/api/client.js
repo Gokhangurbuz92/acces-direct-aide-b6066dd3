@@ -205,6 +205,24 @@ export const apiClient = {
                 method: 'PATCH',
                 body: { status: status }
             });
+        },
+        /** @param {string[]} ids @param {'resolved' | 'ignored'} status */
+        bulkUpdateReviewQueue: function (ids, status) {
+            return apiRequest('/api/admin/review-queue/bulk', {
+                method: 'PATCH',
+                body: {
+                    ids: Array.isArray(ids) ? ids : [],
+                    status: status
+                }
+            });
+        }
+    },
+    monitor: {
+        getDataQuality: function () {
+            return apiRequest('/api/monitor/data-quality');
+        },
+        getIngestionFreshness: function () {
+            return apiRequest('/api/monitor/ingestion-freshness');
         }
     },
     entities: {

@@ -2,6 +2,8 @@
 
 import { fetch } from 'undici';
 
+class UsageError extends Error {}
+
 /**
  * @param {string} value
  * @returns {string}
@@ -34,21 +36,39 @@ function getIntEnvOrDefault(name, fallback) {
   return parsed;
 }
 
-function ok(message) {
-  console.log(`✅ ${message}`);
-}
-
 /**
- * @param {string[]} failures
- * @param {string} message
+ * @param {string[]} argv
+ * @returns {{ json: boolean, baseUrl: string | null }}
  */
-function fail(failures, message) {
-  failures.push(message);
-  console.error(`❌ ${message}`);
-}
+function parseArgs(argv) {
+  /** @type {{ json: boolean, baseUrl: string | null }} */
+  const out = { json: false, baseUrl: null };
 
-function warn(message) {
-  console.warn(`⚠️ ${message}`);
+  for (let index = 0; index < argv.length; index += 1) {
+    const arg = argv[index];
+    if (arg === '--json') {
+      out.json = true;
+      continue;
+    }
+    if (arg === '--base-url') {
+      const value = argv[index + 1];
+      if (!value || value.startsWith('--')) {
+        throw new UsageError('Missing value for --base-url');
+      }
+      out.baseUrl = trimTrailingSlash(value);
+      index += 1;
+      continue;
+    }
+    if (arg.startsWith('--base-url=')) {
+      const value = arg.slice('--base-url='.length);
+      if (!value.trim()) throw new UsageError('Missing value for --base-url');
+      out.baseUrl = trimTrailingSlash(value);
+      continue;
+    }
+    throw new UsageError(`Unknown argument: ${arg}`);
+  }
+
+  return out;
 }
 
 /**
@@ -76,53 +96,121 @@ async function getJson(url, timeoutMs) {
   try {
     json = await response.json();
   } catch {
-    // best-effort only
+    json = null;
   }
 
   return { response, json };
 }
 
+/**
+ * @param {boolean} jsonMode
+ */
+function createReporter(jsonMode) {
+  /** @type {Array<{ name: string, ok: boolean, critical: boolean, message: string, status?: number | null, details?: Record<string, unknown> }>} */
+  const checks = [];
+
+  /**
+   * @param {string} name
+   * @param {{ ok: boolean, critical?: boolean, message: string, status?: number | null, details?: Record<string, unknown> }} result
+   */
+  function record(name, result) {
+    const entry = {
+      name,
+      ok: result.ok,
+      critical: result.critical !== false,
+      message: result.message,
+      status: result.status ?? null,
+      details: result.details || {},
+    };
+    checks.push(entry);
+
+    if (!jsonMode) {
+      const prefix = entry.ok ? '✅' : (entry.critical ? '❌' : '⚠️');
+      const suffix = entry.status == null ? '' : ` (HTTP=${entry.status})`;
+      const line = `${prefix} ${entry.message}${suffix}`;
+      if (entry.ok || !entry.critical) console.log(line);
+      else console.error(line);
+    }
+  }
+
+  return { record, checks };
+}
+
 async function main() {
-  const prodUrl = getEnvOrDefault('PROD_URL', 'https://www.accesdirectaide.fr');
+  const args = parseArgs(process.argv.slice(2));
+  const prodUrl = trimTrailingSlash(args.baseUrl || getEnvOrDefault('PROD_URL', 'https://www.accesdirectaide.fr'));
   const timeoutMs = getIntEnvOrDefault('TIMEOUT_MS', 8000);
   const cronSecret = typeof process.env.CRON_SECRET === 'string' && process.env.CRON_SECRET.trim()
     ? process.env.CRON_SECRET.trim()
     : null;
-  /** @type {string[]} */
-  const failures = [];
 
-  console.log(`[obs-smoke] PROD_URL=${prodUrl}`);
-  console.log(`[obs-smoke] TIMEOUT_MS=${timeoutMs}`);
+  const reporter = createReporter(args.json);
+  if (!args.json) {
+    console.log(`[obs-smoke] PROD_URL=${prodUrl}`);
+    console.log(`[obs-smoke] TIMEOUT_MS=${timeoutMs}`);
+  }
 
   // 1) core monitor (strict)
   try {
     const { response, json } = await getJson(`${prodUrl}/api/monitor/core`, timeoutMs);
     if (response.status !== 200) {
-      fail(failures, `/api/monitor/core attendu HTTP=200, recu HTTP=${response.status}`);
+      reporter.record('monitor.core', {
+        ok: false,
+        message: '/api/monitor/core expected 200',
+        status: response.status,
+      });
     } else if (!json || typeof json !== 'object' || json.ok !== true) {
-      fail(failures, '/api/monitor/core payload invalide (ok=true attendu)');
+      reporter.record('monitor.core', {
+        ok: false,
+        message: '/api/monitor/core payload invalid',
+        status: response.status,
+      });
     } else {
-      ok('/api/monitor/core HTTP=200');
+      reporter.record('monitor.core', {
+        ok: true,
+        message: '/api/monitor/core contract OK',
+        status: response.status,
+      });
     }
   } catch {
-    fail(failures, '/api/monitor/core requête impossible');
+    reporter.record('monitor.core', {
+      ok: false,
+      message: '/api/monitor/core request failed',
+    });
   }
 
-  // 2) cron freshness monitor (200 fresh / 503 stale-missing-error)
+  // 2) cron freshness monitor (200 fresh / 503 degraded accepted)
   try {
     const { response, json } = await getJson(`${prodUrl}/api/monitor/cron/actualites`, timeoutMs);
+    const state = json && typeof json === 'object' ? String(json.state || 'unknown') : 'unknown';
     if (response.status !== 200 && response.status !== 503) {
-      fail(failures, `/api/monitor/cron/actualites status inattendu HTTP=${response.status}`);
+      reporter.record('monitor.cronActualites', {
+        ok: false,
+        message: '/api/monitor/cron/actualites unexpected status',
+        status: response.status,
+        details: { state },
+      });
+    } else if (response.status === 503) {
+      reporter.record('monitor.cronActualites', {
+        ok: true,
+        critical: false,
+        message: '/api/monitor/cron/actualites degraded',
+        status: response.status,
+        details: { state },
+      });
     } else {
-      const state = json && typeof json === 'object' ? json.state : 'unknown';
-      if (response.status === 200) {
-        ok(`/api/monitor/cron/actualites fresh (state=${state})`);
-      } else {
-        warn(`/api/monitor/cron/actualites degraded (HTTP=503, state=${state})`);
-      }
+      reporter.record('monitor.cronActualites', {
+        ok: true,
+        message: '/api/monitor/cron/actualites fresh',
+        status: response.status,
+        details: { state },
+      });
     }
   } catch {
-    fail(failures, '/api/monitor/cron/actualites requête impossible');
+    reporter.record('monitor.cronActualites', {
+      ok: false,
+      message: '/api/monitor/cron/actualites request failed',
+    });
   }
 
   // 3) health no-store
@@ -133,68 +221,125 @@ async function main() {
     });
     const cacheControl = normalizeHeader(response.headers.get('cache-control'));
     if (response.status !== 200) {
-      fail(failures, `/api/health attendu HTTP=200, recu HTTP=${response.status}`);
+      reporter.record('health.public', {
+        ok: false,
+        message: '/api/health expected 200',
+        status: response.status,
+      });
     } else if (!cacheControl.includes('no-store')) {
-      fail(failures, '/api/health Cache-Control no-store manquant');
+      reporter.record('health.public', {
+        ok: false,
+        message: '/api/health missing no-store',
+        status: response.status,
+      });
     } else {
-      ok('/api/health HTTP=200 + Cache-Control no-store');
+      reporter.record('health.public', {
+        ok: true,
+        message: '/api/health cache policy OK',
+        status: response.status,
+      });
     }
   } catch {
-    fail(failures, '/api/health requête impossible');
+    reporter.record('health.public', {
+      ok: false,
+      message: '/api/health request failed',
+    });
   }
 
-  // 4) data quality monitor (200 or 503 acceptable)
+  // 4) data quality monitor (200 or 503 accepted if contract shape is valid)
   try {
     const { response, json } = await getJson(`${prodUrl}/api/monitor/data-quality`, timeoutMs);
+    const validShape = Boolean(
+      json &&
+      typeof json === 'object' &&
+      typeof json.ok === 'boolean' &&
+      typeof json.requestId === 'string' &&
+      json.metrics &&
+      json.thresholds,
+    );
+
     if (response.status !== 200 && response.status !== 503) {
-      fail(failures, `/api/monitor/data-quality status inattendu HTTP=${response.status}`);
-    } else if (
-      !json ||
-      typeof json !== 'object' ||
-      typeof json.ok !== 'boolean' ||
-      typeof json.requestId !== 'string' ||
-      !json.metrics ||
-      !json.thresholds
-    ) {
-      fail(failures, '/api/monitor/data-quality payload invalide');
-    } else if (response.status === 200) {
-      ok('/api/monitor/data-quality healthy (HTTP=200)');
+      reporter.record('monitor.dataQuality', {
+        ok: false,
+        message: '/api/monitor/data-quality unexpected status',
+        status: response.status,
+      });
+    } else if (!validShape) {
+      reporter.record('monitor.dataQuality', {
+        ok: false,
+        message: '/api/monitor/data-quality payload invalid',
+        status: response.status,
+      });
+    } else if (response.status === 503) {
+      reporter.record('monitor.dataQuality', {
+        ok: true,
+        critical: false,
+        message: '/api/monitor/data-quality degraded',
+        status: response.status,
+      });
     } else {
-      warn('/api/monitor/data-quality degraded (HTTP=503)');
+      reporter.record('monitor.dataQuality', {
+        ok: true,
+        message: '/api/monitor/data-quality healthy',
+        status: response.status,
+      });
     }
   } catch {
-    fail(failures, '/api/monitor/data-quality requête impossible');
+    reporter.record('monitor.dataQuality', {
+      ok: false,
+      message: '/api/monitor/data-quality request failed',
+    });
   }
 
-  // 5) ingestion freshness monitor (200 or 503 acceptable)
+  // 5) ingestion freshness monitor (200 or 503 accepted if contract shape is valid)
   try {
     const { response, json } = await getJson(`${prodUrl}/api/monitor/ingestion-freshness`, timeoutMs);
+    const validShape = Boolean(
+      json &&
+      typeof json === 'object' &&
+      typeof json.ok === 'boolean' &&
+      typeof json.requestId === 'string' &&
+      Object.prototype.hasOwnProperty.call(json, 'latestFetchedAt') &&
+      Object.prototype.hasOwnProperty.call(json, 'ageHours') &&
+      typeof json.thresholdHours === 'number',
+    );
+
     if (response.status !== 200 && response.status !== 503) {
-      fail(failures, `/api/monitor/ingestion-freshness status inattendu HTTP=${response.status}`);
-    } else if (
-      !json ||
-      typeof json !== 'object' ||
-      typeof json.ok !== 'boolean' ||
-      typeof json.requestId !== 'string' ||
-      !('latestFetchedAt' in json) ||
-      !('ageHours' in json) ||
-      typeof json.thresholdHours !== 'number'
-    ) {
-      fail(failures, '/api/monitor/ingestion-freshness payload invalide');
-    } else if (response.status === 200) {
-      ok('/api/monitor/ingestion-freshness healthy (HTTP=200)');
+      reporter.record('monitor.ingestionFreshness', {
+        ok: false,
+        message: '/api/monitor/ingestion-freshness unexpected status',
+        status: response.status,
+      });
+    } else if (!validShape) {
+      reporter.record('monitor.ingestionFreshness', {
+        ok: false,
+        message: '/api/monitor/ingestion-freshness payload invalid',
+        status: response.status,
+      });
+    } else if (response.status === 503) {
+      reporter.record('monitor.ingestionFreshness', {
+        ok: true,
+        critical: false,
+        message: '/api/monitor/ingestion-freshness degraded',
+        status: response.status,
+      });
     } else {
-      warn('/api/monitor/ingestion-freshness degraded (HTTP=503)');
+      reporter.record('monitor.ingestionFreshness', {
+        ok: true,
+        message: '/api/monitor/ingestion-freshness healthy',
+        status: response.status,
+      });
     }
   } catch {
-    fail(failures, '/api/monitor/ingestion-freshness requête impossible');
+    reporter.record('monitor.ingestionFreshness', {
+      ok: false,
+      message: '/api/monitor/ingestion-freshness request failed',
+    });
   }
 
   // 6) noindex headers for technical endpoints
   const noIndexTargets = [
     `${prodUrl}/api/monitor/core`,
-    `${prodUrl}/api/monitor/data-quality`,
-    `${prodUrl}/api/monitor/ingestion-freshness`,
     `${prodUrl}/api/health`,
   ];
   for (const url of noIndexTargets) {
@@ -205,18 +350,34 @@ async function main() {
       });
       const robotsTag = normalizeHeader(response.headers.get('x-robots-tag'));
       if (robotsTag !== 'noindex, nofollow') {
-        fail(failures, `${url} x-robots-tag invalide (${robotsTag || 'absent'})`);
+        reporter.record(`headers.noindex:${url}`, {
+          ok: false,
+          message: `${url} invalid x-robots-tag`,
+          status: response.status,
+          details: { header: robotsTag || null },
+        });
       } else {
-        ok(`${url} x-robots-tag OK`);
+        reporter.record(`headers.noindex:${url}`, {
+          ok: true,
+          message: `${url} x-robots-tag OK`,
+          status: response.status,
+        });
       }
     } catch {
-      fail(failures, `${url} requête impossible`);
+      reporter.record(`headers.noindex:${url}`, {
+        ok: false,
+        message: `${url} request failed`,
+      });
     }
   }
 
-  // 7) cron review queue scan (optional, requires CRON_SECRET in terminal)
+  // 7) cron review queue scan (optional)
   if (!cronSecret) {
-    warn('CRON_SECRET absent: skip /api/cron/review-queue/scan');
+    reporter.record('cron.reviewQueueScan', {
+      ok: true,
+      critical: false,
+      message: 'CRON_SECRET missing, scan skipped',
+    });
   } else {
     try {
       const response = await fetch(`${prodUrl}/api/cron/review-queue/scan`, {
@@ -233,37 +394,69 @@ async function main() {
       try {
         json = await response.json();
       } catch {
-        // best-effort only
+        json = null;
       }
 
+      const validShape = Boolean(
+        json &&
+        typeof json === 'object' &&
+        json.ok === true &&
+        typeof json.requestId === 'string' &&
+        json.summary &&
+        typeof json.summary === 'object',
+      );
+
       if (response.status !== 200) {
-        fail(failures, `/api/cron/review-queue/scan attendu HTTP=200, recu HTTP=${response.status}`);
-      } else if (
-        !json ||
-        typeof json !== 'object' ||
-        json.ok !== true ||
-        typeof json.requestId !== 'string' ||
-        !json.summary ||
-        typeof json.summary !== 'object'
-      ) {
-        fail(failures, '/api/cron/review-queue/scan payload invalide');
+        reporter.record('cron.reviewQueueScan', {
+          ok: false,
+          message: '/api/cron/review-queue/scan expected 200',
+          status: response.status,
+        });
+      } else if (!validShape) {
+        reporter.record('cron.reviewQueueScan', {
+          ok: false,
+          message: '/api/cron/review-queue/scan payload invalid',
+          status: response.status,
+        });
       } else {
-        ok('/api/cron/review-queue/scan HTTP=200');
+        reporter.record('cron.reviewQueueScan', {
+          ok: true,
+          message: '/api/cron/review-queue/scan contract OK',
+          status: response.status,
+        });
       }
     } catch {
-      fail(failures, '/api/cron/review-queue/scan requête impossible');
+      reporter.record('cron.reviewQueueScan', {
+        ok: false,
+        message: '/api/cron/review-queue/scan request failed',
+      });
     }
   }
 
-  if (failures.length > 0) {
-    console.error(`[obs-smoke] FAILED (${failures.length} verification(s) critique(s))`);
-    process.exit(1);
+  const criticalFailures = reporter.checks.filter((check) => !check.ok && check.critical);
+  const report = {
+    ok: criticalFailures.length === 0,
+    baseUrl: prodUrl,
+    timeoutMs,
+    checkedAt: new Date().toISOString(),
+    failureCount: criticalFailures.length,
+    checks: reporter.checks,
+  };
+
+  if (args.json) {
+    console.log(JSON.stringify(report, null, 2));
+  } else if (criticalFailures.length > 0) {
+    console.error(`[obs-smoke] FAILED (${criticalFailures.length} critical verification(s))`);
+  } else {
+    console.log('[obs-smoke] OK');
   }
 
-  console.log('[obs-smoke] OK');
+  process.exit(criticalFailures.length > 0 ? 2 : 0);
 }
 
-main().catch(() => {
-  console.error('[obs-smoke] FAILED (unexpected error)');
-  process.exit(1);
+main().catch((error) => {
+  const exitCode = error instanceof UsageError ? 1 : 2;
+  const message = error instanceof Error ? error.message : 'unexpected error';
+  console.error(`[obs-smoke] FAILED (${message})`);
+  process.exit(exitCode);
 });

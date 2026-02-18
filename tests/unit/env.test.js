@@ -31,6 +31,8 @@ const MUTATED_KEYS = [
   'UPSTASH_REDIS_REST_TOKEN',
   'GEMINI_API_KEY',
   'GOOGLE_API_KEY',
+  'CRON_ACTUALITES_STALE_MINUTES',
+  'CRON_ACTUALITES_FAIL_MINUTES',
 ];
 
 const ORIGINAL = snapshotEnv(MUTATED_KEYS);
@@ -94,5 +96,21 @@ describe('api/_utils/env.js', () => {
     delete process.env.GEMINI_API_KEY;
     process.env.GOOGLE_API_KEY = 'google-key';
     expect(env.ai.geminiKey).toBe('google-key');
+  });
+
+  it('env.cron exposes sane defaults for freshness thresholds', () => {
+    delete process.env.CRON_ACTUALITES_STALE_MINUTES;
+    delete process.env.CRON_ACTUALITES_FAIL_MINUTES;
+
+    expect(env.cron.actualitesStaleMinutes).toBe(540);
+    expect(env.cron.actualitesFailMinutes).toBe(1440);
+  });
+
+  it('env.cron parses positive integers and falls back on invalid values', () => {
+    process.env.CRON_ACTUALITES_STALE_MINUTES = '120';
+    process.env.CRON_ACTUALITES_FAIL_MINUTES = 'not-a-number';
+
+    expect(env.cron.actualitesStaleMinutes).toBe(120);
+    expect(env.cron.actualitesFailMinutes).toBe(1440);
   });
 });

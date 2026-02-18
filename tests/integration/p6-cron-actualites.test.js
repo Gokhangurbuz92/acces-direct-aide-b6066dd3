@@ -162,7 +162,49 @@ describe('P6 Cron Actualites (secure + idempotent)', () => {
     expect(count).toBe(1);
 
     const runs = await prisma.cronRun.findMany({ where: { job: 'actualites' }, orderBy: { startedAt: 'asc' } });
-    expect(runs).toHaveLength(2);
-    expect(runs.every((run) => run.status === 'success')).toBe(true);
+    expect(runs).toHaveLength(3);
+    expect(runs[0]?.status).toBe('success');
+    expect(runs[1]?.status).toBe('skipped');
+    expect(runs[1]?.skipReason).toBe('locked');
+    expect(runs[2]?.status).toBe('success');
+  });
+
+  it('records skipped cooldown runs after a recent success', async () => {
+    const { default: handler } = await import('../../api/_handlers/cron/actualites.js');
+
+    const successReq = createMockReq({
+      url: '/api/cron/actualites?limit=1',
+      query: { limit: '1' },
+      headers: { 'x-cron-secret': 'test-cron-secret' },
+    });
+    const successRes = createMockRes();
+
+    await handler(successReq, successRes);
+    expect(successRes.statusCode).toBe(200);
+
+    // Bypass lock TTL to reach cooldown logic immediately.
+    await kv.del('cron:actualites:lock');
+
+    const cooldownReq = createMockReq({
+      url: '/api/cron/actualites?limit=1',
+      query: { limit: '1' },
+      headers: { 'x-cron-secret': 'test-cron-secret' },
+    });
+    const cooldownRes = createMockRes();
+
+    await handler(cooldownReq, cooldownRes);
+    expect(cooldownRes.statusCode).toBe(202);
+    expect(cooldownRes.body?.skipped).toBe(true);
+    expect(cooldownRes.body?.reason).toBe('cooldown');
+
+    const latestRuns = await prisma.cronRun.findMany({
+      where: { job: 'actualites' },
+      orderBy: { startedAt: 'desc' },
+      take: 2,
+    });
+    expect(latestRuns).toHaveLength(2);
+    expect(latestRuns[0]?.status).toBe('skipped');
+    expect(latestRuns[0]?.skipReason).toBe('cooldown');
+    expect(latestRuns[1]?.status).toBe('success');
   });
 });

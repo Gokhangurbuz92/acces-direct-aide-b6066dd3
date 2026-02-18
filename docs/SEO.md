@@ -202,3 +202,37 @@ npm run smoke:seo:prod
 Variables supportées (optionnelles):
 - `PROD_URL` (default: `https://www.accesdirectaide.fr`)
 - `APEX_URL` (default: `https://accesdirectaide.fr`)
+
+## P7-F — SEO final polish
+
+### Error indexation policy (404/410)
+- Route inconnue (`*`):
+  - page "Page introuvable"
+  - `<meta name="robots" content="noindex, nofollow">`
+  - canonical absolu sur l'URL demandee
+- Pages detail (`/aides/:slug`, `/demarches/:slug`, `/actualites/:slug`):
+  - `404` API -> UI introuvable (noindex)
+  - `410` API -> UI "Contenu retire" (noindex)
+- Aucun stacktrace ou detail interne expose dans le HTML.
+
+### OG/Twitter defaults
+- Asset fallback: `public/og-default.png`
+- Le composant `src/components/SEO.jsx` applique automatiquement:
+  - `og:image` et `twitter:image` (URLs absolues)
+  - `og:image:alt` et `twitter:image:alt`
+- `twitter:card` reste `summary_large_image` quand une image est disponible.
+
+### SEO smoke++
+Commande:
+```bash
+npm run smoke:seo:prod
+```
+
+Le script verifie:
+- redirect apex -> www
+- directives robots + sitemap
+- `X-Robots-Tag` sur endpoints techniques
+- checks runtime headless:
+  - OG defaults sur `/`
+  - noindex + canonical + titre sur route inconnue
+  - noindex + titre sur aide inexistante

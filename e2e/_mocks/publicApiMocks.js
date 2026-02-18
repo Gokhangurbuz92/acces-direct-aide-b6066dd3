@@ -104,28 +104,28 @@ const MOCK_ACTUALITE_DETAIL = {
  */
 export async function setupPublicMocks(page) {
     // Aides
-    await page.route('**/api/aides*', async route => {
+    await page.route('**/api/aides**', async route => {
         const url = route.request().url();
         if (url.includes('aide-test')) return route.fulfill({ json: MOCK_AIDE_DETAIL });
         return route.fulfill({ json: MOCK_AIDES });
     });
 
     // Démarches
-    await page.route('**/api/demarches*', async route => {
+    await page.route('**/api/demarches**', async route => {
         const url = route.request().url();
         if (url.includes('demarche-test')) return route.fulfill({ json: MOCK_DEMARCHE_DETAIL });
         return route.fulfill({ json: MOCK_DEMARCHES });
     });
 
     // Structures
-    await page.route('**/api/structures*', async route => {
+    await page.route('**/api/structures**', async route => {
         const url = route.request().url();
         if (url.includes('structure-test')) return route.fulfill({ json: MOCK_STRUCTURE_DETAIL });
         return route.fulfill({ json: MOCK_STRUCTURES });
     });
 
     // Actualités
-    await page.route('**/api/actualites*', async route => {
+    await page.route('**/api/actualites**', async route => {
         const url = route.request().url();
         if (url.includes('actu-test')) return route.fulfill({ json: MOCK_ACTUALITE_DETAIL });
         return route.fulfill({ json: MOCK_ACTUALITES });

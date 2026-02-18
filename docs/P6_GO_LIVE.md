@@ -102,6 +102,27 @@ Comportement HTTP de `/api/health/deep`:
 - cron `error` (age >= fail threshold) => HTTP `503`
 - cron `missing` => visible dans payload (run jamais execute), sans hard-fail
 
+## Monitoring externe (UptimeRobot / BetterUptime)
+
+Endpoint public dedie au monitoring cron:
+- `GET https://www.accesdirectaide.fr/api/monitor/cron/actualites`
+
+Semantique HTTP:
+- `200` => cron `fresh`
+- `503` => cron `stale`, `missing` ou `error`
+- `405` => methode non supportee
+
+Payload JSON minimal:
+- `ok`, `job`, `state`, `ageMinutes`, `lastSuccessAt`, `thresholds`, `requestId`
+
+Recommandation de frequence:
+- ping toutes les `5-10` minutes
+- regle d'alerte: `HTTP != 200`
+
+Difference entre endpoints:
+- `/api/health/deep`: endpoint protege admin/cron, diagnostic complet (DB/KV/Storage + freshness)
+- `/api/monitor/cron/actualites`: endpoint public minimal, robuste, adapte aux outils uptime
+
 ## Observabilite / Incidents
 
 ### Verifier rapidement
@@ -142,6 +163,7 @@ Verifier les derniers runs dans l'admin:
 
 Verifier la fraicheur:
 - `GET /api/health/deep` (auth admin/cron), puis lire `deps.cron.actualites`
+- `GET /api/monitor/cron/actualites` (public), verifie uniquement l'etat cron
 
 Ou utiliser le smoke local:
 - `npm run smoke:prod` (utilise `CRON_SECRET` + `ADMIN_TOKEN` depuis ton terminal)

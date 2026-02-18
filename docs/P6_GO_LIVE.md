@@ -21,6 +21,21 @@ Dans Vercel (Project Settings):
 
 - Build Command: `npm run vercel-build`
 
+### Prisma P3009 recovery (hotfix deploy)
+
+Le build de production utilise un flux de migration resilient:
+
+- `scripts/prisma-migrate-safe.mjs`
+- etape 1: tente `prisma migrate deploy`
+- etape 2 (strictement ciblee): si Prisma renvoie `P3009` pour la migration
+  `20260303000000_add_actualite_source_document_fk`, le script:
+  - applique une reparation de schema idempotente (colonne/index/FK sur `Actualite` + index `SourceDocument`)
+  - execute `prisma migrate resolve --applied 20260303000000_add_actualite_source_document_fk`
+  - relance `prisma migrate deploy`
+- pour toute autre erreur migration: le build echoue normalement (pas de masquage).
+
+Ce comportement est automatique en production via `npm run vercel-build` et ne requiert aucune action manuelle SQL.
+
 ## Endpoint
 
 - `GET /api/cron/actualites`

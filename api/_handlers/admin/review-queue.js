@@ -30,7 +30,8 @@ function extractReviewQueueId(pathname) {
   const match = pathname.match(/^\/(?:api\/)?admin\/review-queue\/([^/?#]+)/);
   if (!match) return null;
   const raw = decodeURIComponent(match[1] || '').trim();
-  if (!raw || raw.toLowerCase() === 'scan') return null;
+  const lowered = raw.toLowerCase();
+  if (!raw || lowered === 'scan' || lowered === 'bulk') return null;
   return raw;
 }
 
@@ -39,6 +40,13 @@ function extractReviewQueueId(pathname) {
  */
 function isScanPath(pathname) {
   return /^\/(?:api\/)?admin\/review-queue\/scan\/?$/.test(pathname);
+}
+
+/**
+ * @param {string} pathname
+ */
+function isBulkPath(pathname) {
+  return /^\/(?:api\/)?admin\/review-queue\/bulk\/?$/.test(pathname);
 }
 
 /**
@@ -75,6 +83,31 @@ function parseReason(raw) {
   const value = String(raw || '').trim();
   if (!value) return null;
   return value.slice(0, 120);
+}
+
+/**
+ * @param {unknown} raw
+ * @returns {string[] | null}
+ */
+function parseBulkIds(raw) {
+  if (!Array.isArray(raw)) return null;
+  if (raw.length === 0 || raw.length > 200) return null;
+
+  /** @type {string[]} */
+  const out = [];
+  const seen = new Set();
+
+  for (const candidate of raw) {
+    const normalized = String(candidate || '').trim();
+    if (!normalized) continue;
+    if (seen.has(normalized)) continue;
+    seen.add(normalized);
+    out.push(normalized);
+    if (out.length > 200) return null;
+  }
+
+  if (out.length === 0) return null;
+  return out;
 }
 
 /**
@@ -156,6 +189,50 @@ export default async function handler(req, res) {
     }
 
     if (req.method === 'PATCH') {
+      if (isBulkPath(pathname)) {
+        const body = parseJsonBody(req.body);
+        const ids = parseBulkIds(/** @type {{ ids?: unknown }} */ (body).ids);
+        const nextStatus = parsePatchStatus(/** @type {{ status?: unknown }} */ (body).status);
+
+        if (!ids || !nextStatus) {
+          return res.status(400).json({ error: 'Invalid bulk payload', requestId });
+        }
+
+        const existing = await prisma.reviewQueueItem.findMany({
+          where: { id: { in: ids } },
+          select: { id: true, status: true },
+        });
+
+        const updatableIds = existing
+          .filter(/** @param {{ id: string, status: string }} item */ (item) => item.status === 'open')
+          .map(/** @param {{ id: string }} item */ (item) => item.id);
+
+        const updateResult = updatableIds.length > 0
+          ? await prisma.reviewQueueItem.updateMany({
+              where: {
+                id: { in: updatableIds },
+                status: 'open',
+              },
+              data: { status: nextStatus },
+            })
+          : { count: 0 };
+
+        const updated = Number(updateResult?.count || 0);
+        const existingCount = existing.length;
+        const notFound = Math.max(0, ids.length - existingCount);
+        const skipped = Math.max(0, existingCount - updated);
+
+        return res.status(200).json({
+          ok: true,
+          requestId,
+          result: {
+            updated,
+            skipped,
+            notFound,
+          },
+        });
+      }
+
       if (!itemId) {
         return res.status(400).json({ error: 'Missing review queue item id', requestId });
       }

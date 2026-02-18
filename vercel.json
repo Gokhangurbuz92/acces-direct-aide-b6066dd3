@@ -7,6 +7,10 @@
     {
       "path": "/api/cron/ingest-structures",
       "schedule": "0 2 * * 0"
+    },
+    {
+      "path": "/api/cron/review-queue/scan",
+      "schedule": "30 */6 * * *"
     }
   ],
   "redirects": [

@@ -8,6 +8,8 @@ import health from './_handlers/health.js';
 import healthDeep from './_handlers/health-deep.js';
 import monitorCronActualites from './_handlers/monitor/cron-actualites.js';
 import monitorCore from './_handlers/monitor/core.js';
+import monitorDataQuality from './_handlers/monitor/data-quality.js';
+import monitorIngestionFreshness from './_handlers/monitor/ingestion-freshness.js';
 import robots from './_handlers/robots.js';
 import sitemap from './_handlers/sitemap.js';
 import loginProGuard from './_handlers/login-pro-guard.js';
@@ -51,6 +53,7 @@ import reports from './_handlers/reports.js';
 // --- Cron ---
 import cronPipeline from './_handlers/cron/pipeline.js';
 import cronActualites from './_handlers/cron/actualites.js';
+import cronReviewQueueScan from './_handlers/cron/review-queue-scan.js';
 import cronIngestStructures from './_handlers/cron/ingest-structures.js';
 import cronIngestAids from './_handlers/cron/ingest-aids.js';
 import cronPurge from './_handlers/cron/purge.js';
@@ -76,6 +79,8 @@ export const routes = [
     { path: 'health/deep', match: 'exact', handler: healthDeep },
     { path: 'monitor/cron/actualites', match: 'exact', handler: monitorCronActualites },
     { path: 'monitor/core', match: 'exact', handler: monitorCore },
+    { path: 'monitor/data-quality', match: 'exact', handler: monitorDataQuality },
+    { path: 'monitor/ingestion-freshness', match: 'exact', handler: monitorIngestionFreshness },
     { path: 'healthz', match: 'exact', handler: health },
     { path: 'robots.txt', match: 'exact', handler: robots },
     { path: 'robots', match: 'exact', handler: robots },
@@ -122,6 +127,7 @@ export const routes = [
     // --- Cron ---
     { path: 'cron/pipeline', match: 'exact', handler: cronPipeline },
     { path: 'cron/actualites', match: 'exact', handler: cronActualites },
+    { path: 'cron/review-queue/scan', match: 'exact', handler: cronReviewQueueScan },
     { path: 'cron/ingest-structures', match: 'exact', handler: cronIngestStructures },
     { path: 'cron/ingest-aids', match: 'exact', handler: cronIngestAids },
     { path: 'cron/purge', match: 'exact', handler: cronPurge },

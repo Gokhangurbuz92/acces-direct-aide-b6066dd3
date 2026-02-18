@@ -261,6 +261,18 @@ export const env = {
     },
   },
 
+  ingestion: {
+    get parserVersion() {
+      return getEnv('INGESTION_PARSER_VERSION', { default: 'v1' }) || 'v1';
+    },
+    get dryRun() {
+      return getEnv('INGESTION_DRY_RUN', { default: '0' }) === '1';
+    },
+    get maxItemsPerRun() {
+      return toPositiveInt(getEnv('INGESTION_MAX_ITEMS_PER_RUN', { default: '200' }), 200);
+    },
+  },
+
   flags: {
     get devLoginEnabled() {
       return getEnv('VITE_DEV_LOGIN_ENABLED') === 'true';

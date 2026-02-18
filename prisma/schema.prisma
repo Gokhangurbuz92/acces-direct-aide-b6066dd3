@@ -20,6 +20,7 @@ model SourceDocument {
   structures  Structure[]
   dispositifs Dispositif[]
   demarches   Demarche[]
+  actualites  Actualite[]
 }
 
 model Aide {
@@ -329,11 +330,14 @@ model Actualite {
   tags               String[]
   type_actu          String?   @default("info")
   url                String?
+  source_document_id String?
+  sourceDocument     SourceDocument? @relation(fields: [source_document_id], references: [id])
 
   @@index([dedupe_hash])
   @@index([source_id])
   @@index([raw_data_hash])
   @@index([statut, date_publication])
+  @@index([source_document_id])
 }
 
 model ImportLog {

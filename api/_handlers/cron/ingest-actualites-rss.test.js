@@ -14,6 +14,9 @@ const mocks = vi.hoisted(() => {
     ]),
     actualiteFindFirst: vi.fn(),
     actualiteUpsert: vi.fn().mockResolvedValue({}),
+    sourceDocumentFindFirst: vi.fn().mockResolvedValue(null),
+    sourceDocumentCreate: vi.fn().mockResolvedValue({ id: 'sdoc-1' }),
+    sourceDocumentUpdate: vi.fn().mockResolvedValue({ id: 'sdoc-1' }),
     fetch: vi.fn(),
     parseString: vi.fn(),
   };
@@ -30,6 +33,11 @@ vi.mock('@prisma/client', () => {
         this.actualite = {
           findFirst: mocks.actualiteFindFirst,
           upsert: mocks.actualiteUpsert,
+        };
+        this.sourceDocument = {
+          findFirst: mocks.sourceDocumentFindFirst,
+          create: mocks.sourceDocumentCreate,
+          update: mocks.sourceDocumentUpdate,
         };
       }
     },

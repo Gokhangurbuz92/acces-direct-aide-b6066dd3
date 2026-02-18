@@ -18,6 +18,8 @@ const KNOWN_REASONS = [
   'MISSING_SLUG',
   'INVALID_SLUG',
   'MISSING_REQUIRED_FIELD:documents_necessaires',
+  'MISSING_SOURCE_DOCUMENT',
+  'MISSING_SOURCE_URL',
 ];
 
 /** @param {unknown} value */

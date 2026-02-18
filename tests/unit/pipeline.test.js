@@ -15,6 +15,11 @@ vi.mock('../../api/_utils/prisma.js', () => ({
         },
         importLog: {
             create: vi.fn()
+        },
+        sourceDocument: {
+            findFirst: vi.fn(),
+            create: vi.fn().mockResolvedValue({ id: 'source-doc-test' }),
+            update: vi.fn().mockResolvedValue({ id: 'source-doc-test' })
         }
     }
 }));

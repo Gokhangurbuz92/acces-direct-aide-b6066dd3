@@ -84,6 +84,7 @@ UI:
 
 Signaux utiles:
 - `reason` (ex: `MISSING_VERIFICATION`, `STALE_VERIFICATION`, `MISSING_SLUG`)
+- drift ingestion: `MISSING_SOURCE_DOCUMENT`, `MISSING_SOURCE_URL`
 - `severity` (`P0`, `P1`, `P2`)
 - `status` (`open`, `resolved`, `ignored`)
 
@@ -92,3 +93,7 @@ Seuils data quality (env, names only):
 - `DATA_DEMARCHES_STALE_DAYS`
 - `DATA_STRUCTURES_STALE_DAYS`
 - `DATA_REVIEW_SCAN_LIMIT_PER_TYPE`
+
+Signaux ingestion hardening:
+- les runs cron exposent `created/updated/skippedExisting` pour surveiller l'anti-churn
+- les entites ingerees doivent pointer vers `SourceDocument` (traceability)

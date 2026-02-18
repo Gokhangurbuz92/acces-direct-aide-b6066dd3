@@ -192,6 +192,7 @@
 ./docs/RELEASE_GATE.md
 ./docs/RELEASE_P0_PROOF.md
 ./docs/RELEASE_PROCESS.md
+./docs/REPO_FILES.tmp
 ./docs/REPO_FILES.txt
 ./docs/REPO_MAP.md
 ./docs/ROTATE_SECRETS.md

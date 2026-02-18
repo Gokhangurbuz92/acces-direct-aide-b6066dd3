@@ -1,28 +1,20 @@
 
 import prisma from '../../../_utils/prisma.js';
-import { verifyProToken, ROLE } from '../../../lib/pro-auth.js';
+import { AUTH_ROLE, requireProAuth, requireProStructureContext } from '../../../_utils/auth.js';
 import { decrypt } from '../../../lib/crypto.js';
 /**
  * @param {import('../../../_utils/http-types').ApiRequest} req
  * @param {import('../../../_utils/http-types').ApiResponse} res
  */
 
-export default async function handler(req, res) {
+async function handler(req, res) {
     if (req.method !== 'GET') {
         return res.status(405).json({ error: "Method not allowed" });
     }
 
-    const authHeader = req.headers.authorization;
-    if (!authHeader || !authHeader.startsWith('Bearer ')) {
-        return res.status(401).json({ error: "Missing token" });
-    }
-
-    const decoded = verifyProToken(authHeader.split(' ')[1]);
-    if (!decoded) {
-        return res.status(401).json({ error: "Invalid token" });
-    }
-
-    const { structureId, role } = decoded;
+    const proCtx = requireProStructureContext(req, res);
+    if (!proCtx) return;
+    const { structureId, role } = proCtx;
 
     // Filters
     const { start_date, end_date, search_hash, id, limit, page } = req.query;
@@ -39,7 +31,7 @@ export default async function handler(req, res) {
             structureId: structureId // Tenant Isolation
         };
 
-        if (role === ROLE.PRO) {
+        if (role === AUTH_ROLE.PRO) {
             // Can PRO see all structure appointments? 
             // Usually yes if they are admin, but role=PRO might be restrictive.
             // Prompt: "RBAC server-side strict."
@@ -131,3 +123,5 @@ export default async function handler(req, res) {
         return res.status(500).json({ error: "Internal Error" });
     }
 }
+
+export default requireProAuth(handler);

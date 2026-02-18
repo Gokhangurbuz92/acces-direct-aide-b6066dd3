@@ -1,26 +1,20 @@
 
 import prisma from '../../_utils/prisma.js';
-import { verifyProToken, ROLE, logProAudit } from '../../lib/pro-auth.js';
+import { logProAudit } from '../../lib/pro-auth.js';
+import { AUTH_ROLE, requireProAuth, requireProStructureContext } from '../../_utils/auth.js';
 import slugify from '@sindresorhus/slugify';
 /**
  * @param {import('../../_utils/http-types').ApiRequest} req
  * @param {import('../../_utils/http-types').ApiResponse} res
  */
 
-export default async function handler(req, res) {
-    const authHeader = req.headers.authorization;
-    if (!authHeader || !authHeader.startsWith('Bearer ')) {
-        return res.status(401).json({ error: "Missing token" });
-    }
+async function handler(req, res) {
+    const proCtx = requireProStructureContext(req, res);
+    if (!proCtx) return;
 
-    const decoded = verifyProToken(authHeader.split(' ')[1]);
-    if (!decoded) {
-        return res.status(401).json({ error: "Invalid token" });
-    }
-
-    const { structureId, role, userId } = decoded;
+    const { structureId, role, userId } = proCtx;
     // Basic RBAC
-    const canWrite = role === ROLE.STRUCTURE_ADMIN || role === ROLE.SUPERADMIN;
+    const canWrite = role === AUTH_ROLE.STRUCTURE_ADMIN || role === AUTH_ROLE.SUPERADMIN;
 
     try {
         if (req.method === 'GET') {
@@ -70,11 +64,12 @@ export default async function handler(req, res) {
             const { name, description_falc, duration_minutes, modes, audiences, is_active } = req.body;
 
             // Ensure ownership
-            const existing = await prisma.service.findFirst({ where: { id, structureId } });
+            const existing = await prisma.service.findUnique({ where: { id: String(id) } });
             if (!existing) return res.status(404).json({ error: "Service not found" });
+            if (existing.structureId !== structureId) return res.status(403).json({ error: "Forbidden" });
 
             const updated = await prisma.service.update({
-                where: { id },
+                where: { id: String(id) },
                 data: {
                     name,
                     description_falc,
@@ -94,10 +89,11 @@ export default async function handler(req, res) {
             const { id } = req.query;
 
             // Ensure ownership
-            const existing = await prisma.service.findFirst({ where: { id, structureId } });
+            const existing = await prisma.service.findUnique({ where: { id: String(id) } });
             if (!existing) return res.status(404).json({ error: "Service not found" });
+            if (existing.structureId !== structureId) return res.status(403).json({ error: "Forbidden" });
 
-            await prisma.service.delete({ where: { id } });
+            await prisma.service.delete({ where: { id: String(id) } });
             await logProAudit('SERVICE_DELETED', userId, structureId, { serviceId: id }, req.socket.remoteAddress);
             return res.status(200).json({ success: true });
         } else {
@@ -109,3 +105,5 @@ export default async function handler(req, res) {
         return res.status(500).json({ error: "Internal Error" });
     }
 }
+
+export default requireProAuth(handler);

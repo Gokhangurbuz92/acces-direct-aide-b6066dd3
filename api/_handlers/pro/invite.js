@@ -1,29 +1,20 @@
 
 import prisma from '../../_utils/prisma.js';
-import { verifyProToken, ROLE, logProAudit } from '../../lib/pro-auth.js';
+import { ROLE, logProAudit } from '../../lib/pro-auth.js';
+import { AUTH_ROLE, requireProRole, requireProStructureContext } from '../../_utils/auth.js';
 import crypto from 'crypto';
 /**
  * @param {import('../../_utils/http-types').ApiRequest} req
  * @param {import('../../_utils/http-types').ApiResponse} res
  */
 
-export default async function handler(req, res) {
+async function handler(req, res) {
     if (req.method !== 'POST') return res.status(405).json({ error: "Method not allowed" });
 
-    const authHeader = req.headers.authorization;
-    if (!authHeader || !authHeader.startsWith('Bearer ')) {
-        return res.status(401).json({ error: "Missing token" });
-    }
+    const proCtx = requireProStructureContext(req, res);
+    if (!proCtx) return;
 
-    const decoded = verifyProToken(authHeader.split(' ')[1]);
-    if (!decoded) {
-        return res.status(401).json({ error: "Invalid token" });
-    }
-
-    const { structureId, role, userId } = decoded;
-    if (role !== ROLE.STRUCTURE_ADMIN && role !== ROLE.SUPERADMIN) {
-        return res.status(403).json({ error: "Forbidden: Admins only" });
-    }
+    const { structureId, userId } = proCtx;
 
     const { email, role: inviteRole } = req.body;
     if (!email) return res.status(400).json({ error: "Email required" });
@@ -48,8 +39,8 @@ export default async function handler(req, res) {
             }
         });
 
-        // Mock sending email
-        console.log(`[MOCK EMAIL] Invitation sent to ${email} with token ${token}`);
+        // Mock sending email (token intentionally redacted in logs)
+        console.log(`[MOCK EMAIL] Invitation sent to ${email} with token [REDACTED]`);
 
         await logProAudit('INVITATION_SENT', userId, structureId, { email, role: inviteRole }, req.socket.remoteAddress);
 
@@ -60,3 +51,5 @@ export default async function handler(req, res) {
         return res.status(500).json({ error: "Internal Error" });
     }
 }
+
+export default requireProRole(handler, [AUTH_ROLE.STRUCTURE_ADMIN, AUTH_ROLE.SUPERADMIN]);

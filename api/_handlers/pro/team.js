@@ -1,26 +1,17 @@
 
 import prisma from '../../_utils/prisma.js';
-import { verifyProToken, ROLE, logProAudit } from '../../lib/pro-auth.js';
+import { logProAudit } from '../../lib/pro-auth.js';
+import { AUTH_ROLE, requireProRole, requireProStructureContext } from '../../_utils/auth.js';
 /**
  * @param {import('../../_utils/http-types').ApiRequest} req
  * @param {import('../../_utils/http-types').ApiResponse} res
  */
 
-export default async function handler(req, res) {
-    const authHeader = req.headers.authorization;
-    if (!authHeader || !authHeader.startsWith('Bearer ')) {
-        return res.status(401).json({ error: "Missing token" });
-    }
+async function handler(req, res) {
+    const proCtx = requireProStructureContext(req, res);
+    if (!proCtx) return;
 
-    const decoded = verifyProToken(authHeader.split(' ')[1]);
-    if (!decoded) {
-        return res.status(401).json({ error: "Invalid token" });
-    }
-
-    const { structureId, role, userId } = decoded;
-    if (role !== ROLE.STRUCTURE_ADMIN && role !== ROLE.SUPERADMIN) {
-        return res.status(403).json({ error: "Forbidden: Admins only" });
-    }
+    const { structureId, userId } = proCtx;
 
     try {
         if (req.method === 'GET') {
@@ -62,3 +53,5 @@ export default async function handler(req, res) {
         return res.status(500).json({ error: "Internal Error" });
     }
 }
+
+export default requireProRole(handler, [AUTH_ROLE.STRUCTURE_ADMIN, AUTH_ROLE.SUPERADMIN]);

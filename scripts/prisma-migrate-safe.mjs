@@ -14,6 +14,12 @@ DO $$
 DECLARE
   actualite_table regclass;
   source_table regclass;
+  source_schema text;
+  source_name text;
+  has_source_url boolean;
+  has_source_url_legacy boolean;
+  has_content_hash boolean;
+  has_content_hash_legacy boolean;
 BEGIN
   actualite_table := COALESCE(
     to_regclass('public."Actualite"'),
@@ -37,7 +43,69 @@ BEGIN
     RAISE EXCEPTION 'Auto-recovery aborted: SourceDocument table not found';
   END IF;
 
+  source_schema := split_part(source_table::text, '.', 1);
+  source_name := split_part(source_table::text, '.', 2);
+
+  IF source_name = '' THEN
+    source_name := source_schema;
+    source_schema := 'public';
+  END IF;
+
+  source_schema := replace(source_schema, '"', '');
+  source_name := replace(source_name, '"', '');
+
+  SELECT EXISTS (
+    SELECT 1
+    FROM information_schema.columns
+    WHERE table_schema = source_schema
+      AND table_name = source_name
+      AND column_name = 'source_url'
+  ) INTO has_source_url;
+
+  SELECT EXISTS (
+    SELECT 1
+    FROM information_schema.columns
+    WHERE table_schema = source_schema
+      AND table_name = source_name
+      AND column_name = 'sourceUrl'
+  ) INTO has_source_url_legacy;
+
+  SELECT EXISTS (
+    SELECT 1
+    FROM information_schema.columns
+    WHERE table_schema = source_schema
+      AND table_name = source_name
+      AND column_name = 'content_hash'
+  ) INTO has_content_hash;
+
+  SELECT EXISTS (
+    SELECT 1
+    FROM information_schema.columns
+    WHERE table_schema = source_schema
+      AND table_name = source_name
+      AND column_name = 'contentHash'
+  ) INTO has_content_hash_legacy;
+
   EXECUTE format('ALTER TABLE %s ADD COLUMN IF NOT EXISTS source_document_id TEXT', actualite_table);
+
+  IF NOT has_source_url THEN
+    EXECUTE format('ALTER TABLE %s ADD COLUMN IF NOT EXISTS source_url TEXT', source_table);
+    has_source_url := true;
+  END IF;
+
+  IF NOT has_content_hash THEN
+    EXECUTE format('ALTER TABLE %s ADD COLUMN IF NOT EXISTS content_hash TEXT', source_table);
+    has_content_hash := true;
+  END IF;
+
+  IF has_source_url_legacy THEN
+    EXECUTE format('UPDATE %s SET source_url = COALESCE(source_url, "sourceUrl") WHERE source_url IS NULL', source_table);
+  END IF;
+
+  IF has_content_hash_legacy THEN
+    EXECUTE format('UPDATE %s SET content_hash = COALESCE(content_hash, "contentHash") WHERE content_hash IS NULL', source_table);
+  END IF;
+
   EXECUTE format('CREATE INDEX IF NOT EXISTS %I ON %s (source_document_id)', 'Actualite_source_document_id_idx', actualite_table);
   EXECUTE format('CREATE INDEX IF NOT EXISTS %I ON %s (source_url)', 'SourceDocument_source_url_idx', source_table);
   EXECUTE format('CREATE INDEX IF NOT EXISTS %I ON %s (content_hash)', 'SourceDocument_content_hash_idx', source_table);

@@ -64,7 +64,18 @@ describe('Actualites API Handler', () => {
         expect(res.status).toHaveBeenCalledWith(200);
         expect(res.json).toHaveBeenCalledWith(
           expect.objectContaining({
-            items: [{ id: '1', titre: 'News' }],
+            items: [
+              expect.objectContaining({
+                id: '1',
+                titre: 'News',
+                provenance: expect.objectContaining({
+                  verifiedAt: null,
+                  fetchedAt: null,
+                  sourceUrl: null,
+                  sourceHost: null,
+                }),
+              }),
+            ],
             pagination: expect.objectContaining({ page: 1 }),
           }),
         );

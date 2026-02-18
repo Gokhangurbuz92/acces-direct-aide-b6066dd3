@@ -12,6 +12,7 @@ import {
   MapPin,
   Newspaper,
   Activity,
+  ListChecks,
   Info,
   Calendar,
   ChevronDown
@@ -44,6 +45,7 @@ const NAV_ITEMS = [
   { label: 'Structures', page: 'AdminStructures', icon: MapPin, adminOnly: true },
   { label: 'Démarches', page: 'AdminDemarches', icon: FileText, adminOnly: true },
   { label: 'Observabilité', page: 'AdminObservability', icon: Activity, adminOnly: true },
+  { label: 'Review Queue', page: 'AdminReviewQueue', icon: ListChecks, adminOnly: true },
   { label: 'Admin', page: 'AdminSync', icon: Info, adminOnly: true },
 ];
 

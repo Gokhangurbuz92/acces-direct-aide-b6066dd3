@@ -1,0 +1,633 @@
+import prisma from './prisma.js';
+import { env } from './env.js';
+
+export const REVIEW_QUEUE_OPEN_STATUS = 'open';
+
+/** @type {{ aide: 'aide', demarche: 'demarche', structure: 'structure', actualite: 'actualite' }} */
+const ENTITY_TYPES = {
+  aide: 'aide',
+  demarche: 'demarche',
+  structure: 'structure',
+  actualite: 'actualite',
+};
+
+const MAX_SCAN_LIMIT = 1000;
+
+/**
+ * @param {number | undefined} value
+ * @param {number} fallback
+ * @returns {number}
+ */
+function toBoundedPositiveInt(value, fallback) {
+  if (!Number.isFinite(value)) return fallback;
+  const parsed = Math.trunc(Number(value));
+  if (parsed <= 0) return fallback;
+  return Math.min(parsed, MAX_SCAN_LIMIT);
+}
+
+/**
+ * @param {Date | string | null | undefined} value
+ * @returns {number | null}
+ */
+function ageDaysFrom(value) {
+  if (!value) return null;
+  const date = value instanceof Date ? value : new Date(String(value));
+  if (Number.isNaN(date.getTime())) return null;
+  const diffMs = Date.now() - date.getTime();
+  if (diffMs < 0) return 0;
+  return Math.floor(diffMs / (24 * 60 * 60 * 1000));
+}
+
+/**
+ * @param {string | null | undefined} slug
+ * @returns {boolean}
+ */
+function isInvalidSlug(slug) {
+  if (!slug) return false;
+  return !/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(String(slug));
+}
+
+/**
+ * @param {string | null | undefined} value
+ * @returns {string | null}
+ */
+function safeString(value) {
+  if (!value) return null;
+  const normalized = String(value).trim();
+  if (!normalized) return null;
+  return normalized.slice(0, 300);
+}
+
+/**
+ * @param {Array<string> | null | undefined} values
+ * @returns {boolean}
+ */
+function isEmptyStringArray(values) {
+  if (!Array.isArray(values)) return true;
+  return values.filter((value) => typeof value === 'string' && value.trim() !== '').length === 0;
+}
+
+/**
+ * @param {string} entityType
+ * @param {string} entityId
+ * @param {string | null | undefined} entitySlug
+ * @param {string | null | undefined} title
+ * @param {string} reason
+ * @param {'P0' | 'P1' | 'P2'} severity
+ * @param {Record<string, unknown>=} details
+ */
+function createCandidate(entityType, entityId, entitySlug, title, reason, severity, details = {}) {
+  return {
+    entityType,
+    entityId,
+    entitySlug: safeString(entitySlug),
+    title: safeString(title),
+    reason,
+    severity,
+    details,
+  };
+}
+
+/**
+ * @param {Record<string, unknown>} details
+ * @returns {import('@prisma/client').Prisma.InputJsonValue}
+ */
+function toJsonDetails(details) {
+  return /** @type {import('@prisma/client').Prisma.InputJsonValue} */ (details);
+}
+
+/**
+ * @param {{
+ *   id: string,
+ *   slug: string | null,
+ *   titre: string,
+ *   date_verification: Date | null,
+ *   documents_necessaires: string[],
+ * }} aide
+ * @param {{ staleDays: number }} thresholds
+ */
+function buildAideCandidates(aide, thresholds) {
+  const out = [];
+  const ageDays = ageDaysFrom(aide.date_verification);
+
+  if (!aide.date_verification) {
+    out.push(
+      createCandidate(
+        ENTITY_TYPES.aide,
+        aide.id,
+        aide.slug,
+        aide.titre,
+        'MISSING_VERIFICATION',
+        'P1',
+        { lastVerifiedAt: null },
+      ),
+    );
+  } else if (typeof ageDays === 'number' && ageDays > thresholds.staleDays) {
+    out.push(
+      createCandidate(
+        ENTITY_TYPES.aide,
+        aide.id,
+        aide.slug,
+        aide.titre,
+        'STALE_VERIFICATION',
+        'P1',
+        {
+          lastVerifiedAt: aide.date_verification.toISOString(),
+          ageDays,
+          staleDays: thresholds.staleDays,
+        },
+      ),
+    );
+  }
+
+  if (!aide.slug) {
+    out.push(
+      createCandidate(ENTITY_TYPES.aide, aide.id, aide.slug, aide.titre, 'MISSING_SLUG', 'P0'),
+    );
+  } else if (isInvalidSlug(aide.slug)) {
+    out.push(
+      createCandidate(ENTITY_TYPES.aide, aide.id, aide.slug, aide.titre, 'INVALID_SLUG', 'P1', { slug: aide.slug }),
+    );
+  }
+
+  if (isEmptyStringArray(aide.documents_necessaires)) {
+    out.push(
+      createCandidate(
+        ENTITY_TYPES.aide,
+        aide.id,
+        aide.slug,
+        aide.titre,
+        'MISSING_REQUIRED_FIELD:documents_necessaires',
+        'P0',
+        { field: 'documents_necessaires' },
+      ),
+    );
+  }
+
+  return out;
+}
+
+/**
+ * @param {{
+ *   id: string,
+ *   slug: string | null,
+ *   titre: string,
+ *   date_verification: Date | null,
+ * }} demarche
+ * @param {{ staleDays: number }} thresholds
+ */
+function buildDemarcheCandidates(demarche, thresholds) {
+  const out = [];
+  const ageDays = ageDaysFrom(demarche.date_verification);
+
+  if (!demarche.date_verification) {
+    out.push(
+      createCandidate(
+        ENTITY_TYPES.demarche,
+        demarche.id,
+        demarche.slug,
+        demarche.titre,
+        'MISSING_VERIFICATION',
+        'P1',
+        { lastVerifiedAt: null },
+      ),
+    );
+  } else if (typeof ageDays === 'number' && ageDays > thresholds.staleDays) {
+    out.push(
+      createCandidate(
+        ENTITY_TYPES.demarche,
+        demarche.id,
+        demarche.slug,
+        demarche.titre,
+        'STALE_VERIFICATION',
+        'P1',
+        {
+          lastVerifiedAt: demarche.date_verification.toISOString(),
+          ageDays,
+          staleDays: thresholds.staleDays,
+        },
+      ),
+    );
+  }
+
+  if (!demarche.slug) {
+    out.push(
+      createCandidate(ENTITY_TYPES.demarche, demarche.id, demarche.slug, demarche.titre, 'MISSING_SLUG', 'P0'),
+    );
+  } else if (isInvalidSlug(demarche.slug)) {
+    out.push(
+      createCandidate(
+        ENTITY_TYPES.demarche,
+        demarche.id,
+        demarche.slug,
+        demarche.titre,
+        'INVALID_SLUG',
+        'P1',
+        { slug: demarche.slug },
+      ),
+    );
+  }
+
+  return out;
+}
+
+/**
+ * @param {{
+ *   id: string,
+ *   slug: string | null,
+ *   nom: string,
+ *   date_verification: Date | null,
+ * }} structure
+ * @param {{ staleDays: number }} thresholds
+ */
+function buildStructureCandidates(structure, thresholds) {
+  const out = [];
+  const ageDays = ageDaysFrom(structure.date_verification);
+
+  if (!structure.date_verification) {
+    out.push(
+      createCandidate(
+        ENTITY_TYPES.structure,
+        structure.id,
+        structure.slug,
+        structure.nom,
+        'MISSING_VERIFICATION',
+        'P1',
+        { lastVerifiedAt: null },
+      ),
+    );
+  } else if (typeof ageDays === 'number' && ageDays > thresholds.staleDays) {
+    out.push(
+      createCandidate(
+        ENTITY_TYPES.structure,
+        structure.id,
+        structure.slug,
+        structure.nom,
+        'STALE_VERIFICATION',
+        'P1',
+        {
+          lastVerifiedAt: structure.date_verification.toISOString(),
+          ageDays,
+          staleDays: thresholds.staleDays,
+        },
+      ),
+    );
+  }
+
+  if (!structure.slug) {
+    out.push(
+      createCandidate(ENTITY_TYPES.structure, structure.id, structure.slug, structure.nom, 'MISSING_SLUG', 'P0'),
+    );
+  } else if (isInvalidSlug(structure.slug)) {
+    out.push(
+      createCandidate(
+        ENTITY_TYPES.structure,
+        structure.id,
+        structure.slug,
+        structure.nom,
+        'INVALID_SLUG',
+        'P1',
+        { slug: structure.slug },
+      ),
+    );
+  }
+
+  return out;
+}
+
+/**
+ * @param {{ id: string, slug: string | null, titre: string }} actualite
+ */
+function buildActualiteCandidates(actualite) {
+  const out = [];
+
+  if (!actualite.slug) {
+    out.push(
+      createCandidate(ENTITY_TYPES.actualite, actualite.id, actualite.slug, actualite.titre, 'MISSING_SLUG', 'P0'),
+    );
+  } else if (isInvalidSlug(actualite.slug)) {
+    out.push(
+      createCandidate(
+        ENTITY_TYPES.actualite,
+        actualite.id,
+        actualite.slug,
+        actualite.titre,
+        'INVALID_SLUG',
+        'P1',
+        { slug: actualite.slug },
+      ),
+    );
+  }
+
+  return out;
+}
+
+/**
+ * @param {import('@prisma/client').PrismaClient} prismaClient
+ * @param {number} limit
+ */
+async function loadAidesForReview(prismaClient, limit) {
+  const missing = await prismaClient.aide.findMany({
+    where: { date_verification: null },
+    select: {
+      id: true,
+      slug: true,
+      titre: true,
+      date_verification: true,
+      documents_necessaires: true,
+    },
+    orderBy: { updatedAt: 'desc' },
+    take: limit,
+  });
+
+  const remaining = Math.max(0, limit - missing.length);
+  if (remaining === 0) return missing;
+
+  const oldest = await prismaClient.aide.findMany({
+    where: { date_verification: { not: null } },
+    select: {
+      id: true,
+      slug: true,
+      titre: true,
+      date_verification: true,
+      documents_necessaires: true,
+    },
+    orderBy: { date_verification: 'asc' },
+    take: remaining,
+  });
+
+  return [...missing, ...oldest];
+}
+
+/**
+ * @param {import('@prisma/client').PrismaClient} prismaClient
+ * @param {number} limit
+ */
+async function loadDemarchesForReview(prismaClient, limit) {
+  const missing = await prismaClient.demarche.findMany({
+    where: { date_verification: null },
+    select: {
+      id: true,
+      slug: true,
+      titre: true,
+      date_verification: true,
+    },
+    orderBy: { updatedAt: 'desc' },
+    take: limit,
+  });
+
+  const remaining = Math.max(0, limit - missing.length);
+  if (remaining === 0) return missing;
+
+  const oldest = await prismaClient.demarche.findMany({
+    where: { date_verification: { not: null } },
+    select: {
+      id: true,
+      slug: true,
+      titre: true,
+      date_verification: true,
+    },
+    orderBy: { date_verification: 'asc' },
+    take: remaining,
+  });
+
+  return [...missing, ...oldest];
+}
+
+/**
+ * @param {import('@prisma/client').PrismaClient} prismaClient
+ * @param {number} limit
+ */
+async function loadStructuresForReview(prismaClient, limit) {
+  const missing = await prismaClient.structure.findMany({
+    where: { date_verification: null },
+    select: {
+      id: true,
+      slug: true,
+      nom: true,
+      date_verification: true,
+    },
+    orderBy: { updatedAt: 'desc' },
+    take: limit,
+  });
+
+  const remaining = Math.max(0, limit - missing.length);
+  if (remaining === 0) return missing;
+
+  const oldest = await prismaClient.structure.findMany({
+    where: { date_verification: { not: null } },
+    select: {
+      id: true,
+      slug: true,
+      nom: true,
+      date_verification: true,
+    },
+    orderBy: { date_verification: 'asc' },
+    take: remaining,
+  });
+
+  return [...missing, ...oldest];
+}
+
+/**
+ * @param {import('@prisma/client').PrismaClient} prismaClient
+ * @param {number} limit
+ */
+async function loadRecentActualites(prismaClient, limit) {
+  return prismaClient.actualite.findMany({
+    select: {
+      id: true,
+      slug: true,
+      titre: true,
+    },
+    orderBy: { date_publication: 'desc' },
+    take: limit,
+  });
+}
+
+/**
+ * @param {import('@prisma/client').PrismaClient} prismaClient
+ * @param {ReturnType<typeof createCandidate>} candidate
+ */
+async function upsertOpenCandidate(prismaClient, candidate) {
+  const where = {
+    entityType_entityId_reason_status: {
+      entityType: candidate.entityType,
+      entityId: candidate.entityId,
+      reason: candidate.reason,
+      status: REVIEW_QUEUE_OPEN_STATUS,
+    },
+  };
+
+  const existing = await prismaClient.reviewQueueItem.findUnique({
+    where,
+    select: { id: true },
+  });
+
+  if (existing) {
+    await prismaClient.reviewQueueItem.update({
+      where: { id: existing.id },
+      data: {
+        entitySlug: candidate.entitySlug,
+        title: candidate.title,
+        severity: candidate.severity,
+        details: toJsonDetails(candidate.details),
+      },
+    });
+    return 'updated';
+  }
+
+  await prismaClient.reviewQueueItem.create({
+    data: {
+      entityType: candidate.entityType,
+      entityId: candidate.entityId,
+      entitySlug: candidate.entitySlug,
+      title: candidate.title,
+      reason: candidate.reason,
+      severity: candidate.severity,
+      status: REVIEW_QUEUE_OPEN_STATUS,
+      details: toJsonDetails(candidate.details),
+    },
+  });
+  return 'created';
+}
+
+/**
+ * @param {Record<string, number>} counter
+ * @param {string} key
+ */
+function increment(counter, key) {
+  counter[key] = (counter[key] || 0) + 1;
+}
+
+/**
+ * @param {{
+ *   prismaClient?: import('@prisma/client').PrismaClient,
+ *   limitPerType?: number,
+ * }} options
+ */
+export async function scanDataQuality(options = {}) {
+  const prismaClient = options.prismaClient || prisma;
+  const defaultLimit = env.dataQuality.reviewScanLimitPerType;
+  const effectiveLimit = toBoundedPositiveInt(options.limitPerType, defaultLimit);
+
+  const staleThresholds = {
+    aide: env.dataQuality.aidesStaleDays,
+    demarche: env.dataQuality.demarchesStaleDays,
+    structure: env.dataQuality.structuresStaleDays,
+  };
+
+  const [aides, demarches, structures, actualites] = await Promise.all([
+    loadAidesForReview(prismaClient, effectiveLimit),
+    loadDemarchesForReview(prismaClient, effectiveLimit),
+    loadStructuresForReview(prismaClient, effectiveLimit),
+    loadRecentActualites(prismaClient, effectiveLimit),
+  ]);
+
+  /** @type {Array<ReturnType<typeof createCandidate>>} */
+  const candidates = [];
+
+  for (const aide of aides) {
+    candidates.push(
+      ...buildAideCandidates(aide, {
+        staleDays: staleThresholds.aide,
+      }),
+    );
+  }
+
+  for (const demarche of demarches) {
+    candidates.push(
+      ...buildDemarcheCandidates(demarche, {
+        staleDays: staleThresholds.demarche,
+      }),
+    );
+  }
+
+  for (const structure of structures) {
+    candidates.push(
+      ...buildStructureCandidates(structure, {
+        staleDays: staleThresholds.structure,
+      }),
+    );
+  }
+
+  for (const actualite of actualites) {
+    candidates.push(...buildActualiteCandidates(actualite));
+  }
+
+  let created = 0;
+  let updated = 0;
+  /** @type {Record<string, number>} */
+  const byReason = {};
+  /** @type {Record<string, number>} */
+  const bySeverity = {};
+  /** @type {Record<string, number>} */
+  const byEntityType = {};
+
+  for (const candidate of candidates) {
+    const action = await upsertOpenCandidate(prismaClient, candidate);
+    if (action === 'created') created += 1;
+    else updated += 1;
+
+    increment(byReason, candidate.reason);
+    increment(bySeverity, candidate.severity);
+    increment(byEntityType, candidate.entityType);
+  }
+
+  const openTotal = await prismaClient.reviewQueueItem.count({
+    where: { status: REVIEW_QUEUE_OPEN_STATUS },
+  });
+
+  return {
+    scanned: {
+      aides: aides.length,
+      demarches: demarches.length,
+      structures: structures.length,
+      actualites: actualites.length,
+    },
+    created,
+    updated,
+    openTotal,
+    byReason,
+    bySeverity,
+    byEntityType,
+    limitPerType: effectiveLimit,
+  };
+}
+
+/**
+ * @param {unknown} raw
+ * @param {'open' | 'resolved' | 'ignored'=} fallback
+ * @returns {'open' | 'resolved' | 'ignored'}
+ */
+export function normalizeReviewStatus(raw, fallback = 'open') {
+  const normalized = String(raw || '').trim().toLowerCase();
+  if (normalized === 'open' || normalized === 'resolved' || normalized === 'ignored') {
+    return normalized;
+  }
+  return fallback;
+}
+
+/**
+ * @param {unknown} raw
+ * @returns {'resolved' | 'ignored' | null}
+ */
+export function parsePatchStatus(raw) {
+  const normalized = String(raw || '').trim().toLowerCase();
+  if (normalized === 'resolved' || normalized === 'ignored') return normalized;
+  return null;
+}
+
+/**
+ * @param {unknown} raw
+ * @returns {'aide' | 'demarche' | 'structure' | 'actualite' | null}
+ */
+export function normalizeEntityType(raw) {
+  const value = String(raw || '').trim().toLowerCase();
+  if (!value) return null;
+  if (value === ENTITY_TYPES.aide) return ENTITY_TYPES.aide;
+  if (value === ENTITY_TYPES.demarche) return ENTITY_TYPES.demarche;
+  if (value === ENTITY_TYPES.structure) return ENTITY_TYPES.structure;
+  if (value === ENTITY_TYPES.actualite) return ENTITY_TYPES.actualite;
+  return null;
+}

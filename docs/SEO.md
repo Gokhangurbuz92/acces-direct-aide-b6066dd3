@@ -107,3 +107,63 @@ Attendu:
 ## Notes sécurité
 - Aucun secret n’est loggé dans les réponses HTML/meta/JSON-LD.
 - Aucun secret dans les docs SEO.
+
+## P7-D — Indexability policy (admin + endpoints techniques)
+
+### Règle globale
+- Les pages publiques restent indexables.
+- Les surfaces techniques et d’administration sont explicitement noindex.
+
+### Différence entre les mécanismes
+- `robots.txt`:
+  - Directive de crawl pour les bots.
+  - N’est pas un mécanisme de sécurité.
+- `X-Robots-Tag: noindex, nofollow`:
+  - En-tête HTTP côté API pour empêcher l’indexation d’endpoints techniques.
+  - S’applique même quand la réponse est en erreur (`401/403/500`).
+- `<meta name="robots" content="noindex, nofollow">`:
+  - Contrôle d’indexation côté pages HTML (SPA), utilisé pour `/admin` et sous-routes.
+
+### Cibles indexables (inventaire actuel)
+- `/`
+- `/aides`
+- `/aides/:slug`
+- `/demarches`
+- `/demarches/:slug`
+- `/annuaire`
+- `/structures/:slug`
+- `/actualites`
+- `/actualites/:slug`
+- `/robots.txt`
+- `/sitemap.xml`
+
+### Cibles non-indexables (inventaire actuel)
+- `/admin`
+- `/admin/*`
+- `/api/health`
+- `/api/health/deep`
+- `/api/healthz`
+- `/api/monitor/*`
+- `/api/cron/*`
+- `/api/admin/*`
+
+### robots.txt policy
+- Fichier: `public/robots.txt`
+- Directives:
+  - `User-agent: *`
+  - `Allow: /`
+  - `Disallow: /admin`
+  - `Disallow: /api/`
+  - `Sitemap: https://www.accesdirectaide.fr/sitemap.xml`
+
+### Vérification rapide
+```bash
+curl -s https://www.accesdirectaide.fr/robots.txt
+curl -I https://www.accesdirectaide.fr/api/health | rg -i "x-robots-tag"
+curl -I https://www.accesdirectaide.fr/api/monitor/cron/actualites | rg -i "x-robots-tag"
+```
+
+Playwright:
+```bash
+npx playwright test e2e/noindex-admin.spec.js
+```

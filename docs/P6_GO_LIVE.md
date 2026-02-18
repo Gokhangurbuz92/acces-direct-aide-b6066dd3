@@ -207,3 +207,18 @@ curl -I "https://www.accesdirectaide.fr/aides/"
 Attendu:
 - apex -> `www` en redirection permanente, avec conservation path + querystring.
 - trailing slash -> URL sans slash final (`/aides/` -> `/aides`).
+
+## Smoke indexability (post-deploy)
+
+Checklist minimal:
+
+```bash
+curl -s https://www.accesdirectaide.fr/robots.txt
+curl -I https://www.accesdirectaide.fr/api/health | rg -i "x-robots-tag"
+curl -I https://www.accesdirectaide.fr/api/monitor/cron/actualites | rg -i "x-robots-tag"
+```
+
+Attendu:
+- `robots.txt` contient `Disallow: /admin` et `Disallow: /api/`.
+- les endpoints techniques renvoient `X-Robots-Tag: noindex, nofollow`.
+- les pages admin exposent `meta[name="robots"]` avec `noindex, nofollow`.

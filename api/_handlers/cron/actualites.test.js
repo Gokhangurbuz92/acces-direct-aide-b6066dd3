@@ -42,14 +42,22 @@ vi.mock('../../_utils/prisma.js', () => ({
 import handler from './actualites.js';
 
 function mockReq(overrides = {}) {
+  const { headers: overrideHeaders = {}, ...rest } = overrides;
+  const headers = {
+    host: 'localhost:3000',
+    'x-forwarded-proto': 'http',
+    'user-agent': 'curl/8.0.0',
+    ...overrideHeaders,
+  };
+
   return {
     method: 'GET',
     url: 'http://localhost/api/cron/actualites',
-    headers: {},
+    headers,
     query: {},
     body: {},
     cookies: {},
-    ...overrides,
+    ...rest,
   };
 }
 
@@ -103,6 +111,7 @@ describe('Cron Actualites Handler', () => {
     await handler(req, res);
 
     expect(res.status).toHaveBeenCalledWith(401);
+    expect(mocks.prisma.cronRun.create).not.toHaveBeenCalled();
   });
 
   it('authorizes Vercel Cron user-agent in production (no secret header)', async () => {
@@ -132,29 +141,54 @@ describe('Cron Actualites Handler', () => {
     expect(res.status).toHaveBeenCalledWith(401);
   });
 
-  it('returns 202 when cron lock is already held (anti-flood)', async () => {
-    mocks.kv.set.mockResolvedValueOnce('OK').mockResolvedValueOnce(null);
+  it('returns 202 and records skipped run when lock is already held', async () => {
+    mocks.kv.set.mockResolvedValueOnce(null);
 
-    const res1 = mockRes();
+    const res = mockRes();
     await handler(
       mockReq({
         headers: { 'x-cron-secret': 'test-cron-secret' },
       }),
-      res1,
-    );
-    expect(res1.status).toHaveBeenCalledWith(200);
-
-    const res2 = mockRes();
-    await handler(
-      mockReq({
-        headers: { 'x-cron-secret': 'test-cron-secret' },
-      }),
-      res2,
+      res,
     );
 
-    expect(res2.status).toHaveBeenCalledWith(202);
-    expect(mocks.runIngestActualitesRss).toHaveBeenCalledTimes(1);
+    expect(res.status).toHaveBeenCalledWith(202);
+    expect(mocks.runIngestActualitesRss).not.toHaveBeenCalled();
     expect(mocks.prisma.cronRun.create).toHaveBeenCalledTimes(1);
+    expect(mocks.prisma.cronRun.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({
+          status: 'skipped',
+          skipReason: 'locked',
+          trigger: 'manual',
+        }),
+      }),
+    );
+  });
+
+  it('returns 202 and records skipped run when cooldown is active', async () => {
+    mocks.prisma.cronRun.findFirst.mockResolvedValueOnce({ startedAt: new Date() });
+
+    const res = mockRes();
+    await handler(
+      mockReq({
+        headers: { 'x-cron-secret': 'test-cron-secret' },
+      }),
+      res,
+    );
+
+    expect(res.status).toHaveBeenCalledWith(202);
+    expect(mocks.runIngestActualitesRss).not.toHaveBeenCalled();
+    expect(mocks.prisma.cronRun.create).toHaveBeenCalledTimes(1);
+    expect(mocks.prisma.cronRun.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({
+          status: 'skipped',
+          skipReason: 'cooldown',
+          trigger: 'manual',
+        }),
+      }),
+    );
   });
 
   it('returns 200 when authorized and triggers ingestion', async () => {
@@ -166,7 +200,14 @@ describe('Cron Actualites Handler', () => {
     await handler(req, res);
 
     expect(res.status).toHaveBeenCalledWith(200);
-    expect(mocks.prisma.cronRun.create).toHaveBeenCalled();
+    expect(mocks.prisma.cronRun.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({
+          status: 'running',
+          trigger: 'manual',
+        }),
+      }),
+    );
     expect(mocks.prisma.cronRun.update).toHaveBeenCalled();
     expect(mocks.runIngestActualitesRss).toHaveBeenCalledWith(
       expect.objectContaining({ runId: expect.any(String) }),

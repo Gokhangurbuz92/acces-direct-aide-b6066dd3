@@ -231,6 +231,18 @@ export const env = {
     },
   },
 
+  auth: {
+    get mode() {
+      return getEnv('AUTH_MODE', { default: 'token' }) || 'token';
+    },
+    get secret() {
+      return envAliases('AUTH_SECRET', ['AUTH_JWT_SECRET']);
+    },
+    get magiclinkEnabled() {
+      return getEnv('AUTH_MAGICLINK_ENABLED', { default: '0' }) === '1';
+    },
+  },
+
   ai: {
     get geminiKey() {
       return envAliases('GEMINI_API_KEY', ['GOOGLE_API_KEY']);

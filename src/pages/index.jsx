@@ -5,6 +5,7 @@ import { frontendEnv } from "@/config/env";
 // [LAZY LOADED PAGES]
 // Public
 const Home = lazy(() => import("./Home.jsx"));
+const Login = lazy(() => import("./Login.jsx"));
 const Orientation = lazy(() => import("./Orientation.jsx"));
 const APropos = lazy(() => import("./APropos.jsx"));
 const Accessibilite = lazy(() => import("./Accessibilite.jsx"));
@@ -47,6 +48,7 @@ const AppointmentCancel = lazy(() => import("./AppointmentCancel.jsx"));
 const AppointmentReschedule = lazy(() => import("./AppointmentReschedule.jsx"));
 const Layout = lazy(() => import("./Layout.jsx"));
 const AdminGuard = lazy(() => import("@/components/AdminGuard"));
+const ProGuard = lazy(() => import("@/components/ProGuard"));
 
 // Admin
 const AdminLogin = lazy(() => import("./AdminLogin.jsx"));
@@ -95,7 +97,7 @@ const PAGES = {
     AdminAideEdit, AdminAides, AdminGuideSync, AdminMessages,
     AdminRecentSyncs, AdminSources, AdminSync, AdminTestSync,
     AideDetail, Aides, Annuaire, Confidentialite, Contact, Cookies,
-    DemarcheDetail, DispositifDetail, LoginPro, Demarches, Home, Orientation,
+    DemarcheDetail, DispositifDetail, Login, LoginPro, Demarches, Home, Orientation,
     MentionsLegales, SourcesMethode, SentryTest, StructureDetail,
     AdminInbox, AdminRuns, AdminObservability, AdminReviewQueue, AppointmentRequest, AppointmentCancel, AppointmentReschedule, AdminStructures,
     AdminDemarches, AdminDemarcheEdit, AdminAppointments, AdminReview, Status
@@ -160,12 +162,12 @@ function PagesContent() {
                         <Route path="register" element={<ProRegister />} />
                         <Route path="forgot-password" element={<ProForgotPassword />} />
                         <Route path="reset-password" element={<ProResetPassword />} />
-                        <Route path="dashboard" element={<ProDashboard />} />
-                        <Route path="services" element={<ProServices />} />
-                        <Route path="team" element={<ProTeam />} />
-                        <Route path="structure" element={<ProStructure />} />
-                        <Route path="appointments" element={<ProAppointments />} />
-                        <Route path="appointments/:id" element={<ProAppointmentDetail />} />
+                        <Route path="dashboard" element={<ProGuard><ProDashboard /></ProGuard>} />
+                        <Route path="services" element={<ProGuard><ProServices /></ProGuard>} />
+                        <Route path="team" element={<ProGuard><ProTeam /></ProGuard>} />
+                        <Route path="structure" element={<ProGuard><ProStructure /></ProGuard>} />
+                        <Route path="appointments" element={<ProGuard><ProAppointments /></ProGuard>} />
+                        <Route path="appointments/:id" element={<ProGuard><ProAppointmentDetail /></ProGuard>} />
                     </Route>
                 </Routes>
             </Suspense>
@@ -177,6 +179,7 @@ function PagesContent() {
             <Layout currentPageName={currentPage}>
                 <Routes>
                     <Route path="/" element={<Home />} />
+                    <Route path="/login" element={<Login />} />
                     <Route path="/a-propos" element={<APropos />} />
                     <Route path="/accessibilite" element={<Accessibilite />} />
                     <Route path="/actualites" element={<Actualites />} />

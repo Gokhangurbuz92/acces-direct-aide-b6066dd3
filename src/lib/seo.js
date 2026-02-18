@@ -1,3 +1,5 @@
+import { frontendEnv } from '@/config/env';
+
 const DEFAULT_BASE_URL = 'https://www.accesdirectaide.fr';
 const SITE_NAME = 'Accès Direct Aide';
 
@@ -25,9 +27,18 @@ function sanitizePath(path) {
 }
 
 export function getRuntimeOrigin() {
+  if (frontendEnv.runtime.vercelEnv === 'production') {
+    return DEFAULT_BASE_URL;
+  }
+
   if (typeof window !== 'undefined' && window.location?.origin) {
+    const hostname = String(window.location.hostname || '').toLowerCase();
+    if (hostname === 'accesdirectaide.fr' || hostname === 'www.accesdirectaide.fr') {
+      return DEFAULT_BASE_URL;
+    }
     return window.location.origin;
   }
+
   return DEFAULT_BASE_URL;
 }
 

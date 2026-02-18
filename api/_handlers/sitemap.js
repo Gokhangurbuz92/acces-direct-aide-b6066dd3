@@ -1,7 +1,7 @@
 import { randomUUID } from 'crypto';
 import prisma from '../_utils/prisma.js';
 import logger from '../_utils/logger.js';
-import { PRODUCTION_DOMAIN } from '../_utils/seo.js';
+import { getCanonicalOrigin } from '../_utils/site-origin.js';
 
 const CACHE_CONTROL = 'public, max-age=0, s-maxage=300, stale-while-revalidate=60';
 const MAX_DYNAMIC_URLS = 10000;
@@ -19,45 +19,6 @@ function escapeXml(value) {
     .replace(/>/g, '&gt;')
     .replace(/"/g, '&quot;')
     .replace(/'/g, '&apos;');
-}
-
-/**
- * @param {unknown} value
- * @returns {string | null}
- */
-function normalizeHeaderValue(value) {
-  if (typeof value === 'string') return value.trim() || null;
-  if (Array.isArray(value) && typeof value[0] === 'string') {
-    const first = value[0].trim();
-    return first || null;
-  }
-  return null;
-}
-
-/**
- * @param {import('../_utils/http-types').ApiRequest} req
- * @param {string} name
- * @returns {string | null}
- */
-function getHeader(req, name) {
-  if (!req?.headers) return null;
-  return normalizeHeaderValue(req.headers[name.toLowerCase()] ?? req.headers[name]);
-}
-
-/**
- * @param {import('../_utils/http-types').ApiRequest} req
- * @returns {string}
- */
-function getBaseUrl(req) {
-  const forwardedProto = getHeader(req, 'x-forwarded-proto');
-  const protoRaw = (forwardedProto || 'https').split(',')[0]?.trim().toLowerCase();
-  const proto = protoRaw === 'http' ? 'http' : 'https';
-
-  const forwardedHost = getHeader(req, 'x-forwarded-host');
-  const hostRaw = (forwardedHost || getHeader(req, 'host') || PRODUCTION_DOMAIN).split(',')[0]?.trim();
-  const host = hostRaw || PRODUCTION_DOMAIN;
-
-  return `${proto}://${host}`;
 }
 
 /**
@@ -119,7 +80,7 @@ export default async function handler(req, res) {
   }
 
   const requestId = typeof req.requestId === 'string' ? req.requestId : randomUUID();
-  const baseUrl = getBaseUrl(req);
+  const baseUrl = getCanonicalOrigin(req);
 
   try {
     const aides = await prisma.aide.findMany({

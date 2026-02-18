@@ -176,6 +176,35 @@ export const apiClient = {
         /** @param {string} id */
         getCronRun: function (id) {
             return apiRequest('/api/admin/cron-runs/' + encodeURIComponent(id));
+        },
+        /** @param {number=} limitPerType */
+        scanReviewQueue: function (limitPerType) {
+            var body = {};
+            if (limitPerType != null) body.limitPerType = Number(limitPerType);
+            return apiRequest('/api/admin/review-queue/scan', {
+                method: 'POST',
+                body: body
+            });
+        },
+        /**
+         * @param {{ status?: string, entityType?: string, reason?: string, limit?: number | string, cursor?: string }=} filters
+         */
+        getReviewQueueItems: function (filters) {
+            var params = new URLSearchParams();
+            var input = filters || {};
+            if (input.status) params.append('status', String(input.status));
+            if (input.entityType) params.append('entityType', String(input.entityType));
+            if (input.reason) params.append('reason', String(input.reason));
+            if (input.limit != null) params.append('limit', String(input.limit));
+            if (input.cursor) params.append('cursor', String(input.cursor));
+            return apiRequest('/api/admin/review-queue?' + params.toString());
+        },
+        /** @param {string} id @param {'resolved' | 'ignored'} status */
+        updateReviewQueueStatus: function (id, status) {
+            return apiRequest('/api/admin/review-queue/' + encodeURIComponent(id), {
+                method: 'PATCH',
+                body: { status: status }
+            });
         }
     },
     entities: {

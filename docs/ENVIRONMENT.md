@@ -32,6 +32,10 @@ Legend:
 | `CRON_SECRET` | server | no | yes | Secures cron endpoints (recommended locally, required on Vercel). |
 | `CRON_ACTUALITES_STALE_MINUTES` | server | no | no | Freshness warning threshold for `/api/health/deep` (default `540`). |
 | `CRON_ACTUALITES_FAIL_MINUTES` | server | no | no | Freshness failure threshold for `/api/health/deep` (default `1440`). |
+| `DATA_AIDES_STALE_DAYS` | server | no | no | Data quality stale threshold for aides review queue (default `365`). |
+| `DATA_DEMARCHES_STALE_DAYS` | server | no | no | Data quality stale threshold for demarches review queue (default `365`). |
+| `DATA_STRUCTURES_STALE_DAYS` | server | no | no | Data quality stale threshold for structures review queue (default `365`). |
+| `DATA_REVIEW_SCAN_LIMIT_PER_TYPE` | server | no | no | Max entities scanned per type during review queue scan (default `200`). |
 | `BYPASS_SECRET` | server | no | no | Optional bypass for specific automation/test flows. |
 | `KV_REST_API_URL` | server | no | yes | Upstash/Vercel KV REST URL (required for prod rate limiting/locks). |
 | `KV_REST_API_TOKEN` | server | no | yes | Upstash/Vercel KV REST token. |

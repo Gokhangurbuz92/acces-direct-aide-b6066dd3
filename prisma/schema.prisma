@@ -357,7 +357,9 @@ model ImportLog {
 model CronRun {
   id          String   @id @default(cuid())
   job         String
-  status      String // "running" | "success" | "failed"
+  status      String // "running" | "success" | "failed" | "skipped"
+  trigger     String? // "vercel" | "manual" | "external" | "unknown"
+  skipReason  String? // "locked" | "cooldown"
   startedAt   DateTime @default(now())
   finishedAt  DateTime?
   durationMs  Int?
@@ -371,6 +373,7 @@ model CronRun {
 
   @@index([job, startedAt])
   @@index([status, startedAt])
+  @@index([trigger, startedAt])
 }
 
 model RssSource {

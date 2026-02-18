@@ -30,8 +30,8 @@ console.log(`[vercel-build] start (VERCEL_ENV=${vercelEnv})`);
 run('npx prisma generate');
 
 if (isProduction) {
-  console.log('[vercel-build] production detected -> running prisma migrate deploy');
-  run('npx prisma migrate deploy');
+  console.log('[vercel-build] production detected -> running safe prisma migrate flow');
+  run('node scripts/prisma-migrate-safe.mjs');
 } else {
   console.log('[vercel-build] skipping prisma migrate deploy (not production)');
 }
@@ -40,4 +40,3 @@ if (isProduction) {
 run('npm run build');
 
 console.log('[vercel-build] done');
-

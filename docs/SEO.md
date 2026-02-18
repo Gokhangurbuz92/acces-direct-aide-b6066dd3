@@ -1,4 +1,4 @@
-# SEO Guide (P7-A + P7-B + P7-C)
+# SEO Guide (P7-A -> P7-E)
 
 ## P7-A — SEO plumbing (root)
 
@@ -35,9 +35,12 @@ Le composant `src/components/SEO.jsx` applique sur les pages publiques:
 - Twitter: `twitter:card`, `twitter:title`, `twitter:description`, `twitter:image`
 
 ### Canonical strategy
-- Le canonical est construit au runtime depuis l’origin courant (`window.location.origin`) + le path de page.
+- Le canonical est construit au runtime depuis l’origin + path, avec règle durcie:
+  - `VERCEL_ENV=production` => origin forcée à `https://www.accesdirectaide.fr`
+  - preview/dev => origin dérivée du host runtime
 - Résultat:
-  - Compatible Preview/Prod (pas de hardcode d’un seul domaine).
+  - Preview garde ses URLs de déploiement.
+  - Production reste strictement sur le domaine canonique `www`.
   - URLs absolues stables pour OG/Twitter (`og:url = canonical`).
 
 ### JSON-LD minimal
@@ -167,3 +170,35 @@ Playwright:
 ```bash
 npx playwright test e2e/noindex-admin.spec.js
 ```
+
+## P7-E — Search Console readiness
+
+### Canonical origin backend (sitemap)
+- Source of truth backend: `api/_utils/site-origin.js`
+- Règle:
+  - `VERCEL_ENV=production` => sitemap force `https://www.accesdirectaide.fr`
+  - preview/dev => sitemap utilise `x-forwarded-proto` + `x-forwarded-host|host`
+
+### Meta verification optionnelle (sans token en code)
+Le composant `src/components/SEO.jsx` supporte optionnellement:
+- `VITE_GOOGLE_SITE_VERIFICATION` -> `<meta name="google-site-verification" ...>`
+- `VITE_BING_SITE_VERIFICATION` -> `<meta name="msvalidate.01" ...>`
+
+Si ces variables ne sont pas définies, aucune meta de vérification n’est injectée.
+
+### Search Console (checklist rapide)
+1. Ajouter le domaine/propriété dans l’outil webmaster.
+2. Définir le token côté env (variable `VITE_*` correspondante).
+3. Déployer.
+4. Vérifier la présence de la meta sur `/`.
+5. Soumettre le sitemap: `https://www.accesdirectaide.fr/sitemap.xml`.
+
+### Smoke SEO manuel
+Commande runbook:
+```bash
+npm run smoke:seo:prod
+```
+
+Variables supportées (optionnelles):
+- `PROD_URL` (default: `https://www.accesdirectaide.fr`)
+- `APEX_URL` (default: `https://accesdirectaide.fr`)

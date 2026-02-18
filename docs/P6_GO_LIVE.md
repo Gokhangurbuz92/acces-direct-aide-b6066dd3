@@ -222,3 +222,22 @@ Attendu:
 - `robots.txt` contient `Disallow: /admin` et `Disallow: /api/`.
 - les endpoints techniques renvoient `X-Robots-Tag: noindex, nofollow`.
 - les pages admin exposent `meta[name="robots"]` avec `noindex, nofollow`.
+
+## Smoke SEO global (post-deploy)
+
+Commande unique (sans secrets):
+
+```bash
+npm run smoke:seo:prod
+```
+
+Variables optionnelles:
+- `PROD_URL` (default `https://www.accesdirectaide.fr`)
+- `APEX_URL` (default `https://accesdirectaide.fr`)
+
+Le script vérifie:
+- redirect apex -> www
+- policy `robots.txt`
+- contract `sitemap.xml` (origin canonique)
+- header `x-robots-tag` sur endpoints techniques
+- meta noindex admin (best effort SPA)

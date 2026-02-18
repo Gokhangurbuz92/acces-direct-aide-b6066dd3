@@ -30,6 +30,8 @@ Legend:
 | `ADA_ENCRYPTION_KEY` | server | yes | yes | Server encryption key. |
 | `ADMIN_TOKEN` | server | no | yes | Admin API auth token (recommended locally, required on Vercel). |
 | `CRON_SECRET` | server | no | yes | Secures cron endpoints (recommended locally, required on Vercel). |
+| `CRON_ACTUALITES_STALE_MINUTES` | server | no | no | Freshness warning threshold for `/api/health/deep` (default `540`). |
+| `CRON_ACTUALITES_FAIL_MINUTES` | server | no | no | Freshness failure threshold for `/api/health/deep` (default `1440`). |
 | `BYPASS_SECRET` | server | no | no | Optional bypass for specific automation/test flows. |
 | `KV_REST_API_URL` | server | no | yes | Upstash/Vercel KV REST URL (required for prod rate limiting/locks). |
 | `KV_REST_API_TOKEN` | server | no | yes | Upstash/Vercel KV REST token. |
@@ -63,4 +65,3 @@ These variables are used by some flows but are not enforced by `env-check`:
 | `DEBUG_TOKEN` | server | Optional protected diagnostics. |
 | `ALLOW_DEV_TOOLS` | server | Local-only dev toggle. |
 | `VITE_*` flags | client | Must stay client-only. Never move server secrets under `VITE_*`. |
-

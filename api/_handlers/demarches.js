@@ -5,6 +5,7 @@ import { verifyAdmin } from '../_utils/auth.js';
 import { logger } from '../lib/logger.js';
 import * as Sentry from '@sentry/node';
 import crypto from 'crypto';
+import { buildProvenance } from '../_utils/provenance.js';
 /**
  * @param {string | null | undefined} url
  * @param {string | null | undefined} host
@@ -106,14 +107,31 @@ export default async function handler(req, res) {
         if (effectiveParams.id || effectiveParams.slug) {
             const demarche = await prisma.demarche.findFirst({
                 where: effectiveParams.id ? { id: effectiveParams.id } : { slug: effectiveParams.slug },
-                include: { category: true, situations: true }
+                include: {
+                  category: true,
+                  situations: true,
+                  sourceDocument: {
+                    select: {
+                      fetched_at: true,
+                      source_url: true,
+                    },
+                  },
+                }
             });
 
             if (!demarche) return res.status(404).json({ error: "Démarche non trouvée" });
             if (!isAdmin && demarche.statut !== 'publie') {
                 return res.status(404).json({ error: "Démarche non trouvée" });
             }
-            return res.status(200).json(demarche);
+            const { sourceDocument, ...safeDemarche } = demarche;
+            return res.status(200).json({
+              ...safeDemarche,
+              provenance: buildProvenance({
+                verifiedAt: safeDemarche.date_verification,
+                fetchedAt: sourceDocument?.fetched_at,
+                sourceUrl: sourceDocument?.source_url || safeDemarche.source_url || safeDemarche.source_url_exact,
+              }),
+            });
         }
 
         // 2. Search / List

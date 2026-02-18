@@ -4,12 +4,14 @@ import {
   Phone,
   Globe,
   Clock,
+  Calendar,
   Accessibility,
   ArrowRight
 } from 'lucide-react';
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { formatProvenanceDate, getProvenance } from '@/lib/provenance';
 
 const TYPE_LABELS = {
   association: 'Association',
@@ -35,6 +37,9 @@ const TYPE_COLORS = {
 };
 
 export default function StructureCard({ structure, compact = false }) {
+  const provenance = getProvenance(structure);
+  const verifiedAt = formatProvenanceDate(provenance.verifiedAt);
+  const sourceHost = provenance.sourceHost;
   const targetUrl = structure.slug ? `/structures/${structure.slug}` : `/structures/view?id=${structure.id}`;
   const isPmrAccessible = Boolean(structure.accessibilite_pmr || structure.accessibility_info?.pmr);
 
@@ -94,7 +99,7 @@ export default function StructureCard({ structure, compact = false }) {
           )}
 
           {/* Infos de contact */}
-          <div className="space-y-2 text-sm text-slate-600 relative z-20">
+	          <div className="space-y-2 text-sm text-slate-600 relative z-20">
             {/* Note: Links inside here like telephone/email must be z-20 to be clickable. */}
             {structure.adresse && (
               <div className="flex items-start gap-2">
@@ -123,9 +128,25 @@ export default function StructureCard({ structure, compact = false }) {
                 <span>{structure.horaires}</span>
               </div>
             )}
-          </div>
+	          </div>
+            {(verifiedAt || sourceHost) && (
+              <div className="mt-1 flex flex-wrap gap-4 text-xs text-slate-500">
+                {verifiedAt && (
+                  <span className="flex items-center gap-1.5">
+                    <Calendar className="h-3.5 w-3.5" />
+                    Vérifié: {verifiedAt}
+                  </span>
+                )}
+                {sourceHost && (
+                  <span className="flex items-center gap-1.5">
+                    <Globe className="h-3.5 w-3.5" />
+                    Source: {sourceHost}
+                  </span>
+                )}
+              </div>
+            )}
 
-          {/* Actions */}
+	          {/* Actions */}
           <div className="flex flex-wrap gap-2 mt-2">
             {structure.site_web && (
               <Button

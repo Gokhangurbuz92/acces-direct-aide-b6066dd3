@@ -7,7 +7,7 @@ import SEO from '@/components/SEO';
 import NotFound from './NotFound';
 import Gone from './Gone';
 import { generateActualiteSchema, generateBreadcrumbSchema } from '@/utils/schema';
-import SourceTraceability from '@/components/SourceTraceability';
+import ProvenanceFreshness from '@/components/ProvenanceFreshness';
 import FalcSummary from '@/components/FalcSummary';
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -22,6 +22,7 @@ import {
   Info,
   ExternalLink
 } from 'lucide-react';
+import { getProvenance } from '@/lib/provenance';
 
 const TYPE_ICONS = {
   nouveaute: Star,
@@ -134,6 +135,7 @@ export default function ActualiteDetail() {
   const TypeIcon = TYPE_ICONS[actu.type_actu] || Info;
   const sourceName = actu.source_nom || actu.source_name || actu.source || '';
   const sourceUrl = actu.canonical_url || actu.lien_url || actu.url || actu.source_url || '';
+  const provenance = getProvenance(actu);
 
   const breadcrumbs = [
     { name: 'Accueil', url: '/' },
@@ -241,14 +243,7 @@ export default function ActualiteDetail() {
         {/* FALC Summary */}
         <FalcSummary text={actu?.summary_falc} />
 
-        {/* Traçabilité de la source */}
-        <SourceTraceability
-          source_url={actu.source_url}
-          retrieved_at={actu.retrieved_at || actu.fetched_at}
-          fetched_at={actu.fetched_at}
-          last_checked_at={actu.last_checked_at}
-          source_last_modified={actu.source_last_modified}
-        />
+        <ProvenanceFreshness provenance={provenance} />
       </div>
     </div>
   );

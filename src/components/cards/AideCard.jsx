@@ -8,6 +8,7 @@ import {
 } from 'lucide-react';
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
+import { formatProvenanceDate, getProvenance } from '@/lib/provenance';
 
 const CATEGORIE_COLORS = {
   logement: 'bg-orange-100 text-orange-800',
@@ -44,6 +45,10 @@ const CATEGORIE_LABELS = {
 };
 
 export default function AideCard({ aide, compact = false }) {
+  const provenance = getProvenance(aide);
+  const verifiedAt = formatProvenanceDate(provenance.verifiedAt);
+  const sourceHost = provenance.sourceHost;
+
   const categorySlug = (() => {
     const raw = aide?.categorie || aide?.theme || aide?.category?.slug || aide?.category_code;
     if (!raw) return null;
@@ -122,10 +127,16 @@ export default function AideCard({ aide, compact = false }) {
                 {getTerritoireLabel()}
               </span>
             )}
-            {aide.date_verification && (
+            {verifiedAt && (
               <span className="flex items-center gap-1">
                 <Calendar className="h-4 w-4" />
-                Vérifié le {new Date(aide.date_verification).toLocaleDateString('fr-FR')}
+                Vérifié: {verifiedAt}
+              </span>
+            )}
+            {sourceHost && (
+              <span className="flex items-center gap-1">
+                <CheckCircle2 className="h-4 w-4" />
+                Source: {sourceHost}
               </span>
             )}
           </div>

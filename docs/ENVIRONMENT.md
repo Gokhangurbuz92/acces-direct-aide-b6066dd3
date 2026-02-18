@@ -46,6 +46,8 @@ Legend:
 | `STORAGE_SECRET_ACCESS_KEY` | server | no | yes | Secret access key. |
 | `SENTRY_DSN` | server | no | yes | Server Sentry DSN. |
 | `VITE_SENTRY_DSN` | client | no | no | Client Sentry DSN (must be `VITE_*`). |
+| `VITE_GOOGLE_SITE_VERIFICATION` | client | no | no | Optional Google Search Console meta verification token. |
+| `VITE_BING_SITE_VERIFICATION` | client | no | no | Optional Bing Webmaster meta verification token. |
 | `SENTRY_ORG` | server | no | no | DevOps/build only. |
 | `SENTRY_PROJECT` | server | no | no | DevOps/build only. |
 | `SENTRY_AUTH_TOKEN` | server | no | no | DevOps/build only. Must not be used at runtime. |

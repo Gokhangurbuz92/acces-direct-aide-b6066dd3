@@ -4,6 +4,9 @@ import crypto from 'crypto';
 import { geocodeAddress } from '../../_utils/geocoder.js';
 import { withLock } from '../../_utils/pipelineLock.js';
 import logger from '../../_utils/logger.js';
+import { computeContentHash } from '../../_utils/contentHash.js';
+import { ensureSlugOrNull } from '../../_utils/slug.js';
+import { upsertSourceDocument } from '../../_utils/sourceDocument.js';
 
 const DATASETS = [
     {
@@ -14,22 +17,20 @@ const DATASETS = [
     }
 ];
 
-function slugify(text) {
-    if (!text) return '';
-    return text.toString().toLowerCase().trim()
-        .replace(/\s+/g, '-')
-        .replace(/[^\w-]+/g, '')
-        .replace(/--+/g, '-')
-        .replace(/^-+/, '')
-        .replace(/-+$/, '');
+/**
+ * @param {unknown} error
+ * @returns {string}
+ */
+function getErrorMessage(error) {
+    if (error instanceof Error) return error.message;
+    if (typeof error === 'string') return error;
+    return 'unknown error';
 }
 
 /**
  * Pure ingestion logic for Structures
- * @param {Object} params
- * @param {number} params.limit
- * @param {string} params.runId
- * @returns {Promise<Object>} stats
+ * @param {{ limit?: number, runId?: string }} params
+ * @returns {Promise<{ fetched: number, processed: number, created: number, updated: number, skippedExisting: number, errors: string[], durationByStage: { fetchMs: number, processingMs: number } }>}
  */
 export async function runIngestStructures({ limit, runId }) {
     // Log format: INGEST_<SOURCE>_ENTER url=<...>
@@ -39,6 +40,7 @@ export async function runIngestStructures({ limit, runId }) {
     // Ensure runId
     if (!runId) runId = crypto.randomUUID();
 
+    /** @type {{ fetched: number, processed: number, created: number, updated: number, skippedExisting: number, errors: string[], durationByStage: { fetchMs: number, processingMs: number } }} */
     const stats = {
         fetched: 0,
         processed: 0,
@@ -62,8 +64,8 @@ export async function runIngestStructures({ limit, runId }) {
         try {
             response = await fetch(dataset.url);
         } catch (fetchErr) {
-            stats.errors.push(`${dataset.id}: Fetch failed - ${fetchErr.message}`);
-            console.error(`[STRUCTURES] Fetch Error: ${fetchErr.message}`);
+            stats.errors.push(`${dataset.id}: Fetch failed - ${getErrorMessage(fetchErr)}`);
+            console.error(`[STRUCTURES] Fetch Error: ${getErrorMessage(fetchErr)}`);
             continue;
         }
 
@@ -86,7 +88,7 @@ export async function runIngestStructures({ limit, runId }) {
             // Log keys for diagnosis
             // console.log(`[STRUCTURES] Data Keys: ${data ? Object.keys(data).join(',') : 'null'}`);
         } catch (parseErr) {
-            stats.errors.push(`${dataset.id}: JSON Parse Error - ${parseErr.message}`);
+            stats.errors.push(`${dataset.id}: JSON Parse Error - ${getErrorMessage(parseErr)}`);
             continue;
         }
 
@@ -128,40 +130,73 @@ export async function runIngestStructures({ limit, runId }) {
                 const ville = f.commune || f.ville || "Strasbourg";
                 const cp = (f.code_postal || f.cp || "").toString();
 
-                // Dedupe Logic: Hash of Name + Address
-                const rawContent = `${nom}${fullAdresse}${ville}`.toLowerCase();
-                const hash = crypto.createHash('md5').update(rawContent).digest('hex');
+                const hash = computeContentHash({
+                    nom,
+                    fullAdresse,
+                    ville,
+                    cp,
+                    email: f.mail || f.email || null,
+                    telephone: f.tel || f.telephone || null,
+                    site: f.url || f.site_internet || null,
+                });
+                const baseSlug = ensureSlugOrNull(nom);
+                const normalizedSlug = ensureSlugOrNull(`${baseSlug || 'structure'}-${hash.substring(0, 6)}`);
+
+                let sourceDocumentId = null;
+                try {
+                    const sourceDocument = await upsertSourceDocument(prisma, {
+                        sourceUrl: dataset.url,
+                        rawContent: JSON.stringify(item),
+                        metadata: {
+                            entityType: 'structure',
+                            datasetId: dataset.id,
+                            datasetName: dataset.name,
+                        },
+                    });
+                    sourceDocumentId = sourceDocument.id;
+                } catch {
+                    stats.errors.push(`${dataset.id}: source document failed`);
+                }
 
                 // Check if exists
                 const existing = await prisma.structure.findFirst({
                     where: {
                         OR: [
                             { raw_data_hash: hash },
-                            { slug: slugify(nom) + '-' + hash.substring(0, 6) }
+                            ...(normalizedSlug ? [{ slug: normalizedSlug }] : []),
                         ]
                     }
                 });
 
                 if (existing) {
-                    // UPDATE
-                    await prisma.structure.update({
-                        where: { id: existing.id },
-                        data: {
-                            last_sync: new Date(),
-                            import_batch: runId,
-                            telephone: existing.telephone || f.tel || f.telephone || null,
-                            email: existing.email || f.mail || f.email || null,
-                            site_web: existing.site_web || f.url || f.site_internet || null,
-                            raw_data_hash: hash
-                        }
-                    });
-                    stats.updated++;
+                    const unchanged =
+                        existing.raw_data_hash === hash &&
+                        (existing.source_document_id || null) === sourceDocumentId;
+
+                    if (unchanged) {
+                        stats.skippedExisting++;
+                    } else {
+                        await prisma.structure.update({
+                            where: { id: existing.id },
+                            data: {
+                                last_sync: new Date(),
+                                import_batch: runId,
+                                telephone: existing.telephone || f.tel || f.telephone || null,
+                                email: existing.email || f.mail || f.email || null,
+                                site_web: existing.site_web || f.url || f.site_internet || null,
+                                raw_data_hash: hash,
+                                source_document_id: sourceDocumentId,
+                                slug: existing.slug || normalizedSlug || null,
+                            }
+                        });
+                        stats.updated++;
+                    }
                 } else {
                     // CREATE - Valve 1: Ingest
                     const newStructure = await prisma.structure.create({
                         data: {
                             nom,
-                            slug: slugify(nom) + '-' + hash.substring(0, 6),
+                            slug: normalizedSlug || null,
                             adresse: `${fullAdresse} ${cp} ${ville}`.trim(),
                             ville,
                             code_postal: cp,
@@ -171,6 +206,7 @@ export async function runIngestStructures({ limit, runId }) {
                             source_id: dataset.id,
                             source_url: dataset.url,
                             raw_data_hash: hash,
+                            source_document_id: sourceDocumentId,
                             import_batch: runId,
                             statut: "brouillon",
                             import_status: "active"
@@ -213,8 +249,8 @@ export async function runIngestStructures({ limit, runId }) {
                     stats.created++;
                 }
             } catch (recErr) {
-                console.error("Structure Record Error:", recErr.message);
-                stats.errors.push(`Record fail: ${recErr.message}`);
+                console.error("Structure Record Error:", getErrorMessage(recErr));
+                stats.errors.push(`Record fail: ${getErrorMessage(recErr)}`);
             }
         }
         stats.durationByStage.processingMs += (Date.now() - startProcess);
@@ -290,7 +326,7 @@ export default async function handler(req, res) {
                     data: {
                         status: 'failed',
                         ended_at: new Date(),
-                        error: error.message
+                        error: getErrorMessage(error)
                     }
                 });
                 throw error;
@@ -299,12 +335,12 @@ export default async function handler(req, res) {
 
         return res.status(200).json(stats);
     } catch (err) {
-        if (err.message.includes('already running')) {
+        if (getErrorMessage(err).includes('already running')) {
             logger.warn({ runId }, 'Ingest-Structures already running, skipping');
             return res.status(409).json({ error: 'Pipeline already running', runId });
         }
         
-        logger.error({ runId, error: err.message }, "Handler Structure Error");
-        return res.status(500).json({ error: err.message, runId });
+        logger.error({ runId, error: getErrorMessage(err) }, "Handler Structure Error");
+        return res.status(500).json({ error: 'Internal Server Error', runId });
     }
 }

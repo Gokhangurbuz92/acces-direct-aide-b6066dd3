@@ -5,25 +5,30 @@ import { logger } from '../../lib/logger.js';
 import * as Sentry from '@sentry/node';
 import { GrandEstConnector } from '../../lib/ingestion/GrandEstConnector.js';
 import { AgefiphConnector } from '../../lib/ingestion/AgefiphConnector.js';
+import { computeContentHash } from '../../_utils/contentHash.js';
+import { ensureSlugOrNull } from '../../_utils/slug.js';
+import { upsertSourceDocument } from '../../_utils/sourceDocument.js';
 
-function slugify(text) {
-    if (!text) return '';
-    return text
-        .toString()
-        .toLowerCase()
-        .trim()
-        .replace(/\s+/g, '-')
-        .replace(/[^\w-]+/g, '')
-        .replace(/--+/g, '-')
-        .replace(/^-+/, '')
-        .replace(/-+$/, '');
+/**
+ * @param {unknown} error
+ * @returns {string}
+ */
+function getErrorMessage(error) {
+    if (error instanceof Error) return error.message;
+    if (typeof error === 'string') return error;
+    return 'unknown error';
 }
 
+/**
+ * @param {{ limit?: number, runId?: string, wipe?: boolean }} params
+ * @returns {Promise<{ fetched: number, processed: number, created: number, updated: number, skippedExisting: number, errors: string[], durationByStage: { fetchMs: number, processingMs: number } }>}
+ */
 export async function runIngestAids({ limit, runId, wipe = false }) {
     if (!runId) runId = crypto.randomUUID();
 
     logger.info('INGEST_AIDS_START', { runId, wipe, limit });
 
+    /** @type {{ fetched: number, processed: number, created: number, updated: number, skippedExisting: number, errors: string[], durationByStage: { fetchMs: number, processingMs: number } }} */
     const stats = {
         fetched: 0,
         processed: 0,
@@ -57,7 +62,7 @@ export async function runIngestAids({ limit, runId, wipe = false }) {
             logger.warn('INGEST_AIDS_WIPE_DONE', { runId });
         } catch (e) {
             logger.error('INGEST_AIDS_WIPE_ERROR', { runId, error: e });
-            stats.errors.push(`Wipe failed: ${e.message}`);
+            stats.errors.push(`Wipe failed: ${getErrorMessage(e)}`);
         }
     }
 
@@ -77,7 +82,7 @@ export async function runIngestAids({ limit, runId, wipe = false }) {
                 urls = await connector.getDetailUrls();
             } catch (e) {
                 logger.error(`CONNECTOR_CRAWL_ERROR`, { runId, connector: connector.name, error: e });
-                stats.errors.push(`${connector.name} crawl error: ${e.message}`);
+                stats.errors.push(`${connector.name} crawl error: ${getErrorMessage(e)}`);
                 
                 // Enhanced Sentry context for connector crawl errors
                 Sentry.captureException(e, {
@@ -124,8 +129,33 @@ export async function runIngestAids({ limit, runId, wipe = false }) {
                         fetched_at: item.fetched_at || new Date()
                     };
 
-                    const slug = slugify(`${connector.name}-${normalizedItem.title}`);
-                    const contentHash = crypto.createHash('md5').update(JSON.stringify(item)).digest('hex');
+                    const baseSlug = ensureSlugOrNull(`${connector.name}-${normalizedItem.title}`);
+                    const contentHash = computeContentHash({
+                        title: normalizedItem.title,
+                        description: normalizedItem.description,
+                        content: normalizedItem.content,
+                        source_url: normalizedItem.source_url,
+                        apply_url: normalizedItem.apply_url,
+                        theme: normalizedItem.theme,
+                        connector: connector.name,
+                    });
+
+                    let sourceDocumentId = null;
+                    try {
+                        const sourceDocument = await upsertSourceDocument(prisma, {
+                            sourceUrl: normalizedItem.source_url || url,
+                            rawContent: typeof html === 'string' ? html.slice(0, 20000) : JSON.stringify(item),
+                            metadata: {
+                                entityType: 'aide',
+                                connector: connector.name,
+                                parserVersion: 'connector-v1',
+                            },
+                        });
+                        sourceDocumentId = sourceDocument.id;
+                    } catch {
+                        stats.errors.push(`${url}: source document failed`);
+                        logger.warn('INGEST_AIDS_SOURCE_DOCUMENT_FAIL', { runId, connector: connector.name });
+                    }
 
                     // Idempotency: Upsert by slug (or source_url)
                     // We prioritize source_url for uniqueness if possible, but slug is the DB unique key.
@@ -134,9 +164,9 @@ export async function runIngestAids({ limit, runId, wipe = false }) {
                     const existing = await prisma.aide.findFirst({
                         where: {
                             OR: [
-                                { slug },
-                                { source_url: item.source_url }
-                            ]
+                                ...(baseSlug ? [{ slug: baseSlug }] : []),
+                                ...(normalizedItem.source_url ? [{ source_url: normalizedItem.source_url }] : []),
+                            ],
                         }
                     });
 
@@ -155,35 +185,31 @@ export async function runIngestAids({ limit, runId, wipe = false }) {
                         last_checked_at: new Date(), // Current check timestamp
                         statut: 'publie',
                         published_at: new Date(),
-                        content_hash: contentHash
+                        content_hash: contentHash,
+                        source_document_id: sourceDocumentId,
                     };
 
                     if (existing) {
-                        if (existing.content_hash !== contentHash) {
+                        if (existing.content_hash !== contentHash || (existing.source_document_id || null) !== sourceDocumentId) {
                              await prisma.aide.update({
                                 where: { id: existing.id },
-                                data: { ...data, updatedAt: new Date() }
+                                data
                             });
                             stats.updated++;
                         } else {
-                            // Update last_checked_at even if content unchanged (traceability)
-                            await prisma.aide.update({
-                                where: { id: existing.id },
-                                data: { last_checked_at: new Date() }
-                            });
                             stats.skippedExisting++;
                         }
                     } else {
-                        // Ensure slug uniqueness
-                        let finalSlug = slug;
-                        if (await prisma.aide.count({ where: { slug: finalSlug } }) > 0) {
-                            finalSlug = `${slug}-${crypto.randomBytes(2).toString('hex')}`;
+                        // Ensure deterministic slug uniqueness.
+                        let finalSlug = baseSlug;
+                        if (finalSlug && (await prisma.aide.count({ where: { slug: finalSlug } })) > 0) {
+                            finalSlug = ensureSlugOrNull(`${finalSlug}-${contentHash.slice(0, 6)}`);
                         }
 
                         await prisma.aide.create({
                             data: {
                                 ...data,
-                                slug: finalSlug
+                                slug: finalSlug || null
                             }
                         });
                         stats.created++;
@@ -191,7 +217,7 @@ export async function runIngestAids({ limit, runId, wipe = false }) {
 
                 } catch (itemErr) {
                     logger.error(`ITEM_PROCESS_ERROR`, { runId, url, error: itemErr });
-                    stats.errors.push(`${url}: ${itemErr.message}`);
+                    stats.errors.push(`${url}: ${getErrorMessage(itemErr)}`);
                     
                     // Enhanced Sentry context for item-level errors
                     Sentry.captureException(itemErr, {
@@ -210,7 +236,7 @@ export async function runIngestAids({ limit, runId, wipe = false }) {
 
         } catch (connErr) {
              logger.error(`CONNECTOR_ERROR`, { runId, connector: connector.name, error: connErr });
-             stats.errors.push(`${connector.name} fatal: ${connErr.message}`);
+             stats.errors.push(`${connector.name} fatal: ${getErrorMessage(connErr)}`);
              
              // Enhanced Sentry context for fatal connector errors
              Sentry.captureException(connErr, {
@@ -291,6 +317,6 @@ export default async function handler(req, res) {
     } catch (error) {
         logger.error('Ingest Aids Handler Error', { runId, error });
         Sentry.captureException(error, { extra: { runId } });
-        return res.status(500).json({ error: error.message });
+        return res.status(500).json({ error: 'Internal Server Error', runId });
     }
 }

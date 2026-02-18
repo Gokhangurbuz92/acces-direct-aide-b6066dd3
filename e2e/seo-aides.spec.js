@@ -40,9 +40,9 @@ async function setupAidesSeoMocks(page) {
     });
   });
 
-  await page.route('**/api/aides*', async (route) => {
+  await page.route('**/api/aides**', async (route) => {
     const url = route.request().url();
-    if (url.includes('slug=aide-seo-test')) {
+    if (url.includes('/api/aides/aide-seo-test') || url.includes('slug=aide-seo-test')) {
       await route.fulfill({ json: { items: [DETAIL_ITEM] } });
       return;
     }
@@ -89,7 +89,10 @@ test.describe('SEO Runtime - Aides', () => {
 
   test('/aides/:slug updates metadata from loaded aide data', async ({ page }) => {
     await page.goto('/aides/aide-seo-test');
-    await page.waitForResponse((response) => response.url().includes('/api/aides?slug=aide-seo-test'));
+    await page.waitForResponse((response) =>
+      response.url().includes('/api/aides/aide-seo-test') ||
+      response.url().includes('/api/aides?slug=aide-seo-test')
+    );
 
     const origin = new URL(page.url()).origin;
     const expectedCanonical = `${origin}/aides/aide-seo-test`;
@@ -110,4 +113,3 @@ test.describe('SEO Runtime - Aides', () => {
     expect(webPageEntry?.mainEntity?.name).toBe('Aide SEO Test');
   });
 });
-

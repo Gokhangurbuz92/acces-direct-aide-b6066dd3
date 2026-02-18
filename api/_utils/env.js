@@ -246,6 +246,21 @@ export const env = {
     },
   },
 
+  dataQuality: {
+    get aidesStaleDays() {
+      return toPositiveInt(getEnv('DATA_AIDES_STALE_DAYS', { default: '365' }), 365);
+    },
+    get demarchesStaleDays() {
+      return toPositiveInt(getEnv('DATA_DEMARCHES_STALE_DAYS', { default: '365' }), 365);
+    },
+    get structuresStaleDays() {
+      return toPositiveInt(getEnv('DATA_STRUCTURES_STALE_DAYS', { default: '365' }), 365);
+    },
+    get reviewScanLimitPerType() {
+      return toPositiveInt(getEnv('DATA_REVIEW_SCAN_LIMIT_PER_TYPE', { default: '200' }), 200);
+    },
+  },
+
   flags: {
     get devLoginEnabled() {
       return getEnv('VITE_DEV_LOGIN_ENABLED') === 'true';

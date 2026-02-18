@@ -66,6 +66,7 @@ import adminCronRuns from './_handlers/admin/cron-runs.js';
 import adminPartnerships from './_handlers/admin/partnerships.js';
 import adminLinkChecks from './_handlers/admin/link-checks.js';
 import adminValidatePublication from './_handlers/admin/validate-publication.js';
+import adminReviewQueue from './_handlers/admin/review-queue.js';
 
 export const routes = [
     // --- Special / Root ---
@@ -136,4 +137,5 @@ export const routes = [
     { path: 'admin/partnerships', match: 'exact', handler: adminPartnerships },
     { path: 'admin/link-checks', match: 'exact', handler: adminLinkChecks },
     { path: 'admin/validate-publication', match: 'exact', handler: adminValidatePublication },
+    { path: 'admin/review-queue', match: 'prefix', handler: adminReviewQueue },
 ];

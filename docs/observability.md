@@ -1,59 +1,69 @@
 # Observability
 
-Goal: Diagnose incidents in < 5 minutes.
+## Objectif
+Diagnostiquer rapidement les incidents runtime sans exposer de donnees sensibles.
 
-## 1. Stack
-- **Logging**: Pino (JSON structured logs).
-- **Tracing/Errors**: Sentry (Full stack).
-- **Context**: `requestId` (UUID) propagated via `x-request-id` header.
+## Endpoints de monitoring recommandes
 
-## 2. Logs Structure
-Logs are output to `stdout` in JSON format.
+1. `GET /api/monitor/core` (public)
+- Usage: monitor uptime infra core (DB + KV) via BetterUptime/UptimeRobot/StatusCake.
+- Semantique:
+  - `200`: DB + KV OK.
+  - `503`: DB ou KV indisponible (ou timeout).
+  - `405`: methode non supportee.
+- Header attendu: `Cache-Control: no-store`
+- Header attendu: `X-Robots-Tag: noindex, nofollow`
 
-```json
-{
-  "level": "info",
-  "time": 1715695000000,
-  "env": "production",
-  "service": "api",
-  "release": "abcdef123",
-  "requestId": "550e8400-e29b-41d4-a716-446655440000",
-  "msg": "Incoming Request",
-  "method": "GET",
-  "path": "/aides",
-  "query": { "category": "logement" },
-  "duration": 45
-}
-```
+2. `GET /api/monitor/cron/actualites` (public)
+- Usage: monitor freshness du cron actualites.
+- Semantique:
+  - `200`: cron fresh.
+  - `503`: cron stale/missing/error.
 
-## 3. Sentry Alerts
-Configure these rules in Sentry Project Settings:
+## Endpoint diagnostique protege
 
-1.  **5xx Spike**:
-    *   Condition: `count() > 5` in 1 minute where `level:error` and `transaction.status:5xx`.
-    *   Action: Slack/Email P0.
+`GET /api/health/deep` reste l'endpoint admin/cron pour diagnostic detaille (DB/KV/Storage + freshness cron).
 
-2.  **Search Errors (Degraded Experience)**:
-    *   Condition: `count() > 10` in 5 minutes where `transaction:/api/aides` and `level:error`.
+## Telemetrie Sentry (safe tags)
 
-3.  **Auth Brute Force**:
-    *   Condition: `count() > 20` in 1 minute where `transaction:/api/auth/login` and `message:"Invalid credentials"`.
+Les requetes API ajoutent des tags Sentry filtrables:
+- `request_id`
+- `route`
+- `route_group` (`public|admin|cron|monitor|health|other`)
+- `vercel_env`
+- `release`
+- `http.method`
 
-## 4. Debug Checklist (P0 Incident)
+Pour les erreurs capturees centralement, `http.status_code` est ajoute quand disponible.
 
-1.  **Get the Request ID**:
-    *   Ask reporter for `x-request-id` header or find it in Sentry event tags (`requestId`).
-2.  **Find Logs**:
-    *   Filter logs by `requestId` in your log aggregator (Datadog, Vercel Logs, etc.).
-3.  **Check Sentry**:
-    *   Search by `requestId` or `release` version.
-    *   Look at "Breadcrumbs" for steps leading to error.
-4.  **Identify Deployment**:
-    *   Check `release` field in logs/Sentry matches the deployed git commit.
-    *   Verify `env` matches expected environment (production vs staging).
-5.  **Rollback?**:
-    *   If many 500s appear after a new release, revert immediately using Vercel Dashboard.
+Contraintes de securite:
+- pas de corps de requete dans les events
+- pas d'Authorization/Cookie/token en clair
+- pas de valeurs d'env dans les logs/events
 
-## 5. Development
-- **Sourcemaps**: Automatically uploaded on build via `@sentry/vite-plugin`.
-- **Verify**: Run `npm run verify` to check route integrity.
+## Alerting manuel conseille
+
+1. API errors spike
+- Filtre: `level:error` + `http.status_code:500` (ou 5xx selon dashboard).
+- Scope: `route_group:public` ou `route_group:monitor` selon besoin.
+
+2. Core monitor down
+- Uptime monitor sur `/api/monitor/core` avec alerte si `HTTP != 200`.
+
+3. Cron freshness degradee
+- Uptime monitor sur `/api/monitor/cron/actualites` avec alerte si `HTTP != 200`.
+
+## Diagnostic rapide
+
+1. `/api/monitor/core` en `503`
+- verifier DB
+- verifier KV
+- verifier latence/timeouts reseau
+
+2. `/api/monitor/cron/actualites` en `503`
+- verifier `/api/admin/cron-runs?job=actualites&limit=20`
+- verifier scheduling Vercel cron
+- verifier logs ingestion
+
+3. Correlation
+- recuperer `x-request-id` et filtrer logs/Sentry avec `request_id`.

@@ -5,6 +5,7 @@ import { searchAides } from '../lib/search-query.js';
 import { logger } from '../lib/logger.js';
 import * as Sentry from '@sentry/node';
 import crypto from 'crypto';
+import { buildProvenance } from '../_utils/provenance.js';
 
 function extractSlugFromPath(url, host = 'localhost') {
     if (!url) return null;
@@ -109,15 +110,35 @@ async function handler(req, res) {
 
             const aide = await prisma.aide.findFirst({
                 where: effectiveParams.id ? { id: effectiveParams.id } : { slug: effectiveParams.slug },
-                include: { category: true, situations: true, aidSituations: { include: { situation: true } } }
+                include: {
+                  category: true,
+                  situations: true,
+                  aidSituations: { include: { situation: true } },
+                  sourceDocument: {
+                    select: {
+                      fetched_at: true,
+                      source_url: true,
+                    },
+                  },
+                }
             });
 
             if (!aide || aide.statut !== 'publie') {
                 return res.status(404).json({ error: "Aide non trouvée" });
             }
 
+            const { sourceDocument, ...safeAide } = aide;
+            const payload = {
+              ...safeAide,
+              provenance: buildProvenance({
+                verifiedAt: safeAide.date_verification,
+                fetchedAt: sourceDocument?.fetched_at || safeAide.fetched_at,
+                sourceUrl: sourceDocument?.source_url || safeAide.source_url,
+              }),
+            };
+
             logger.info('SEARCH_AIDES_SINGLE_SUCCESS', { requestId, duration_ms: Date.now() - start });
-            return res.status(200).json(aide);
+            return res.status(200).json(payload);
         }
 
         // 2. Search / List (Unified)

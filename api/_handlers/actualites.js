@@ -4,6 +4,7 @@ import { handleAdminCreate, handleAdminUpdate, handleAdminDelete } from '../_uti
 import { logger } from '../lib/logger.js'; // Ensure logger is imported
 import { searchActualitesSchema } from '../_utils/validators.js';
 import crypto from 'crypto';
+import { buildProvenance } from '../_utils/provenance.js';
 /**
  * @param {import('../_utils/http-types').ApiRequest} req
  * @param {import('../_utils/http-types').ApiResponse} res
@@ -121,12 +122,33 @@ export default async function handler(req, res) {
         if (effectiveParams.id || effectiveParams.slug) {
             const item = await prisma.actualite.findFirst({
                 where: effectiveParams.id ? { id: effectiveParams.id } : { slug: effectiveParams.slug },
+                include: {
+                  sourceDocument: {
+                    select: {
+                      fetched_at: true,
+                      source_url: true,
+                    },
+                  },
+                },
             });
 
             if (!item) return res.status(404).json({ error: 'Not found' });
             if (!isAdmin && item.statut !== 'publie') return res.status(404).json({ error: 'Not found' });
 
-            return res.status(200).json(item);
+            const { sourceDocument, ...safeItem } = item;
+            return res.status(200).json({
+              ...safeItem,
+              provenance: buildProvenance({
+                verifiedAt: null,
+                fetchedAt: sourceDocument?.fetched_at || safeItem.fetched_at,
+                sourceUrl:
+                  sourceDocument?.source_url ||
+                  safeItem.source_url ||
+                  safeItem.canonical_url ||
+                  safeItem.lien_url ||
+                  safeItem.url,
+              }),
+            });
         }
 
         // 2) Listing / search
@@ -195,12 +217,36 @@ export default async function handler(req, res) {
                         source_nom: true,
                         source_url: true,
                         quality_score: true,
+                        fetched_at: true,
+                        sourceDocument: {
+                          select: {
+                            fetched_at: true,
+                            source_url: true,
+                          },
+                        },
                     },
                 }),
             ]);
 
+            const itemsWithProvenance = items.map((item) => {
+              const { sourceDocument, ...safeItem } = item;
+              return {
+                ...safeItem,
+                provenance: buildProvenance({
+                  verifiedAt: null,
+                  fetchedAt: sourceDocument?.fetched_at || safeItem.fetched_at,
+                  sourceUrl:
+                    sourceDocument?.source_url ||
+                    safeItem.source_url ||
+                    safeItem.canonical_url ||
+                    safeItem.lien_url ||
+                    safeItem.url,
+                }),
+              };
+            });
+
             return res.status(200).json({
-                items,
+                items: itemsWithProvenance,
                 pagination: {
                     total,
                     page,

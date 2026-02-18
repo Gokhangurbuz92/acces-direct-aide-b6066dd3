@@ -2,6 +2,7 @@ import prisma from '../_utils/prisma.js';
 import { checkRateLimit, getClientIp } from '../_utils/rateLimit.js';
 import { searchStructuresSchema } from '../_utils/validators.js';
 import { searchStructures } from '../lib/search-query.js';
+import { buildProvenance } from '../_utils/provenance.js';
 
 /**
  * @param {string | null | undefined} url
@@ -76,13 +77,29 @@ async function handler(req, res) {
         if (effectiveParams.id || effectiveParams.slug) {
             const structure = await prisma.structure.findFirst({
                 where: effectiveParams.id ? { id: effectiveParams.id } : { slug: effectiveParams.slug },
-                include: { proServices: true }
+                include: {
+                  proServices: true,
+                  sourceDocument: {
+                    select: {
+                      fetched_at: true,
+                      source_url: true,
+                    },
+                  },
+                }
             });
 
             if (!structure || structure.statut !== 'actif') {
                 return res.status(404).json({ error: "Structure non trouvée" });
             }
-            return res.status(200).json(structure);
+            const { sourceDocument, ...safeStructure } = structure;
+            return res.status(200).json({
+              ...safeStructure,
+              provenance: buildProvenance({
+                verifiedAt: safeStructure.date_verification,
+                fetchedAt: sourceDocument?.fetched_at,
+                sourceUrl: sourceDocument?.source_url || safeStructure.source_url || safeStructure.source_url_exact,
+              }),
+            });
         }
 
         // 2. Search / List

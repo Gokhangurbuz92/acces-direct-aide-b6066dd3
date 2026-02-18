@@ -12,6 +12,7 @@ import ListSkeleton from '@/components/feedback/ListSkeleton';
 import { Badge } from '@/components/ui/badge';
 import NewsFallback from '@/components/news/NewsFallback';
 import { generateBreadcrumbSchema } from '@/utils/schema';
+import { formatProvenanceDate, getProvenance } from '@/lib/provenance';
 
 /**
  * @typedef {object} ActualiteListItem
@@ -31,6 +32,7 @@ import { generateBreadcrumbSchema } from '@/utils/schema';
  * @property {string=} lien_url
  * @property {string=} url
  * @property {string=} source_url
+ * @property {{ verifiedAt?: string|null, fetchedAt?: string|null, sourceUrl?: string|null, sourceHost?: string|null }=} provenance
  */
 
 const CATEGORIES = {
@@ -341,12 +343,15 @@ export default function Actualites() {
         ) : actualites.length > 0 ? (
 	          <>
 	            <div className="space-y-6" data-testid="actualites-results-list">
-	              {actualites.map((actu) => {
-	                const typeKey = actu.type_actu || 'info';
-	                const TypeIcon = TYPE_ICONS[typeKey] || Info;
-	                const linkUrl = actu.slug ? `/actualites/${actu.slug}` : `/actualites/view?id=${actu.id}`;
-	                const sourceName = getSourceName(actu);
-	                const sourceUrl = getSourceUrl(actu);
+		              {actualites.map((actu) => {
+		                const typeKey = actu.type_actu || 'info';
+		                const TypeIcon = TYPE_ICONS[typeKey] || Info;
+		                const linkUrl = actu.slug ? `/actualites/${actu.slug}` : `/actualites/view?id=${actu.id}`;
+		                const sourceName = getSourceName(actu);
+		                const sourceUrl = getSourceUrl(actu);
+                    const provenance = getProvenance(actu);
+                    const verifiedAt = formatProvenanceDate(provenance.verifiedAt);
+                    const sourceHost = provenance.sourceHost;
 
                 return (
                   <Card
@@ -402,8 +407,14 @@ export default function Actualites() {
                               year: 'numeric',
                             })}
                           </span>
-                          {sourceName && (
-                            <span>Source : {sourceName}</span>
+                          {verifiedAt && (
+                            <span>Vérifié: {verifiedAt}</span>
+                          )}
+                          {sourceHost && (
+                            <span>Source: {sourceHost}</span>
+                          )}
+                          {!sourceHost && sourceName && (
+                            <span>Source: {sourceName}</span>
                           )}
                         </div>
 

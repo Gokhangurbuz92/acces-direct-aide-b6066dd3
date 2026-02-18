@@ -8,7 +8,14 @@ const MOCK_AIDES = {
             providerName: 'Test Provider',
             cest_quoi: 'Résumé facile.',
             categorie: 'logement',
-            statut: 'publie'
+            statut: 'publie',
+            date_verification: '2026-01-10T10:00:00.000Z',
+            provenance: {
+                verifiedAt: '2026-01-10T10:00:00.000Z',
+                fetchedAt: '2026-02-10T10:00:00.000Z',
+                sourceUrl: 'https://www.service-public.fr/aide-test',
+                sourceHost: 'www.service-public.fr'
+            }
         }
     ],
     pagination: { total: 1, page: 1, pageSize: 10, totalPages: 1 }
@@ -22,7 +29,14 @@ const MOCK_AIDE_DETAIL = {
     cest_quoi: 'Description longue',
     categorie: 'logement',
     statut: 'publie',
-    category: { name: 'Logement' }
+    category: { name: 'Logement' },
+    date_verification: '2026-01-10T10:00:00.000Z',
+    provenance: {
+        verifiedAt: '2026-01-10T10:00:00.000Z',
+        fetchedAt: '2026-02-10T10:00:00.000Z',
+        sourceUrl: 'https://www.service-public.fr/aide-test',
+        sourceHost: 'www.service-public.fr'
+    }
 };
 
 const MOCK_DEMARCHES = {
@@ -32,7 +46,14 @@ const MOCK_DEMARCHES = {
             slug: 'demarche-test',
             titre: 'Démarche Test',
             summary_falc: 'Résumé démarche.',
-            statut: 'publie'
+            statut: 'publie',
+            date_verification: '2025-10-10T10:00:00.000Z',
+            provenance: {
+                verifiedAt: '2025-10-10T10:00:00.000Z',
+                fetchedAt: '2026-02-10T10:00:00.000Z',
+                sourceUrl: 'https://www.service-public.fr/demarche-test',
+                sourceHost: 'www.service-public.fr'
+            }
         }
     ],
     pagination: { total: 1, page: 1, pageSize: 10, totalPages: 1 }
@@ -43,7 +64,14 @@ const MOCK_DEMARCHE_DETAIL = {
     slug: 'demarche-test',
     titre: 'Démarche Test',
     summary_falc: 'Résumé démarche.',
-    statut: 'publie'
+    statut: 'publie',
+    date_verification: '2025-10-10T10:00:00.000Z',
+    provenance: {
+        verifiedAt: '2025-10-10T10:00:00.000Z',
+        fetchedAt: '2026-02-10T10:00:00.000Z',
+        sourceUrl: 'https://www.service-public.fr/demarche-test',
+        sourceHost: 'www.service-public.fr'
+    }
 };
 
 const MOCK_STRUCTURES = {
@@ -55,7 +83,14 @@ const MOCK_STRUCTURES = {
             adresse: '1 rue Test',
             ville: 'Testville',
             statut: 'actif',
-            type_structure: 'association'
+            type_structure: 'association',
+            date_verification: '2025-07-10T10:00:00.000Z',
+            provenance: {
+                verifiedAt: '2025-07-10T10:00:00.000Z',
+                fetchedAt: '2026-02-10T10:00:00.000Z',
+                sourceUrl: 'https://www.bas-rhin.fr/structure-test',
+                sourceHost: 'www.bas-rhin.fr'
+            }
         }
     ],
     pagination: { total: 1, page: 1, pageSize: 10, totalPages: 1 }
@@ -69,7 +104,14 @@ const MOCK_STRUCTURE_DETAIL = {
     ville: 'Testville',
     statut: 'actif',
     type_structure: 'association',
-    proServices: []
+    proServices: [],
+    date_verification: '2025-07-10T10:00:00.000Z',
+    provenance: {
+        verifiedAt: '2025-07-10T10:00:00.000Z',
+        fetchedAt: '2026-02-10T10:00:00.000Z',
+        sourceUrl: 'https://www.bas-rhin.fr/structure-test',
+        sourceHost: 'www.bas-rhin.fr'
+    }
 };
 
 const MOCK_ACTUALITES = {
@@ -82,7 +124,13 @@ const MOCK_ACTUALITES = {
             type_actu: 'info',
             date_publication: new Date().toISOString(),
             published_at: new Date().toISOString(),
-            est_important: false
+            est_important: false,
+            provenance: {
+                verifiedAt: null,
+                fetchedAt: '2026-02-10T10:00:00.000Z',
+                sourceUrl: 'https://www.service-public.fr/actualite-test',
+                sourceHost: 'www.service-public.fr'
+            }
         }
     ],
     pagination: { total: 1, page: 1, pageSize: 10, totalPages: 1 }
@@ -95,7 +143,13 @@ const MOCK_ACTUALITE_DETAIL = {
     contenu: 'Contenu actu',
     type_actu: 'info',
     date_publication: new Date().toISOString(),
-    published_at: new Date().toISOString()
+    published_at: new Date().toISOString(),
+    provenance: {
+        verifiedAt: null,
+        fetchedAt: '2026-02-10T10:00:00.000Z',
+        sourceUrl: 'https://www.service-public.fr/actualite-test',
+        sourceHost: 'www.service-public.fr'
+    }
 };
 
 /**

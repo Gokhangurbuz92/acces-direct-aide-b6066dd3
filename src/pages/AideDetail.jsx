@@ -23,11 +23,12 @@ import {
   Loader2
 } from 'lucide-react';
 import { buildAideDetailSchemas, truncateDescription } from '@/lib/seo';
-import SourceTraceability from '@/components/SourceTraceability';
+import ProvenanceFreshness from '@/components/ProvenanceFreshness';
 import FalcSummary from '@/components/FalcSummary';
 import FalcToggle from '@/components/FalcToggle';
 import FalcContent from '@/components/FalcContent';
 import ReportContentButton from '@/components/ReportContentButton';
+import { formatProvenanceDate, getProvenance } from '@/lib/provenance';
 
 /** @typedef {Error & { status?: number, payload?: unknown }} ApiError */
 
@@ -162,6 +163,8 @@ export default function AideDetail() {
     aide?.category?.label ||
     categorySlug ||
     'Autre';
+  const provenance = getProvenance(aide);
+  const fetchedAtLabel = formatProvenanceDate(provenance.fetchedAt);
 
   const getTerritoireLabel = () => {
     if (!aide.territoires?.length) return 'Non précisé';
@@ -234,10 +237,10 @@ export default function AideDetail() {
               <MapPin className="h-4 w-4" />
               {getTerritoireLabel()}
             </span>
-            {aide.fetched_at && (
+            {fetchedAtLabel && (
                <span className="flex items-center gap-1" title="Date de dernière mise à jour de la source">
                   <Calendar className="h-4 w-4" />
-                  Mise à jour : {new Date(aide.source_last_modified || aide.fetched_at).toLocaleDateString('fr-FR')}
+                  Mise à jour : {fetchedAtLabel}
                </span>
             )}
             {aide.delai_indicatif && (
@@ -400,14 +403,7 @@ export default function AideDetail() {
 
           {/* Sidebar */}
           <div className="space-y-6">
-            {/* Source Traceability */}
-            <SourceTraceability 
-              source_url={aide.source_url}
-              retrieved_at={aide.retrieved_at}
-              last_checked_at={aide.last_checked_at}
-              source_last_modified={aide.source_last_modified}
-              fetched_at={aide.fetched_at}
-            />
+            <ProvenanceFreshness provenance={provenance} />
 
             {/* Actions */}
             <Card>

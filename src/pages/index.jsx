@@ -1,7 +1,5 @@
 import { Suspense, lazy } from "react";
-import Layout from "./Layout.jsx";
 import { BrowserRouter as Router, Route, Routes, useLocation, Navigate, useParams } from 'react-router-dom';
-import AdminGuard from "@/components/AdminGuard";
 import { frontendEnv } from "@/config/env";
 
 // [LAZY LOADED PAGES]
@@ -46,6 +44,8 @@ const BeneficiaryMessages = lazy(() => import("./BeneficiaryMessages.jsx"));
 const AppointmentRequest = lazy(() => import("./AppointmentRequest.jsx"));
 const AppointmentCancel = lazy(() => import("./AppointmentCancel.jsx"));
 const AppointmentReschedule = lazy(() => import("./AppointmentReschedule.jsx"));
+const Layout = lazy(() => import("./Layout.jsx"));
+const AdminGuard = lazy(() => import("@/components/AdminGuard"));
 
 // Admin
 const AdminLogin = lazy(() => import("./AdminLogin.jsx"));
@@ -171,8 +171,8 @@ function PagesContent() {
     }
 
     return (
-        <Layout currentPageName={currentPage}>
-            <Suspense fallback={<PageLoader />}>
+        <Suspense fallback={<PageLoader />}>
+            <Layout currentPageName={currentPage}>
                 <Routes>
                     <Route path="/" element={<Home />} />
                     <Route path="/a-propos" element={<APropos />} />
@@ -277,8 +277,8 @@ function PagesContent() {
 
                     <Route path="*" element={<NotFound />} />
                 </Routes>
-            </Suspense>
-        </Layout>
+            </Layout>
+        </Suspense>
     );
 }
 

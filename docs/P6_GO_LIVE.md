@@ -194,3 +194,16 @@ export ADMIN_TOKEN="(dans ton terminal)"
 
 npm run smoke:prod
 ```
+
+## Smoke redirects SEO (post-deploy)
+
+Verifier les redirections canoniques sans secrets:
+
+```bash
+curl -I "https://accesdirectaide.fr/aides?utm=test"
+curl -I "https://www.accesdirectaide.fr/aides/"
+```
+
+Attendu:
+- apex -> `www` en redirection permanente, avec conservation path + querystring.
+- trailing slash -> URL sans slash final (`/aides/` -> `/aides`).

@@ -1,4 +1,4 @@
-# SEO Guide (P7-A + P7-B)
+# SEO Guide (P7-A + P7-B + P7-C)
 
 ## P7-A — SEO plumbing (root)
 
@@ -49,6 +49,45 @@ Le composant `src/components/SEO.jsx` applique sur les pages publiques:
 ### Navigation sémantique
 - Les entrées de navigation publique et les cartes d’aides utilisent des liens `<a>` via `Link/NavLink`.
 - Pas de navigation principale basée uniquement sur des `onClick`.
+
+## P7-C — Canonicalization & Redirects
+
+### Host canonical (prod uniquement)
+- Configuration dans `vercel.json` via `redirects` + condition `has.host`.
+- Règle:
+  - `accesdirectaide.fr/:path*` -> `https://www.accesdirectaide.fr/:path*`
+  - `permanent: true`
+- Effet attendu:
+  - Production: apex redirige vers `www`.
+  - Preview/Dev: pas de redirection globale forcée (hosts Vercel preview inchangés).
+
+### Politique trailing slash
+- Normalisation globale:
+  - `/(.+)/` -> `/$1` (`permanent: true`)
+- But:
+  - Éviter le duplicate content entre `/aides` et `/aides/`.
+  - Préserver `/` (homepage).
+
+### Redirects legacy conservés
+- Exemples maintenus:
+  - `/aide/:slug` -> `/aides/:slug`
+  - `/structures` -> `/annuaire`
+- Principe:
+  - Ajouter uniquement les chemins legacy confirmés par le routeur/docs/tests.
+
+### Vérification locale (config)
+- Vérifier la présence des règles:
+  - `cat vercel.json`
+  - `npm test -- tests/integration/p7c-redirects-config.test.js`
+
+### Vérification prod (post-deploy)
+```bash
+curl -I "https://accesdirectaide.fr/aides?x=1"
+curl -I "https://www.accesdirectaide.fr/aides/"
+```
+Attendu:
+- première commande: redirection permanente vers `https://www.accesdirectaide.fr/aides?x=1`
+- seconde commande: redirection permanente vers `https://www.accesdirectaide.fr/aides`
 
 ## Tests SEO
 

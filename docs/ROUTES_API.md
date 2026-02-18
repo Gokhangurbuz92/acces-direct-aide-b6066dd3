@@ -13,6 +13,8 @@ L'authentification et les autorisations sont gérées par les handlers ou des mi
 | GET | `/api/health/deep` | `_handlers/health-deep.js` | Vérification santé complète (DB, etc) | Admin |
 | GET | `/api/monitor/cron/actualites` | `_handlers/monitor/cron-actualites.js` | Monitoring public freshness cron actualités | Public |
 | GET | `/api/monitor/core` | `_handlers/monitor/core.js` | Monitoring public uptime core (DB + KV) | Public |
+| GET | `/api/monitor/data-quality` | `_handlers/monitor/data-quality.js` | Monitoring public de la review queue (seuils P0/total) | Public |
+| GET | `/api/monitor/ingestion-freshness` | `_handlers/monitor/ingestion-freshness.js` | Monitoring public de fraicheur ingestion (SourceDocument) | Public |
 | GET | `/api/healthz` | `_handlers/health.js` | Alias Health | Public |
 | GET | `/api/robots.txt` | `_handlers/robots.js` | Robots API (root servi en statique via `public/robots.txt`) | Public |
 | GET | `/api/sitemap.xml` | `_handlers/sitemap.js` | Sitemap dynamique (exposé en root via `/sitemap.xml`) | Public |
@@ -95,6 +97,7 @@ Notes:
 |---|---|---|---|---|
 | GET | `/api/cron/pipeline` | `_handlers/cron/pipeline.js` | Orchestrateur ingestion | Cron Secret |
 | GET | `/api/cron/actualites` | `_handlers/cron/actualites.js` | Ingestion actus | Cron Secret |
+| GET/POST | `/api/cron/review-queue/scan` | `_handlers/cron/review-queue-scan.js` | Scan data quality automatise (cron) | Cron Secret / Vercel Cron (prod) |
 | GET | `/api/cron/ingest-structures` | `_handlers/cron/ingest-structures.js` | Ingestion structures | Cron Secret |
 | GET | `/api/cron/ingest-aids` | `_handlers/cron/ingest-aids.js` | Ingestion aides | Cron Secret |
 | GET | `/api/cron/purge` | `_handlers/cron/purge.js` | Purge données | Cron Secret |

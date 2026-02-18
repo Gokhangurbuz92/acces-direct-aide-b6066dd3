@@ -1,4 +1,4 @@
-import { verifyAdmin } from '../../_utils/auth.js';
+import { resolveAuthContext } from '../../_utils/auth.js';
 import { env } from '../../_utils/env.js';
 /**
  * @param {import('../../_utils/http-types').ApiRequest} req
@@ -10,16 +10,29 @@ export default async function handler(req, res) {
         return res.status(405).json({ error: 'Method Not Allowed' });
     }
 
-    if (!verifyAdmin(req)) {
+    const auth = resolveAuthContext(req);
+    if (!auth) {
         return res.status(401).json({ error: 'Unauthorized' });
     }
 
-    // If verification passes, return user info
-    // Since we use a static token, we assume the user is the generic admin
+    if (auth.authType === 'pro_jwt') {
+        return res.status(200).json({
+            user: {
+                id: auth.userId || null,
+                email: auth.email || null,
+                role: auth.role,
+                structureId: auth.structureId || null,
+                authType: auth.authType,
+            },
+        });
+    }
+
     return res.status(200).json({
         user: {
-            email: env.secrets.adminEmail || 'admin@accesdirectaide.fr',
-            role: 'admin'
-        }
+            id: 'admin',
+            email: auth.email || env.secrets.adminEmail || 'admin@accesdirectaide.fr',
+            role: auth.role,
+            authType: auth.authType,
+        },
     });
 }

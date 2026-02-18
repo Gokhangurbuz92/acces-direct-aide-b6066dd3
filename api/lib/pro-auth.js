@@ -19,6 +19,28 @@ export const ROLE = {
 };
 
 /**
+ * Shared JWT helpers to avoid duplicating direct jsonwebtoken imports.
+ *
+ * @param {Record<string, any>} payload
+ * @param {string} secret
+ * @param {Record<string, any>=} options
+ * @returns {string}
+ */
+export function signJwt(payload, secret, options = {}) {
+    return jwt.sign(payload, secret, options);
+}
+
+/**
+ * @param {string} token
+ * @param {string} secret
+ * @param {Record<string, any>=} options
+ * @returns {any}
+ */
+export function verifyJwt(token, secret, options = {}) {
+    return jwt.verify(token, secret, options);
+}
+
+/**
  * Sign a JWT token for a Pro user
  */
 /** @param {any} user */

@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Link, useParams, useNavigate } from 'react-router-dom';
 import { createPageUrl } from '@/utils';
 import { client } from '@/api/client';
@@ -21,7 +21,7 @@ import {
   ChevronRight,
   Loader2
 } from 'lucide-react';
-import { generateBreadcrumbSchema, generateAideSchema } from '@/utils/schema';
+import { buildAideDetailSchemas, truncateDescription } from '@/lib/seo';
 import SourceTraceability from '@/components/SourceTraceability';
 import FalcSummary from '@/components/FalcSummary';
 import FalcToggle from '@/components/FalcToggle';
@@ -88,11 +88,30 @@ export default function AideDetail() {
     s.categories_aidees?.includes(aide?.categorie)
   ).slice(0, 3);
 
+  const canonicalPath = aide?.slug ? `/aides/${aide.slug}` : (slug ? `/aides/${slug}` : '/aides');
+  const seoTitle = aide?.titre || 'Aide';
+  const seoDescription = truncateDescription(
+    aide?.summary_falc || aide?.cest_quoi || "Consultez le détail d'une aide sociale."
+  ) || "Consultez le détail d'une aide sociale.";
+  const schema = useMemo(
+    () => buildAideDetailSchemas(aide, canonicalPath),
+    [aide, canonicalPath]
+  );
+
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-slate-50 flex items-center justify-center">
-        <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
-      </div>
+      <>
+        <SEO
+          title={seoTitle}
+          description={seoDescription}
+          path={canonicalPath}
+          ogType="article"
+          schema={schema}
+        />
+        <div className="min-h-screen bg-slate-50 flex items-center justify-center">
+          <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
+        </div>
+      </>
     );
   }
 
@@ -124,29 +143,19 @@ export default function AideDetail() {
     }).join(', ');
   };
 
-  const breadcrumbs = [
-    { name: 'Accueil', url: '/' },
-    { name: 'Aides', url: '/aides' },
-    { name: aide.titre, url: `/aides/${aide.slug}` }
-  ];
-
-  const schema = [
-    generateBreadcrumbSchema(breadcrumbs),
-    generateAideSchema(aide)
-  ].filter(Boolean);
-
   return (
     <div className="min-h-screen bg-slate-50">
       <SEO
-        title={aide.titre}
-        description={aide.summary_falc || aide.cest_quoi?.substring(0, 150)}
-        path={`/aides/${aide.slug}`}
+        title={seoTitle}
+        description={seoDescription}
+        path={canonicalPath}
+        ogType="article"
         schema={schema}
       />
       {/* Fil d'Ariane */}
       <div className="bg-white border-b border-slate-200">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 py-4">
-          <nav className="flex items-center gap-2 text-sm text-slate-600">
+          <nav className="flex items-center gap-2 text-sm text-slate-600" aria-label="Fil d'Ariane" data-testid="aide-breadcrumb">
             <Link to={createPageUrl('Home')} className="hover:text-blue-600">Accueil</Link>
             <ChevronRight className="h-4 w-4" />
             <Link to={createPageUrl('Aides')} className="hover:text-blue-600">Aides</Link>

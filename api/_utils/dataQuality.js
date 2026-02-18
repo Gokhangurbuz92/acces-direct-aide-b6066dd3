@@ -103,6 +103,8 @@ function toJsonDetails(details) {
  *   titre: string,
  *   date_verification: Date | null,
  *   documents_necessaires: string[],
+ *   source_document_id?: string | null,
+ *   sourceDocument?: { source_url: string | null } | null,
  * }} aide
  * @param {{ staleDays: number }} thresholds
  */
@@ -164,6 +166,30 @@ function buildAideCandidates(aide, thresholds) {
     );
   }
 
+  if (!aide.source_document_id) {
+    out.push(
+      createCandidate(
+        ENTITY_TYPES.aide,
+        aide.id,
+        aide.slug,
+        aide.titre,
+        'MISSING_SOURCE_DOCUMENT',
+        'P1',
+      ),
+    );
+  } else if (!safeString(aide.sourceDocument?.source_url)) {
+    out.push(
+      createCandidate(
+        ENTITY_TYPES.aide,
+        aide.id,
+        aide.slug,
+        aide.titre,
+        'MISSING_SOURCE_URL',
+        'P1',
+      ),
+    );
+  }
+
   return out;
 }
 
@@ -173,6 +199,8 @@ function buildAideCandidates(aide, thresholds) {
  *   slug: string | null,
  *   titre: string,
  *   date_verification: Date | null,
+ *   source_document_id?: string | null,
+ *   sourceDocument?: { source_url: string | null } | null,
  * }} demarche
  * @param {{ staleDays: number }} thresholds
  */
@@ -228,6 +256,30 @@ function buildDemarcheCandidates(demarche, thresholds) {
     );
   }
 
+  if (!demarche.source_document_id) {
+    out.push(
+      createCandidate(
+        ENTITY_TYPES.demarche,
+        demarche.id,
+        demarche.slug,
+        demarche.titre,
+        'MISSING_SOURCE_DOCUMENT',
+        'P1',
+      ),
+    );
+  } else if (!safeString(demarche.sourceDocument?.source_url)) {
+    out.push(
+      createCandidate(
+        ENTITY_TYPES.demarche,
+        demarche.id,
+        demarche.slug,
+        demarche.titre,
+        'MISSING_SOURCE_URL',
+        'P1',
+      ),
+    );
+  }
+
   return out;
 }
 
@@ -237,6 +289,8 @@ function buildDemarcheCandidates(demarche, thresholds) {
  *   slug: string | null,
  *   nom: string,
  *   date_verification: Date | null,
+ *   source_document_id?: string | null,
+ *   sourceDocument?: { source_url: string | null } | null,
  * }} structure
  * @param {{ staleDays: number }} thresholds
  */
@@ -292,11 +346,41 @@ function buildStructureCandidates(structure, thresholds) {
     );
   }
 
+  if (!structure.source_document_id) {
+    out.push(
+      createCandidate(
+        ENTITY_TYPES.structure,
+        structure.id,
+        structure.slug,
+        structure.nom,
+        'MISSING_SOURCE_DOCUMENT',
+        'P1',
+      ),
+    );
+  } else if (!safeString(structure.sourceDocument?.source_url)) {
+    out.push(
+      createCandidate(
+        ENTITY_TYPES.structure,
+        structure.id,
+        structure.slug,
+        structure.nom,
+        'MISSING_SOURCE_URL',
+        'P1',
+      ),
+    );
+  }
+
   return out;
 }
 
 /**
- * @param {{ id: string, slug: string | null, titre: string }} actualite
+ * @param {{
+ *   id: string,
+ *   slug: string | null,
+ *   titre: string,
+ *   source_document_id?: string | null,
+ *   sourceDocument?: { source_url: string | null } | null,
+ * }} actualite
  */
 function buildActualiteCandidates(actualite) {
   const out = [];
@@ -319,6 +403,30 @@ function buildActualiteCandidates(actualite) {
     );
   }
 
+  if (!actualite.source_document_id) {
+    out.push(
+      createCandidate(
+        ENTITY_TYPES.actualite,
+        actualite.id,
+        actualite.slug,
+        actualite.titre,
+        'MISSING_SOURCE_DOCUMENT',
+        'P1',
+      ),
+    );
+  } else if (!safeString(actualite.sourceDocument?.source_url)) {
+    out.push(
+      createCandidate(
+        ENTITY_TYPES.actualite,
+        actualite.id,
+        actualite.slug,
+        actualite.titre,
+        'MISSING_SOURCE_URL',
+        'P1',
+      ),
+    );
+  }
+
   return out;
 }
 
@@ -335,6 +443,12 @@ async function loadAidesForReview(prismaClient, limit) {
       titre: true,
       date_verification: true,
       documents_necessaires: true,
+      source_document_id: true,
+      sourceDocument: {
+        select: {
+          source_url: true,
+        },
+      },
     },
     orderBy: { updatedAt: 'desc' },
     take: limit,
@@ -351,6 +465,12 @@ async function loadAidesForReview(prismaClient, limit) {
       titre: true,
       date_verification: true,
       documents_necessaires: true,
+      source_document_id: true,
+      sourceDocument: {
+        select: {
+          source_url: true,
+        },
+      },
     },
     orderBy: { date_verification: 'asc' },
     take: remaining,
@@ -371,6 +491,12 @@ async function loadDemarchesForReview(prismaClient, limit) {
       slug: true,
       titre: true,
       date_verification: true,
+      source_document_id: true,
+      sourceDocument: {
+        select: {
+          source_url: true,
+        },
+      },
     },
     orderBy: { updatedAt: 'desc' },
     take: limit,
@@ -386,6 +512,12 @@ async function loadDemarchesForReview(prismaClient, limit) {
       slug: true,
       titre: true,
       date_verification: true,
+      source_document_id: true,
+      sourceDocument: {
+        select: {
+          source_url: true,
+        },
+      },
     },
     orderBy: { date_verification: 'asc' },
     take: remaining,
@@ -406,6 +538,12 @@ async function loadStructuresForReview(prismaClient, limit) {
       slug: true,
       nom: true,
       date_verification: true,
+      source_document_id: true,
+      sourceDocument: {
+        select: {
+          source_url: true,
+        },
+      },
     },
     orderBy: { updatedAt: 'desc' },
     take: limit,
@@ -421,6 +559,12 @@ async function loadStructuresForReview(prismaClient, limit) {
       slug: true,
       nom: true,
       date_verification: true,
+      source_document_id: true,
+      sourceDocument: {
+        select: {
+          source_url: true,
+        },
+      },
     },
     orderBy: { date_verification: 'asc' },
     take: remaining,
@@ -439,6 +583,12 @@ async function loadRecentActualites(prismaClient, limit) {
       id: true,
       slug: true,
       titre: true,
+      source_document_id: true,
+      sourceDocument: {
+        select: {
+          source_url: true,
+        },
+      },
     },
     orderBy: { date_publication: 'desc' },
     take: limit,

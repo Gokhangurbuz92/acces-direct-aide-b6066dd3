@@ -391,6 +391,6 @@ export default async function handler(req, res) {
       httpStatus: 500,
       durationMs: Date.now() - startedAtMs,
     });
-    return res.status(500).json({ error: message, runId });
+    return res.status(500).json({ error: 'Internal Server Error', runId, requestId });
   }
 }

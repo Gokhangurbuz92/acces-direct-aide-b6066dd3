@@ -1,8 +1,13 @@
-import prisma from '../../_utils/prisma.js';
 import Parser from 'rss-parser';
 import crypto from 'crypto';
 import fs from 'fs';
 import path from 'path';
+
+import prisma from '../../_utils/prisma.js';
+import { env } from '../../_utils/env.js';
+import { computeContentHash, computeRawContentHash } from '../../_utils/contentHash.js';
+import { ensureSlugOrNull } from '../../_utils/slug.js';
+import { upsertSourceDocument } from '../../_utils/sourceDocument.js';
 
 const DEFAULT_TIMEOUT_MS = 12_000;
 const DEFAULT_MAX_ITEMS_PER_SOURCE = 20;
@@ -49,14 +54,6 @@ function getErrorMessage(error) {
 }
 
 /**
- * @param {string} input
- * @returns {string}
- */
-function sha256(input) {
-  return crypto.createHash('sha256').update(String(input)).digest('hex');
-}
-
-/**
  * @param {string | null} raw
  * @returns {string | null}
  */
@@ -67,23 +64,6 @@ function guessDomain(raw) {
   } catch {
     return null;
   }
-}
-
-/**
- * @param {string | null} text
- * @returns {string}
- */
-function slugify(text) {
-  if (!text) return '';
-  return text
-    .toString()
-    .toLowerCase()
-    .trim()
-    .replace(/\s+/g, '-')
-    .replace(/[^\w-]+/g, '')
-    .replace(/--+/g, '-')
-    .replace(/^-+/, '')
-    .replace(/-+$/, '');
 }
 
 /**
@@ -126,6 +106,174 @@ async function fetchText(url, options = {}) {
   } finally {
     clearTimeout(timeout);
   }
+}
+
+/**
+ * @param {string} baseSlug
+ * @param {string} canonicalHash
+ * @returns {string}
+ */
+function buildActualiteSlug(baseSlug, canonicalHash) {
+  const root = ensureSlugOrNull(baseSlug) || 'actu';
+  const slug = ensureSlugOrNull(`${root}-${canonicalHash.slice(0, 6)}`);
+  return slug || `actu-${canonicalHash.slice(0, 6)}`;
+}
+
+/**
+ * @param {{
+ *   prismaClient?: import('@prisma/client').PrismaClient,
+ *   source: { id: string, name: string },
+ *   feedUrl: string,
+ *   category: string | null,
+ *   territory: string | null,
+ *   item: Record<string, unknown>,
+ *   runId: string,
+ *   isOfficial: boolean,
+ * }} input
+ * @returns {Promise<{ action: 'created' | 'updated' | 'skipped' }>}
+ */
+export async function upsertActualiteFromFeedItem(input) {
+  const prismaClient = input.prismaClient || prisma;
+  const title = safeString(input.item?.title) || 'Sans titre';
+  const canonicalUrl = safeString(input.item?.link) || safeString(input.item?.guid);
+  if (!canonicalUrl) {
+    throw new Error('missing item link/guid');
+  }
+
+  const publishedAt = parsePublishedAt(input.item?.isoDate || input.item?.pubDate);
+  const now = new Date();
+
+  const snippet =
+    safeString(input.item?.contentSnippet) ||
+    safeString(input.item?.summary) ||
+    safeString(input.item?.content) ||
+    null;
+  const resume = snippet ? snippet.slice(0, 600) : null;
+  const contenu = safeString(input.item?.content) || resume || null;
+
+  const canonicalHash = computeRawContentHash(canonicalUrl);
+  const computedSlug = buildActualiteSlug(title, canonicalHash);
+  const entityPayloadHash = computeContentHash({
+    title,
+    resume,
+    contenu,
+    canonicalUrl,
+    publishedAt: publishedAt.toISOString(),
+    sourceId: input.source.id,
+    sourceName: input.source.name,
+    category: input.category || null,
+    territory: input.territory || null,
+  });
+
+  let sourceDocumentId = null;
+  const sourceDocument = await upsertSourceDocument(prismaClient, {
+    sourceUrl: canonicalUrl,
+    rawContent: JSON.stringify({
+      title,
+      canonicalUrl,
+      guid: safeString(input.item?.guid),
+      snippet,
+      contenu,
+      publishedAt: publishedAt.toISOString(),
+    }),
+    metadata: {
+      entityType: 'actualite',
+      sourceName: input.source.name,
+      sourceId: input.source.id,
+      feedUrl: input.feedUrl,
+      category: input.category,
+      territory: input.territory,
+    },
+  });
+  sourceDocumentId = sourceDocument.id;
+
+  const existing = await prismaClient.actualite.findFirst({
+    where: { canonical_url: canonicalUrl },
+    select: {
+      id: true,
+      slug: true,
+      raw_data_hash: true,
+      source_document_id: true,
+    },
+  });
+
+  const finalSlug = safeString(existing?.slug) || computedSlug;
+  const unchanged =
+    Boolean(existing) &&
+    existing?.raw_data_hash === entityPayloadHash &&
+    (existing?.source_document_id || null) === sourceDocumentId;
+
+  if (unchanged || env.ingestion.dryRun) {
+    return { action: 'skipped' };
+  }
+
+  const publicationData = input.isOfficial
+    ? {
+        statut: 'publie',
+        auto_publish: true,
+        published_at: publishedAt,
+      }
+    : {};
+
+  await prismaClient.actualite.upsert({
+    where: { canonical_url: canonicalUrl },
+    update: {
+      titre: title,
+      slug: finalSlug,
+      contenu,
+      resume,
+      canonical_url: canonicalUrl,
+      lien_url: canonicalUrl,
+      url: canonicalUrl,
+      source_url: canonicalUrl,
+      guid: safeString(input.item?.guid) || canonicalUrl,
+      source_id: input.source.id,
+      source_name: input.source.name,
+      source_nom: input.source.name,
+      fetched_at: now,
+      date_publication: publishedAt,
+      raw_data_hash: entityPayloadHash,
+      dedupe_hash: canonicalHash,
+      ingest_batch: input.runId,
+      categorie: input.category || undefined,
+      territoire: input.territory || undefined,
+      type_actu: 'info',
+      source_document_id: sourceDocumentId,
+      ...publicationData,
+    },
+    create: {
+      titre: title,
+      slug: finalSlug,
+      contenu,
+      resume,
+      canonical_url: canonicalUrl,
+      lien_url: canonicalUrl,
+      url: canonicalUrl,
+      source_url: canonicalUrl,
+      guid: safeString(input.item?.guid) || canonicalUrl,
+      source_id: input.source.id,
+      source_name: input.source.name,
+      source_nom: input.source.name,
+      fetched_at: now,
+      date_publication: publishedAt,
+      raw_data_hash: entityPayloadHash,
+      dedupe_hash: canonicalHash,
+      ingest_batch: input.runId,
+      categorie: input.category || undefined,
+      territoire: input.territory || undefined,
+      type_actu: 'info',
+      statut: input.isOfficial ? 'publie' : 'brouillon',
+      auto_publish: input.isOfficial,
+      published_at: input.isOfficial ? publishedAt : null,
+      falc_status: 'pending',
+      quality_score: input.isOfficial ? 60 : 40,
+      score_fiabilite: input.isOfficial ? 95 : 40,
+      tags: [],
+      source_document_id: sourceDocumentId,
+    },
+  });
+
+  return { action: existing ? 'updated' : 'created' };
 }
 
 /**
@@ -191,6 +339,9 @@ export async function runIngestActualitesRss({ limit, runId } = {}) {
   };
 
   const effectiveRunId = runId || crypto.randomUUID();
+  const globalLimit = Number.isFinite(Number(limit))
+    ? Math.max(1, Math.min(Number(limit), env.ingestion.maxItemsPerRun))
+    : env.ingestion.maxItemsPerRun;
 
   const { sources: manifestSources, categoryByFeedUrl, territoryByFeedUrl } = loadSourcesManifest();
 
@@ -215,6 +366,7 @@ export async function runIngestActualitesRss({ limit, runId } = {}) {
     }
   }
 
+  /** @type {Array<{ id: string, name: string, feed_url: string, trust_level: string }>} */
   let dbSources = [];
   try {
     dbSources = await prisma.rssSource.findMany({ where: { enabled: true } });
@@ -227,7 +379,7 @@ export async function runIngestActualitesRss({ limit, runId } = {}) {
   let processedCount = 0;
 
   for (const source of dbSources) {
-    if (limit && processedCount >= limit) break;
+    if (processedCount >= globalLimit) break;
 
     const feedUrl = safeString(source?.feed_url);
     if (!feedUrl) continue;
@@ -236,16 +388,17 @@ export async function runIngestActualitesRss({ limit, runId } = {}) {
     const category = categoryByFeedUrl.get(feedUrl) || null;
     const territory = territoryByFeedUrl.get(feedUrl) || null;
 
+    /** @type {Array<Record<string, unknown>>} */
     let feedItems = [];
 
     try {
       const startFetch = Date.now();
       const xml = await fetchText(feedUrl);
       const feed = await parser.parseString(xml);
-      stats.durationByStage.fetchMs += (Date.now() - startFetch);
+      stats.durationByStage.fetchMs += Date.now() - startFetch;
 
       const items = Array.isArray(feed?.items) ? feed.items : [];
-      const remaining = limit ? Math.max(0, limit - processedCount) : DEFAULT_MAX_ITEMS_PER_SOURCE;
+      const remaining = Math.max(0, globalLimit - processedCount);
       const perSourceLimit = Math.min(DEFAULT_MAX_ITEMS_PER_SOURCE, remaining);
       feedItems = perSourceLimit ? items.slice(0, perSourceLimit) : [];
 
@@ -259,111 +412,26 @@ export async function runIngestActualitesRss({ limit, runId } = {}) {
     for (const item of feedItems) {
       stats.processed += 1;
 
-      const title = safeString(item?.title) || 'Sans titre';
-      const canonicalUrl = safeString(item?.link) || safeString(item?.guid);
-      if (!canonicalUrl) {
-        stats.errors.push(`${source.name}: missing item link/guid (skipped)`);
-        continue;
-      }
-
-      const publishedAt = parsePublishedAt(item?.isoDate || item?.pubDate);
-      const now = new Date();
-
-      const snippet =
-        safeString(item?.contentSnippet) ||
-        safeString(item?.summary) ||
-        safeString(item?.content) ||
-        null;
-      const resume = snippet ? snippet.substring(0, 600) : null;
-      const contenu = safeString(item?.content) || resume || null;
-
-      const hash = sha256(canonicalUrl);
-      const baseSlug = slugify(title) || 'actu';
-      const computedSlug = `${baseSlug.substring(0, 80)}-${hash.substring(0, 6)}`;
-
-      let existing = null;
       try {
-        existing = await prisma.actualite.findFirst({
-          where: { canonical_url: canonicalUrl },
-          select: { id: true, slug: true, statut: true, published_at: true },
-        });
-      } catch (e) {
-        stats.errors.push(`${source.name}: findFirst failed - ${getErrorMessage(e)}`);
-        continue;
-      }
-
-      const shouldPublish = isOfficial;
-      const updatePublication = shouldPublish
-        ? {
-            statut: 'publie',
-            auto_publish: true,
-            published_at: publishedAt,
-          }
-        : {};
-
-      try {
-        await prisma.actualite.upsert({
-          where: { canonical_url: canonicalUrl },
-          update: {
-            titre: title,
-            slug: existing?.slug || computedSlug,
-            contenu,
-            resume,
-            canonical_url: canonicalUrl,
-            lien_url: canonicalUrl,
-            url: canonicalUrl,
-            source_url: canonicalUrl,
-            guid: safeString(item?.guid) || canonicalUrl,
-            source_id: source.id,
-            source_name: source.name,
-            source_nom: source.name,
-            fetched_at: now,
-            date_publication: publishedAt,
-            raw_data_hash: hash,
-            dedupe_hash: hash,
-            ingest_batch: effectiveRunId,
-            categorie: category || undefined,
-            territoire: territory || undefined,
-            type_actu: 'info',
-            quality_score: shouldPublish ? 60 : 40,
-            score_fiabilite: shouldPublish ? 95 : 40,
-            ...updatePublication,
+        const result = await upsertActualiteFromFeedItem({
+          source: {
+            id: source.id,
+            name: source.name,
           },
-          create: {
-            titre: title,
-            slug: computedSlug,
-            contenu,
-            resume,
-            canonical_url: canonicalUrl,
-            lien_url: canonicalUrl,
-            url: canonicalUrl,
-            source_url: canonicalUrl,
-            guid: safeString(item?.guid) || canonicalUrl,
-            source_id: source.id,
-            source_name: source.name,
-            source_nom: source.name,
-            fetched_at: now,
-            date_publication: publishedAt,
-            raw_data_hash: hash,
-            dedupe_hash: hash,
-            ingest_batch: effectiveRunId,
-            categorie: category || undefined,
-            territoire: territory || undefined,
-            type_actu: 'info',
-            statut: shouldPublish ? 'publie' : 'brouillon',
-            auto_publish: shouldPublish,
-            published_at: shouldPublish ? publishedAt : null,
-            falc_status: 'pending',
-            quality_score: shouldPublish ? 60 : 40,
-            score_fiabilite: shouldPublish ? 95 : 40,
-            tags: [],
-          },
+          feedUrl,
+          category,
+          territory,
+          item,
+          runId: effectiveRunId,
+          isOfficial,
         });
 
-        if (existing) {
+        if (result.action === 'updated') {
           stats.updated += 1;
-        } else {
+        } else if (result.action === 'created') {
           stats.created += 1;
+        } else {
+          stats.skippedExisting += 1;
         }
 
         processedCount += 1;
@@ -371,7 +439,7 @@ export async function runIngestActualitesRss({ limit, runId } = {}) {
         stats.errors.push(`${source.name}: upsert failed - ${getErrorMessage(e)}`);
       }
     }
-    stats.durationByStage.processingMs += (Date.now() - startProc);
+    stats.durationByStage.processingMs += Date.now() - startProc;
   }
 
   return stats;

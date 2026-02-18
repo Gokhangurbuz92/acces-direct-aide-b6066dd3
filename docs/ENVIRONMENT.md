@@ -36,6 +36,9 @@ Legend:
 | `DATA_DEMARCHES_STALE_DAYS` | server | no | no | Data quality stale threshold for demarches review queue (default `365`). |
 | `DATA_STRUCTURES_STALE_DAYS` | server | no | no | Data quality stale threshold for structures review queue (default `365`). |
 | `DATA_REVIEW_SCAN_LIMIT_PER_TYPE` | server | no | no | Max entities scanned per type during review queue scan (default `200`). |
+| `INGESTION_PARSER_VERSION` | server | no | no | Parser version tag written in `SourceDocument.metadata` (default `v1`). |
+| `INGESTION_DRY_RUN` | server | no | no | If `1`, ingestion computes stats without mutating entities (`0` by default). |
+| `INGESTION_MAX_ITEMS_PER_RUN` | server | no | no | Safety cap for items processed in one ingestion run (default `200`). |
 | `BYPASS_SECRET` | server | no | no | Optional bypass for specific automation/test flows. |
 | `KV_REST_API_URL` | server | no | yes | Upstash/Vercel KV REST URL (required for prod rate limiting/locks). |
 | `KV_REST_API_TOKEN` | server | no | yes | Upstash/Vercel KV REST token. |

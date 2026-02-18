@@ -341,3 +341,32 @@ Variables env concernees (names only):
 - `DATA_DEMARCHES_STALE_DAYS`
 - `DATA_STRUCTURES_STALE_DAYS`
 - `DATA_REVIEW_SCAN_LIMIT_PER_TYPE`
+
+## Ingestion hardening verification (P8-D)
+
+Objectif:
+- garantir la tracabilite via `SourceDocument`
+- verifier l'idempotence (`created/updated/skippedExisting`)
+- detecter la derive via Review Queue
+
+Checks rapides:
+
+```bash
+# 1) declencher un run cron actualites (secret dans terminal uniquement)
+curl -sS -H "Authorization: Bearer $CRON_SECRET" \
+  "https://www.accesdirectaide.fr/api/cron/actualites"
+
+# 2) verifier que les items de review queue drift existent si besoin
+curl -sS -H "Authorization: Bearer $ADMIN_TOKEN" \
+  "https://www.accesdirectaide.fr/api/admin/review-queue?status=open&limit=50&reason=MISSING_SOURCE_DOCUMENT"
+```
+
+Attendu:
+- le cron retourne des stats avec `created`, `updated`, `skippedExisting`
+- les relances a payload identique augmentent surtout `skippedExisting`
+- la review queue remonte `MISSING_SOURCE_DOCUMENT` / `MISSING_SOURCE_URL` si la traceability manque
+
+Variables ingestion (names only):
+- `INGESTION_PARSER_VERSION`
+- `INGESTION_DRY_RUN`
+- `INGESTION_MAX_ITEMS_PER_RUN`

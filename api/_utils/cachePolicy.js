@@ -1,4 +1,4 @@
-import { getHeader, setNoStore, setPublicCache, hasAuthHeader, setCachePolicyTag } from "./cache.js";
+import { applyNoStore, applyPublicCache, getHeader, hasAuthHeader, setCachePolicyTag } from "./cache.js";
 
 function parseUrl(req) {
     // req.url might be "/api/aides?slug=..."
@@ -11,16 +11,15 @@ function parseUrl(req) {
 
 function isPrivatePath(pathname) {
     // Hard NO-STORE zones
-    if (/^\/api\/(admin|auth|pro|cron)\b/i.test(pathname)) return true;
+    if (/^\/api\/(admin|auth|pro|cron|health|monitor)\b/i.test(pathname)) return true;
     if (/^\/api\/public\/(messages|appointments|suggest-structure)\b/i.test(pathname)) return true;
     if (/^\/api\/(upload|download)\b/i.test(pathname)) return true;
     return false;
 }
 
 function isVariesByUserPublicUnsafe(pathname) {
-    // Per your audit: these may expose drafts for admin/pro
-    // Per your audit: these may expose drafts for admin/pro
-    return pathname === "/api/actualites" || pathname === "/api/guides" || pathname === "/api/tools";
+    // Keep endpoints with user/admin variants hard no-store unless explicitly whitelisted.
+    return pathname === "/api/guides" || pathname === "/api/tools";
 }
 
 function isVercelDefaultCacheControl(v) {
@@ -46,87 +45,75 @@ export function applyCachePolicy(req, res) {
     const method = (req.method || "GET").toUpperCase();
     const url = parseUrl(req);
     const pathname = url.pathname;
-    const sp = url.searchParams;
 
     // Default: no-store for non-GET
     if (method !== "GET") {
         setCachePolicyTag(res, "NOSTORE_METHOD");
-        return setNoStore(res);
+        return applyNoStore(res);
     }
 
     // Any Authorization => no-store (prevents leaking admin views / user-variant mixing)
     if (hasAuthHeader(req)) {
         setCachePolicyTag(res, "NOSTORE_AUTH");
-        return setNoStore(res);
+        return applyNoStore(res);
     }
 
     // Private zones => no-store
     if (isPrivatePath(pathname)) {
         setCachePolicyTag(res, "NOSTORE_PRIVATE");
-        return setNoStore(res);
+        return applyNoStore(res);
     }
 
     // Varies-by-user public endpoints => no-store (safe default)
     if (isVariesByUserPublicUnsafe(pathname)) {
         setCachePolicyTag(res, "NOSTORE_VARIES");
-        return setNoStore(res);
+        return applyNoStore(res);
     }
 
     // === PUBLIC CACHE WHITELIST ===
     // robots/sitemap (very stable)
     if (pathname === "/api/robots.txt" || pathname === "/robots.txt") {
         setCachePolicyTag(res, "ROBOTS_1D");
-        return setPublicCache(res, { sMaxage: 86400, swr: 604800 });
+        return applyPublicCache(res, { sMaxAge: 86400, swr: 604800 });
     }
     if (pathname === "/api/sitemap.xml" || pathname === "/sitemap.xml") {
         setCachePolicyTag(res, "SITEMAP_1H");
-        return setPublicCache(res, { sMaxage: 3600, swr: 86400 });
+        return applyPublicCache(res, { sMaxAge: 3600, swr: 86400 });
     }
 
     // taxonomy (stable)
     if (pathname === "/api/taxonomy") {
         setCachePolicyTag(res, "TAXONOMY_1H");
-        return setPublicCache(res, { sMaxage: 3600, swr: 86400 });
+        return applyPublicCache(res, { sMaxAge: 3600, swr: 86400 });
     }
 
     // public stats (already configured in your code, but safe to unify here)
     if (pathname === "/api/public/stats") {
         setCachePolicyTag(res, "STATS_5M");
-        return setPublicCache(res, { sMaxage: 300, swr: 3600 });
+        return applyPublicCache(res, { sMaxAge: 300, swr: 3600 });
     }
 
     // availability (volatile)
     if (pathname === "/api/public/availability") {
         setCachePolicyTag(res, "AVAIL_1M");
-        return setPublicCache(res, { sMaxage: 60, swr: 120 });
+        return applyPublicCache(res, { sMaxAge: 60, swr: 120 });
     }
 
-    // Entities: list vs detail policy
-    if (
-        pathname === "/api/aides" ||
-        pathname === "/api/structures" ||
-        pathname === "/api/demarches" ||
-        pathname === "/api/dispositifs"
-    ) {
-        const isDetail = sp.has("id") || sp.has("slug");
+    // Public content (listing + detail)
+    // P8-A contract:
+    // - aides/demarches/structures: 1h + 24h SWR
+    // - actualites: 5m + 6h SWR
+    if (/^\/api\/(aides|demarches|structures)(?:\/[^/]+)?$/i.test(pathname)) {
+        setCachePolicyTag(res, "PUBLIC_CONTENT_1H");
+        return applyPublicCache(res, { sMaxAge: 3600, swr: 86400 });
+    }
 
-        // Structures: geo/search is more volatile (optional nuance)
-        const isStructures = pathname === "/api/structures";
-        const isGeoOrSearch = isStructures && (sp.has("q") || sp.has("lat") || sp.has("lon"));
-
-        if (isDetail) {
-            setCachePolicyTag(res, "DETAIL_1M");
-            return setPublicCache(res, { sMaxage: 60, swr: 3600 });
-        }
-        if (isGeoOrSearch) {
-            setCachePolicyTag(res, "STRUCTURES_GEO_1M");
-            return setPublicCache(res, { sMaxage: 60, swr: 600 });
-        }
-        setCachePolicyTag(res, "LIST_10M");
-        return setPublicCache(res, { sMaxage: 600, swr: 86400 });
+    if (/^\/api\/actualites(?:\/[^/]+)?$/i.test(pathname)) {
+        setCachePolicyTag(res, "ACTUALITES_5M");
+        return applyPublicCache(res, { sMaxAge: 300, swr: 21600 });
     }
 
     // Not in whitelist => default no-store (safe)
     setCachePolicyTag(res, "NOSTORE_DEFAULT");
-    return setNoStore(res);
+    return applyNoStore(res);
 }

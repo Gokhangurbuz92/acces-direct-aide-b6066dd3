@@ -245,6 +245,35 @@ Le script vérifie:
 - noindex + canonical sur route inconnue
 - noindex sur fiche aide inexistante
 
+## Verification performance / cache (P8-A)
+
+Objectif:
+- mettre en cache CDN uniquement les endpoints publics safe
+- garantir `no-store` sur endpoints techniques/sensibles
+- ne jamais mettre en cache les erreurs (4xx/5xx)
+
+Checks rapides:
+```bash
+# Public content (200 -> CDN cache attendu)
+curl -I "https://www.accesdirectaide.fr/api/aides?limit=1"
+curl -I "https://www.accesdirectaide.fr/api/demarches?limit=1"
+curl -I "https://www.accesdirectaide.fr/api/structures?limit=1"
+curl -I "https://www.accesdirectaide.fr/api/actualites?limit=1"
+
+# Technique (toujours no-store)
+curl -I "https://www.accesdirectaide.fr/api/health"
+curl -I "https://www.accesdirectaide.fr/api/monitor/cron/actualites"
+
+# Sitemap
+curl -I "https://www.accesdirectaide.fr/sitemap.xml"
+```
+
+Attendu:
+- `aides/demarches/structures`: `Cache-Control` contient `s-maxage=3600` et `stale-while-revalidate=86400`
+- `actualites`: `Cache-Control` contient `s-maxage=300` et `stale-while-revalidate=21600`
+- endpoints techniques: `Cache-Control` contient `no-store`
+- `sitemap.xml`: cache public sur `200`, et `no-store` si `503`
+
 ## Verification SEO finale (post-deploy)
 
 Checklist:

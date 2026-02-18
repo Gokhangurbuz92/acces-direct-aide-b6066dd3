@@ -53,9 +53,31 @@ export function setNoStore(res) {
     setHeader(res, "Pragma", "no-cache");
 }
 
+/** @param {ApiResponse} res */
+export function applyNoStore(res) {
+    setNoStore(res);
+}
+
 /** @param {ApiResponse} res @param {{ sMaxage?: number, swr?: number }=} policy */
 export function setPublicCache(res, { sMaxage = 600, swr = 86400 } = {}) {
     setHeader(res, "Cache-Control", `public, max-age=0, s-maxage=${sMaxage}, stale-while-revalidate=${swr}`);
+}
+
+/**
+ * Apply CDN-friendly cache ONLY for successful responses.
+ * If status is already an error (>=400), force no-store.
+ *
+ * @param {ApiResponse} res
+ * @param {{ sMaxAge?: number, swr?: number }=} policy
+ */
+export function applyPublicCache(res, { sMaxAge = 600, swr = 86400 } = {}) {
+    const status = Number(res?.statusCode || 200);
+    if (status >= 400) {
+        setNoStore(res);
+        return false;
+    }
+    setPublicCache(res, { sMaxage: sMaxAge, swr });
+    return true;
 }
 
 // Safety: if request is authorized, never public-cache it.

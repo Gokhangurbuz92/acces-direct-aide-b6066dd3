@@ -1,34 +1,33 @@
 #!/bin/bash
-# Generate a list of all files in the repository, excluding build artifacts and secrets.
 
 # Create docs directory if it doesn't exist
 mkdir -p docs
 
-# Find all files, excluding specific directories and patterns
-# We exclude .env* files generally, but explicitly keep .env.example
-find . -type d \( \
-    -name "node_modules" -o \
-    -name "dist" -o \
-    -name ".git" -o \
-    -name ".vercel" -o \
-    -name "coverage" -o \
-    -name "test-results" -o \
-    -name "venv" -o \
-    -name "uploads_mock" \
-\) -prune -o \
--type f \
--not -name ".env*" \
--not -name "cookies*.txt" \
--not -name "test-img*.jpg" \
--print > docs/REPO_FILES.tmp
+# Find all files, excluding specified directories and patterns
+# We use a while loop to filter .env files more precisely
+find . -type f \
+  -not -path '*/node_modules/*' \
+  -not -path '*/dist/*' \
+  -not -path '*/.git/*' \
+  -not -path '*/.vercel/*' \
+  -not -path '*/coverage/*' \
+  -not -path '*/test-results/*' \
+  -not -path '*/playwright-report/*' \
+  -not -path '*/venv/*' \
+  -not -path '*/uploads_mock/*' \
+  -not -name 'cookies*.txt' \
+  -not -name 'test-img*.jpg' \
+  -not -name '.DS_Store' \
+  -not -path '*/api/_utils/build-info.js' \
+  -print0 | while IFS= read -r -d '' file; do
+    # Check if file is an env file (starts with .env or contains /.env)
+    # If it is, ensure it is .env.example, otherwise skip
+    if [[ "$file" == *".env"* ]]; then
+      if [[ "$file" != *".env.example" ]]; then
+        continue
+      fi
+    fi
+    echo "$file"
+done | sort > docs/REPO_FILES.txt
 
-# Add back .env.example if it exists
-if [ -f .env.example ]; then
-    echo "./.env.example" >> docs/REPO_FILES.tmp
-fi
-
-# Sort and save to final file
-sort -u docs/REPO_FILES.tmp > docs/REPO_FILES.txt
-rm docs/REPO_FILES.tmp
-
-echo "Repository map generated at docs/REPO_FILES.txt"
+echo "Repo map generated in docs/REPO_FILES.txt"

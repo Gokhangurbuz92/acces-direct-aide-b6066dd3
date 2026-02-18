@@ -311,6 +311,40 @@ En cas d'alerte:
 1. `monitor/core` down: verifier DB/KV en priorite.
 2. `monitor/cron/actualites` degrade: verifier cron runs + scheduling.
 
+## Data quality alerting loop (P8-F)
+
+Nouveaux endpoints monitorables (public, no-store + noindex):
+- `/api/monitor/data-quality`:
+  - `200` si la review queue est sous les seuils
+  - `503` si `openTotal` ou `openP0` depassent les seuils, ou si DB indisponible
+- `/api/monitor/ingestion-freshness`:
+  - `200` si la derniere collecte (`SourceDocument.fetched_at`) est recente
+  - `503` si stale/missing/error
+
+Cron automatique de scan quality:
+- endpoint: `/api/cron/review-queue/scan`
+- scheduling Vercel (UTC) dans `vercel.json`
+- auth: cron secret (manuel) ou User-Agent `vercel-cron/*` en production
+
+Variables associees (names only):
+- `DATA_REVIEW_SCAN_CRON_LIMIT_PER_TYPE`
+- `DATA_REVIEW_SCAN_CRON_ENABLED`
+- `MONITOR_DQ_OPEN_TOTAL_MAX`
+- `MONITOR_DQ_OPEN_P0_MAX`
+- `MONITOR_INGEST_FRESHNESS_MAX_AGE_HOURS`
+
+Smoke post-deploy:
+```bash
+npm run smoke:obs:prod
+```
+
+Le smoke verifie notamment:
+- `/api/monitor/core`
+- `/api/monitor/cron/actualites`
+- `/api/monitor/data-quality`
+- `/api/monitor/ingestion-freshness`
+- et tente `/api/cron/review-queue/scan` si `CRON_SECRET` est present dans le terminal.
+
 ## Verification SEO finale (post-deploy)
 
 Checklist:

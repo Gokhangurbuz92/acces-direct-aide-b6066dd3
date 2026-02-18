@@ -37,6 +37,7 @@ const Security = lazy(() => import("./Security.jsx"));
 const Partners = lazy(() => import("./Partners.jsx"));
 const SuggestStructure = lazy(() => import("./SuggestStructure.jsx"));
 const SubventionDossier = lazy(() => import("./SubventionDossier.jsx"));
+const Status = lazy(() => import("./Status.jsx"));
 const StructureDetail = lazy(() => import("./StructureDetail.jsx"));
 const NotFound = lazy(() => import("./NotFound.jsx"));
 const LoginPro = lazy(() => import("./LoginPro.jsx"));
@@ -97,7 +98,7 @@ const PAGES = {
     DemarcheDetail, DispositifDetail, LoginPro, Demarches, Home, Orientation,
     MentionsLegales, SourcesMethode, SentryTest, StructureDetail,
     AdminInbox, AdminRuns, AdminObservability, AdminReviewQueue, AppointmentRequest, AppointmentCancel, AppointmentReschedule, AdminStructures,
-    AdminDemarches, AdminDemarcheEdit, AdminAppointments, AdminReview
+    AdminDemarches, AdminDemarcheEdit, AdminAppointments, AdminReview, Status
 };
 
 // Loading Fallback
@@ -265,6 +266,7 @@ function PagesContent() {
                     <Route path="/partenaires" element={<Partners />} />
                     <Route path="/proposer-une-structure" element={<SuggestStructure />} />
                     <Route path="/dossier-subventions" element={<SubventionDossier />} />
+                    <Route path="/status" element={<Status />} />
 
                     {/* Styleguide */}
                     <Route path="/styleguide/branding" element={<StyleguideBranding />} />

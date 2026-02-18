@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { Fragment, useCallback, useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
@@ -12,6 +12,13 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Badge } from '@/components/ui/badge';
 
 const DEFAULT_LIMIT = 50;
+const DEFAULT_FILTERS = {
+  status: 'open',
+  entityType: '',
+  reason: '',
+  severity: '',
+  search: '',
+};
 const KNOWN_REASONS = [
   'MISSING_VERIFICATION',
   'STALE_VERIFICATION',
@@ -57,22 +64,49 @@ function buildPublicLink(item) {
   return null;
 }
 
+/**
+ * @param {unknown} details
+ * @returns {string}
+ */
+function stringifyDetails(details) {
+  if (!details || typeof details !== 'object') return '{}';
+  try {
+    return JSON.stringify(details, null, 2);
+  } catch {
+    return '{}';
+  }
+}
+
+/**
+ * @param {unknown} details
+ * @returns {Array<{ label: string, value: string }>}
+ */
+function extractDetailHighlights(details) {
+  if (!details || typeof details !== 'object') return [];
+  const source = /** @type {Record<string, unknown>} */ (details);
+  /** @type {Array<{ label: string, value: string }>} */
+  const out = [];
+  if (source.ageDays != null) out.push({ label: 'ageDays', value: String(source.ageDays) });
+  if (source.staleDays != null) out.push({ label: 'staleDays', value: String(source.staleDays) });
+  if (source.field != null) out.push({ label: 'field', value: String(source.field) });
+  return out;
+}
+
 export default function AdminReviewQueue() {
   const [items, setItems] = useState(/** @type {any[]} */ ([]));
   const [pagination, setPagination] = useState({ nextCursor: null, limit: DEFAULT_LIMIT });
   const [loading, setLoading] = useState(false);
   const [scanning, setScanning] = useState(false);
   const [savingId, setSavingId] = useState('');
+  const [bulkSaving, setBulkSaving] = useState('');
   const [error, setError] = useState('');
   const [summary, setSummary] = useState(/** @type {any} */ (null));
   const [requestId, setRequestId] = useState('');
   const [liveMessage, setLiveMessage] = useState('');
+  const [expandedDetailsIds, setExpandedDetailsIds] = useState(/** @type {string[]} */ ([]));
+  const [selectedIds, setSelectedIds] = useState(/** @type {string[]} */ ([]));
 
-  const [filters, setFilters] = useState({
-    status: 'open',
-    entityType: '',
-    reason: '',
-  });
+  const [filters, setFilters] = useState({ ...DEFAULT_FILTERS });
 
   const reasonOptions = useMemo(() => {
     const dynamic = Array.from(new Set(items.map((item) => item.reason).filter(Boolean)));
@@ -85,7 +119,9 @@ export default function AdminReviewQueue() {
 
     try {
       const response = await apiClient.admin.getReviewQueueItems({
-        ...filters,
+        status: filters.status,
+        entityType: filters.entityType,
+        reason: filters.reason,
         limit: DEFAULT_LIMIT,
         cursor: cursor || undefined,
       });
@@ -100,7 +136,7 @@ export default function AdminReviewQueue() {
     } finally {
       setLoading(false);
     }
-  }, [filters]);
+  }, [filters.status, filters.entityType, filters.reason]);
 
   const handleScan = useCallback(async () => {
     setScanning(true);
@@ -118,24 +154,126 @@ export default function AdminReviewQueue() {
     }
   }, [loadItems]);
 
-  const handleStatusChange = useCallback(async (id, status) => {
-    setSavingId(id);
-    setError('');
+  const handleStatusChange = useCallback(
+    /**
+     * @param {string} id
+     * @param {'resolved' | 'ignored'} status
+     */
+    async (id, status) => {
+      setSavingId(id);
+      setError('');
 
-    try {
-      await apiClient.admin.updateReviewQueueStatus(id, status);
-      setLiveMessage('Statut mis a jour');
-      await loadItems();
-    } catch {
-      setError('Impossible de mettre a jour le statut.');
-    } finally {
-      setSavingId('');
-    }
-  }, [loadItems]);
+      try {
+        await apiClient.admin.updateReviewQueueStatus(id, status);
+        setLiveMessage('Statut mis a jour');
+        await loadItems();
+      } catch {
+        setError('Impossible de mettre a jour le statut.');
+      } finally {
+        setSavingId('');
+      }
+    },
+    [loadItems],
+  );
+
+  const filteredItems = useMemo(() => {
+    const normalizedSearch = String(filters.search || '').trim().toLowerCase();
+    return items.filter((item) => {
+      if (filters.severity && item.severity !== filters.severity) return false;
+      if (!normalizedSearch) return true;
+      const haystack = [
+        item.title,
+        item.entitySlug,
+        item.entityId,
+        item.reason,
+      ]
+        .filter(Boolean)
+        .map((value) => String(value).toLowerCase())
+        .join(' ');
+      return haystack.includes(normalizedSearch);
+    });
+  }, [items, filters.severity, filters.search]);
+
+  const selectedSet = useMemo(() => new Set(selectedIds), [selectedIds]);
+  const expandedSet = useMemo(() => new Set(expandedDetailsIds), [expandedDetailsIds]);
+  const visibleIds = useMemo(() => filteredItems.map((item) => item.id), [filteredItems]);
+  const allVisibleSelected = visibleIds.length > 0 && visibleIds.every((id) => selectedSet.has(id));
+  const hasSelection = selectedIds.length > 0;
+
+  const toggleSelectAllVisible = useCallback(() => {
+    setSelectedIds((prev) => {
+      const current = new Set(prev);
+      if (allVisibleSelected) {
+        for (const id of visibleIds) current.delete(id);
+      } else {
+        for (const id of visibleIds) current.add(id);
+      }
+      return Array.from(current);
+    });
+  }, [allVisibleSelected, visibleIds]);
+
+  const toggleSelected = useCallback(
+    /** @param {string} id */
+    (id) => {
+      setSelectedIds((prev) => {
+        if (prev.includes(id)) return prev.filter((candidate) => candidate !== id);
+        return [...prev, id];
+      });
+    },
+    [],
+  );
+
+  const toggleDetails = useCallback(
+    /** @param {string} id */
+    (id) => {
+      setExpandedDetailsIds((prev) => {
+        if (prev.includes(id)) return prev.filter((candidate) => candidate !== id);
+        return [...prev, id];
+      });
+    },
+    [],
+  );
+
+  const handleBulkAction = useCallback(
+    /** @param {'resolved' | 'ignored'} nextStatus */
+    async (nextStatus) => {
+      if (selectedIds.length === 0) return;
+      setBulkSaving(nextStatus);
+      setError('');
+
+      try {
+        const response = await apiClient.admin.bulkUpdateReviewQueue(selectedIds, nextStatus);
+        const result = response?.result || {};
+        setLiveMessage(
+          `Action de masse terminée (${result.updated || 0} mis a jour, ${result.skipped || 0} ignores, ${result.notFound || 0} introuvables)`,
+        );
+        setSelectedIds([]);
+        await loadItems();
+      } catch {
+        setError("Impossible d'executer l'action de masse.");
+      } finally {
+        setBulkSaving('');
+      }
+    },
+    [selectedIds, loadItems],
+  );
+
+  const resetFilters = useCallback(() => {
+    setFilters({ ...DEFAULT_FILTERS });
+    setSelectedIds([]);
+    setExpandedDetailsIds([]);
+    setLiveMessage('Filtres reinitialises');
+  }, []);
 
   useEffect(() => {
     loadItems();
   }, [loadItems]);
+
+  useEffect(() => {
+    const visibleSet = new Set(visibleIds);
+    setSelectedIds((prev) => prev.filter((id) => visibleSet.has(id)));
+    setExpandedDetailsIds((prev) => prev.filter((id) => visibleSet.has(id)));
+  }, [visibleIds]);
 
   return (
     <div className="container mx-auto space-y-6 py-8">
@@ -167,7 +305,7 @@ export default function AdminReviewQueue() {
         <CardHeader>
           <CardTitle>Filtres</CardTitle>
         </CardHeader>
-        <CardContent className="grid grid-cols-1 gap-3 md:grid-cols-4">
+        <CardContent className="grid grid-cols-1 gap-3 md:grid-cols-6">
           <label className="text-sm">
             <span className="mb-1 block text-slate-700">Status</span>
             <select
@@ -210,11 +348,68 @@ export default function AdminReviewQueue() {
             </select>
           </label>
 
-          <div className="flex items-end">
+          <label className="text-sm">
+            <span className="mb-1 block text-slate-700">Severity</span>
+            <select
+              className="w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm"
+              value={filters.severity}
+              onChange={(event) => setFilters((prev) => ({ ...prev, severity: event.target.value }))}
+            >
+              <option value="">all</option>
+              <option value="P0">P0</option>
+              <option value="P1">P1</option>
+              <option value="P2">P2</option>
+            </select>
+          </label>
+
+          <label className="text-sm md:col-span-2">
+            <span className="mb-1 block text-slate-700">Search</span>
+            <input
+              className="w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm"
+              value={filters.search}
+              onChange={(event) => setFilters((prev) => ({ ...prev, search: event.target.value }))}
+              placeholder="title, slug, id, reason"
+              data-testid="rq-search-input"
+            />
+          </label>
+
+          <div className="md:col-span-3">
             <Button className="w-full" onClick={() => loadItems()} disabled={loading}>Apply</Button>
+          </div>
+          <div className="md:col-span-3">
+            <Button className="w-full" variant="outline" onClick={resetFilters} disabled={loading}>
+              Reset filters
+            </Button>
           </div>
         </CardContent>
       </Card>
+
+      {hasSelection && (
+        <Card>
+          <CardContent className="flex flex-wrap items-center gap-2 py-4">
+            <span className="text-sm text-slate-700">
+              {selectedIds.length} item(s) sélectionné(s)
+            </span>
+            <Button
+              size="sm"
+              onClick={() => handleBulkAction('resolved')}
+              disabled={bulkSaving !== '' || loading}
+              data-testid="rq-bulk-resolve"
+            >
+              Resolve selected
+            </Button>
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => handleBulkAction('ignored')}
+              disabled={bulkSaving !== '' || loading}
+              data-testid="rq-bulk-ignore"
+            >
+              Ignore selected
+            </Button>
+          </CardContent>
+        </Card>
+      )}
 
       {summary && (
         <Card>
@@ -249,12 +444,22 @@ export default function AdminReviewQueue() {
 
       <Card>
         <CardHeader>
-          <CardTitle>Items ({items.length})</CardTitle>
+          <CardTitle>Items ({filteredItems.length})</CardTitle>
         </CardHeader>
         <CardContent>
           <Table>
             <TableHeader>
               <TableRow>
+                <TableHead className="w-[40px]">
+                  <input
+                    type="checkbox"
+                    aria-label="Select all visible items"
+                    checked={allVisibleSelected}
+                    onChange={toggleSelectAllVisible}
+                    disabled={filteredItems.length === 0}
+                    data-testid="rq-select-all"
+                  />
+                </TableHead>
                 <TableHead>Created</TableHead>
                 <TableHead>Entity</TableHead>
                 <TableHead>Title</TableHead>
@@ -268,61 +473,103 @@ export default function AdminReviewQueue() {
             <TableBody>
               {loading ? (
                 <TableRow>
-                  <TableCell colSpan={8} className="text-sm text-slate-600">Chargement...</TableCell>
+                  <TableCell colSpan={9} className="text-sm text-slate-600">Chargement...</TableCell>
                 </TableRow>
-              ) : items.length === 0 ? (
+              ) : filteredItems.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={8} className="text-sm text-slate-600">Aucun item.</TableCell>
+                  <TableCell colSpan={9} className="text-sm text-slate-600">Aucun item.</TableCell>
                 </TableRow>
               ) : (
-                items.map((item) => {
+                filteredItems.map((item) => {
                   const publicLink = buildPublicLink(item);
+                  const detailsOpen = expandedSet.has(item.id);
+                  const detailsHighlights = extractDetailHighlights(item.details);
+
                   return (
-                    <TableRow key={item.id}>
-                      <TableCell className="font-mono text-xs">{formatDate(item.createdAt)}</TableCell>
-                      <TableCell className="font-mono text-xs">{item.entityType}</TableCell>
-                      <TableCell className="max-w-[260px] truncate text-sm" title={item.title || ''}>{item.title || '-'}</TableCell>
-                      <TableCell className="font-mono text-xs">{item.reason}</TableCell>
-                      <TableCell>
-                        <Badge className={severityClass(item.severity)}>{item.severity || '-'}</Badge>
-                      </TableCell>
-                      <TableCell>
-                        <Badge className={statusClass(item.status)}>{item.status || '-'}</Badge>
-                      </TableCell>
-                      <TableCell>
-                        {publicLink ? (
-                          <Link className="text-sm font-medium text-blue-700 hover:text-blue-800 hover:underline" to={publicLink} target="_blank" rel="noreferrer">
-                            Ouvrir
-                          </Link>
-                        ) : (
-                          <span className="text-xs text-slate-500">-</span>
-                        )}
-                      </TableCell>
-                      <TableCell>
-                        {item.status === 'open' ? (
-                          <div className="flex items-center gap-2">
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              disabled={savingId === item.id}
-                              onClick={() => handleStatusChange(item.id, 'resolved')}
-                            >
-                              Resolve
-                            </Button>
+                    <Fragment key={item.id}>
+                      <TableRow>
+                        <TableCell>
+                          <input
+                            type="checkbox"
+                            aria-label={`Select review item ${item.id}`}
+                            checked={selectedSet.has(item.id)}
+                            onChange={() => toggleSelected(item.id)}
+                            data-testid={`rq-select-${item.id}`}
+                          />
+                        </TableCell>
+                        <TableCell className="font-mono text-xs">{formatDate(item.createdAt)}</TableCell>
+                        <TableCell className="font-mono text-xs">{item.entityType}</TableCell>
+                        <TableCell className="max-w-[260px] truncate text-sm" title={item.title || ''}>{item.title || '-'}</TableCell>
+                        <TableCell className="font-mono text-xs">{item.reason}</TableCell>
+                        <TableCell>
+                          <Badge className={severityClass(item.severity)}>{item.severity || '-'}</Badge>
+                        </TableCell>
+                        <TableCell>
+                          <Badge className={statusClass(item.status)}>{item.status || '-'}</Badge>
+                        </TableCell>
+                        <TableCell>
+                          {publicLink ? (
+                            <Link className="text-sm font-medium text-blue-700 hover:text-blue-800 hover:underline" to={publicLink} target="_blank" rel="noreferrer">
+                              Ouvrir
+                            </Link>
+                          ) : (
+                            <span className="text-xs text-slate-500">-</span>
+                          )}
+                        </TableCell>
+                        <TableCell>
+                          <div className="flex flex-wrap items-center gap-2">
+                            {item.status === 'open' && (
+                              <>
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  disabled={savingId === item.id}
+                                  onClick={() => handleStatusChange(item.id, 'resolved')}
+                                >
+                                  Resolve
+                                </Button>
+                                <Button
+                                  size="sm"
+                                  variant="ghost"
+                                  disabled={savingId === item.id}
+                                  onClick={() => handleStatusChange(item.id, 'ignored')}
+                                >
+                                  Ignore
+                                </Button>
+                              </>
+                            )}
                             <Button
                               size="sm"
                               variant="ghost"
-                              disabled={savingId === item.id}
-                              onClick={() => handleStatusChange(item.id, 'ignored')}
+                              onClick={() => toggleDetails(item.id)}
+                              data-testid={`rq-details-toggle-${item.id}`}
                             >
-                              Ignore
+                              {detailsOpen ? 'Hide details' : 'Details'}
                             </Button>
                           </div>
-                        ) : (
-                          <span className="text-xs text-slate-500">-</span>
-                        )}
-                      </TableCell>
-                    </TableRow>
+                        </TableCell>
+                      </TableRow>
+                      {detailsOpen && (
+                        <TableRow data-testid={`rq-details-${item.id}`}>
+                          <TableCell colSpan={9}>
+                            <div className="space-y-2 rounded-lg border border-slate-200 bg-slate-50 p-3">
+                              {detailsHighlights.length > 0 && (
+                                <div className="flex flex-wrap gap-2 text-xs">
+                                  {detailsHighlights.map((entry) => (
+                                    <Badge key={`${item.id}-${entry.label}`} variant="outline">
+                                      {entry.label}: {entry.value}
+                                    </Badge>
+                                  ))}
+                                </div>
+                              )}
+                              <pre className="max-h-40 overflow-auto whitespace-pre-wrap break-all rounded bg-slate-900 p-3 text-xs text-slate-100">
+                                {stringifyDetails(item.details)}
+                              </pre>
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                      )}
+                    </Fragment>
                   );
                 })
               )}

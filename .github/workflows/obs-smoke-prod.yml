@@ -1,0 +1,94 @@
+name: Obs Smoke PROD
+
+on:
+  schedule:
+    - cron: '0 * * * *'
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+  issues: write
+
+jobs:
+  smoke:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run observability smoke
+        id: smoke
+        continue-on-error: true
+        env:
+          PROD_BASE_URL: ${{ secrets.PROD_BASE_URL }}
+        run: |
+          BASE_URL="${PROD_BASE_URL:-https://www.accesdirectaide.fr}"
+          set +e
+          node scripts/obs-smoke.mjs --base-url "$BASE_URL" --json > obs-smoke-report.json
+          EXIT_CODE=$?
+          echo "exit_code=$EXIT_CODE" >> "$GITHUB_OUTPUT"
+          cat obs-smoke-report.json
+          exit 0
+
+      - name: Create or update incident issue
+        if: steps.smoke.outputs.exit_code != '0'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            const title = '🚨 PROD smoke failed';
+            const owner = context.repo.owner;
+            const repo = context.repo.repo;
+            const runUrl = `${context.serverUrl}/${owner}/${repo}/actions/runs/${context.runId}`;
+            const report = fs.existsSync('obs-smoke-report.json')
+              ? fs.readFileSync('obs-smoke-report.json', 'utf8').trim()
+              : '(report unavailable)';
+            const now = new Date().toISOString();
+            const body = [
+              'Automated observability smoke check failed.',
+              '',
+              `- Date: ${now}`,
+              `- Run: ${runUrl}`,
+              `- Exit code: ${process.env.OBS_SMOKE_EXIT_CODE || 'unknown'}`,
+              '',
+              '```json',
+              report || '(empty)',
+              '```',
+            ].join('\n');
+
+            const issues = await github.paginate(github.rest.issues.listForRepo, {
+              owner,
+              repo,
+              state: 'open',
+              per_page: 100,
+            });
+            const existing = issues.find((issue) => issue.title === title);
+
+            if (existing) {
+              await github.rest.issues.createComment({
+                owner,
+                repo,
+                issue_number: existing.number,
+                body,
+              });
+            } else {
+              await github.rest.issues.create({
+                owner,
+                repo,
+                title,
+                body,
+              });
+            }
+        env:
+          OBS_SMOKE_EXIT_CODE: ${{ steps.smoke.outputs.exit_code }}
+
+      - name: Fail workflow when smoke failed
+        if: steps.smoke.outputs.exit_code != '0'
+        run: exit 1

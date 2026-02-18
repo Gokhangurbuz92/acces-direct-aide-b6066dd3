@@ -25,8 +25,8 @@ L'authentification et les autorisations sont gérées par les handlers ou des mi
 
 | Méthode | Chemin | Handler | Description | Auth |
 |---|---|---|---|---|
-| POST | `/api/auth/login` | `_handlers/auth/login.js` | Connexion Admin | Public |
-| GET | `/api/auth/me` | `_handlers/auth/me.js` | Session Admin | Admin Token |
+| POST | `/api/auth/login` | `_handlers/auth/login.js` | Connexion Admin (`AUTH_MODE=token|jwt`) | Public |
+| GET | `/api/auth/me` | `_handlers/auth/me.js` | Introspection session (admin token/jwt ou pro jwt) | Bearer Token |
 
 ## 3. Espace Pro
 

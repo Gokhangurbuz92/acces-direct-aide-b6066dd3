@@ -1,31 +1,34 @@
 #!/bin/bash
-# Generate a list of all files in the repository, excluding ignored directories.
+# Generate a list of all files in the repository, excluding build artifacts and secrets.
 
-TEMP_FILE="/tmp/REPO_FILES.tmp"
+# Create docs directory if it doesn't exist
+mkdir -p docs
 
-# Find all files, excluding unwanted directories and excluding all .env* files initially
-find . -type f \
-  -not -path '*/node_modules/*' \
-  -not -path '*/dist/*' \
-  -not -path '*/.git/*' \
-  -not -path '*/.vercel/*' \
-  -not -path '*/coverage/*' \
-  -not -path '*/test-results/*' \
-  -not -path '*/venv/*' \
-  -not -path '*/uploads_mock/*' \
-  -not -name 'cookies*.txt' \
-  -not -name 'test-img*.jpg' \
-  -not -name '.DS_Store' \
-  -not -name '.env*' \
-  > "$TEMP_FILE"
+# Find all files, excluding specific directories and patterns
+# We exclude .env* files generally, but explicitly keep .env.example
+find . -type d \( \
+    -name "node_modules" -o \
+    -name "dist" -o \
+    -name ".git" -o \
+    -name ".vercel" -o \
+    -name "coverage" -o \
+    -name "test-results" -o \
+    -name "venv" -o \
+    -name "uploads_mock" \
+\) -prune -o \
+-type f \
+-not -name ".env*" \
+-not -name "cookies*.txt" \
+-not -name "test-img*.jpg" \
+-print > docs/REPO_FILES.tmp
 
-# Explicitly add .env.example if it exists
+# Add back .env.example if it exists
 if [ -f .env.example ]; then
-    echo "./.env.example" >> "$TEMP_FILE"
+    echo "./.env.example" >> docs/REPO_FILES.tmp
 fi
 
-# Sort and deduplicate, output to final file
-sort -u "$TEMP_FILE" > docs/REPO_FILES.txt
-rm "$TEMP_FILE"
+# Sort and save to final file
+sort -u docs/REPO_FILES.tmp > docs/REPO_FILES.txt
+rm docs/REPO_FILES.tmp
 
-echo "Repo map generated in docs/REPO_FILES.txt"
+echo "Repository map generated at docs/REPO_FILES.txt"

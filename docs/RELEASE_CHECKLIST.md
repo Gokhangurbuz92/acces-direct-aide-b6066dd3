@@ -9,14 +9,14 @@ Ce document définit les étapes obligatoires pour valider une mise en productio
 - [ ] **Routes** : Vérifier que les nouvelles routes sont documentées dans `docs/ROUTES_FRONT.md` et `docs/ROUTES_API.md`.
 
 ## 2. CI (Automatique)
-- [ ] **Workflow GitHub** : Le job `build-and-test` est vert.
-- [ ] **Secrets scan** : Le workflow `secrets-scan` est vert.
+- [ ] **Workflow GitHub** : Les jobs `quality`, `build`, et `e2e` sont verts.
+- [ ] **Secrets scan** : Le workflow de sécurité est vert (si configuré).
 - [ ] **Dépendances** : Pas de vulnérabilité critique (`npm audit`).
 
 ## 3. Déploiement (Vercel)
 - [ ] **Preview** : Vérifier l'URL de preview avant merge.
 - [ ] **Variables d'environnement** : Vérifier que les secrets (DATABASE_URL, ADA_ENCRYPTION_KEY, etc.) sont bien configurés sur l'environnement cible.
-- [ ] **Migrations DB** : Si changements de schéma, exécuter `prisma migrate deploy` post-déploiement (ou via script dédié).
+- [ ] **Migrations DB** : Si changements de schéma, exécuter `prisma migrate deploy` post-déploiement.
 
 ## 4. Post-Release (Production)
 - [ ] **Smoke Test** : Vérifier manuellement les parcours critiques (Accueil -> Recherche -> Détail -> RDV).

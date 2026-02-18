@@ -13,8 +13,8 @@ L'authentification et les autorisations sont gérées par les handlers ou des mi
 | GET | `/api/health/deep` | `_handlers/health-deep.js` | Vérification santé complète (DB, etc) | Admin |
 | GET | `/api/monitor/cron/actualites` | `_handlers/monitor/cron-actualites.js` | Monitoring public freshness cron actualités | Public |
 | GET | `/api/healthz` | `_handlers/health.js` | Alias Health | Public |
-| GET | `/api/robots.txt` | `_handlers/robots.js` | Robots.txt dynamique | Public |
-| GET | `/api/sitemap.xml` | `_handlers/sitemap.js` | Sitemap dynamique | Public |
+| GET | `/api/robots.txt` | `_handlers/robots.js` | Robots API (root servi en statique via `public/robots.txt`) | Public |
+| GET | `/api/sitemap.xml` | `_handlers/sitemap.js` | Sitemap dynamique (exposé en root via `/sitemap.xml`) | Public |
 | GET | `/api/login-pro-guard` | `_handlers/login-pro-guard.js` | Guard redirection Pro | Public |
 | GET | `/api/taxonomy` | `_handlers/taxonomy.js` | Référentiel taxonomies | Public |
 

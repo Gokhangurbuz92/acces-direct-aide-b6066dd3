@@ -1,90 +1,101 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 
-const { mockFindMany } = vi.hoisted(() => {
-    return { mockFindMany: vi.fn() }
-});
+const { mockAideFindMany } = vi.hoisted(() => ({
+  mockAideFindMany: vi.fn(),
+}));
 
-vi.mock('@prisma/client', () => {
+vi.mock('@prisma/client', () => ({
+  PrismaClient: vi.fn().mockImplementation(function PrismaClient() {
     return {
-        PrismaClient: vi.fn().mockImplementation(function () {
-            return {
-                aide: { findMany: mockFindMany },
-                demarche: { findMany: mockFindMany },
-                structure: { findMany: mockFindMany },
-                dispositif: { findMany: mockFindMany },
-                resourceAccessibility: { findMany: mockFindMany },
-                guide: { findMany: mockFindMany },
-                toolboxItem: { findMany: mockFindMany },
-                actualite: { findMany: mockFindMany }
-            };
-        })
+      aide: { findMany: mockAideFindMany },
     };
-});
+  }),
+}));
 
 import sitemapHandler from '../api/_handlers/sitemap.js';
 
-describe('Sitemap Handler', () => {
-    let req, res;
+function createReq(overrides = {}) {
+  return {
+    method: 'GET',
+    headers: {
+      host: 'preview-accesdirectaide.vercel.app',
+      'x-forwarded-proto': 'https',
+      'x-forwarded-host': 'preview-accesdirectaide.vercel.app',
+    },
+    ...overrides,
+  };
+}
 
-    beforeEach(() => {
-        vi.clearAllMocks();
-        req = {
-            method: 'GET',
-            headers: { host: 'localhost:3000' }
-        };
-        res = {
-            setHeader: vi.fn(),
-            writeHeader: vi.fn(),
-            writeHead: vi.fn(),
-            end: vi.fn(),
-            status: vi.fn().mockReturnThis(),
-            json: vi.fn()
-        };
+function createRes() {
+  return {
+    writeHead: vi.fn(),
+    end: vi.fn(),
+    status: vi.fn().mockReturnThis(),
+    json: vi.fn().mockReturnThis(),
+    setHeader: vi.fn(),
+  };
+}
 
-        // Setup default mock returns
-        mockFindMany.mockResolvedValue([]);
-    });
+describe('Sitemap handler (P7-A)', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mockAideFindMany.mockResolvedValue([]);
+  });
 
-    it('should generate plural URLs for demarches and structures', async () => {
-        // Mock data
-        const date = new Date('2023-01-01');
-        const aides = [{ slug: 'aide-1', updatedAt: date }];
-        const demarches = [{ slug: 'demarche-1', updatedAt: date }];
-        const structures = [{ slug: 'structure-1', updatedAt: date }];
-        const dispositifs = [{ slug: 'dispositif-1', updatedAt: date }];
-        const ressources = [{ slug: 'ressource-1', updatedAt: date }];
+  it('returns XML with static and dynamic URLs', async () => {
+    mockAideFindMany.mockResolvedValue([
+      { slug: 'aide-exemple', updatedAt: new Date('2026-01-01T12:00:00.000Z') },
+    ]);
 
-        // Order of calls in handler:
-        // 1. aide
-        // 2. demarche
-        // 3. structure
-        // 4. dispositif
-        // 5. resourceAccessibility
-        // 6. guide
-        // 7. toolboxItem
-        // 8. actualite
-        mockFindMany
-            .mockResolvedValueOnce(aides)      // aides
-            .mockResolvedValueOnce(demarches)  // demarches
-            .mockResolvedValueOnce(structures) // structures
-            .mockResolvedValueOnce(dispositifs)// dispositifs
-            .mockResolvedValueOnce(ressources) // resourceAccessibility
-            .mockResolvedValueOnce([])         // guides
-            .mockResolvedValueOnce([])         // tools
-            .mockResolvedValueOnce([]);        // actus
+    const req = createReq();
+    const res = createRes();
 
-        await sitemapHandler(req, res);
+    await sitemapHandler(req, res);
 
-        expect(res.end).toHaveBeenCalled();
-        const xml = res.end.mock.calls[0][0];
+    expect(res.writeHead).toHaveBeenCalledWith(
+      200,
+      expect.objectContaining({
+        'Content-Type': 'application/xml; charset=utf-8',
+      }),
+    );
 
-        // Check URLs
-        // Note: api/_utils/seo.js getCanonicalBaseUrl logic forces production domain usually.
-        // So we expect the hardcoded production domain if logic dictates, even if host is localhost.
-        expect(xml).toContain('<loc>https://www.accesdirectaide.fr/aides/aide-1</loc>'); // Plural (Verified Fix)
-        expect(xml).toContain('<loc>https://www.accesdirectaide.fr/demarches/demarche-1</loc>'); // Plural (Verified Fix)
-        expect(xml).toContain('<loc>https://www.accesdirectaide.fr/structures/structure-1</loc>'); // Plural (Verified Fix)
-        expect(xml).toContain('<loc>https://www.accesdirectaide.fr/dispositifs/dispositif-1</loc>');
-        expect(xml).toContain('<loc>https://www.accesdirectaide.fr/ressources/ressource-1</loc>');
-    });
+    const xml = res.end.mock.calls[0]?.[0];
+    expect(xml).toContain('<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">');
+    expect(xml).toContain('<loc>https://preview-accesdirectaide.vercel.app/</loc>');
+    expect(xml).toContain('<loc>https://preview-accesdirectaide.vercel.app/aides</loc>');
+    expect(xml).toContain('<loc>https://preview-accesdirectaide.vercel.app/aides/aide-exemple</loc>');
+  });
+
+  it('returns 503 without stack details when DB is unavailable', async () => {
+    mockAideFindMany.mockRejectedValue(new Error('db unavailable'));
+
+    const req = createReq();
+    const res = createRes();
+
+    await sitemapHandler(req, res);
+
+    expect(res.writeHead).toHaveBeenCalledWith(
+      503,
+      expect.objectContaining({
+        'Content-Type': 'application/xml; charset=utf-8',
+        'Cache-Control': 'no-store',
+      }),
+    );
+
+    const body = res.end.mock.calls[0]?.[0];
+    expect(body).toContain('<error>service_unavailable</error>');
+    expect(body).not.toContain('db unavailable');
+    expect(body).not.toContain('stack');
+  });
+
+  it('supports HEAD requests', async () => {
+    const req = createReq({ method: 'HEAD' });
+    const res = createRes();
+
+    await sitemapHandler(req, res);
+
+    expect(res.writeHead).toHaveBeenCalledWith(200, expect.any(Object));
+    expect(res.end).toHaveBeenCalledWith();
+  });
 });
+

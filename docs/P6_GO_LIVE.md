@@ -304,3 +304,40 @@ Checklist:
 - verifier une aide inexistante (`/aides/slug-inexistant-123`) -> page introuvable + noindex
 - verifier OG preview sur `/` (image par defaut absolue)
 - verifier `sitemap.xml` avec origin canonique `https://www.accesdirectaide.fr`
+
+## Data quality scan (P8-C)
+
+Objectif:
+- executer un scan humain de qualite de donnees
+- alimenter la review queue admin
+- traiter les items (`open` -> `resolved` ou `ignored`)
+
+Endpoints admin (token requis, names only):
+- `POST /api/admin/review-queue/scan`
+- `GET /api/admin/review-queue?status=open&limit=50`
+- `PATCH /api/admin/review-queue/:id`
+
+Exemple de scan manuel (sans valeurs en clair):
+
+```bash
+export PROD_URL="https://www.accesdirectaide.fr"
+export ADMIN_TOKEN="(dans ton terminal)"
+
+curl -sS \
+  -H "Authorization: Bearer $ADMIN_TOKEN" \
+  -H "Content-Type: application/json" \
+  -X POST \
+  -d '{"limitPerType":200}' \
+  "$PROD_URL/api/admin/review-queue/scan"
+```
+
+Verification rapide:
+- ouvrir `/admin/review-queue`
+- verifier que des items `open` apparaissent
+- traiter un item en `resolved` ou `ignored`
+
+Variables env concernees (names only):
+- `DATA_AIDES_STALE_DAYS`
+- `DATA_DEMARCHES_STALE_DAYS`
+- `DATA_STRUCTURES_STALE_DAYS`
+- `DATA_REVIEW_SCAN_LIMIT_PER_TYPE`

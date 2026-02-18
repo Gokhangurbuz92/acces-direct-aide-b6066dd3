@@ -71,7 +71,15 @@ describe('API GET /api/aides (Integration Logic)', () => {
 
         // Assertions
         expect(res.status).toHaveBeenCalledWith(200);
-        expect(res.json).toHaveBeenCalledWith(mockItem);
+        expect(res.json).toHaveBeenCalledWith(expect.objectContaining({
+            ...mockItem,
+            provenance: expect.objectContaining({
+                verifiedAt: null,
+                fetchedAt: null,
+                sourceUrl: null,
+                sourceHost: null
+            })
+        }));
 
         // CRITICAL: Verify correct query structure
         expect(prisma.aide.findFirst).toHaveBeenCalledWith(expect.objectContaining({

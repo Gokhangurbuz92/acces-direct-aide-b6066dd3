@@ -27,6 +27,10 @@ Legend:
 | `POSTGRES_PRISMA_URL` | server | no | no | Optional legacy alias some platforms provide. |
 | `DATABASE_URL_UNPOOLED` | server | no | no | Legacy alias for `POSTGRES_URL_NON_POOLING`. |
 | `JWT_SECRET` | server | yes | yes | Auth signing secret. |
+| `AUTH_MODE` | server | no | no | Auth mode for `/api/auth/login` (`token` default, `jwt` optional). |
+| `AUTH_SECRET` | server | no | no | Admin auth signing secret when `AUTH_MODE=jwt`. Alias: `AUTH_JWT_SECRET`. |
+| `AUTH_JWT_SECRET` | server | no | no | Alias for `AUTH_SECRET`. |
+| `AUTH_MAGICLINK_ENABLED` | server | no | no | Reserved feature flag for future passwordless flow (`0` default). |
 | `ADA_ENCRYPTION_KEY` | server | yes | yes | Server encryption key. |
 | `ADMIN_TOKEN` | server | no | yes | Admin API auth token (recommended locally, required on Vercel). |
 | `CRON_SECRET` | server | no | yes | Secures cron endpoints (recommended locally, required on Vercel). |

@@ -10,6 +10,7 @@ Accessibles à tous les utilisateurs.
 | Route | Page / Composant | API Calls Principaux | Notes |
 |---|---|---|---|
 | `/` | `Home` | `/api/public/stats` | Page d'accueil |
+| `/login` | `Login` | - | Entrée de connexion unifiée (admin/pro, noindex) |
 | `/aides` | `Aides` | `/api/aides`, `/api/taxonomy` | Recherche aides |
 | `/aides/:slug` | `AideDetail` | `/api/aides/:slug` | Détail aide |
 | `/status` | `Status` | `/api/monitor/data-quality`, `/api/monitor/ingestion-freshness` | Statut public (noindex) |
@@ -61,12 +62,12 @@ Routes imbriquées sous le layout `ProLayout`.
 | `/pro/register` | `ProRegister` | `/api/pro/auth/register` | Inscription |
 | `/pro/forgot-password` | `ProForgotPassword` | `/api/pro/auth/forgot-password` | Mot de passe oublié |
 | `/pro/reset-password` | `ProResetPassword` | `/api/pro/auth/reset-password` | Reset mot de passe |
-| `/pro/dashboard` | `ProDashboard` | `/api/pro/me` | Tableau de bord |
-| `/pro/services` | `ProServices` | `/api/pro/services` | Gestion services |
-| `/pro/team` | `ProTeam` | `/api/pro/team` | Gestion équipe |
-| `/pro/structure` | `ProStructure` | `/api/pro/structure` | Gestion structure |
-| `/pro/appointments` | `ProAppointments` | `/api/pro/appointments` | Liste RDV |
-| `/pro/appointments/:id` | `ProAppointmentDetail` | `/api/pro/appointments/:id` | Détail RDV |
+| `/pro/dashboard` | `ProDashboard` | `/api/pro/me` | Tableau de bord (Protégé par `ProGuard`) |
+| `/pro/services` | `ProServices` | `/api/pro/services` | Gestion services (Protégé par `ProGuard`) |
+| `/pro/team` | `ProTeam` | `/api/pro/team` | Gestion équipe (Protégé par `ProGuard`) |
+| `/pro/structure` | `ProStructure` | `/api/pro/structure` | Gestion structure (Protégé par `ProGuard`) |
+| `/pro/appointments` | `ProAppointments` | `/api/pro/appointments` | Liste RDV (Protégé par `ProGuard`) |
+| `/pro/appointments/:id` | `ProAppointmentDetail` | `/api/pro/appointments/:id` | Détail RDV (Protégé par `ProGuard`) |
 | `/login/pro` | `LoginPro` | - | Legacy / Dev only |
 
 ## 3. Administration (`/admin`)

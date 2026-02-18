@@ -274,6 +274,28 @@ Attendu:
 - endpoints techniques: `Cache-Control` contient `no-store`
 - `sitemap.xml`: cache public sur `200`, et `no-store` si `503`
 
+## Observability smoke (P8-B)
+
+Commande unique (sans secrets):
+
+```bash
+npm run smoke:obs:prod
+```
+
+Variables optionnelles:
+- `PROD_URL` (default `https://www.accesdirectaide.fr`)
+- `TIMEOUT_MS` (default `8000`)
+
+Le script verifie:
+- `/api/monitor/core` (attendu `HTTP=200`)
+- `/api/monitor/cron/actualites` (attendu `HTTP=200` ou `HTTP=503` selon freshness)
+- `/api/health` (`HTTP=200` + `Cache-Control: no-store`)
+- `X-Robots-Tag: noindex, nofollow` sur `/api/monitor/core` et `/api/health`
+
+En cas d'alerte:
+1. `monitor/core` down: verifier DB/KV en priorite.
+2. `monitor/cron/actualites` degrade: verifier cron runs + scheduling.
+
 ## Verification SEO finale (post-deploy)
 
 Checklist:

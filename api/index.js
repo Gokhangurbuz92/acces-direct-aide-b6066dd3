@@ -44,6 +44,47 @@ function redactQueryParams(searchParams) {
     }
     return out;
 }
+
+/**
+ * @param {string} path
+ * @returns {'public' | 'admin' | 'cron' | 'monitor' | 'health' | 'other'}
+ */
+function getRouteGroup(path) {
+    if (!path) return 'other';
+    if (path.startsWith('admin/')) return 'admin';
+    if (path.startsWith('cron/')) return 'cron';
+    if (path.startsWith('monitor/')) return 'monitor';
+    if (path === 'health' || path === 'healthz' || path.startsWith('health/')) return 'health';
+
+    const publicPrefixes = [
+        'aides',
+        'actualites',
+        'appointments',
+        'auth/',
+        'demarches',
+        'dispositifs',
+        'download',
+        'guides',
+        'login-pro-guard',
+        'pro/',
+        'public/',
+        'reports',
+        'ressources',
+        'robots',
+        'search',
+        'sitemap',
+        'structures',
+        'taxonomy',
+        'tools',
+        'upload',
+    ];
+
+    if (publicPrefixes.some((prefix) => path === prefix || path.startsWith(prefix))) {
+        return 'public';
+    }
+
+    return 'other';
+}
 /**
  * @param {import('./_utils/http-types').ApiRequest} req
  * @param {import('./_utils/http-types').ApiResponse} res
@@ -90,6 +131,7 @@ export default async function handler(req, res) {
         path = path.replace(/^\/api(\/|$)/, "/");
         path = path.replace(/^\/+/, "");
         path = path.replace(/\/+$/, "");
+        const routeGroup = getRouteGroup(path);
 
         if (isTechnicalNoIndexPath(path)) {
             applyNoIndex(res);
@@ -99,6 +141,7 @@ export default async function handler(req, res) {
             msg: "Incoming Request",
             method: req.method,
             path: path,
+            routeGroup,
             query: redactQueryParams(urlObj.searchParams),
             userAgent: req.headers['user-agent']
         });
@@ -142,6 +185,7 @@ export default async function handler(req, res) {
                 msg: "Request Completed",
                 status: res.statusCode,
                 duration,
+                routeGroup,
             });
         });
 
@@ -156,8 +200,14 @@ export default async function handler(req, res) {
             try {
                 scope.setTag('request_id', requestId);
                 scope.setTag('route', path);
+                scope.setTag('route_group', routeGroup);
                 scope.setTag('vercel_env', env.runtime.vercelEnv);
                 scope.setTag('release', env.sentry.release);
+                scope.setTag('http.method', String(req.method || 'GET').toUpperCase());
+                scope.setContext('http', {
+                    method: String(req.method || 'GET').toUpperCase(),
+                    path: `/${path}`,
+                });
 
                 await routeHandler(req, res);
             } catch (routeError) {
@@ -166,7 +216,15 @@ export default async function handler(req, res) {
 
                 try {
                     Sentry.captureException(routeError, {
-                        tags: { requestId, route: path, phase: 'handler' },
+                        tags: {
+                            requestId,
+                            route: path,
+                            routeGroup,
+                            phase: 'handler',
+                            vercelEnv: env.runtime.vercelEnv,
+                            'http.method': String(req.method || 'GET').toUpperCase(),
+                            'http.status_code': '500',
+                        },
                     });
                     await Sentry.flush(2000);
                 } catch {

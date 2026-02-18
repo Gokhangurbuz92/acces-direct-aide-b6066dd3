@@ -67,3 +67,28 @@ Contraintes de securite:
 
 3. Correlation
 - recuperer `x-request-id` et filtrer logs/Sentry avec `request_id`.
+
+## Review Queue (Data Quality)
+
+Objectif:
+- detecter les contenus a risque (verification manquante/trop ancienne, slug invalide, champs obligatoires manquants)
+- alimenter une file de traitement humaine en admin
+
+Endpoints admin (token requis):
+- `POST /api/admin/review-queue/scan`
+- `GET /api/admin/review-queue?status=open&limit=50`
+- `PATCH /api/admin/review-queue/:id` avec `{ \"status\": \"resolved\" | \"ignored\" }`
+
+UI:
+- `/admin/review-queue`
+
+Signaux utiles:
+- `reason` (ex: `MISSING_VERIFICATION`, `STALE_VERIFICATION`, `MISSING_SLUG`)
+- `severity` (`P0`, `P1`, `P2`)
+- `status` (`open`, `resolved`, `ignored`)
+
+Seuils data quality (env, names only):
+- `DATA_AIDES_STALE_DAYS`
+- `DATA_DEMARCHES_STALE_DAYS`
+- `DATA_STRUCTURES_STALE_DAYS`
+- `DATA_REVIEW_SCAN_LIMIT_PER_TYPE`

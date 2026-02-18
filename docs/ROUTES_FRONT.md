@@ -92,6 +92,7 @@ Protégé par `AdminGuard` (Token statique ou session admin).
 | `/admin/health` | `AdminHealth` | `/api/health` | État santé |
 | `/admin/observability` | `AdminObservability` | - | Métriques |
 | `/admin/runs` | `AdminRuns` | `/api/admin/runs` | Historique runs |
+| `/admin/review-queue` | `AdminReviewQueue` | `/api/admin/review-queue`, `/api/admin/review-queue/scan` | Revue data quality |
 
 ## 4. Legacy & Redirects
 

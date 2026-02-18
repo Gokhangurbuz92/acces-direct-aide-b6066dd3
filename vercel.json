@@ -34,11 +34,7 @@
   "rewrites": [
     {
       "source": "/sitemap.xml",
-      "destination": "/api"
-    },
-    {
-      "source": "/robots.txt",
-      "destination": "/api"
+      "destination": "/api/sitemap.xml"
     },
     {
       "source": "/__dev/:path*",

@@ -1,156 +1,162 @@
+import { randomUUID } from 'crypto';
 import prisma from '../_utils/prisma.js';
-import { getCanonicalBaseUrl, isIndexable } from '../_utils/seo.js';
-import crypto from 'crypto';
+import logger from '../_utils/logger.js';
+import { PRODUCTION_DOMAIN } from '../_utils/seo.js';
+
+const CACHE_CONTROL = 'public, max-age=0, s-maxage=300, stale-while-revalidate=60';
+const MAX_DYNAMIC_URLS = 10000;
+
+const STATIC_PUBLIC_PATHS = ['/', '/aides', '/demarches', '/annuaire', '/actualites'];
+
+/**
+ * @param {unknown} value
+ * @returns {string}
+ */
+function escapeXml(value) {
+  return String(value)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&apos;');
+}
+
+/**
+ * @param {unknown} value
+ * @returns {string | null}
+ */
+function normalizeHeaderValue(value) {
+  if (typeof value === 'string') return value.trim() || null;
+  if (Array.isArray(value) && typeof value[0] === 'string') {
+    const first = value[0].trim();
+    return first || null;
+  }
+  return null;
+}
+
+/**
+ * @param {import('../_utils/http-types').ApiRequest} req
+ * @param {string} name
+ * @returns {string | null}
+ */
+function getHeader(req, name) {
+  if (!req?.headers) return null;
+  return normalizeHeaderValue(req.headers[name.toLowerCase()] ?? req.headers[name]);
+}
+
+/**
+ * @param {import('../_utils/http-types').ApiRequest} req
+ * @returns {string}
+ */
+function getBaseUrl(req) {
+  const forwardedProto = getHeader(req, 'x-forwarded-proto');
+  const protoRaw = (forwardedProto || 'https').split(',')[0]?.trim().toLowerCase();
+  const proto = protoRaw === 'http' ? 'http' : 'https';
+
+  const forwardedHost = getHeader(req, 'x-forwarded-host');
+  const hostRaw = (forwardedHost || getHeader(req, 'host') || PRODUCTION_DOMAIN).split(',')[0]?.trim();
+  const host = hostRaw || PRODUCTION_DOMAIN;
+
+  return `${proto}://${host}`;
+}
+
+/**
+ * @param {Date | null | undefined} value
+ * @returns {string | null}
+ */
+function toLastMod(value) {
+  if (!(value instanceof Date)) return null;
+  if (Number.isNaN(value.getTime())) return null;
+  return value.toISOString();
+}
+
+/**
+ * @param {string} baseUrl
+ * @param {string} path
+ * @param {Date | null | undefined} updatedAt
+ * @returns {string}
+ */
+function buildUrlNode(baseUrl, path, updatedAt) {
+  const loc = `${baseUrl}${path}`;
+  const lastmod = toLastMod(updatedAt);
+  if (!lastmod) {
+    return `  <url><loc>${escapeXml(loc)}</loc></url>`;
+  }
+  return `  <url><loc>${escapeXml(loc)}</loc><lastmod>${escapeXml(lastmod)}</lastmod></url>`;
+}
+
+/**
+ * @param {string} baseUrl
+ * @param {Array<{slug: string | null, updatedAt: Date}>} aides
+ * @returns {string}
+ */
+function buildSitemapXml(baseUrl, aides) {
+  /** @type {string[]} */
+  const nodes = [];
+
+  for (const path of STATIC_PUBLIC_PATHS) {
+    nodes.push(buildUrlNode(baseUrl, path, null));
+  }
+
+  for (const aide of aides) {
+    if (!aide?.slug) continue;
+    nodes.push(buildUrlNode(baseUrl, `/aides/${aide.slug}`, aide.updatedAt));
+  }
+
+  return `<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+${nodes.join('\n')}
+</urlset>`;
+}
+
 /**
  * @param {import('../_utils/http-types').ApiRequest} req
  * @param {import('../_utils/http-types').ApiResponse} res
  */
-
 export default async function handler(req, res) {
-    if (req.method !== 'GET' && req.method !== 'HEAD') {
-        return res.status(405).json({ error: 'Method not allowed' });
+  if (req.method !== 'GET' && req.method !== 'HEAD') {
+    return res.status(405).json({ error: 'Method not allowed' });
+  }
+
+  const requestId = typeof req.requestId === 'string' ? req.requestId : randomUUID();
+  const baseUrl = getBaseUrl(req);
+
+  try {
+    const aides = await prisma.aide.findMany({
+      where: { statut: 'publie', slug: { not: null } },
+      select: { slug: true, updatedAt: true },
+      take: MAX_DYNAMIC_URLS,
+      orderBy: { updatedAt: 'desc' },
+    });
+
+    const xml = buildSitemapXml(baseUrl, aides);
+
+    res.setHeader('x-request-id', requestId);
+    res.writeHead(200, {
+      'Content-Type': 'application/xml; charset=utf-8',
+      'Cache-Control': CACHE_CONTROL,
+    });
+
+    if (req.method === 'HEAD') {
+      res.end();
+      return;
     }
 
-    try {
-        const indexable = isIndexable(req);
-        const BASE_URL = getCanonicalBaseUrl(req);
+    res.end(xml);
+  } catch {
+    logger.warn({ requestId, route: 'sitemap.xml' }, 'sitemap.generation_failed');
 
-        // Fetch published content with fallback on error
-        /** @typedef {{ slug: string, updatedAt: Date }} SlugUpdatedAt */
-        /** @type {SlugUpdatedAt[]} */
-        let aides = [];
-        /** @type {SlugUpdatedAt[]} */
-        let demarches = [];
-        /** @type {SlugUpdatedAt[]} */
-        let structures = [];
-        /** @type {SlugUpdatedAt[]} */
-        let dispositifs = [];
-        /** @type {SlugUpdatedAt[]} */
-        let ressources = [];
-        /** @type {SlugUpdatedAt[]} */
-        let guides = [];
-        /** @type {SlugUpdatedAt[]} */
-        let tools = [];
-        /** @type {SlugUpdatedAt[]} */
-        let actualites = [];
-        
-        try {
-            [aides, demarches, structures, dispositifs, ressources, guides, tools, actualites] = await Promise.all([
-                prisma.aide.findMany({ where: { statut: 'publie' }, select: { slug: true, updatedAt: true } }).catch(() => []),
-                prisma.demarche.findMany({ where: { statut: 'publie' }, select: { slug: true, updatedAt: true } }).catch(() => []),
-                prisma.structure.findMany({ where: { statut: 'actif' }, select: { slug: true, updatedAt: true } }).catch(() => []),
-                prisma.dispositif.findMany({ where: { statut: 'publie' }, select: { slug: true, updatedAt: true } }).catch(() => []),
-                prisma.resourceAccessibility.findMany({ where: { status: 'published' }, select: { slug: true, updatedAt: true } }).catch(() => []),
-                prisma.guide.findMany({ where: { statut: 'publie' }, select: { slug: true, updatedAt: true } }).catch(() => []),
-                prisma.toolboxItem.findMany({ where: { statut: 'publie' }, select: { slug: true, updatedAt: true } }).catch(() => []),
-                prisma.actualite.findMany({ where: { statut: 'publie' }, select: { slug: true, updatedAt: true } }).catch(() => [])
-            ]);
-        } catch (dbError) {
-            console.warn('Sitemap DB fetch partial failure, using static pages only:', dbError.message);
-            // Continue with empty arrays - static pages will still be included
-        }
+    res.setHeader('x-request-id', requestId);
+    res.writeHead(503, {
+      'Content-Type': 'application/xml; charset=utf-8',
+      'Cache-Control': 'no-store',
+    });
 
-        // Static pages
-        const staticPages = [
-            { loc: '/', priority: '1.0' },
-            { loc: '/aides', priority: '0.9' },
-            { loc: '/demarches', priority: '0.9' },
-            { loc: '/annuaire', priority: '0.9' },
-            { loc: '/dispositifs', priority: '0.9' },
-            { loc: '/ressources', priority: '0.9' },
-            { loc: '/bonnes-pratiques', priority: '0.8' },
-            { loc: '/outils', priority: '0.8' },
-            { loc: '/actualites', priority: '0.7' },
-            { loc: '/impact', priority: '0.8' },
-            { loc: '/notre-mission', priority: '0.8' },
-            { loc: '/notre-methode', priority: '0.7' },
-            { loc: '/sources', priority: '0.7' },
-            { loc: '/securite-et-rgpd', priority: '0.7' },
-            { loc: '/accessibilite', priority: '0.7' },
-            { loc: '/partenaires', priority: '0.8' },
-            { loc: '/proposer-une-structure', priority: '0.6' },
-            { loc: '/apropos', priority: '0.5' },
-            { loc: '/contact', priority: '0.6' },
-            { loc: '/mentionslegales', priority: '0.3' },
-            { loc: '/confidentialite', priority: '0.3' }
-        ];
-
-        // Build URL entries
-        let urls = staticPages.map(p =>
-            `  <url><loc>${BASE_URL}${p.loc}</loc><priority>${p.priority}</priority></url>`
-        );
-
-        // Add dynamic content
-        aides.filter(a => a.slug).forEach(a => {
-            urls.push(`  <url><loc>${BASE_URL}/aides/${a.slug}</loc><lastmod>${a.updatedAt.toISOString().split('T')[0]}</lastmod><priority>0.7</priority></url>`);
-        });
-
-        demarches.filter(d => d.slug).forEach(d => {
-            urls.push(`  <url><loc>${BASE_URL}/demarches/${d.slug}</loc><lastmod>${d.updatedAt.toISOString().split('T')[0]}</lastmod><priority>0.7</priority></url>`);
-        });
-
-        structures.filter(s => s.slug).forEach(s => {
-            urls.push(`  <url><loc>${BASE_URL}/structures/${s.slug}</loc><lastmod>${s.updatedAt.toISOString().split('T')[0]}</lastmod><priority>0.6</priority></url>`);
-        });
-
-        dispositifs.filter(d => d.slug).forEach(d => {
-            urls.push(`  <url><loc>${BASE_URL}/dispositifs/${d.slug}</loc><lastmod>${d.updatedAt.toISOString().split('T')[0]}</lastmod><priority>0.6</priority></url>`);
-        });
-
-        ressources.filter(r => r.slug).forEach(r => {
-            urls.push(`  <url><loc>${BASE_URL}/ressources/${r.slug}</loc><lastmod>${r.updatedAt.toISOString().split('T')[0]}</lastmod><priority>0.6</priority></url>`);
-        });
-
-        guides.filter(g => g.slug).forEach(g => {
-            urls.push(`  <url><loc>${BASE_URL}/bonnes-pratiques/${g.slug}</loc><lastmod>${g.updatedAt.toISOString().split('T')[0]}</lastmod><priority>0.6</priority></url>`);
-        });
-
-        tools.filter(t => t.slug).forEach(t => {
-            urls.push(`  <url><loc>${BASE_URL}/outils/${t.slug}</loc><lastmod>${t.updatedAt.toISOString().split('T')[0]}</lastmod><priority>0.6</priority></url>`);
-        });
-
-        actualites.filter(a => a.slug).forEach(a => {
-            urls.push(`  <url><loc>${BASE_URL}/actualites/${a.slug}</loc><lastmod>${a.updatedAt.toISOString().split('T')[0]}</lastmod><priority>0.5</priority></url>`);
-        });
-
-        const xml = `<?xml version="1.0" encoding="UTF-8"?>
-<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
-${urls.join('\n')}
-</urlset>`;
-
-        // Calculate ETag
-        const etag = 'W/"' + crypto.createHash('md5').update(xml).digest('hex') + '"';
-
-        if (req.headers['if-none-match'] === etag) {
-            res.writeHead(304);
-            res.end();
-            return;
-        }
-
-        res.writeHead(200, {
-            'Content-Type': 'application/xml; charset=utf-8',
-            'Cache-Control': 'public, s-maxage=3600, stale-while-revalidate=600',
-            'X-Robots-Tag': indexable ? 'all' : 'noindex, nofollow',
-            'ETag': etag
-        });
-
-        if (req.method === 'HEAD') {
-            res.end();
-        } else {
-            res.end(xml);
-        }
-
-    } catch (e) {
-        console.error('CRITICAL SITEMAP ERROR:', e);
-        // Fallback XML to prevent 500
-        const fallbackXml = `<?xml version="1.0" encoding="UTF-8"?>
-<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
-  <url><loc>https://www.accesdirectaide.fr/</loc><priority>1.0</priority></url>
-</urlset>`;
-
-        res.writeHead(200, {
-            'Content-Type': 'application/xml; charset=utf-8'
-        });
-        res.end(fallbackXml);
+    if (req.method === 'HEAD') {
+      res.end();
+      return;
     }
+
+    res.end('<?xml version="1.0" encoding="UTF-8"?><error>service_unavailable</error>');
+  }
 }

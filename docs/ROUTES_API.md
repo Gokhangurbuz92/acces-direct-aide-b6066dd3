@@ -118,6 +118,7 @@ Notes:
 | POST | `/api/admin/validate-publication` | `_handlers/admin/validate-publication.js` | Validation contenu | Admin |
 | POST | `/api/admin/review-queue/scan` | `_handlers/admin/review-queue.js` | Lance un scan data quality | Admin |
 | GET | `/api/admin/review-queue` | `_handlers/admin/review-queue.js` | Liste review queue (filtres status/entityType/reason) | Admin |
+| PATCH | `/api/admin/review-queue/bulk` | `_handlers/admin/review-queue.js` | Action de masse (`resolved`/`ignored`) sur une liste d'ids | Admin |
 | PATCH | `/api/admin/review-queue/:id` | `_handlers/admin/review-queue.js` | Met a jour le statut d'un item (`resolved`/`ignored`) | Admin |
 
 ---

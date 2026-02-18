@@ -12,6 +12,7 @@ Accessibles à tous les utilisateurs.
 | `/` | `Home` | `/api/public/stats` | Page d'accueil |
 | `/aides` | `Aides` | `/api/aides`, `/api/taxonomy` | Recherche aides |
 | `/aides/:slug` | `AideDetail` | `/api/aides/:slug` | Détail aide |
+| `/status` | `Status` | `/api/monitor/data-quality`, `/api/monitor/ingestion-freshness` | Statut public (noindex) |
 | `/demarches` | `Demarches` | `/api/demarches` | Liste démarches |
 | `/demarches/:slug` | `DemarcheDetail` | `/api/demarches/:slug` | Détail démarche |
 | `/annuaire` | `Annuaire` | `/api/structures` | Liste structures |
@@ -92,7 +93,7 @@ Protégé par `AdminGuard` (Token statique ou session admin).
 | `/admin/health` | `AdminHealth` | `/api/health` | État santé |
 | `/admin/observability` | `AdminObservability` | - | Métriques |
 | `/admin/runs` | `AdminRuns` | `/api/admin/runs` | Historique runs |
-| `/admin/review-queue` | `AdminReviewQueue` | `/api/admin/review-queue`, `/api/admin/review-queue/scan` | Revue data quality |
+| `/admin/review-queue` | `AdminReviewQueue` | `/api/admin/review-queue`, `/api/admin/review-queue/scan`, `/api/admin/review-queue/bulk` | Revue data quality + triage de masse |
 
 ## 4. Legacy & Redirects
 

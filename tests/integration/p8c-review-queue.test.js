@@ -1,0 +1,312 @@
+import { afterEach, describe, expect, it } from 'vitest';
+
+import apiHandler from '../../api/index.js';
+import prisma from '../../api/_utils/prisma.js';
+
+function adminAuthHeader() {
+  return { authorization: `Bearer ${process.env.ADMIN_TOKEN}` };
+}
+
+/**
+ * @param {{
+ *   method?: string,
+ *   url?: string,
+ *   headers?: Record<string, string>,
+ *   query?: Record<string, string>,
+ *   body?: unknown,
+ * }} overrides
+ */
+function createReq(overrides = {}) {
+  return {
+    method: overrides.method || 'GET',
+    url: overrides.url || '/api/admin/review-queue',
+    headers: {
+      host: 'localhost:3000',
+      'x-forwarded-proto': 'http',
+      ...(overrides.headers || {}),
+    },
+    query: overrides.query || {},
+    body: overrides.body || null,
+    cookies: {},
+  };
+}
+
+function createRes() {
+  /** @type {Record<string, string>} */
+  const headers = {};
+  /** @type {Array<() => void>} */
+  const finishListeners = [];
+
+  return {
+    statusCode: 200,
+    body: null,
+    headersSent: false,
+    on(event, listener) {
+      if (event === 'finish' && typeof listener === 'function') {
+        finishListeners.push(listener);
+      }
+      return this;
+    },
+    setHeader(key, value) {
+      headers[String(key).toLowerCase()] = String(value);
+    },
+    getHeader(key) {
+      return headers[String(key).toLowerCase()];
+    },
+    status(code) {
+      this.statusCode = code;
+      return this;
+    },
+    writeHead(code, outHeaders = {}) {
+      this.statusCode = code;
+      for (const [key, value] of Object.entries(outHeaders)) {
+        headers[String(key).toLowerCase()] = String(value);
+      }
+      return this;
+    },
+    json(payload) {
+      this.body = payload;
+      this.headersSent = true;
+      for (const listener of finishListeners) listener();
+      return this;
+    },
+    send(payload) {
+      this.body = payload;
+      this.headersSent = true;
+      for (const listener of finishListeners) listener();
+      return this;
+    },
+    end(payload) {
+      if (typeof payload !== 'undefined') this.body = payload;
+      this.headersSent = true;
+      for (const listener of finishListeners) listener();
+      return this;
+    },
+  };
+}
+
+/**
+ * @param {string} url
+ * @param {{
+ *   method?: string,
+ *   headers?: Record<string, string>,
+ *   query?: Record<string, string>,
+ *   body?: unknown,
+ * }} options
+ */
+async function invokeApi(url, options = {}) {
+  const req = createReq({
+    method: options.method,
+    url,
+    headers: options.headers,
+    query: options.query,
+    body: options.body,
+  });
+  const res = createRes();
+  await apiHandler(req, res);
+  return res;
+}
+
+/** @type {Array<{ type: 'aide' | 'demarche' | 'structure' | 'actualite', id: string }>} */
+const createdEntities = [];
+
+afterEach(async () => {
+  if (createdEntities.length === 0) return;
+
+  const entityIds = createdEntities.map((entry) => entry.id);
+  await prisma.reviewQueueItem.deleteMany({ where: { entityId: { in: entityIds } } });
+
+  const aideIds = createdEntities.filter((entry) => entry.type === 'aide').map((entry) => entry.id);
+  const demarcheIds = createdEntities.filter((entry) => entry.type === 'demarche').map((entry) => entry.id);
+
+  if (aideIds.length > 0) {
+    await prisma.aide.deleteMany({ where: { id: { in: aideIds } } });
+  }
+  if (demarcheIds.length > 0) {
+    await prisma.demarche.deleteMany({ where: { id: { in: demarcheIds } } });
+  }
+
+  createdEntities.length = 0;
+});
+
+async function createAideForReviewQueue() {
+  const aide = await prisma.aide.create({
+    data: {
+      titre: `RQ aide ${Date.now()}-${Math.random().toString(16).slice(2, 8)}`,
+      territoires: ['FRANCE'],
+      documents_necessaires: [],
+      date_verification: null,
+      slug: null,
+      statut: 'publie',
+    },
+    select: { id: true, titre: true },
+  });
+  createdEntities.push({ type: 'aide', id: aide.id });
+  return aide;
+}
+
+async function createStaleDemarche() {
+  const demarche = await prisma.demarche.create({
+    data: {
+      titre: `RQ demarche stale ${Date.now()}-${Math.random().toString(16).slice(2, 8)}`,
+      documents_necessaires: ['piece-identite'],
+      slug: `rq-demarche-stale-${Math.random().toString(16).slice(2, 10)}`,
+      date_verification: new Date(Date.now() - 900 * 24 * 60 * 60 * 1000),
+      statut: 'publie',
+    },
+    select: { id: true, titre: true },
+  });
+  createdEntities.push({ type: 'demarche', id: demarche.id });
+  return demarche;
+}
+
+describe('P8-C Review Queue contracts', () => {
+  it('scan creates open items for missing verification + missing required field + missing slug', async () => {
+    const aide = await createAideForReviewQueue();
+
+    const scanRes = await invokeApi('/api/admin/review-queue/scan', {
+      method: 'POST',
+      headers: adminAuthHeader(),
+      body: { limitPerType: 200 },
+    });
+
+    expect(scanRes.statusCode).toBe(200);
+    expect(scanRes.body?.ok).toBe(true);
+    expect(String(scanRes.getHeader('cache-control')).toLowerCase()).toContain('no-store');
+    expect(scanRes.getHeader('x-robots-tag')).toBe('noindex, nofollow');
+
+    const openItems = await prisma.reviewQueueItem.findMany({
+      where: {
+        entityType: 'aide',
+        entityId: aide.id,
+        status: 'open',
+      },
+      select: { reason: true },
+    });
+
+    const reasons = new Set(openItems.map((item) => item.reason));
+    expect(reasons.has('MISSING_VERIFICATION')).toBe(true);
+    expect(reasons.has('MISSING_REQUIRED_FIELD:documents_necessaires')).toBe(true);
+    expect(reasons.has('MISSING_SLUG')).toBe(true);
+  });
+
+  it('scan is idempotent for open items', async () => {
+    const aide = await createAideForReviewQueue();
+
+    await invokeApi('/api/admin/review-queue/scan', {
+      method: 'POST',
+      headers: adminAuthHeader(),
+      body: { limitPerType: 200 },
+    });
+
+    await invokeApi('/api/admin/review-queue/scan', {
+      method: 'POST',
+      headers: adminAuthHeader(),
+      body: { limitPerType: 200 },
+    });
+
+    const count = await prisma.reviewQueueItem.count({
+      where: {
+        entityType: 'aide',
+        entityId: aide.id,
+        reason: 'MISSING_SLUG',
+        status: 'open',
+      },
+    });
+
+    expect(count).toBe(1);
+  });
+
+  it('GET list status=open returns review queue items', async () => {
+    const aide = await createAideForReviewQueue();
+
+    await invokeApi('/api/admin/review-queue/scan', {
+      method: 'POST',
+      headers: adminAuthHeader(),
+      body: { limitPerType: 200 },
+    });
+
+    const listRes = await invokeApi('/api/admin/review-queue?status=open&entityType=aide&limit=50', {
+      method: 'GET',
+      headers: adminAuthHeader(),
+      query: { status: 'open', entityType: 'aide', limit: '50' },
+    });
+
+    expect(listRes.statusCode).toBe(200);
+    expect(listRes.body?.ok).toBe(true);
+    const target = (listRes.body?.items || []).find((item) => item.entityId === aide.id);
+    expect(target).toBeTruthy();
+  });
+
+  it('PATCH status=resolved updates item status and removes it from open filter', async () => {
+    const aide = await createAideForReviewQueue();
+
+    await invokeApi('/api/admin/review-queue/scan', {
+      method: 'POST',
+      headers: adminAuthHeader(),
+      body: { limitPerType: 200 },
+    });
+
+    const openItems = await prisma.reviewQueueItem.findMany({
+      where: {
+        entityType: 'aide',
+        entityId: aide.id,
+        status: 'open',
+      },
+      orderBy: { createdAt: 'asc' },
+      take: 1,
+      select: { id: true },
+    });
+
+    const targetId = openItems[0]?.id;
+    expect(typeof targetId).toBe('string');
+
+    const patchRes = await invokeApi(`/api/admin/review-queue/${targetId}`, {
+      method: 'PATCH',
+      headers: adminAuthHeader(),
+      body: { status: 'resolved' },
+    });
+
+    expect(patchRes.statusCode).toBe(200);
+    expect(patchRes.body?.item?.status).toBe('resolved');
+
+    const openAfterPatch = await invokeApi('/api/admin/review-queue?status=open&entityType=aide&limit=50', {
+      method: 'GET',
+      headers: adminAuthHeader(),
+      query: { status: 'open', entityType: 'aide', limit: '50' },
+    });
+
+    const stillOpen = (openAfterPatch.body?.items || []).find((item) => item.id === targetId);
+    expect(stillOpen).toBeUndefined();
+  });
+
+  it('scan creates STALE_VERIFICATION for an old verification date', async () => {
+    const demarche = await createStaleDemarche();
+
+    const scanRes = await invokeApi('/api/admin/review-queue/scan', {
+      method: 'POST',
+      headers: adminAuthHeader(),
+      body: { limitPerType: 1000 },
+    });
+
+    expect(scanRes.statusCode).toBe(200);
+
+    const staleItem = await prisma.reviewQueueItem.findFirst({
+      where: {
+        entityType: 'demarche',
+        entityId: demarche.id,
+        status: 'open',
+        reason: 'STALE_VERIFICATION',
+      },
+      select: {
+        id: true,
+        details: true,
+      },
+    });
+
+    expect(staleItem).toBeTruthy();
+    const details = /** @type {{ ageDays?: number } | null | undefined } */ (staleItem?.details);
+    expect(typeof details?.ageDays).toBe('number');
+    expect(Number(details?.ageDays)).toBeGreaterThan(365);
+  });
+});

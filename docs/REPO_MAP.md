@@ -1,9 +1,8 @@
-# Cartographie du Répertoire
+# Carte du Dépôt (Repository Map)
 
-Ce document décrit l'organisation du code source du projet AccesDirectAide.
-Il est généré à partir de l'inventaire technique `docs/REPO_FILES.txt` et de la documentation d'architecture.
+Cette documentation décrit la structure du dépôt `AccesDirectAide`, les rôles de chaque dossier, et les propriétaires techniques.
 
-## 1. Racine et Configuration
+Fichier généré automatiquement associé : `docs/REPO_FILES.txt` (inventaire exhaustif).
 
 | Chemin | Rôle | Propriétaire | Risques Principaux |
 |---|---|---|---|

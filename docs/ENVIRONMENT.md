@@ -36,9 +36,14 @@ Legend:
 | `DATA_DEMARCHES_STALE_DAYS` | server | no | no | Data quality stale threshold for demarches review queue (default `365`). |
 | `DATA_STRUCTURES_STALE_DAYS` | server | no | no | Data quality stale threshold for structures review queue (default `365`). |
 | `DATA_REVIEW_SCAN_LIMIT_PER_TYPE` | server | no | no | Max entities scanned per type during review queue scan (default `200`). |
+| `DATA_REVIEW_SCAN_CRON_LIMIT_PER_TYPE` | server | no | no | Max entities scanned per type during cron review queue scan (fallback: `DATA_REVIEW_SCAN_LIMIT_PER_TYPE`). |
+| `DATA_REVIEW_SCAN_CRON_ENABLED` | server | no | no | Enable/disable cron review queue scan (`1` by default, `0` to disable). |
 | `INGESTION_PARSER_VERSION` | server | no | no | Parser version tag written in `SourceDocument.metadata` (default `v1`). |
 | `INGESTION_DRY_RUN` | server | no | no | If `1`, ingestion computes stats without mutating entities (`0` by default). |
 | `INGESTION_MAX_ITEMS_PER_RUN` | server | no | no | Safety cap for items processed in one ingestion run (default `200`). |
+| `MONITOR_DQ_OPEN_TOTAL_MAX` | server | no | no | Max open items before `/api/monitor/data-quality` returns `503` (default `500`). |
+| `MONITOR_DQ_OPEN_P0_MAX` | server | no | no | Max open `P0` items before `/api/monitor/data-quality` returns `503` (default `25`). |
+| `MONITOR_INGEST_FRESHNESS_MAX_AGE_HOURS` | server | no | no | Max age of latest `SourceDocument.fetched_at` before `/api/monitor/ingestion-freshness` returns `503` (default `48`). |
 | `BYPASS_SECRET` | server | no | no | Optional bypass for specific automation/test flows. |
 | `KV_REST_API_URL` | server | no | yes | Upstash/Vercel KV REST URL (required for prod rate limiting/locks). |
 | `KV_REST_API_TOKEN` | server | no | yes | Upstash/Vercel KV REST token. |

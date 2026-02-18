@@ -20,6 +20,18 @@ Diagnostiquer rapidement les incidents runtime sans exposer de donnees sensibles
   - `200`: cron fresh.
   - `503`: cron stale/missing/error.
 
+3. `GET /api/monitor/data-quality` (public)
+- Usage: monitor volume review queue sans token admin.
+- Semantique:
+  - `200`: seuils data quality OK.
+  - `503`: `openTotal`/`openP0` au-dessus des seuils, ou DB indisponible.
+
+4. `GET /api/monitor/ingestion-freshness` (public)
+- Usage: monitor freshness globale ingestion depuis `SourceDocument`.
+- Semantique:
+  - `200`: derniere collecte recente.
+  - `503`: stale/missing/error.
+
 ## Endpoint diagnostique protege
 
 `GET /api/health/deep` reste l'endpoint admin/cron pour diagnostic detaille (DB/KV/Storage + freshness cron).
@@ -53,6 +65,12 @@ Contraintes de securite:
 3. Cron freshness degradee
 - Uptime monitor sur `/api/monitor/cron/actualites` avec alerte si `HTTP != 200`.
 
+4. Data quality degradee
+- Uptime monitor sur `/api/monitor/data-quality` avec alerte si `HTTP != 200`.
+
+5. Ingestion stale
+- Uptime monitor sur `/api/monitor/ingestion-freshness` avec alerte si `HTTP != 200`.
+
 ## Diagnostic rapide
 
 1. `/api/monitor/core` en `503`
@@ -64,6 +82,14 @@ Contraintes de securite:
 - verifier `/api/admin/cron-runs?job=actualites&limit=20`
 - verifier scheduling Vercel cron
 - verifier logs ingestion
+
+3. `/api/monitor/data-quality` en `503`
+- verifier `MONITOR_DQ_OPEN_TOTAL_MAX` et `MONITOR_DQ_OPEN_P0_MAX`
+- lancer un scan manuel review queue puis traiter les items critiques
+
+4. `/api/monitor/ingestion-freshness` en `503`
+- verifier cron ingestion (`/api/cron/actualites`, `/api/cron/review-queue/scan`)
+- verifier presence/recence de `SourceDocument.fetched_at`
 
 3. Correlation
 - recuperer `x-request-id` et filtrer logs/Sentry avec `request_id`.
@@ -93,6 +119,11 @@ Seuils data quality (env, names only):
 - `DATA_DEMARCHES_STALE_DAYS`
 - `DATA_STRUCTURES_STALE_DAYS`
 - `DATA_REVIEW_SCAN_LIMIT_PER_TYPE`
+- `DATA_REVIEW_SCAN_CRON_LIMIT_PER_TYPE`
+- `DATA_REVIEW_SCAN_CRON_ENABLED`
+- `MONITOR_DQ_OPEN_TOTAL_MAX`
+- `MONITOR_DQ_OPEN_P0_MAX`
+- `MONITOR_INGEST_FRESHNESS_MAX_AGE_HOURS`
 
 Signaux ingestion hardening:
 - les runs cron exposent `created/updated/skippedExisting` pour surveiller l'anti-churn

@@ -241,3 +241,15 @@ Le script vérifie:
 - contract `sitemap.xml` (origin canonique)
 - header `x-robots-tag` sur endpoints techniques
 - meta noindex admin (best effort SPA)
+- OG defaults sur `/` (`og:image`, `twitter:image`, `og:image:alt`)
+- noindex + canonical sur route inconnue
+- noindex sur fiche aide inexistante
+
+## Verification SEO finale (post-deploy)
+
+Checklist:
+- `npm run smoke:seo:prod`
+- verifier une URL inexistante (`/route-qui-nexiste-pas-123`) -> meta robots `noindex`
+- verifier une aide inexistante (`/aides/slug-inexistant-123`) -> page introuvable + noindex
+- verifier OG preview sur `/` (image par defaut absolue)
+- verifier `sitemap.xml` avec origin canonique `https://www.accesdirectaide.fr`

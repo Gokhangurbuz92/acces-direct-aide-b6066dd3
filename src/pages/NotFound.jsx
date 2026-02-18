@@ -8,7 +8,11 @@ import { FileQuestion } from 'lucide-react';
 export default function NotFound() {
   return (
     <div className="min-h-screen bg-slate-50 flex items-center justify-center p-4">
-      <SEO title="Page introuvable" description="La page que vous recherchez n'existe pas." />
+      <SEO
+        title="Page introuvable"
+        description="La page que vous recherchez n'existe pas."
+        noindex={true}
+      />
 
       <div className="max-w-md w-full text-center">
         <div className="bg-white rounded-2xl p-8 shadow-sm border border-slate-200">

@@ -55,8 +55,8 @@ export function buildCanonicalUrl(path = '/') {
 }
 
 /** @param {string} imagePath */
-export function buildAbsoluteImageUrl(imagePath = '/og-image.png') {
-  const image = String(imagePath || '/og-image.png');
+export function buildAbsoluteImageUrl(imagePath = '/og-default.png') {
+  const image = String(imagePath || '/og-default.png');
   if (image.startsWith('http://') || image.startsWith('https://')) {
     return image;
   }

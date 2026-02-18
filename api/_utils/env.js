@@ -27,6 +27,19 @@ function normalizeEnvValue(raw) {
 }
 
 /**
+ * Parse a positive integer from env-like strings.
+ *
+ * @param {string | undefined} raw
+ * @param {number} fallback
+ * @returns {number}
+ */
+function toPositiveInt(raw, fallback) {
+  if (!raw) return fallback;
+  const parsed = Number.parseInt(raw, 10);
+  return Number.isFinite(parsed) && parsed > 0 ? parsed : fallback;
+}
+
+/**
  * Read a single environment variable safely (trimmed).
  *
  * @param {string} name
@@ -221,6 +234,15 @@ export const env = {
   ai: {
     get geminiKey() {
       return envAliases('GEMINI_API_KEY', ['GOOGLE_API_KEY']);
+    },
+  },
+
+  cron: {
+    get actualitesStaleMinutes() {
+      return toPositiveInt(getEnv('CRON_ACTUALITES_STALE_MINUTES', { default: '540' }), 540);
+    },
+    get actualitesFailMinutes() {
+      return toPositiveInt(getEnv('CRON_ACTUALITES_FAIL_MINUTES', { default: '1440' }), 1440);
     },
   },
 

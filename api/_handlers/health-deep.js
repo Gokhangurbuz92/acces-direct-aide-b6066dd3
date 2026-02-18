@@ -120,6 +120,103 @@ async function checkStorage() {
   }
 }
 
+async function checkCronFreshness() {
+  const staleMinutes = env.cron.actualitesStaleMinutes;
+  const failMinutes = Math.max(env.cron.actualitesFailMinutes, staleMinutes);
+
+  try {
+    const [lastSuccess, lastRun] = await Promise.all([
+      prisma.cronRun.findFirst({
+        where: { job: 'actualites', status: 'success' },
+        orderBy: { startedAt: 'desc' },
+        select: { startedAt: true },
+      }),
+      prisma.cronRun.findFirst({
+        where: { job: 'actualites' },
+        orderBy: { startedAt: 'desc' },
+        select: { startedAt: true, status: true },
+      }),
+    ]);
+
+    const lastSuccessAt = lastSuccess?.startedAt ?? null;
+    const lastRunAt = lastRun?.startedAt ?? null;
+    const lastStatus = lastRun?.status ?? null;
+
+    if (!lastSuccessAt) {
+      return {
+        actualites: {
+          ok: false,
+          state: 'missing',
+          lastSuccessAt: null,
+          lastRunAt: lastRunAt ? lastRunAt.toISOString() : null,
+          lastStatus,
+          ageMinutes: null,
+          thresholds: { staleMinutes, failMinutes },
+        },
+        hardFail: false,
+      };
+    }
+
+    const ageMinutes = Math.max(0, Math.floor((Date.now() - lastSuccessAt.getTime()) / 60000));
+
+    if (ageMinutes >= failMinutes) {
+      return {
+        actualites: {
+          ok: false,
+          state: 'error',
+          lastSuccessAt: lastSuccessAt.toISOString(),
+          lastRunAt: lastRunAt ? lastRunAt.toISOString() : null,
+          lastStatus,
+          ageMinutes,
+          thresholds: { staleMinutes, failMinutes },
+        },
+        hardFail: true,
+      };
+    }
+
+    if (ageMinutes >= staleMinutes) {
+      return {
+        actualites: {
+          ok: false,
+          state: 'stale',
+          lastSuccessAt: lastSuccessAt.toISOString(),
+          lastRunAt: lastRunAt ? lastRunAt.toISOString() : null,
+          lastStatus,
+          ageMinutes,
+          thresholds: { staleMinutes, failMinutes },
+        },
+        hardFail: false,
+      };
+    }
+
+    return {
+      actualites: {
+        ok: true,
+        state: 'fresh',
+        lastSuccessAt: lastSuccessAt.toISOString(),
+        lastRunAt: lastRunAt ? lastRunAt.toISOString() : null,
+        lastStatus,
+        ageMinutes,
+        thresholds: { staleMinutes, failMinutes },
+      },
+      hardFail: false,
+    };
+  } catch {
+    return {
+      actualites: {
+        ok: false,
+        state: 'error',
+        lastSuccessAt: null,
+        lastRunAt: null,
+        lastStatus: null,
+        ageMinutes: null,
+        thresholds: { staleMinutes, failMinutes },
+      },
+      hardFail: true,
+    };
+  }
+}
+
 /**
  * Deep health endpoint (protected): checks DB/KV/Storage with strict timeouts.
  *
@@ -150,13 +247,15 @@ export default async function handler(req, res) {
   const db = await checkDb();
   const kvCheck = await checkKv(requestId);
   const storage = await checkStorage();
+  const cron = await checkCronFreshness();
 
   const geminiKeyPresent = Boolean(env.ai.geminiKey);
 
   const overallOk =
     db.ok === true &&
     (kvCheck.ok === true || kvCheck.ok === 'skipped') &&
-    (storage.ok === true || storage.ok === 'skipped');
+    (storage.ok === true || storage.ok === 'skipped') &&
+    !cron.hardFail;
 
   const payload = {
     ok: overallOk,
@@ -165,6 +264,9 @@ export default async function handler(req, res) {
       db,
       kv: kvCheck,
       storage,
+      cron: {
+        actualites: cron.actualites,
+      },
       geminiKeyPresent,
       sentry: {
         dsnPresent: Boolean(env.sentry.dsn),
@@ -181,6 +283,7 @@ export default async function handler(req, res) {
         db: db.ok,
         kv: kvCheck.ok,
         storage: storage.ok,
+        cronActualitesState: cron.actualites.state,
       },
       'health.deep.failed',
     );

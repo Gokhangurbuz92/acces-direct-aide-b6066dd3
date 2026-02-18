@@ -11,6 +11,7 @@ L'authentification et les autorisations sont gérées par les handlers ou des mi
 | GET | `/api/download` | `_handlers/download.js` | Téléchargement fichiers | Public |
 | GET | `/api/health` | `_handlers/health.js` | Vérification santé simple | Public |
 | GET | `/api/health/deep` | `_handlers/health-deep.js` | Vérification santé complète (DB, etc) | Admin |
+| GET | `/api/monitor/cron/actualites` | `_handlers/monitor/cron-actualites.js` | Monitoring public freshness cron actualités | Public |
 | GET | `/api/healthz` | `_handlers/health.js` | Alias Health | Public |
 | GET | `/api/robots.txt` | `_handlers/robots.js` | Robots.txt dynamique | Public |
 | GET | `/api/sitemap.xml` | `_handlers/sitemap.js` | Sitemap dynamique | Public |

@@ -311,6 +311,29 @@ En cas d'alerte:
 1. `monitor/core` down: verifier DB/KV en priorite.
 2. `monitor/cron/actualites` degrade: verifier cron runs + scheduling.
 
+## Triage + status + smoke CI (P8-G)
+
+Nouveautes:
+- endpoint admin bulk: `PATCH /api/admin/review-queue/bulk`
+- page publique `noindex`: `/status`
+- workflow planifie: `.github/workflows/obs-smoke-prod.yml`
+
+Checklist post-deploy:
+1. Ouvrir `/status` et verifier les 2 cartes:
+   - `Data Quality`
+   - `Ingestion Freshness`
+2. Verifier `meta robots` noindex sur `/status`.
+3. Executer localement:
+   ```bash
+   npm run smoke:obs:prod
+   ```
+4. Verifier le workflow GitHub `Obs Smoke PROD`:
+   - run horaire present
+   - issue `🚨 PROD smoke failed` creee/commentee en cas d'echec
+
+Note CI (names only):
+- secret GitHub Actions requis: `PROD_BASE_URL`
+
 ## Data quality alerting loop (P8-F)
 
 Nouveaux endpoints monitorables (public, no-store + noindex):

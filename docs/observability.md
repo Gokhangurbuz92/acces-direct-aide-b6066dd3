@@ -32,6 +32,14 @@ Diagnostiquer rapidement les incidents runtime sans exposer de donnees sensibles
   - `200`: derniere collecte recente.
   - `503`: stale/missing/error.
 
+5. `GET /status` (public, front noindex)
+- Usage: vue publique temps reel de l'etat monitor (`data-quality` + `ingestion-freshness`).
+- Semantique:
+  - carte `Data Quality`: agrege `openTotal/openP0` et status `OK/KO`.
+  - carte `Ingestion Freshness`: agrege `latestFetchedAt/ageHours` et status `OK/KO`.
+- SEO:
+  - `meta robots` force `noindex, nofollow`.
+
 ## Endpoint diagnostique protege
 
 `GET /api/health/deep` reste l'endpoint admin/cron pour diagnostic detaille (DB/KV/Storage + freshness cron).
@@ -70,6 +78,41 @@ Contraintes de securite:
 
 5. Ingestion stale
 - Uptime monitor sur `/api/monitor/ingestion-freshness` avec alerte si `HTTP != 200`.
+
+## Smoke observeability (local / runbook)
+
+Commande:
+```bash
+npm run smoke:obs:prod
+```
+
+Options supportees:
+- `--base-url <url>` (ex: URL preview/prod explicite)
+- `--json` (sortie machine-readable)
+- env fallback: `PROD_URL`, `TIMEOUT_MS`
+
+Codes de sortie:
+- `0`: checks critiques OK
+- `2`: echec de checks critiques
+- `1`: erreur d'usage (arguments invalides)
+
+Exemple JSON:
+```bash
+node scripts/obs-smoke.mjs --base-url "https://www.accesdirectaide.fr" --json
+```
+
+## Scheduled CI smoke (GitHub Actions)
+
+Workflow: `.github/workflows/obs-smoke-prod.yml`
+
+- declenchement: toutes les heures + manuel (`workflow_dispatch`)
+- execution: `node scripts/obs-smoke.mjs --base-url $PROD_BASE_URL --json`
+- en cas d'echec:
+  - ouverture (ou commentaire) d'une issue unique `🚨 PROD smoke failed`
+  - run marque en failed
+
+Secret GitHub Actions requis (names only):
+- `PROD_BASE_URL`
 
 ## Diagnostic rapide
 

@@ -5,71 +5,74 @@ Il est généré à partir de l'inventaire technique `docs/REPO_FILES.txt` et de
 
 ## 1. Racine et Configuration
 
-| Chemin | Rôle | Propriétaire | Notes / Vigilance |
+| Chemin | Rôle | Propriétaire | Risques Principaux |
 |---|---|---|---|
 | `README.md` | Point d'entrée projet | Ops | Doit refléter scripts & archi réelle |
-| `package.json`, `package-lock.json` | Scripts + dépendances | Ops | |
-| `vite.config.js`, `index.html` | Build Frontend (Vite) | Front | Attention aux rewrites SPA |
-| `postcss.config.js`, `tailwind.config.js` | Configuration CSS | Front | |
-| `vercel.json` | Configuration Vercel | Ops | Rewrites, headers, crons |
-| `eslint.config.js` | Configuration Linting | Dev | |
-| `.env.example` | Modèle variables d'environnement | Ops | Doit lister toutes les variables requises |
-| `.gitignore` | Exclusion Git | Ops | |
-| `prisma/schema.prisma` | Modèle de données | Backend | Slugs uniques, indexes |
+| `package.json`, `package-lock.json` | Scripts + dépendances | Ops | Versions strictes (Node 20) |
+| `vite.config.js`, `index.html` | Build Frontend (Vite) | Front | Configuration rewrites SPA |
+| `postcss.config.js`, `tailwind.config.js` | Configuration CSS | Front | Performance build CSS |
+| `vercel.json` | Configuration Vercel | Ops | Routes API, Headers, Crons |
+| `eslint.config.js` | Configuration Linting | Dev | Règles strictes (CI gate) |
+| `.env.example` | Modèle variables d'environnement | Ops | Secrets manquants en prod |
+| `.gitignore` | Exclusion Git | Ops | Fuite de secrets |
 
 ## 2. Frontend (`src/`)
 
-| Chemin | Rôle | Propriétaire | Notes / Vigilance |
+| Chemin | Rôle | Propriétaire | Risques Principaux |
 |---|---|---|---|
-| `src/main.jsx` | Point d'entrée React | Front | |
-| `src/App.jsx` | Composant racine | Front | |
-| `src/pages/index.jsx` | Routeur principal | Front | Définit toutes les routes |
-| `src/pages/` | Pages de l'application | Front | |
-| `src/components/` | Composants réutilisables | Front | |
-| `src/contexts/` | Contextes React (Falc, etc.) | Front | |
-| `src/hooks/` | Hooks personnalisés | Front | |
-| `src/api/` | Client API Frontend | Front | `client.js` |
-| `src/utils/` | Utilitaires Frontend | Front | |
-| `src/styles/` | Styles globaux et tokens | Front | |
+| `src/main.jsx` | Point d'entrée React | Front | Hydration errors |
+| `src/App.jsx` | Composant racine | Front | Providers manquants |
+| `src/pages/index.jsx` | Routeur principal | Front | Routes orphelines, redirects |
+| `src/pages/` | Pages de l'application | Front | Performance (Code splitting) |
+| `src/components/` | Composants réutilisables | Front | Accessibilité (A11y) |
+| `src/api/client.js` | Client API Frontend (Unique source) | Front | Alignement avec API backend |
+| `src/utils/` | Utilitaires Frontend | Front | Logique dupliquée |
+| `src/styles/` | Styles globaux et tokens | Front | Conflits CSS |
 
 ## 3. API (`api/`)
 
-| Chemin | Rôle | Propriétaire | Notes / Vigilance |
+| Chemin | Rôle | Propriétaire | Risques Principaux |
 |---|---|---|---|
-| `api/index.js` | Point d'entrée Serverless | Backend | |
-| `api/routes.js` | Mapping Routes -> Handlers | Backend | Point critique de sécurité |
-| `api/_handlers/` | Handlers métier | Backend | Logique des endpoints |
-| `api/_utils/` | Utilitaires transverses | Backend | Auth, RateLimit, Sentry, DB |
-| `api/lib/` | Bibliothèques métier | Backend | Ingestion, Search, Crypto |
-| `api/cron/` | Scripts planifiés | Backend | Ingestion, maintenance |
+| `api/index.js` | Point d'entrée Serverless | Backend | Cold starts |
+| `api/routes.js` | Mapping Routes -> Handlers | Backend | Sécurité, Auth bypass |
+| `api/_handlers/` | Handlers métier | Backend | Validation inputs, Error handling |
+| `api/_utils/` | Utilitaires transverses | Backend | Fuite données (Logs), Auth |
+| `api/lib/falc-summarizer.js` | Moteur FALC (Unique source) | Backend | Qualité génération |
+| `api/cron/` | Scripts planifiés | Backend | Timeout, Mémoire, Doublons |
 
-## 4. Données et Scripts
+## 4. Base de Données (`prisma/`)
 
-| Chemin | Rôle | Propriétaire | Notes / Vigilance |
+| Chemin | Rôle | Propriétaire | Risques Principaux |
 |---|---|---|---|
-| `prisma/migrations/` | Migrations de base de données | Backend | Ordre strict |
-| `scripts/` | Scripts de maintenance/vérification | Ops | Seeds, verify, ingest |
-| `data/` | Données statiques / Seed | Data | CSV sources |
-| `config/` | Configuration métier | Data | Sources RSS, etc. |
+| `prisma/schema.prisma` | Modèle de données | DB | Intégrité, Migrations destructives |
+| `prisma/migrations/` | Historique migrations | DB | Conflits, Rollback impossible |
+| `prisma/seed.js` | Données initiales | DB | Données obsolètes |
 
-## 5. Documentation (`docs/`)
+## 5. Scripts et Données (`scripts/`, `data/`)
 
-| Chemin | Rôle | Propriétaire | Notes / Vigilance |
+| Chemin | Rôle | Propriétaire | Risques Principaux |
 |---|---|---|---|
-| `docs/REPO_MAP.md` | Cartographie (ce fichier) | Ops | |
-| `docs/REPO_FILES.txt` | Inventaire technique généré | Ops | Ne pas éditer manuellement |
-| `docs/ROUTES_FRONT.md` | Documentation routes Front | Front | |
-| `docs/ROUTES_API.md` | Documentation routes API | Backend | |
-| `docs/ADMIN_GUIDE.md` | Guide administrateur | Produit | |
-| `docs/RUNBOOK.md` | Procédures d'exploitation | Ops | Incidents, Rollback |
+| `scripts/` | Scripts maintenance/vérification | Ops | Effets de bord prod |
+| `data/` | Sources statiques (CSV/JSON) | Data | Format invalide, Encodage |
+| `config/` | Configuration métier (RSS, etc.) | Data | Sources mortes |
 
-## 6. Tests
+## 6. Documentation (`docs/`)
 
-| Chemin | Rôle | Propriétaire | Notes / Vigilance |
+| Chemin | Rôle | Propriétaire | Risques Principaux |
 |---|---|---|---|
-| `e2e/` | Tests End-to-End (Playwright) | QA | Parcours critiques |
-| `tests/` | Tests d'intégration / Unitaires | Dev | |
-| `api/tests/` | Tests spécifiques API | Backend | |
+| `docs/REPO_MAP.md` | Cartographie officielle | Ops | Obsolescence |
+| `docs/REPO_FILES.txt` | Inventaire technique auto-généré | Ops | |
+| `docs/ROUTES_FRONT.md` | Documentation routes Front | Front | Désynchro code |
+| `docs/ROUTES_API.md` | Documentation routes API | Backend | Désynchro code |
+| `docs/ADMIN_GUIDE.md` | Guide administrateur (Unique) | Produit | |
+| `docs/RUNBOOK.md` | Procédures d'exploitation | Ops | Procédures non testées |
+
+## 7. Tests (`tests/`, `e2e/`)
+
+| Chemin | Rôle | Propriétaire | Risques Principaux |
+|---|---|---|---|
+| `e2e/` | Tests End-to-End (Playwright) | QA | Flaky tests, faux positifs |
+| `tests/` | Tests d'intégration / Unitaires | Dev | Couverture insuffisante |
 
 ---
-*Dernière mise à jour : via `scripts/generate-repo-map.sh`*
+*Généré par `scripts/generate-repo-map.sh` et maintenu par l'équipe technique.*

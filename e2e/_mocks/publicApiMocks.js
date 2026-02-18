@@ -42,6 +42,7 @@ const MOCK_DEMARCHE_DETAIL = {
     id: 'demarche-1',
     slug: 'demarche-test',
     titre: 'Démarche Test',
+    summary_falc: 'Résumé démarche.',
     statut: 'publie'
 };
 
@@ -71,24 +72,28 @@ const MOCK_STRUCTURE_DETAIL = {
     proServices: []
 };
 
-const MOCK_ACTUALITES = [
-    {
-        id: 'actu-1',
-        slug: 'actu-test',
-        titre: 'Actualité Test',
-        resume: 'Résumé actu.',
-        type_actu: 'info',
-        date_publication: new Date().toISOString(),
-        published_at: new Date().toISOString(),
-        est_important: false
-    }
-];
+const MOCK_ACTUALITES = {
+    items: [
+        {
+            id: 'actu-1',
+            slug: 'actu-test',
+            titre: 'Actualité Test',
+            resume: 'Résumé actu.',
+            type_actu: 'info',
+            date_publication: new Date().toISOString(),
+            published_at: new Date().toISOString(),
+            est_important: false
+        }
+    ],
+    pagination: { total: 1, page: 1, pageSize: 10, totalPages: 1 }
+};
 
 const MOCK_ACTUALITE_DETAIL = {
     id: 'actu-1',
     slug: 'actu-test',
     titre: 'Actualité Test',
     contenu: 'Contenu actu',
+    type_actu: 'info',
     date_publication: new Date().toISOString(),
     published_at: new Date().toISOString()
 };

@@ -5,6 +5,7 @@ import { randomUUID } from 'crypto';
 import { attachNoStoreOnError } from "./_utils/cache.js";
 import { applyCachePolicy } from "./_utils/cachePolicy.js";
 import { env, getEnv } from './_utils/env.js';
+import { applyNoIndex, isTechnicalNoIndexPath } from './_utils/robots.js';
 
 /** @param {unknown} value */
 function normalizeRequestId(value) {
@@ -89,6 +90,10 @@ export default async function handler(req, res) {
         path = path.replace(/^\/api(\/|$)/, "/");
         path = path.replace(/^\/+/, "");
         path = path.replace(/\/+$/, "");
+
+        if (isTechnicalNoIndexPath(path)) {
+            applyNoIndex(res);
+        }
 
         log.info({
             msg: "Incoming Request",

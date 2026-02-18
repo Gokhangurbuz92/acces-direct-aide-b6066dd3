@@ -54,6 +54,14 @@ export default function SEO({
             {/* Robots */}
             {(noindex || !isProduction) && <meta name="robots" content="noindex, nofollow" />}
 
+            {/* Search Console / Webmaster verification (optional, no hardcoded values) */}
+            {frontendEnv.verification.googleSiteVerification && (
+                <meta name="google-site-verification" content={frontendEnv.verification.googleSiteVerification} />
+            )}
+            {frontendEnv.verification.bingSiteVerification && (
+                <meta name="msvalidate.01" content={frontendEnv.verification.bingSiteVerification} />
+            )}
+
             {/* OpenGraph */}
             <meta property="og:type" content={ogType} />
             <meta property="og:site_name" content={SITE_NAME} />

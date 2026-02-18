@@ -385,3 +385,26 @@ Variables ingestion (names only):
 - `INGESTION_PARSER_VERSION`
 - `INGESTION_DRY_RUN`
 - `INGESTION_MAX_ITEMS_PER_RUN`
+
+## Provenance & Freshness UI (P8-E)
+
+Objectif:
+- rendre visible la fraicheur (`date_verification`) et la provenance (`SourceDocument`) sur les pages publiques
+- verifier rapidement le rendu detail + listing sans exposer de donnees internes
+
+Checklist visuelle:
+1. Ouvrir une fiche publique (`/aides/:slug`, `/demarches/:slug`, `/structures/:slug`, `/actualites/:slug`).
+2. Verifier le bloc `Provenance et fraicheur`:
+   - badge `A jour` / `A verifier` / `A risque` / `Non verifie`
+   - date `Derniere verification`
+   - date `Derniere collecte`
+   - lien `Source` (host visible, ouvre un lien externe)
+3. Sur les listings publics (`/aides`, `/demarches`, `/annuaire`, `/actualites`), verifier la ligne compacte:
+   - `Verifie: dd/MM/yyyy` si disponible
+   - `Source: <host>` si disponible
+
+Contrat API associe (public):
+- `provenance.verifiedAt`
+- `provenance.fetchedAt`
+- `provenance.sourceUrl`
+- `provenance.sourceHost`

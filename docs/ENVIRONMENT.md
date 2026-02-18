@@ -79,3 +79,11 @@ These variables are used by some flows but are not enforced by `env-check`:
 | `DEBUG_TOKEN` | server | Optional protected diagnostics. |
 | `ALLOW_DEV_TOOLS` | server | Local-only dev toggle. |
 | `VITE_*` flags | client | Must stay client-only. Never move server secrets under `VITE_*`. |
+
+## CI Secrets (GitHub Actions, Names Only)
+
+These values are configured in GitHub repository secrets, not in app `.env` files:
+
+| Secret | Used By | Notes |
+|---|---|---|
+| `PROD_BASE_URL` | `.github/workflows/obs-smoke-prod.yml` | Base URL passed to `scripts/obs-smoke.mjs --base-url` for scheduled production smoke checks. |

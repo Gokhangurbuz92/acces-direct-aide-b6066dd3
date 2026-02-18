@@ -22,8 +22,9 @@ import {
   Loader2
 } from 'lucide-react';
 import { generateBreadcrumbSchema, generateStructureSchema } from '@/utils/schema';
-import SourceTraceability from '@/components/SourceTraceability';
+import ProvenanceFreshness from '@/components/ProvenanceFreshness';
 import FalcSummary from '@/components/FalcSummary';
+import { getProvenance } from '@/lib/provenance';
 
 const TYPE_LABELS = {
   association: 'Association',
@@ -83,6 +84,7 @@ export default function StructureDetail() {
     generateBreadcrumbSchema(breadcrumbs),
     generateStructureSchema(structure)
   ].filter(Boolean);
+  const provenance = getProvenance(structure);
 
   return (
     <div className="min-h-screen bg-slate-50">
@@ -284,13 +286,7 @@ export default function StructureDetail() {
 
           {/* Sidebar */}
           <div className="space-y-6">
-            {/* Source Traceability */}
-            <SourceTraceability 
-              source_url={structure.source_url || structure.source_url_exact}
-              retrieved_at={structure.retrieved_at}
-              last_checked_at={structure.last_checked_at}
-              source_last_modified={structure.source_last_modified}
-            />
+            <ProvenanceFreshness provenance={provenance} />
 
             {/* Actions rapides */}
             <Card>

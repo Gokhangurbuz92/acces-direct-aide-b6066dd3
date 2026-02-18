@@ -24,8 +24,9 @@ import {
   Lightbulb
 } from 'lucide-react';
 import { generateBreadcrumbSchema, generateDemarcheSchema } from '@/utils/schema';
-import SourceTraceability from '@/components/SourceTraceability';
+import ProvenanceFreshness from '@/components/ProvenanceFreshness';
 import FalcSummary from '@/components/FalcSummary';
+import { getProvenance } from '@/lib/provenance';
 
 /** @typedef {Error & { status?: number, payload?: unknown }} ApiError */
 /** @typedef {{ numero?: number, titre?: string, title?: string, nom?: string, description?: string, contenu?: string, text?: string, conseils?: string }} DemarcheStep */
@@ -156,6 +157,7 @@ export default function DemarcheDetail() {
     demarche?.category?.label ||
     categorySlug ||
     'Autre';
+  const provenance = getProvenance(demarche);
 
   const canonicalPath = demarche.slug
     ? `/demarches/${demarche.slug}`
@@ -374,14 +376,7 @@ export default function DemarcheDetail() {
 
           {/* Sidebar */}
           <div className="space-y-6">
-            {/* Source Traceability */}
-            <SourceTraceability 
-              source_url={demarche.source_url || demarche.source_url_exact}
-              retrieved_at={demarche.retrieved_at}
-              last_checked_at={demarche.last_checked_at}
-              source_last_modified={demarche.source_last_modified}
-              fetched_at={demarche.updatedAt}
-            />
+            <ProvenanceFreshness provenance={provenance} />
 
             {/* Actions */}
             <Card>

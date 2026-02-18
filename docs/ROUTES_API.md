@@ -57,6 +57,27 @@ L'authentification et les autorisations sont gérées par les handlers ou des mi
 | GET | `/api/ressources` | `_handlers/ressources.js` | Ressources | Public |
 | GET | `/api/reports` | `_handlers/reports.js` | Rapports / Stats publiques | Public |
 
+### Contrat Provenance Public (P8-E)
+
+Les endpoints publics de contenu (`/api/aides`, `/api/demarches`, `/api/structures`, `/api/actualites`, en list + detail) exposent un bloc `provenance` minimal:
+
+```json
+{
+  "provenance": {
+    "verifiedAt": "ISO string | null",
+    "fetchedAt": "ISO string | null",
+    "sourceUrl": "string | null",
+    "sourceHost": "string | null"
+  }
+}
+```
+
+Notes:
+- `verifiedAt` provient de `date_verification` si disponible.
+- `fetchedAt` et `sourceUrl` proviennent prioritairement de `SourceDocument`.
+- `sourceHost` est derive de `sourceUrl` (hostname safe).
+- Le payload public n'expose pas `raw_content`, `content_hash` ni metadata volumineuses de `SourceDocument`.
+
 ## 5. Interactions Publiques
 
 | Méthode | Chemin | Handler | Description | Auth |

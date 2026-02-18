@@ -1,5 +1,6 @@
 import { Prisma } from '@prisma/client';
 import { expandQueryWithSynonyms, normalizeSearchTerm } from './search-utils.js';
+import { buildProvenance } from '../_utils/provenance.js';
 
 /**
  * Builds and executes a search query for Aides.
@@ -221,6 +222,13 @@ export async function searchAides(prisma, params) {
       source_name: true,
       source_org: true,
       source_url: true,
+      fetched_at: true,
+      sourceDocument: {
+        select: {
+          fetched_at: true,
+          source_url: true,
+        },
+      },
     };
 
     const fullItems = await prisma.aide.findMany({
@@ -230,11 +238,21 @@ export async function searchAides(prisma, params) {
 
     const itemMap = new Map(fullItems.map((/** @type {{ id: string }} */ i) => [i.id, i]));
     enrichedItems = items.map((/** @type {{ id: string, rank?: number }} */ raw) => {
-        const full = itemMap.get(raw.id);
-        if (q) {
-            return { ...full, rank: raw.rank };
-        }
-        return full;
+      const full = itemMap.get(raw.id);
+      if (!full) return null;
+      const { sourceDocument, ...safeFull } = full;
+      const baseItem = {
+        ...safeFull,
+        provenance: buildProvenance({
+          verifiedAt: safeFull.date_verification,
+          fetchedAt: sourceDocument?.fetched_at || safeFull.fetched_at,
+          sourceUrl: sourceDocument?.source_url || safeFull.source_url,
+        }),
+      };
+      if (q) {
+        return { ...baseItem, rank: raw.rank };
+      }
+      return baseItem;
     }).filter(Boolean);
   }
 
@@ -391,9 +409,18 @@ export async function searchDemarches(prisma, params) {
       summary_falc: true,
       delai: true,
       lien_officiel: true,
+      source_url: true,
+      source_url_exact: true,
+      date_verification: true,
       quality_score: true,
       published_at: true,
       updatedAt: true,
+      sourceDocument: {
+        select: {
+          fetched_at: true,
+          source_url: true,
+        },
+      },
       category: {
         select: {
           id: true,
@@ -409,9 +436,19 @@ export async function searchDemarches(prisma, params) {
     });
     const itemMap = new Map(fullItems.map((/** @type {{ id: string }} */ i) => [i.id, i]));
     enrichedItems = items.map((/** @type {{ id: string, rank?: number }} */ raw) => {
-        const full = itemMap.get(raw.id);
-        if (q) return { ...full, rank: raw.rank };
-        return full;
+      const full = itemMap.get(raw.id);
+      if (!full) return null;
+      const { sourceDocument, ...safeFull } = full;
+      const baseItem = {
+        ...safeFull,
+        provenance: buildProvenance({
+          verifiedAt: safeFull.date_verification,
+          fetchedAt: sourceDocument?.fetched_at,
+          sourceUrl: sourceDocument?.source_url || safeFull.source_url || safeFull.source_url_exact,
+        }),
+      };
+      if (q) return { ...baseItem, rank: raw.rank };
+      return baseItem;
     }).filter(Boolean);
   }
 
@@ -539,6 +576,9 @@ export async function searchStructures(prisma, params) {
       type_structure: true,
       accessibilite_pmr: true,
       description_courte: true,
+      date_verification: true,
+      source_url: true,
+      source_url_exact: true,
       adresse: true,
       code_postal: true,
       ville: true,
@@ -553,6 +593,12 @@ export async function searchStructures(prisma, params) {
       statut: true,
       status: true,
       is_pro_enabled: true,
+      sourceDocument: {
+        select: {
+          fetched_at: true,
+          source_url: true,
+        },
+      },
     };
 
     const fullItems = await prisma.structure.findMany({
@@ -561,9 +607,19 @@ export async function searchStructures(prisma, params) {
     });
     const itemMap = new Map(fullItems.map((/** @type {{ id: string }} */ i) => [i.id, i]));
     enrichedItems = items.map((/** @type {{ id: string, rank?: number }} */ raw) => {
-        const full = itemMap.get(raw.id);
-        if (q) return { ...full, rank: raw.rank };
-        return full;
+      const full = itemMap.get(raw.id);
+      if (!full) return null;
+      const { sourceDocument, ...safeFull } = full;
+      const baseItem = {
+        ...safeFull,
+        provenance: buildProvenance({
+          verifiedAt: safeFull.date_verification,
+          fetchedAt: sourceDocument?.fetched_at,
+          sourceUrl: sourceDocument?.source_url || safeFull.source_url || safeFull.source_url_exact,
+        }),
+      };
+      if (q) return { ...baseItem, rank: raw.rank };
+      return baseItem;
     }).filter(Boolean);
   }
 

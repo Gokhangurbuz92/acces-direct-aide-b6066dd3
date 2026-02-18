@@ -1,50 +1,70 @@
-# SEO Plumbing (P7-A)
+# SEO Guide (P7-A + P7-B)
 
-## Objectif
+## P7-A — SEO plumbing (root)
 
-Fournir des endpoints SEO stables en racine:
-- `/robots.txt`
-- `/sitemap.xml`
-
-## Robots (root)
-
+### Robots
 - Fichier statique: `public/robots.txt`
-- Règles minimales:
+- Exposé en racine: `/robots.txt`
+- Contient:
   - `User-agent: *`
   - `Allow: /`
   - `Sitemap: https://www.accesdirectaide.fr/sitemap.xml`
 
-Le root `/robots.txt` est servi par Vite/static hosting (pas par API).
-
-## Sitemap (root dynamique)
-
-Le sitemap est généré côté API par `api/_handlers/sitemap.js`.
-
-### Routage
-
+### Sitemap dynamique
+- Handler: `api/_handlers/sitemap.js`
 - Endpoint API: `/api/sitemap.xml`
-- Exposition root via `vercel.json`:
+- Exposition racine via `vercel.json`:
   - `"/sitemap.xml" -> "/api/sitemap.xml"`
 
-### Contenu
+### Sitemap HTTP contract
+- `200` en nominal
+- `503` si DB indisponible (réponse minimale, sans stacktrace)
+- `405` méthode non supportée
+- Headers:
+  - `Content-Type: application/xml; charset=utf-8`
+  - `Cache-Control: public, max-age=0, s-maxage=300, stale-while-revalidate=60`
 
-Le XML inclut:
-- Pages publiques statiques: `/`, `/aides`, `/demarches`, `/annuaire`, `/actualites`
-- Pages dynamiques d'aides: `/aides/:slug` (aides publiées)
+## P7-B — SEO runtime (pages publiques)
 
-### Statuts HTTP
+### Métadonnées standardisées
+Le composant `src/components/SEO.jsx` applique sur les pages publiques:
+- `<title>` suffixé `| Accès Direct Aide`
+- `<meta name="description">`
+- `<link rel="canonical">` absolu
+- OpenGraph: `og:title`, `og:description`, `og:type`, `og:url`, `og:image`
+- Twitter: `twitter:card`, `twitter:title`, `twitter:description`, `twitter:image`
 
-- `200`: sitemap généré
-- `503`: indisponibilité DB (réponse XML minimale, sans détail interne)
-- `405`: méthode non supportée
+### Canonical strategy
+- Le canonical est construit au runtime depuis l’origin courant (`window.location.origin`) + le path de page.
+- Résultat:
+  - Compatible Preview/Prod (pas de hardcode d’un seul domaine).
+  - URLs absolues stables pour OG/Twitter (`og:url = canonical`).
 
-### Headers
+### JSON-LD minimal
+- Home `/`: `WebSite` + `Organization`.
+- Listing `/aides`: `BreadcrumbList` + `ItemList`.
+- Détail `/aides/:slug`: `BreadcrumbList` + `WebPage(mainEntity=GovernmentService)`.
+- Les champs optionnels non disponibles sont omis (pas de données inventées).
 
-- `Content-Type: application/xml; charset=utf-8`
-- `Cache-Control: public, max-age=0, s-maxage=300, stale-while-revalidate=60`
-- `x-request-id` sur la réponse
+### Navigation sémantique
+- Les entrées de navigation publique et les cartes d’aides utilisent des liens `<a>` via `Link/NavLink`.
+- Pas de navigation principale basée uniquement sur des `onClick`.
+
+## Tests SEO
+
+### Playwright dédié
+- Fichier: `e2e/seo-aides.spec.js`
+- Les appels réseau `/api/aides`, `/api/taxonomy`, `/api/structures` sont mockés pour éviter toute dépendance DB.
+- Vérifie:
+  - title/description/canonical/OG/Twitter
+  - présence JSON-LD
+  - lien sémantique vers la fiche aide
+  - breadcrumb sur la fiche détail
+
+### Commandes utiles
+- `npx playwright test e2e/public-core.spec.js`
+- `npx playwright test e2e/seo-aides.spec.js`
 
 ## Notes sécurité
-
-- Aucun secret n'est inclus dans le sitemap/robots.
-- En cas d'erreur DB, aucune stacktrace n'est renvoyée au client.
+- Aucun secret n’est loggé dans les réponses HTML/meta/JSON-LD.
+- Aucun secret dans les docs SEO.

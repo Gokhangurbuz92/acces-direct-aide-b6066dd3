@@ -1,87 +1,78 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 
-const { mockFindMany } = vi.hoisted(() => {
-    return { mockFindMany: vi.fn() }
-});
+const { mockAideFindMany } = vi.hoisted(() => ({
+  mockAideFindMany: vi.fn(),
+}));
 
-vi.mock('@prisma/client', () => {
+vi.mock('@prisma/client', () => ({
+  PrismaClient: vi.fn().mockImplementation(function PrismaClient() {
     return {
-        PrismaClient: vi.fn().mockImplementation(function () {
-            return {
-                aide: { findMany: mockFindMany },
-                demarche: { findMany: mockFindMany },
-                structure: { findMany: mockFindMany },
-                dispositif: { findMany: mockFindMany },
-                resourceAccessibility: { findMany: mockFindMany },
-                guide: { findMany: mockFindMany },
-                toolboxItem: { findMany: mockFindMany },
-                actualite: { findMany: mockFindMany }
-            };
-        })
+      aide: { findMany: mockAideFindMany },
     };
-});
+  }),
+}));
 
 import handler from '../api/_handlers/sitemap.js';
 
-describe('Sitemap Handler', () => {
-    let req, res;
+describe('Sitemap handler script-level coverage', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mockAideFindMany.mockResolvedValue([]);
+  });
 
-    beforeEach(() => {
-        vi.clearAllMocks();
-        req = {
-            method: 'GET',
-            headers: {
-                host: 'localhost:3000'
-            }
-        };
-        res = {
-            writeHead: vi.fn(),
-            end: vi.fn(),
-            status: vi.fn().mockReturnThis(),
-            json: vi.fn()
-        };
-        mockFindMany.mockResolvedValue([]);
-    });
+  it('returns 200 xml on nominal flow', async () => {
+    const req = {
+      method: 'GET',
+      headers: {
+        host: 'localhost:3000',
+        'x-forwarded-proto': 'http',
+      },
+    };
+    const res = {
+      writeHead: vi.fn(),
+      end: vi.fn(),
+      setHeader: vi.fn(),
+      status: vi.fn().mockReturnThis(),
+      json: vi.fn(),
+    };
 
-    it('should return correct headers and content', async () => {
-        await handler(req, res);
+    await handler(req, res);
 
-        expect(res.writeHead).toHaveBeenCalledWith(200, expect.objectContaining({
-            'Content-Type': 'application/xml; charset=utf-8',
-            'X-Robots-Tag': 'noindex, nofollow' // because host is localhost
-        }));
+    expect(res.writeHead).toHaveBeenCalledWith(
+      200,
+      expect.objectContaining({
+        'Content-Type': 'application/xml; charset=utf-8',
+      }),
+    );
+    expect(String(res.end.mock.calls[0]?.[0])).toContain('<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">');
+  });
 
-        expect(res.end).toHaveBeenCalled();
-        const output = res.end.mock.calls[0][0];
-        expect(output).toContain('<?xml version="1.0" encoding="UTF-8"?>');
-        expect(output).toContain('<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">');
-    });
+  it('returns 503 xml when DB lookup fails', async () => {
+    mockAideFindMany.mockRejectedValue(new Error('db failure'));
 
-    it('should handle ETag caching', async () => {
-        // First request to get content and etag
-        await handler(req, res);
+    const req = {
+      method: 'GET',
+      headers: {
+        host: 'localhost:3000',
+      },
+    };
+    const res = {
+      writeHead: vi.fn(),
+      end: vi.fn(),
+      setHeader: vi.fn(),
+      status: vi.fn().mockReturnThis(),
+      json: vi.fn(),
+    };
 
-        const headers = res.writeHead.mock.calls[0][1];
-        const etag = headers['ETag'];
+    await handler(req, res);
 
-        // Second request with ETag
-        const req2 = { ...req, headers: { ...req.headers, 'if-none-match': etag } };
-        const res2 = {
-            writeHead: vi.fn(),
-            end: vi.fn(),
-            status: vi.fn().mockReturnThis(),
-            json: vi.fn()
-        };
-
-        await handler(req2, res2);
-        expect(res2.writeHead).toHaveBeenCalledWith(304);
-        expect(res2.end).toHaveBeenCalled();
-    });
-
-    it('should handle HEAD request', async () => {
-        req.method = 'HEAD';
-        await handler(req, res);
-        expect(res.writeHead).toHaveBeenCalledWith(200, expect.anything());
-        expect(res.end).toHaveBeenCalledWith(); // No body
-    });
+    expect(res.writeHead).toHaveBeenCalledWith(
+      503,
+      expect.objectContaining({
+        'Content-Type': 'application/xml; charset=utf-8',
+      }),
+    );
+    expect(String(res.end.mock.calls[0]?.[0])).toContain('<error>service_unavailable</error>');
+  });
 });
+

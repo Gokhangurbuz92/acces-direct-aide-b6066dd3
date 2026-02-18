@@ -92,6 +92,9 @@ L'authentification et les autorisations sont gérées par les handlers ou des mi
 | GET | `/api/admin/partnerships` | `_handlers/admin/partnerships.js` | Partenariats | Admin |
 | POST | `/api/admin/link-checks` | `_handlers/admin/link-checks.js` | Lance link check | Admin |
 | POST | `/api/admin/validate-publication` | `_handlers/admin/validate-publication.js` | Validation contenu | Admin |
+| POST | `/api/admin/review-queue/scan` | `_handlers/admin/review-queue.js` | Lance un scan data quality | Admin |
+| GET | `/api/admin/review-queue` | `_handlers/admin/review-queue.js` | Liste review queue (filtres status/entityType/reason) | Admin |
+| PATCH | `/api/admin/review-queue/:id` | `_handlers/admin/review-queue.js` | Met a jour le statut d'un item (`resolved`/`ignored`) | Admin |
 
 ---
 *Généré à partir de `api/routes.js`.*

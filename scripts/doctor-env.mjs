@@ -119,6 +119,10 @@ function checkRequiredEnv() {
     // Optional in local: enable extra features (cron/admin/kv/storage/sentry/ai)
     { name: 'ADMIN_TOKEN', required: false, warnOnly: true },
     { name: 'CRON_SECRET', required: false, warnOnly: true },
+    { name: 'DATA_AIDES_STALE_DAYS', required: false, warnOnly: true },
+    { name: 'DATA_DEMARCHES_STALE_DAYS', required: false, warnOnly: true },
+    { name: 'DATA_STRUCTURES_STALE_DAYS', required: false, warnOnly: true },
+    { name: 'DATA_REVIEW_SCAN_LIMIT_PER_TYPE', required: false, warnOnly: true },
     { name: 'KV_REST_API_URL', required: false, warnOnly: true },
     { name: 'KV_REST_API_TOKEN', required: false, warnOnly: true },
     { name: 'STORAGE_ENDPOINT', required: false, warnOnly: true },

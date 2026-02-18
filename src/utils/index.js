@@ -26,6 +26,7 @@ const PAGE_URL_MAP = {
   AdminDemarcheEdit: '/admin/demarches/:id',
   AdminRecentSyncs: '/admin/sync/recent',
   AdminObservability: '/admin/observability',
+  AdminReviewQueue: '/admin/review-queue',
 };
 
 function fillRouteParams(routeTemplate, params = {}) {

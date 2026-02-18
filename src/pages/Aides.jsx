@@ -10,10 +10,12 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import EmptyState from '@/components/ui/EmptyState';
 import AideCard from '@/components/cards/AideCard';
-import { generateBreadcrumbSchema } from '@/utils/schema';
+import { buildAidesItemListSchema, buildBreadcrumbSchema } from '@/lib/seo';
 
 const DEFAULT_LIMIT = 20;
 const LIMIT_OPTIONS = [10, 20, 50];
+/** @type {Array<Record<string, unknown>>} */
+const EMPTY_ITEMS = [];
 
 function parsePage(value) {
   const parsed = Number.parseInt(String(value ?? '1'), 10);
@@ -98,7 +100,7 @@ export default function Aides() {
     }),
   });
 
-  const items = data?.items || [];
+  const items = data?.items ?? EMPTY_ITEMS;
   const pagination = data?.pagination || {};
   const facets = data?.facets || {};
 
@@ -164,13 +166,13 @@ export default function Aides() {
   };
 
   const schema = useMemo(() => {
-    return [
-      generateBreadcrumbSchema([
-        { name: 'Accueil', url: '/' },
-        { name: 'Aides', url: '/aides' },
-      ]),
-    ].filter(Boolean);
-  }, []);
+    const breadcrumb = buildBreadcrumbSchema([
+      { name: 'Accueil', url: '/' },
+      { name: 'Aides', url: '/aides' },
+    ]);
+    const itemList = buildAidesItemListSchema(items);
+    return [breadcrumb, itemList].filter(Boolean);
+  }, [items]);
 
   const territoryOptions = useMemo(() => {
     const facetTerritories = facets?.territoires || {};
@@ -450,4 +452,3 @@ export default function Aides() {
     </div>
   );
 }
-

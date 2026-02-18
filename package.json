@@ -26,6 +26,7 @@
     "test:e2e": "playwright test",
     "smoke:prod": "node scripts/smoke-prod.mjs",
     "smoke:seo:prod": "node scripts/seo-smoke.mjs",
+    "smoke:obs:prod": "node scripts/obs-smoke.mjs",
     "verify": "node scripts/verify-lot9a-routes.js && node scripts/verify-rdv.js && node scripts/verify-actualites.js && node scripts/verify-sitemap.js && node scripts/verify-robots.js",
     "guard:prisma": "node scripts/guard-prisma.js",
     "preview": "vite preview",

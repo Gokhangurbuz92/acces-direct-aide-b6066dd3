@@ -11,6 +11,22 @@
   ],
   "redirects": [
     {
+      "source": "/:path*",
+      "has": [
+        {
+          "type": "host",
+          "value": "accesdirectaide.fr"
+        }
+      ],
+      "destination": "https://www.accesdirectaide.fr/:path*",
+      "permanent": true
+    },
+    {
+      "source": "/(.+)/",
+      "destination": "/$1",
+      "permanent": true
+    },
+    {
       "source": "/guide/:slug",
       "destination": "/demarches",
       "permanent": true
@@ -28,6 +44,11 @@
     {
       "source": "/home",
       "destination": "/",
+      "permanent": true
+    },
+    {
+      "source": "/structures",
+      "destination": "/annuaire",
       "permanent": true
     }
   ],

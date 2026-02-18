@@ -62,6 +62,7 @@ describe('P6-B+ Admin cron-runs API', () => {
       data: {
         job: 'actualites',
         status: 'success',
+        trigger: 'manual',
         startedAt: new Date(),
         finishedAt: new Date(),
         durationMs: 10,
@@ -88,14 +89,18 @@ describe('P6-B+ Admin cron-runs API', () => {
 
     expect(res.statusCode).toBe(200);
     expect(Array.isArray(res.body?.items)).toBe(true);
-    expect(res.body.items.some((item) => item.id === run.id)).toBe(true);
+    const item = res.body.items.find((entry) => entry.id === run.id);
+    expect(item).toBeTruthy();
+    expect(item.trigger).toBe('manual');
   });
 
   it('returns a cron run detail when authorized', async () => {
     const run = await prisma.cronRun.create({
       data: {
         job: 'actualites',
-        status: 'failed',
+        status: 'skipped',
+        trigger: 'external',
+        skipReason: 'locked',
         startedAt: new Date(),
         finishedAt: new Date(),
         durationMs: 10,
@@ -121,6 +126,7 @@ describe('P6-B+ Admin cron-runs API', () => {
 
     expect(res.statusCode).toBe(200);
     expect(res.body?.item?.id).toBe(run.id);
+    expect(res.body?.item?.status).toBe('skipped');
+    expect(res.body?.item?.skipReason).toBe('locked');
   });
 });
-

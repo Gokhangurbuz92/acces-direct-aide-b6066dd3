@@ -62,12 +62,15 @@ export default async function handler(req, res) {
       id: true,
       job: true,
       status: true,
+      trigger: true,
+      skipReason: true,
       startedAt: true,
+      finishedAt: true,
       durationMs: true,
+      requestId: true,
       metrics: true,
     },
   });
 
   return res.status(200).json({ items });
 }
-

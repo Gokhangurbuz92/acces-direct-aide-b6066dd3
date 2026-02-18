@@ -25,7 +25,8 @@ Dans Vercel (Project Settings):
 
 - `GET /api/cron/actualites`
   - Optional: `?mode=smoke` (limite a 5 items) ou `?limit=<n>`
-  - Reponse: `{ ok, source, runId, durationMs, stats }`
+  - Reponse success: `{ ok, source, runId, durationMs, stats, cronRunId }`
+  - Reponse skip: `202 { ok:true, skipped:true, reason:"locked|cooldown", runId, cronRunId }`
 
 ## Securite (CRON_SECRET)
 
@@ -80,6 +81,27 @@ Pour limiter le risque de spoofing du User-Agent et eviter les doubles execution
 
 Le pipeline garde aussi son lock interne pour prevenir les executions concurrentes.
 
+Les skips (`locked` / `cooldown`) sont journalises en base avec:
+- `CronRun.status = "skipped"`
+- `CronRun.skipReason = "locked" | "cooldown"`
+- `CronRun.trigger = "vercel" | "manual" | "external" | "unknown"`
+
+## Freshness / Staleness (health deep)
+
+`GET /api/health/deep` expose la fraicheur du cron actualites via `deps.cron.actualites`:
+- `state = "fresh" | "stale" | "missing" | "error"`
+- `lastSuccessAt`, `lastRunAt`, `lastStatus`, `ageMinutes`
+- `thresholds.staleMinutes`, `thresholds.failMinutes`
+
+Variables (noms uniquement):
+- `CRON_ACTUALITES_STALE_MINUTES` (default: `540` = 9h)
+- `CRON_ACTUALITES_FAIL_MINUTES` (default: `1440` = 24h)
+
+Comportement HTTP de `/api/health/deep`:
+- cron `stale` => HTTP `200` (warning)
+- cron `error` (age >= fail threshold) => HTTP `503`
+- cron `missing` => visible dans payload (run jamais execute), sans hard-fail
+
 ## Observabilite / Incidents
 
 ### Verifier rapidement
@@ -96,12 +118,20 @@ Le pipeline garde aussi son lock interne pour prevenir les executions concurrent
    - Anti-flood actif (lock ou cooldown)
    - Attendre (TTL lock: 15 minutes) ou verifier les derniers runs en admin
 
-4. `409 Pipeline already running`
+4. `health/deep` indique `state=stale`
+   - Cron pas assez recent mais non critique
+   - Verifier: Vercel Cron actif + `/api/admin/cron-runs?job=actualites&limit=20`
+
+5. `health/deep` renvoie `503` avec `state=error`
+   - Dernier success trop ancien (>= fail threshold) ou erreur d'audit cron
+   - Verifier `vercel.json`, redeployer, verifier logs cron, puis declencher un run manuel securise
+
+6. `409 Pipeline already running`
    - Lock actif (prevention des executions concurrentes)
    - Attendre la fin du run (TTL lock: 20 minutes)
    - Si besoin: verifier le backend KV (Upstash) ou redemarrer la stack
 
-5. `500 CronRun table missing` / Prisma "table does not exist"
+7. `500 CronRun table missing` / Prisma "table does not exist"
    - Cause: migrations Prisma pas appliquees en prod
    - Fix: executer `npx prisma migrate deploy` sur la DB prod (voir `docs/RUNBOOK_MIGRATIONS.md`)
 
@@ -109,6 +139,9 @@ Le pipeline garde aussi son lock interne pour prevenir les executions concurrent
 
 Verifier les derniers runs dans l'admin:
 - `GET /api/admin/cron-runs?job=actualites&limit=20` (auth: `ADMIN_TOKEN`)
+
+Verifier la fraicheur:
+- `GET /api/health/deep` (auth admin/cron), puis lire `deps.cron.actualites`
 
 Ou utiliser le smoke local:
 - `npm run smoke:prod` (utilise `CRON_SECRET` + `ADMIN_TOKEN` depuis ton terminal)

@@ -25,6 +25,22 @@ function badgeClassForOk(value) {
   return 'border-slate-200 bg-slate-50 text-slate-700';
 }
 
+/** @param {unknown} value */
+function formatDateTime(value) {
+  if (!value) return '-';
+  const date = new Date(String(value));
+  if (Number.isNaN(date.getTime())) return '-';
+  return format(date, 'dd/MM/yyyy HH:mm:ss', { locale: fr });
+}
+
+/** @param {unknown} state */
+function freshnessBadgeClass(state) {
+  if (state === 'fresh') return 'border-emerald-200 bg-emerald-50 text-emerald-900';
+  if (state === 'stale') return 'border-amber-200 bg-amber-50 text-amber-900';
+  if (state === 'error') return 'border-rose-200 bg-rose-50 text-rose-900';
+  return 'border-slate-200 bg-slate-50 text-slate-700';
+}
+
 export default function AdminObservability() {
   const [cronRuns, setCronRuns] = useState(/** @type {any[]} */ ([]));
   const [healthPublic, setHealthPublic] = useState(/** @type {any} */ (null));
@@ -76,6 +92,7 @@ export default function AdminObservability() {
   const kv = healthDeep?.deps?.kv;
   const storage = healthDeep?.deps?.storage;
   const sentry = healthDeep?.deps?.sentry;
+  const cronFreshness = healthDeep?.deps?.cron?.actualites;
 
   return (
     <div className="container mx-auto py-8 space-y-6">
@@ -192,6 +209,42 @@ export default function AdminObservability() {
 
       <Card>
         <CardHeader>
+          <CardTitle>Freshness Cron actualites</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-2 text-sm">
+          <div className="flex items-center justify-between">
+            <span>Etat</span>
+            <Badge className={freshnessBadgeClass(cronFreshness?.state)}>
+              {cronFreshness?.state || 'missing'}
+            </Badge>
+          </div>
+          <div className="flex items-center justify-between">
+            <span>Last success</span>
+            <span className="font-mono text-xs">{formatDateTime(cronFreshness?.lastSuccessAt)}</span>
+          </div>
+          <div className="flex items-center justify-between">
+            <span>Last run</span>
+            <span className="font-mono text-xs">{formatDateTime(cronFreshness?.lastRunAt)}</span>
+          </div>
+          <div className="flex items-center justify-between">
+            <span>Age (minutes)</span>
+            <span className="font-mono text-xs">
+              {typeof cronFreshness?.ageMinutes === 'number' ? cronFreshness.ageMinutes : '-'}
+            </span>
+          </div>
+          <div className="flex items-center justify-between">
+            <span>Seuils stale/fail</span>
+            <span className="font-mono text-xs">
+              {typeof cronFreshness?.thresholds?.staleMinutes === 'number'
+                ? `${cronFreshness.thresholds.staleMinutes}/${cronFreshness.thresholds.failMinutes}`
+                : '-'}
+            </span>
+          </div>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
           <CardTitle>Cron actualites</CardTitle>
         </CardHeader>
         <CardContent>
@@ -200,6 +253,8 @@ export default function AdminObservability() {
               <TableRow>
                 <TableHead>Date</TableHead>
                 <TableHead>Status</TableHead>
+                <TableHead>Trigger</TableHead>
+                <TableHead>Reason</TableHead>
                 <TableHead>Duree</TableHead>
                 <TableHead>Metrics</TableHead>
               </TableRow>
@@ -207,7 +262,7 @@ export default function AdminObservability() {
             <TableBody>
               {cronRuns.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={4} className="text-sm text-slate-600">
+                  <TableCell colSpan={6} className="text-sm text-slate-600">
                     Aucun run.
                   </TableCell>
                 </TableRow>
@@ -222,6 +277,8 @@ export default function AdminObservability() {
                         className={
                           run.status === 'success'
                             ? 'border-emerald-200 bg-emerald-50 text-emerald-900'
+                            : run.status === 'skipped'
+                              ? 'border-amber-200 bg-amber-50 text-amber-900'
                             : run.status === 'running'
                               ? 'border-slate-200 bg-slate-50 text-slate-700'
                               : 'border-rose-200 bg-rose-50 text-rose-900'
@@ -230,6 +287,8 @@ export default function AdminObservability() {
                         {run.status}
                       </Badge>
                     </TableCell>
+                    <TableCell className="font-mono text-xs">{run.trigger || '-'}</TableCell>
+                    <TableCell className="font-mono text-xs">{run.skipReason || '-'}</TableCell>
                     <TableCell className="font-mono text-xs">{typeof run.durationMs === 'number' ? `${run.durationMs}ms` : '-'}</TableCell>
                     <TableCell className="font-mono text-xs text-slate-600">
                       {run.metrics ? JSON.stringify(run.metrics) : '-'}

@@ -5,11 +5,16 @@ import prisma from '../../_utils/prisma.js';
 import { env } from '../../_utils/env.js';
 import Sentry from '../../_utils/sentry.js';
 import { kv } from '../../_utils/kv.js';
+import logger from '../../_utils/logger.js';
 import { runIngestActualitesRss } from './ingest-actualites-rss.js';
 
 const CRON_LOCK_KEY = 'cron:actualites:lock';
 const CRON_LOCK_TTL_SECONDS = 15 * 60; // 15 minutes
 const CRON_COOLDOWN_MS = 10 * 60 * 1000; // 10 minutes
+
+/**
+ * @typedef {'vercel' | 'manual' | 'external' | 'unknown'} CronTrigger
+ */
 
 /**
  * Vercel Cron jobs cannot send custom Authorization headers. We accept the
@@ -22,6 +27,31 @@ function isAuthorizedByVercelCronUA(req) {
   if (env.runtime.vercelEnv !== 'production') return false;
   const ua = String(getHeader(req, 'user-agent') || '');
   return ua.startsWith('vercel-cron/');
+}
+
+/**
+ * @param {import('../../_utils/http-types').ApiRequest} req
+ * @param {boolean} vercelCronOk
+ * @param {boolean} secretAuthOk
+ * @returns {CronTrigger}
+ */
+function detectTrigger(req, vercelCronOk, secretAuthOk) {
+  if (vercelCronOk) return 'vercel';
+  if (!secretAuthOk) return 'unknown';
+
+  const host = String(getHeader(req, 'host') || '').toLowerCase();
+  const ua = String(getHeader(req, 'user-agent') || '').toLowerCase();
+
+  const isLocalHost = host.includes('localhost') || host.startsWith('127.0.0.1') || host.endsWith('.local');
+  const isCliUa =
+    ua.includes('curl') ||
+    ua.includes('postman') ||
+    ua.includes('insomnia') ||
+    ua.includes('httpie') ||
+    ua.includes('wget');
+
+  if (isLocalHost || isCliUa) return 'manual';
+  return 'external';
 }
 
 /**
@@ -45,6 +75,89 @@ async function tryAcquireCronLock(runId) {
 }
 
 /**
+ * @param {unknown} err
+ * @param {{
+ *   trigger: CronTrigger,
+ *   status: 'failed' | 'skipped',
+ *   runId: string,
+ *   requestId: string | null,
+ *   httpStatus: number,
+ *   durationMs: number,
+ *   skipReason?: 'locked' | 'cooldown',
+ * }} context
+ */
+async function captureCronError(err, context) {
+  try {
+    Sentry.captureException(err, {
+      tags: {
+        cron: 'actualites',
+        source: 'cron',
+        job: 'actualites',
+        trigger: context.trigger,
+        status: context.status,
+        skipReason: context.skipReason,
+        httpStatus: String(context.httpStatus),
+        requestId: context.requestId ?? undefined,
+      },
+      extra: {
+        runId: context.runId,
+        durationMs: context.durationMs,
+      },
+    });
+    await Sentry.flush(2000);
+  } catch {
+    // best-effort
+  }
+}
+
+/**
+ * @param {{
+ *   runId: string,
+ *   requestId: string | null,
+ *   trigger: CronTrigger,
+ *   reason: 'locked' | 'cooldown',
+ *   startedAtMs: number,
+ *   mode: unknown,
+ *   limit: number | undefined,
+ *   lockTtlMs?: number,
+ *   cooldownMs?: number,
+ *   lastSuccessAt?: Date | null,
+ * }} params
+ * @returns {Promise<string | null>}
+ */
+async function recordSkippedRun(params) {
+  const finishedAt = new Date();
+  const durationMs = Math.max(0, Date.now() - params.startedAtMs);
+
+  const created = await prisma.cronRun.create({
+    data: {
+      job: 'actualites',
+      status: 'skipped',
+      trigger: params.trigger,
+      skipReason: params.reason,
+      startedAt: new Date(params.startedAtMs),
+      finishedAt,
+      durationMs,
+      requestId: params.requestId,
+      vercelEnv: env.runtime.vercelEnv,
+      release: env.sentry.release,
+      metrics: {
+        runId: params.runId,
+        reason: params.reason,
+        mode: params.mode ?? null,
+        limit: params.limit ?? null,
+        lockTtlMs: params.lockTtlMs ?? null,
+        cooldownMs: params.cooldownMs ?? null,
+        lastSuccessAt: params.lastSuccessAt ? params.lastSuccessAt.toISOString() : null,
+      },
+    },
+    select: { id: true },
+  });
+
+  return created.id;
+}
+
+/**
  * Stable cron endpoint for RSS/Atom news ingestion.
  *
  * Note: ingestion logic lives in `runIngestActualitesRss` (P5). This handler only
@@ -59,34 +172,8 @@ export default async function handler(req, res) {
   }
 
   const runId = crypto.randomUUID();
-
-  const auth = getCronAuth(req);
-  if (!auth.ok && auth.reason === 'missing_secret') {
-    return res.status(500).json({ error: 'CRON_SECRET is not configured' });
-  }
-
-  const vercelCronOk = isAuthorizedByVercelCronUA(req);
-  if (!auth.ok && !vercelCronOk) {
-    return res.status(401).json({ error: 'Unauthorized' });
-  }
-
+  const startedAtMs = Date.now();
   const requestId = typeof req.requestId === 'string' ? req.requestId : null;
-
-  const lockState = await tryAcquireCronLock(runId);
-  if (lockState === false) {
-    return res.status(202).json({ ok: true, skipped: true, reason: 'locked', runId, requestId });
-  }
-  if (lockState === null) {
-    try {
-      Sentry.captureMessage('cron.lock.unavailable', {
-        level: 'warning',
-        tags: { cron: 'actualites', requestId: requestId ?? undefined },
-      });
-      await Sentry.flush(500);
-    } catch {
-      // best-effort
-    }
-  }
 
   const mode = req.query?.mode;
   const limitParam = req.query?.limit;
@@ -96,7 +183,64 @@ export default async function handler(req, res) {
       ? 5
       : undefined;
 
-  const startTime = Date.now();
+  const auth = getCronAuth(req);
+  if (!auth.ok && auth.reason === 'missing_secret') {
+    return res.status(500).json({ error: 'CRON_SECRET is not configured' });
+  }
+
+  const vercelCronOk = isAuthorizedByVercelCronUA(req);
+  const trigger = detectTrigger(req, vercelCronOk, auth.ok);
+  if (!auth.ok && !vercelCronOk) {
+    return res.status(401).json({ error: 'Unauthorized' });
+  }
+
+  const lockState = await tryAcquireCronLock(runId);
+  if (lockState === false) {
+    let cronRunId = null;
+    try {
+      cronRunId = await recordSkippedRun({
+        runId,
+        requestId,
+        trigger,
+        reason: 'locked',
+        startedAtMs,
+        mode,
+        limit,
+        lockTtlMs: CRON_LOCK_TTL_SECONDS * 1000,
+      });
+    } catch (err) {
+      logger.warn({ requestId, runId, job: 'actualites', reason: 'locked', trigger }, 'cron.actualites.skip_log_failed');
+      await captureCronError(err, {
+        trigger,
+        status: 'skipped',
+        skipReason: 'locked',
+        runId,
+        requestId,
+        httpStatus: 202,
+        durationMs: Date.now() - startedAtMs,
+      });
+    }
+    return res.status(202).json({ ok: true, skipped: true, reason: 'locked', runId, requestId, cronRunId });
+  }
+  if (lockState === null) {
+    try {
+      Sentry.captureMessage('cron.lock.unavailable', {
+        level: 'warning',
+        tags: {
+          cron: 'actualites',
+          source: 'cron',
+          job: 'actualites',
+          trigger,
+          status: 'running',
+          requestId: requestId ?? undefined,
+        },
+        extra: { runId },
+      });
+      await Sentry.flush(500);
+    } catch {
+      // best-effort
+    }
+  }
 
   try {
     // Defense-in-depth: if KV is unavailable or the lock is manually cleared,
@@ -111,7 +255,38 @@ export default async function handler(req, res) {
       if (lastSuccess) {
         const ageMs = Date.now() - lastSuccess.startedAt.getTime();
         if (ageMs >= 0 && ageMs < CRON_COOLDOWN_MS) {
-          return res.status(202).json({ ok: true, skipped: true, reason: 'cooldown', runId, requestId });
+          let cronRunId = null;
+          try {
+            cronRunId = await recordSkippedRun({
+              runId,
+              requestId,
+              trigger,
+              reason: 'cooldown',
+              startedAtMs,
+              mode,
+              limit,
+              cooldownMs: CRON_COOLDOWN_MS,
+              lastSuccessAt: lastSuccess.startedAt,
+            });
+          } catch (err) {
+            logger.warn(
+              { requestId, runId, job: 'actualites', reason: 'cooldown', trigger },
+              'cron.actualites.skip_log_failed',
+            );
+            await captureCronError(err, {
+              trigger,
+              status: 'skipped',
+              skipReason: 'cooldown',
+              runId,
+              requestId,
+              httpStatus: 202,
+              durationMs: Date.now() - startedAtMs,
+            });
+          }
+
+          return res
+            .status(202)
+            .json({ ok: true, skipped: true, reason: 'cooldown', runId, requestId, cronRunId });
         }
       }
     } catch {
@@ -126,6 +301,7 @@ export default async function handler(req, res) {
         data: {
           job: 'actualites',
           status: 'running',
+          trigger,
           requestId,
           vercelEnv: env.runtime.vercelEnv,
           release: env.sentry.release,
@@ -142,12 +318,13 @@ export default async function handler(req, res) {
 
       try {
         const result = await runIngestActualitesRss({ limit, runId });
-        const durationMs = Date.now() - startTime;
+        const durationMs = Date.now() - startedAtMs;
 
         await prisma.cronRun.update({
           where: { id: created.id },
           data: {
             status: 'success',
+            trigger,
             finishedAt: new Date(),
             durationMs,
             metrics: {
@@ -166,13 +343,14 @@ export default async function handler(req, res) {
 
         return result;
       } catch (err) {
-        const durationMs = Date.now() - startTime;
+        const durationMs = Date.now() - startedAtMs;
         const message = err instanceof Error ? err.message : String(err);
 
         await prisma.cronRun.update({
           where: { id: created.id },
           data: {
             status: 'failed',
+            trigger,
             finishedAt: new Date(),
             durationMs,
             errorSample: message.slice(0, 500),
@@ -192,9 +370,10 @@ export default async function handler(req, res) {
       ok: true,
       source: 'actualites',
       runId,
+      trigger,
       mode,
       limit: limit ?? null,
-      durationMs: Date.now() - startTime,
+      durationMs: Date.now() - startedAtMs,
       stats,
       cronRunId,
     });
@@ -204,18 +383,14 @@ export default async function handler(req, res) {
       return res.status(409).json({ error: 'Pipeline already running', runId });
     }
 
-    try {
-      Sentry.captureException(err, {
-        tags: {
-          cron: 'actualites',
-          runId,
-          requestId: requestId ?? undefined,
-        },
-      });
-      await Sentry.flush(2000);
-    } catch {
-      // best-effort
-    }
+    await captureCronError(err, {
+      trigger,
+      status: 'failed',
+      runId,
+      requestId,
+      httpStatus: 500,
+      durationMs: Date.now() - startedAtMs,
+    });
     return res.status(500).json({ error: message, runId });
   }
 }

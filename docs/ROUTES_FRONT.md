@@ -53,7 +53,8 @@ Accessibles à tous les utilisateurs.
 
 ## 2. Espace Pro (`/pro`)
 
-Nécessite une authentification professionnelle (JWT).
+Nécessite une authentification professionnelle (JWT Pro uniquement).
+`ProGuard` redirige vers `/login?mode=pro` si la session Pro est absente/invalide.
 Routes imbriquées sous le layout `ProLayout`.
 
 | Route | Page / Composant | API Calls Principaux | Notes |
@@ -72,7 +73,8 @@ Routes imbriquées sous le layout `ProLayout`.
 
 ## 3. Administration (`/admin`)
 
-Protégé par `AdminGuard` (Token statique ou session admin).
+Protégé par `AdminGuard` (token statique admin ou session admin JWT).
+Les credentials Pro ne donnent pas acces aux routes `/admin`.
 
 | Route | Page / Composant | API Calls Principaux | Notes |
 |---|---|---|---|

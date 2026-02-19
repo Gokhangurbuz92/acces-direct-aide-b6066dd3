@@ -20,12 +20,42 @@ async function handler(req, res) {
     const { summary_falc, is_pro_enabled } = req.body;
 
     try {
-        const updated = await prisma.structure.update({
-            where: { id: structureId },
-            data: {
-                summary_falc,
-                is_pro_enabled
+        const updated = await prisma.$transaction(async (tx) => {
+            const structure = await tx.structure.update({
+                where: { id: structureId },
+                data: {
+                    summary_falc,
+                    is_pro_enabled
+                }
+            });
+
+            if (typeof is_pro_enabled === 'boolean') {
+                const existing = await tx.structureRdvSettings.findUnique({
+                    where: { structureId },
+                    select: { id: true, publishedAt: true },
+                });
+
+                if (existing) {
+                    await tx.structureRdvSettings.update({
+                        where: { id: existing.id },
+                        data: {
+                            isPublished: is_pro_enabled,
+                            publishedAt: is_pro_enabled ? existing.publishedAt || new Date() : existing.publishedAt,
+                        },
+                    });
+                } else {
+                    await tx.structureRdvSettings.create({
+                        data: {
+                            structureId,
+                            isPublished: is_pro_enabled,
+                            bookingMode: 'IN_PERSON',
+                            ...(is_pro_enabled ? { publishedAt: new Date() } : {}),
+                        },
+                    });
+                }
             }
+
+            return structure;
         });
 
         await logProAudit('STRUCTURE_UPDATED', userId, structureId, { is_pro_enabled }, req.socket.remoteAddress);

@@ -40,6 +40,7 @@ import proAppointmentsCancel from './_handlers/pro/appointments/cancel.js';
 import proAvailability from './_handlers/pro/availability.js';
 import proSlots from './_handlers/pro/slots.js';
 import proTimeOff from './_handlers/pro/timeoff.js';
+import proRdvSettings from './_handlers/pro/rdv-settings.js';
 
 // --- Public Content ---
 import publicMessages from './_handlers/public/messages.js';
@@ -126,6 +127,7 @@ export const routes = [
     { path: 'pro/appointments/cancel', match: 'exact', handler: proAppointmentsCancel },
     { path: 'pro/availability', match: 'exact', handler: proAvailability },
     { path: 'pro/timeoff', match: 'exact', handler: proTimeOff },
+    { path: 'pro/rdv/settings', match: 'exact', handler: proRdvSettings },
 
     // --- Public Content ---
     { path: 'public/messages', match: 'exact', handler: publicMessages },

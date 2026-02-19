@@ -231,6 +231,7 @@ model Structure {
   proRdvRules    ProAvailabilityRule[]
   proRdvSlots    ProAppointment[]
   proRdvTimeOffs ProTimeOff[]
+  rdvSettings    StructureRdvSettings?
 
   @@index([source_id])
   @@index([raw_data_hash])
@@ -295,44 +296,44 @@ model Demarche {
 }
 
 model Actualite {
-  id                 String    @id @default(uuid())
+  id                 String          @id @default(uuid())
   titre              String
   contenu            String?
-  date_publication   DateTime  @default(now())
+  date_publication   DateTime        @default(now())
   image_url          String?
   lien_url           String?
   source             String?
-  updatedAt          DateTime  @updatedAt
-  statut             String    @default("brouillon")
+  updatedAt          DateTime        @updatedAt
+  statut             String          @default("brouillon")
   updatedBy          String?
   commentaire_statut String?
   published_at       DateTime?
-  canonical_url      String?   @unique
-  category           String?   @default("actualite")
+  canonical_url      String?         @unique
+  category           String?         @default("actualite")
   dedupe_hash        String?
   fetched_at         DateTime?
   guid               String?
   key_points_falc    String[]
-  slug               String?   @unique
+  slug               String?         @unique
   source_id          String?
   source_name        String?
   summary_falc       String?
-  territoire         String?   @default("FRANCE")
-  auto_publish       Boolean   @default(false)
-  categorie          String?   @default("general")
+  territoire         String?         @default("FRANCE")
+  auto_publish       Boolean         @default(false)
+  categorie          String?         @default("general")
   departements       String[]
-  est_important      Boolean   @default(false)
-  falc_status        String    @default("pending")
+  est_important      Boolean         @default(false)
+  falc_status        String          @default("pending")
   ingest_batch       String?
-  quality_score      Int       @default(0)
-  raw_data_hash      String?   @unique
+  quality_score      Int             @default(0)
+  raw_data_hash      String?         @unique
   raw_payload_json   Json?
   resume             String?
-  score_fiabilite    Int       @default(0)
+  score_fiabilite    Int             @default(0)
   source_nom         String?
   source_url         String?
   tags               String[]
-  type_actu          String?   @default("info")
+  type_actu          String?         @default("info")
   url                String?
   source_document_id String?
   sourceDocument     SourceDocument? @relation(fields: [source_document_id], references: [id])
@@ -363,12 +364,12 @@ model ImportLog {
 }
 
 model CronRun {
-  id          String   @id @default(cuid())
+  id          String    @id @default(cuid())
   job         String
   status      String // "running" | "success" | "failed" | "skipped"
   trigger     String? // "vercel" | "manual" | "external" | "unknown"
   skipReason  String? // "locked" | "cooldown"
-  startedAt   DateTime @default(now())
+  startedAt   DateTime  @default(now())
   finishedAt  DateTime?
   durationMs  Int?
   requestId   String?
@@ -376,8 +377,8 @@ model CronRun {
   release     String?
   metrics     Json?
   errorSample String?
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
 
   @@index([job, startedAt])
   @@index([status, startedAt])
@@ -397,9 +398,9 @@ model ReviewQueueItem {
   createdAt  DateTime @default(now())
   updatedAt  DateTime @updatedAt
 
+  @@unique([entityType, entityId, reason, status])
   @@index([status, createdAt])
   @@index([entityType, status])
-  @@unique([entityType, entityId, reason, status])
 }
 
 model RssSource {
@@ -510,18 +511,18 @@ model AuditLog {
 }
 
 model ProUser {
-  id            String         @id @default(uuid())
-  email         String
-  password_hash String
-  role          String
-  status        String         @default("pending")
-  structureId   String
-  createdAt     DateTime       @default(now())
-  updatedAt     DateTime       @updatedAt
-  appointments  Appointment[]
-  availability  Availability[]
+  id                     String           @id @default(uuid())
+  email                  String
+  password_hash          String
+  role                   String
+  status                 String           @default("pending")
+  structureId            String
+  createdAt              DateTime         @default(now())
+  updatedAt              DateTime         @updatedAt
+  appointments           Appointment[]
+  availability           Availability[]
   proAppointmentsCreated ProAppointment[] @relation("ProAppointmentCreatedBy")
-  structure     Structure      @relation(fields: [structureId], references: [id])
+  structure              Structure        @relation(fields: [structureId], references: [id])
 
   @@unique([structureId, email])
 }
@@ -563,36 +564,36 @@ model ProRdvService {
 }
 
 model ProAvailabilityRule {
-  id         String    @id @default(uuid())
+  id          String    @id @default(uuid())
   structureId String
-  weekday    Int
-  startTime  String
-  endTime    String
-  timezone   String    @default("Europe/Paris")
-  isActive   Boolean   @default(true)
-  createdAt  DateTime  @default(now())
-  updatedAt  DateTime  @updatedAt
-  structure  Structure @relation(fields: [structureId], references: [id])
+  weekday     Int
+  startTime   String
+  endTime     String
+  timezone    String    @default("Europe/Paris")
+  isActive    Boolean   @default(true)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  structure   Structure @relation(fields: [structureId], references: [id])
 
   @@index([structureId, weekday])
 }
 
 model ProAppointment {
-  id                 String         @id @default(uuid())
+  id                 String        @id @default(uuid())
   structureId        String
   serviceId          String
   startAt            DateTime
   endAt              DateTime
-  status             String         @default("booked")
+  status             String        @default("booked")
   beneficiaryName    String
   beneficiaryPhone   String?
   notes              String?
   createdByProUserId String?
-  createdAt          DateTime       @default(now())
-  updatedAt          DateTime       @updatedAt
-  createdByProUser   ProUser?       @relation("ProAppointmentCreatedBy", fields: [createdByProUserId], references: [id], onDelete: SetNull)
-  service            ProRdvService  @relation(fields: [serviceId], references: [id], onDelete: Cascade)
-  structure          Structure       @relation(fields: [structureId], references: [id], onDelete: Cascade)
+  createdAt          DateTime      @default(now())
+  updatedAt          DateTime      @updatedAt
+  createdByProUser   ProUser?      @relation("ProAppointmentCreatedBy", fields: [createdByProUserId], references: [id], onDelete: SetNull)
+  service            ProRdvService @relation(fields: [serviceId], references: [id], onDelete: Cascade)
+  structure          Structure     @relation(fields: [structureId], references: [id], onDelete: Cascade)
 
   @@index([structureId, startAt])
   @@index([structureId, status, startAt])
@@ -600,16 +601,31 @@ model ProAppointment {
 }
 
 model ProTimeOff {
-  id         String    @id @default(uuid())
+  id          String    @id @default(uuid())
   structureId String
-  startAt    DateTime
-  endAt      DateTime
-  reason     String?
-  createdAt  DateTime  @default(now())
-  updatedAt  DateTime  @updatedAt
-  structure  Structure @relation(fields: [structureId], references: [id], onDelete: Cascade)
+  startAt     DateTime
+  endAt       DateTime
+  reason      String?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  structure   Structure @relation(fields: [structureId], references: [id], onDelete: Cascade)
 
   @@index([structureId, startAt])
+}
+
+model StructureRdvSettings {
+  id           String         @id @default(uuid())
+  structureId  String         @unique
+  isPublished  Boolean        @default(false)
+  bookingMode  RdvBookingMode @default(IN_PERSON)
+  contactEmail String?
+  contactPhone String?
+  publishedAt  DateTime?
+  createdAt    DateTime       @default(now())
+  updatedAt    DateTime       @updatedAt
+  structure    Structure      @relation(fields: [structureId], references: [id], onDelete: Cascade)
+
+  @@index([isPublished, updatedAt])
 }
 
 model Invitation {
@@ -894,6 +910,12 @@ enum IngestJobStatus {
   PROCESSING
   COMPLETED
   ERROR
+}
+
+enum RdvBookingMode {
+  IN_PERSON
+  VIDEO
+  BOTH
 }
 
 model ContentReport {

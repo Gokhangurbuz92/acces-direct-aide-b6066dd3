@@ -1,7 +1,7 @@
 // @ts-nocheck
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useOutletContext } from 'react-router-dom';
-import { Edit, Loader2, Plus, Power, Save, Trash2 } from 'lucide-react';
+import { AlertTriangle, Edit, ExternalLink, Loader2, Plus, Power, Save, Trash2 } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -30,13 +30,31 @@ function toNonNegativeInt(value, fallback = 0) {
 }
 
 export default function ProServices() {
-  const { user } = useOutletContext();
+  const { user, rdvReadiness } = useOutletContext();
   const canEdit = user?.role === 'STRUCTURE_ADMIN' || user?.role === 'SUPERADMIN';
+  const readinessOk = rdvReadiness?.status === 200 && rdvReadiness?.payload?.ok === true;
+  const readinessMissingTables = Array.isArray(rdvReadiness?.payload?.missingTables)
+    ? rdvReadiness.payload.missingTables
+    : [];
+  const readinessMissingMigrations = Array.isArray(rdvReadiness?.payload?.missingMigrations)
+    ? rdvReadiness.payload.missingMigrations
+    : [];
+  const structureSlug = String(user?.structure?.slug || '').trim();
 
   const [services, setServices] = useState([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
+  const [settingsLoading, setSettingsLoading] = useState(true);
+  const [settingsSaving, setSettingsSaving] = useState(false);
+  const [settingsError, setSettingsError] = useState('');
+  const [settingsNotice, setSettingsNotice] = useState('');
+  const [settingsForm, setSettingsForm] = useState({
+    isPublished: false,
+    bookingMode: 'IN_PERSON',
+    contactEmail: '',
+    contactPhone: '',
+  });
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingService, setEditingService] = useState(null);
   const [formData, setFormData] = useState({
@@ -47,7 +65,25 @@ export default function ProServices() {
     isActive: true,
   });
 
-  const fetchServices = async () => {
+  const publicRdvUrl = useMemo(() => {
+    if (!structureSlug) return '';
+    if (typeof window === 'undefined' || !window.location?.origin) {
+      return `https://www.accesdirectaide.fr/rdv/${encodeURIComponent(structureSlug)}`;
+    }
+    return `${window.location.origin}/rdv/${encodeURIComponent(structureSlug)}`;
+  }, [structureSlug]);
+
+  const hydrateSettings = (payload) => {
+    if (!payload || typeof payload !== 'object') return;
+    setSettingsForm({
+      isPublished: Boolean(payload.isPublished ?? payload.is_published),
+      bookingMode: String(payload.bookingMode || payload.booking_mode || 'IN_PERSON'),
+      contactEmail: String(payload.contactEmail || payload.contact_email || ''),
+      contactPhone: String(payload.contactPhone || payload.contact_phone || ''),
+    });
+  };
+
+  const fetchServices = useCallback(async () => {
     setLoading(true);
     setError('');
     try {
@@ -58,11 +94,54 @@ export default function ProServices() {
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
+
+  const fetchSettings = useCallback(async () => {
+    setSettingsLoading(true);
+    setSettingsError('');
+    try {
+      const response = await proRdvClient.settings.get();
+      hydrateSettings(response);
+    } catch {
+      setSettingsError('Impossible de charger les parametres de publication RDV.');
+    } finally {
+      setSettingsLoading(false);
+    }
+  }, []);
 
   useEffect(() => {
     fetchServices();
-  }, []);
+    fetchSettings();
+  }, [fetchServices, fetchSettings]);
+
+  const saveSettings = async (event) => {
+    event.preventDefault();
+    if (!canEdit) return;
+
+    setSettingsSaving(true);
+    setSettingsError('');
+    setSettingsNotice('');
+    try {
+      const payload = {
+        isPublished: Boolean(settingsForm.isPublished),
+        bookingMode: String(settingsForm.bookingMode || 'IN_PERSON'),
+        contactEmail: String(settingsForm.contactEmail || '').trim() || null,
+        contactPhone: String(settingsForm.contactPhone || '').trim() || null,
+      };
+
+      const updated = await proRdvClient.settings.update(payload);
+      hydrateSettings(updated);
+      setSettingsNotice('Parametres RDV enregistres.');
+    } catch (requestError) {
+      if (requestError && typeof requestError === 'object' && requestError.status === 409) {
+        setSettingsError('Impossible de publier: la base RDV n est pas prete sur cet environnement.');
+      } else {
+        setSettingsError('Impossible de sauvegarder les parametres RDV.');
+      }
+    } finally {
+      setSettingsSaving(false);
+    }
+  };
 
   const openCreate = () => {
     setEditingService(null);
@@ -143,6 +222,129 @@ export default function ProServices() {
 
   return (
     <div className="space-y-6">
+      <Card data-testid="pro-rdv-settings-card">
+        <CardHeader>
+          <CardTitle>Publication de la prise de RDV</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          {!readinessOk ? (
+            <div className="rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-900">
+              <div className="flex items-start gap-2">
+                <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
+                <div>
+                  <p className="font-medium">Readiness RDV KO: publication bloquee.</p>
+                  {readinessMissingTables.length > 0 ? (
+                    <p className="text-xs">Tables manquantes: {readinessMissingTables.join(', ')}</p>
+                  ) : readinessMissingMigrations.length > 0 ? (
+                    <p className="text-xs">Migrations manquantes: {readinessMissingMigrations.join(', ')}</p>
+                  ) : null}
+                </div>
+              </div>
+            </div>
+          ) : null}
+
+          {settingsError ? (
+            <div className="rounded-md border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-800">
+              {settingsError}
+            </div>
+          ) : null}
+          {settingsNotice ? (
+            <div className="rounded-md border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-emerald-800">
+              {settingsNotice}
+            </div>
+          ) : null}
+
+          {settingsLoading ? (
+            <div className="flex items-center gap-2 text-sm text-slate-600">
+              <Loader2 className="h-4 w-4 animate-spin" /> Chargement des parametres RDV...
+            </div>
+          ) : (
+            <form className="space-y-4" onSubmit={saveSettings}>
+              <label className="flex items-center gap-2 text-sm text-slate-700">
+                <input
+                  type="checkbox"
+                  checked={settingsForm.isPublished}
+                  disabled={!canEdit || (!readinessOk && !settingsForm.isPublished)}
+                  onChange={(event) =>
+                    setSettingsForm((prev) => ({ ...prev, isPublished: event.target.checked }))
+                  }
+                />
+                Publier la prise de RDV en ligne
+              </label>
+
+              <div className="grid gap-3 md:grid-cols-3">
+                <label className="space-y-1">
+                  <span className="text-sm font-medium text-slate-700">Mode de reservation</span>
+                  <select
+                    className="h-10 w-full rounded-md border border-slate-300 bg-white px-3 text-sm"
+                    value={settingsForm.bookingMode}
+                    disabled={!canEdit}
+                    onChange={(event) =>
+                      setSettingsForm((prev) => ({ ...prev, bookingMode: event.target.value }))
+                    }
+                  >
+                    <option value="IN_PERSON">Presentiel</option>
+                    <option value="VIDEO">Visio</option>
+                    <option value="BOTH">Presentiel + visio</option>
+                  </select>
+                </label>
+
+                <label className="space-y-1">
+                  <span className="text-sm font-medium text-slate-700">Email contact (optionnel)</span>
+                  <Input
+                    type="email"
+                    value={settingsForm.contactEmail}
+                    disabled={!canEdit}
+                    onChange={(event) =>
+                      setSettingsForm((prev) => ({ ...prev, contactEmail: event.target.value }))
+                    }
+                  />
+                </label>
+
+                <label className="space-y-1">
+                  <span className="text-sm font-medium text-slate-700">Telephone contact (optionnel)</span>
+                  <Input
+                    type="text"
+                    value={settingsForm.contactPhone}
+                    disabled={!canEdit}
+                    onChange={(event) =>
+                      setSettingsForm((prev) => ({ ...prev, contactPhone: event.target.value }))
+                    }
+                  />
+                </label>
+              </div>
+
+              {settingsForm.isPublished && publicRdvUrl ? (
+                <p className="text-sm text-slate-600">
+                  URL publique:{' '}
+                  <a
+                    href={publicRdvUrl}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="inline-flex items-center gap-1 text-indigo-700 hover:underline"
+                    aria-label="Ouvrir la page publique de prise de rendez-vous"
+                  >
+                    {publicRdvUrl}
+                    <ExternalLink className="h-3.5 w-3.5" />
+                  </a>
+                </p>
+              ) : null}
+
+              {canEdit ? (
+                <Button type="submit" disabled={settingsSaving}>
+                  {settingsSaving ? (
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  ) : (
+                    <Save className="mr-2 h-4 w-4" />
+                  )}
+                  Enregistrer les parametres
+                </Button>
+              ) : null}
+            </form>
+          )}
+        </CardContent>
+      </Card>
+
       <div className="flex flex-wrap items-center justify-between gap-3">
         <h2 className="text-xl font-bold text-slate-900">Services</h2>
         {canEdit ? (

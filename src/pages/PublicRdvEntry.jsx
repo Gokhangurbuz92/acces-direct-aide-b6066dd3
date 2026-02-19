@@ -1,6 +1,6 @@
 // @ts-nocheck
 import { useMemo, useState } from 'react';
-import { Link, Navigate, useLocation, useParams, useSearchParams } from 'react-router-dom';
+import { Link, Navigate, useLocation, useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { CheckCircle2, Loader2, ShieldAlert, XCircle } from 'lucide-react';
 import SEO from '@/components/SEO';
@@ -134,6 +134,7 @@ export default function PublicRdvEntry({ view = 'landing' }) {
   const { structureSlug } = useParams();
   const [searchParams, setSearchParams] = useSearchParams();
   const location = useLocation();
+  const navigate = useNavigate();
 
   const structureId = String(searchParams.get('structureId') || '').trim();
   const selectedServiceId = String(searchParams.get('serviceId') || '').trim();
@@ -146,6 +147,7 @@ export default function PublicRdvEntry({ view = 'landing' }) {
   const [bookingError, setBookingError] = useState('');
   const [bookingInfo, setBookingInfo] = useState('');
   const [cancelBusy, setCancelBusy] = useState(false);
+  const [openConversationBusy, setOpenConversationBusy] = useState(false);
 
   const {
     data: structureData,
@@ -359,6 +361,35 @@ export default function PublicRdvEntry({ view = 'landing' }) {
       setBookingError(getErrorMessage(error, "Impossible d'annuler ce rendez-vous."));
     } finally {
       setCancelBusy(false);
+    }
+  };
+
+  const handleOpenConversation = async () => {
+    if (!appointment?.id) return;
+
+    setOpenConversationBusy(true);
+    setBookingError('');
+    setBookingInfo('');
+
+    try {
+      const payload = await apiRequest(
+        `/api/messages/from-appointment/${encodeURIComponent(appointment.id)}`,
+        {
+          method: 'POST',
+          token,
+        },
+      );
+
+      if (payload?.conversationId) {
+        navigate(`/compte/messages/${encodeURIComponent(payload.conversationId)}`);
+        return;
+      }
+
+      setBookingError("Impossible d'ouvrir la conversation.");
+    } catch (error) {
+      setBookingError(getErrorMessage(error, 'Impossible d’ouvrir la conversation.'));
+    } finally {
+      setOpenConversationBusy(false);
     }
   };
 
@@ -733,15 +764,26 @@ export default function PublicRdvEntry({ view = 'landing' }) {
                     <p className="text-xs text-emerald-900">Statut: {appointment.status}</p>
 
                     {appointment.status !== 'CANCELLED' ? (
-                      <Button
-                        type="button"
-                        variant="destructive"
-                        disabled={cancelBusy}
-                        onClick={handleCancelAppointment}
-                      >
-                        {cancelBusy ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <XCircle className="mr-2 h-4 w-4" />}
-                        Annuler mon RDV
-                      </Button>
+                      <div className="flex flex-wrap gap-2">
+                        <Button
+                          type="button"
+                          variant="outline"
+                          disabled={openConversationBusy}
+                          onClick={handleOpenConversation}
+                        >
+                          {openConversationBusy ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+                          Ecrire un message
+                        </Button>
+                        <Button
+                          type="button"
+                          variant="destructive"
+                          disabled={cancelBusy}
+                          onClick={handleCancelAppointment}
+                        >
+                          {cancelBusy ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <XCircle className="mr-2 h-4 w-4" />}
+                          Annuler mon RDV
+                        </Button>
+                      </div>
                     ) : (
                       <p className="text-sm text-slate-700">Ce rendez-vous est annule.</p>
                     )}

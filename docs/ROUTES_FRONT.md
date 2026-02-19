@@ -20,7 +20,9 @@ Accessibles à tous les utilisateurs.
 | `/structures/:slug` | `StructureDetail` | `/api/structures/:slug` | Détail structure |
 | `/rdv/:structureSlug` | `PublicRdvEntry` | `/api/structures/:slug`, `/api/auth/me` | Entrée publique RDV (redirige vers auth si non connecté, bloque si RDV non publiés). |
 | `/rdv/:structureSlug/services` | `PublicRdvEntry` | `/api/structures/:slug`, `/api/auth/me`, `/api/rdv/structures/:slug/services` | Étape choix service (USER authentifié, visible uniquement si `rdv.isPublished=true`). |
-| `/rdv/:structureSlug/creneaux` | `PublicRdvEntry` | `/api/structures/:slug`, `/api/auth/me`, `/api/rdv/structures/:slug/slots`, `/api/rdv/appointments`, `/api/rdv/appointments/:id`, `/api/rdv/appointments/:id/cancel` | Étape créneaux + confirmation/annulation owner-only. |
+| `/rdv/:structureSlug/creneaux` | `PublicRdvEntry` | `/api/structures/:slug`, `/api/auth/me`, `/api/rdv/structures/:slug/slots`, `/api/rdv/appointments`, `/api/rdv/appointments/:id`, `/api/rdv/appointments/:id/cancel`, `/api/messages/from-appointment/:id` | Étape créneaux + confirmation/annulation owner-only + accès conversation RDV. |
+| `/compte/messages` | `CompteMessages` | `/api/auth/me`, `/api/messages/conversations` | Liste des conversations RDV usager (noindex). |
+| `/compte/messages/:conversationId` | `CompteMessageThread` | `/api/auth/me`, `/api/messages/conversations/:id` | Thread usager RDV + envoi message (noindex). |
 | `/auth/login` | `AuthRdvAccess` | `/api/auth/login`, `/api/auth/resend-verification` | Connexion Particulier (support `next=`, noindex). |
 | `/auth/signup` | `AuthRdvAccess` | `/api/auth/signup` | Inscription Particulier (support `next=`, noindex). |
 | `/auth/verify-email` | `AuthVerifyEmail` | `/api/auth/resend-verification` | Ecran verification email (pending/success/error, noindex). |
@@ -78,6 +80,8 @@ Routes imbriquées sous le layout `ProLayout`.
 | `/pro/rdv/agenda` | `ProAppointments` | `/api/pro/appointments` | Agenda RDV (Protégé par `ProGuard`) |
 | `/pro/rdv/new` | `ProRdvNew` | `/api/pro/slots`, `/api/pro/appointments` | Creation RDV (Protégé par `ProGuard`) |
 | `/pro/rdv/absences` | `ProRdvAbsences` | `/api/pro/timeoff` | Gestion absences (Protégé par `ProGuard`) |
+| `/pro/messages` | `ProMessages` | `/api/pro/messages/conversations` | Liste conversations RDV structure (Protégé par `ProGuard`) |
+| `/pro/messages/:conversationId` | `ProMessageThread` | `/api/pro/messages/conversations/:id` | Thread structure RDV + réponse (Protégé par `ProGuard`) |
 | `/pro/services` | `Navigate` -> `/pro/rdv/services` | `/api/pro/services` | Alias legacy |
 | `/pro/team` | `ProTeam` | `/api/pro/team` | Gestion équipe (Protégé par `ProGuard`) |
 | `/pro/structure` | `ProStructure` | `/api/pro/structure` | Gestion structure (Protégé par `ProGuard`) |

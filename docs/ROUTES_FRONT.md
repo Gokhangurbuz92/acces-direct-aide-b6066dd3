@@ -18,9 +18,9 @@ Accessibles à tous les utilisateurs.
 | `/demarches/:slug` | `DemarcheDetail` | `/api/demarches/:slug`, `/api/pdf/demarches/:slug`, `/api/feedback` | Détail démarche + bloc provenance/fraicheur + export PDF stable + CTA “Signaler une info” |
 | `/annuaire` | `Annuaire` | `/api/structures` | Liste structures |
 | `/structures/:slug` | `StructureDetail` | `/api/structures/:slug` | Détail structure |
-| `/rdv/:structureSlug` | `PublicRdvEntry` | `/api/structures/:slug`, `/api/auth/me` | Entrée publique RDV (redirige vers auth si non connecté) |
-| `/rdv/:structureSlug/services` | `PublicRdvEntry` | `/api/structures/:slug`, `/api/auth/me` | Étape choix service |
-| `/rdv/:structureSlug/creneaux` | `PublicRdvEntry` | `/api/structures/:slug`, `/api/auth/me` | Étape créneaux |
+| `/rdv/:structureSlug` | `PublicRdvEntry` | `/api/structures/:slug`, `/api/auth/me` | Entrée publique RDV (redirige vers auth si non connecté, bloque si RDV non publiés). |
+| `/rdv/:structureSlug/services` | `PublicRdvEntry` | `/api/structures/:slug`, `/api/auth/me` | Étape choix service (visible uniquement si `rdv.isPublished=true`). |
+| `/rdv/:structureSlug/creneaux` | `PublicRdvEntry` | `/api/structures/:slug`, `/api/auth/me` | Étape créneaux (visible uniquement si `rdv.isPublished=true`). |
 | `/auth/login` | `AuthRdvAccess` | `/api/auth/login`, `/api/auth/resend-verification` | Connexion Particulier (support `next=`, noindex). |
 | `/auth/signup` | `AuthRdvAccess` | `/api/auth/signup` | Inscription Particulier (support `next=`, noindex). |
 | `/auth/verify-email` | `AuthVerifyEmail` | `/api/auth/resend-verification` | Ecran verification email (pending/success/error, noindex). |
@@ -73,7 +73,7 @@ Routes imbriquées sous le layout `ProLayout`.
 | `/pro/reset-password` | `ProResetPassword` | `/api/pro/auth/reset-password` | Reset mot de passe |
 | `/pro/dashboard` | `ProDashboard` | `/api/pro/me` | Tableau de bord (Protégé par `ProGuard`) |
 | `/pro/rdv` | `ProRdvLayout` | `/api/monitor/pro-rdv` | Shell RDV Pro + banner readiness (Protégé par `ProGuard`) |
-| `/pro/rdv/services` | `ProServices` | `/api/pro/services` | Gestion services RDV (Protégé par `ProGuard`) |
+| `/pro/rdv/services` | `ProServices` | `/api/pro/services`, `/api/pro/rdv/settings` | Gestion services RDV + publication publique (Protégé par `ProGuard`) |
 | `/pro/rdv/disponibilites` | `ProAvailability` | `/api/pro/availability` | Gestion disponibilites (Protégé par `ProGuard`) |
 | `/pro/rdv/agenda` | `ProAppointments` | `/api/pro/appointments` | Agenda RDV (Protégé par `ProGuard`) |
 | `/pro/rdv/new` | `ProRdvNew` | `/api/pro/slots`, `/api/pro/appointments` | Creation RDV (Protégé par `ProGuard`) |

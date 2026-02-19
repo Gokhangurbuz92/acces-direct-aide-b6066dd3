@@ -251,7 +251,8 @@ function PagesContent() {
                     <Route path="/structures/view" element={<StructureDetail />} />
                     <Route path="/structures/:slug" element={<StructureDetail />} />
 
-                    <Route path="/confidentialite" element={<Confidentialite />} />
+                    <Route path="/politique-confidentialite" element={<Confidentialite />} />
+                    <Route path="/confidentialite" element={<Navigate to="/politique-confidentialite" replace />} />
                     <Route path="/contact" element={<Contact />} />
                     <Route path="/cookies" element={<Cookies />} />
                     <Route path="/demarches/view" element={<DemarcheDetail />} />

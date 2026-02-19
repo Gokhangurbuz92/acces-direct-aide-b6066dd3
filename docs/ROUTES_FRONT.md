@@ -38,7 +38,7 @@ Accessibles à tous les utilisateurs.
 | `/a-propos` | `APropos` | - | Statique |
 | `/accessibilite` | `Accessibilite` | - | Statique |
 | `/mentions-legales` | `MentionsLegales` | - | Statique |
-| `/confidentialite` | `Confidentialite` | - | Statique |
+| `/politique-confidentialite` | `Confidentialite` | - | Statique |
 | `/cookies` | `Cookies` | - | Gestion cookies |
 | `/contact` | `Contact` | `/api/public/messages` | Formulaire contact |
 | `/impact` | `Impact` | - | Statique |
@@ -125,6 +125,7 @@ Routes maintenues pour la compatibilité (SEO, anciens liens).
 | `/AideDetail` | `/aides/:slug` | Via `/aidedetail` |
 | `/StructureDetail` | `/annuaire` | |
 | `/DemarcheDetail` | `/demarches` | |
+| `/confidentialite` | `/politique-confidentialite` | Alias legacy confidentialité |
 
 ---
 *Généré automatiquement à partir de `src/pages/index.jsx`.*

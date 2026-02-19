@@ -85,6 +85,10 @@ const MOCK_STRUCTURES = {
             statut: 'actif',
             type_structure: 'association',
             is_pro_enabled: true,
+            rdv: {
+                isPublished: true,
+                bookingMode: 'IN_PERSON'
+            },
             date_verification: '2025-07-10T10:00:00.000Z',
             provenance: {
                 verifiedAt: '2025-07-10T10:00:00.000Z',
@@ -106,6 +110,10 @@ const MOCK_STRUCTURE_DETAIL = {
     statut: 'actif',
     type_structure: 'association',
     is_pro_enabled: true,
+    rdv: {
+        isPublished: true,
+        bookingMode: 'IN_PERSON'
+    },
     proServices: [],
     date_verification: '2025-07-10T10:00:00.000Z',
     provenance: {

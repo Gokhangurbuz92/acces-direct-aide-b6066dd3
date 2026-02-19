@@ -252,6 +252,14 @@ export const proRdvClient = {
       return proRdvRequest('/api/pro/services', { method: 'DELETE', query: { id } });
     },
   },
+  settings: {
+    get() {
+      return proRdvRequest('/api/pro/rdv/settings');
+    },
+    update(payload) {
+      return proRdvRequest('/api/pro/rdv/settings', { method: 'PUT', body: payload });
+    },
+  },
   availability: {
     get() {
       return proRdvRequest('/api/pro/availability');

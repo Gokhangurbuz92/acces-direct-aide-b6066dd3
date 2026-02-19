@@ -79,6 +79,12 @@ async function handler(req, res) {
                 where: effectiveParams.id ? { id: effectiveParams.id } : { slug: effectiveParams.slug },
                 include: {
                   proServices: true,
+                  rdvSettings: {
+                    select: {
+                      isPublished: true,
+                      bookingMode: true,
+                    },
+                  },
                   sourceDocument: {
                     select: {
                       fetched_at: true,
@@ -91,9 +97,24 @@ async function handler(req, res) {
             if (!structure || structure.statut !== 'actif') {
                 return res.status(404).json({ error: "Structure non trouvée" });
             }
-            const { sourceDocument, ...safeStructure } = structure;
+            const { sourceDocument, rdvSettings, ...safeStructure } = structure;
+            const isRdvPublished =
+              rdvSettings && typeof rdvSettings.isPublished === 'boolean'
+                ? rdvSettings.isPublished
+                : Boolean(safeStructure.is_pro_enabled);
+            const bookingMode =
+              rdvSettings && typeof rdvSettings.bookingMode === 'string'
+                ? rdvSettings.bookingMode
+                : 'IN_PERSON';
+
             return res.status(200).json({
               ...safeStructure,
+              is_pro_enabled: isRdvPublished,
+              proServices: isRdvPublished ? safeStructure.proServices : [],
+              rdv: {
+                isPublished: isRdvPublished,
+                bookingMode,
+              },
               provenance: buildProvenance({
                 verifiedAt: safeStructure.date_verification,
                 fetchedAt: sourceDocument?.fetched_at,

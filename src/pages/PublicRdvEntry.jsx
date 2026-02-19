@@ -86,6 +86,7 @@ export default function PublicRdvEntry({ view = 'landing' }) {
 
   const structure = resolveStructure(structureData);
   const safeNext = normalizeNextPath(location.pathname + location.search, '/annuaire');
+  const isRdvPublished = Boolean(structure?.rdv?.isPublished ?? structure?.is_pro_enabled);
 
   const baseSlug = String(structure?.slug || structureSlug || '').trim();
   const basePath = baseSlug ? `/rdv/${encodeURIComponent(baseSlug)}` : '/annuaire';
@@ -156,12 +157,12 @@ export default function PublicRdvEntry({ view = 'landing' }) {
     return <Navigate to={appendNext('/auth/login', safeNext)} replace />;
   }
 
-  if (!structure.is_pro_enabled) {
+  if (!isRdvPublished) {
     return (
       <div className="min-h-screen bg-slate-50 flex items-center justify-center p-6">
         <SEO
           title="RDV indisponible"
-          description="La prise de rendez-vous n'est pas activée pour cette structure."
+          description="La prise de rendez-vous n'est pas publiee pour cette structure."
           path={safeNext}
           noindex={true}
         />
@@ -169,10 +170,10 @@ export default function PublicRdvEntry({ view = 'landing' }) {
           <CardHeader>
             <CardTitle className="flex items-center gap-2 text-slate-900">
               <ShieldAlert className="h-5 w-5 text-amber-600" />
-              RDV indisponible pour cette structure
+              RDV indisponible (non publie)
             </CardTitle>
             <CardDescription>
-              La structure <strong>{structure.nom}</strong> n&apos;a pas encore activé la prise de rendez-vous en ligne.
+              La structure <strong>{structure.nom}</strong> n&apos;a pas encore publie la prise de rendez-vous en ligne.
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">

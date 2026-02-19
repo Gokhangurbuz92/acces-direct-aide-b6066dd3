@@ -10,6 +10,7 @@ import monitorCronActualites from './_handlers/monitor/cron-actualites.js';
 import monitorCore from './_handlers/monitor/core.js';
 import monitorDataQuality from './_handlers/monitor/data-quality.js';
 import monitorIngestionFreshness from './_handlers/monitor/ingestion-freshness.js';
+import monitorProRdv from './_handlers/monitor/pro-rdv.js';
 import robots from './_handlers/robots.js';
 import sitemap from './_handlers/sitemap.js';
 import loginProGuard from './_handlers/login-pro-guard.js';
@@ -31,6 +32,7 @@ import proAppointmentsIndex from './_handlers/pro/appointments/index.js';
 import proAppointmentsCancel from './_handlers/pro/appointments/cancel.js';
 import proAvailability from './_handlers/pro/availability.js';
 import proSlots from './_handlers/pro/slots.js';
+import proTimeOff from './_handlers/pro/timeoff.js';
 
 // --- Public Content ---
 import publicMessages from './_handlers/public/messages.js';
@@ -83,6 +85,7 @@ export const routes = [
     { path: 'monitor/core', match: 'exact', handler: monitorCore },
     { path: 'monitor/data-quality', match: 'exact', handler: monitorDataQuality },
     { path: 'monitor/ingestion-freshness', match: 'exact', handler: monitorIngestionFreshness },
+    { path: 'monitor/pro-rdv', match: 'exact', handler: monitorProRdv },
     { path: 'healthz', match: 'exact', handler: health },
     { path: 'robots.txt', match: 'exact', handler: robots },
     { path: 'robots', match: 'exact', handler: robots },
@@ -107,6 +110,7 @@ export const routes = [
     { path: 'pro/appointments', match: 'exact', handler: proAppointmentsIndex },
     { path: 'pro/appointments/cancel', match: 'exact', handler: proAppointmentsCancel },
     { path: 'pro/availability', match: 'exact', handler: proAvailability },
+    { path: 'pro/timeoff', match: 'exact', handler: proTimeOff },
 
     // --- Public Content ---
     { path: 'public/messages', match: 'exact', handler: publicMessages },

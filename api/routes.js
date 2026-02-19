@@ -62,6 +62,7 @@ import dispositifs from './_handlers/dispositifs/index.js';
 import ressources from './_handlers/ressources.js';
 import reports from './_handlers/reports.js';
 import feedback from './_handlers/feedback.js';
+import rdv from './_handlers/rdv.js';
 
 // --- Cron ---
 import cronPipeline from './_handlers/cron/pipeline.js';
@@ -149,6 +150,7 @@ export const routes = [
     { path: 'ressources', match: 'prefix', handler: ressources },
     { path: 'reports', match: 'prefix', handler: reports },
     { path: 'feedback', match: 'exact', handler: feedback },
+    { path: 'rdv', match: 'prefix', handler: rdv },
 
     // --- Cron ---
     { path: 'cron/pipeline', match: 'exact', handler: cronPipeline },

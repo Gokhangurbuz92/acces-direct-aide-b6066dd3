@@ -71,6 +71,7 @@ function getRouteGroup(path) {
         'pro/',
         'public/',
         'reports',
+        'rdv',
         'ressources',
         'robots',
         'search',

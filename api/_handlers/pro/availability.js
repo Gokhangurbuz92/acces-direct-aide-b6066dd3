@@ -1,70 +1,94 @@
 import prisma from '../../_utils/prisma.js';
 import { requireProAuth, requireProStructureContext } from '../../_utils/auth.js';
+import { normalizeAvailabilityRules, rulesToSlotsJson, slotsJsonToRules } from '../../_utils/pro-rdv.js';
+
+/**
+ * @param {unknown} value
+ * @returns {number}
+ */
+function toInt(value) {
+  const n = Number(value);
+  return Number.isFinite(n) ? Math.trunc(n) : NaN;
+}
+
 /**
  * @param {import('../../_utils/http-types').ApiRequest} req
  * @param {import('../../_utils/http-types').ApiResponse} res
  */
-
 async function handler(req, res) {
-    const proCtx = requireProStructureContext(req, res);
-    if (!proCtx) return;
+  const proCtx = requireProStructureContext(req, res);
+  if (!proCtx) return;
 
-    // GET: Fetch availability
-    if (req.method === 'GET') {
-        try {
-            const availability = await prisma.availability.findUnique({
-                where: { structureId_proId: { structureId: proCtx.structureId, proId: proCtx.userId } }
-            });
+  if (req.method === 'GET') {
+    const rules = await prisma.proAvailabilityRule.findMany({
+      where: { structureId: proCtx.structureId },
+      orderBy: [{ weekday: 'asc' }, { startTime: 'asc' }],
+    });
 
-            // If not found, return defaults
-            if (!availability) {
-                return res.status(200).json({
-                    slots_json: {
-                        mon: ["09:00-12:00", "14:00-17:00"],
-                        tue: ["09:00-12:00", "14:00-17:00"],
-                        wed: ["09:00-12:00", "14:00-17:00"],
-                        thu: ["09:00-12:00", "14:00-17:00"],
-                        fri: ["09:00-12:00", "14:00-16:00"]
-                    },
-                    exceptions_json: []
-                });
-            }
+    return res.status(200).json({
+      rules: rules.map((rule /** @type {any} */) => ({
+        id: rule.id,
+        weekday: rule.weekday,
+        startTime: rule.startTime,
+        endTime: rule.endTime,
+        timezone: rule.timezone,
+        isActive: rule.isActive,
+      })),
+      slots_json: rulesToSlotsJson(rules),
+      timezone: rules[0]?.timezone || 'Europe/Paris',
+    });
+  }
 
-            return res.status(200).json({
-                slots_json: availability.slots_json,
-                exceptions_json: availability.exceptions_json
-            });
-        } catch (e) {
-            console.error(e);
-            return res.status(500).json({ error: 'Internal Error' });
-        }
+  if (req.method === 'PUT' || req.method === 'POST') {
+    const body = req.body && typeof req.body === 'object' ? req.body : {};
+    const timezone = String(body.timezone || 'Europe/Paris');
+
+    /** @type {Array<{weekday:number,startTime:string,endTime:string,timezone:string,isActive:boolean}>} */
+    let normalizedRules = [];
+    if (Array.isArray(body.rules)) {
+      normalizedRules = normalizeAvailabilityRules(
+        body.rules.map((rule /** @type {any} */) => ({
+          weekday: toInt(/** @type {any} */ (rule)?.weekday),
+          startTime: String(/** @type {any} */ (rule)?.startTime || ''),
+          endTime: String(/** @type {any} */ (rule)?.endTime || ''),
+          timezone: String(/** @type {any} */ (rule)?.timezone || timezone),
+          isActive: Boolean(/** @type {any} */ (rule)?.isActive ?? true),
+        })),
+      );
+    } else if (body.slots_json && typeof body.slots_json === 'object') {
+      normalizedRules = slotsJsonToRules(/** @type {Record<string, unknown>} */ (body.slots_json), timezone);
+    } else {
+      return res.status(400).json({ error: 'rules or slots_json is required' });
     }
 
-    // POST: Update availability
-    if (req.method === 'POST') {
-        const { slots_json, exceptions_json } = req.body;
-        try {
-            const availability = await prisma.availability.upsert({
-                where: { structureId_proId: { structureId: proCtx.structureId, proId: proCtx.userId } },
-                update: {
-                    slots_json: slots_json,
-                    exceptions_json: exceptions_json || []
-                },
-                create: {
-                    structureId: proCtx.structureId,
-                    proId: proCtx.userId,
-                    slots_json: slots_json,
-                    exceptions_json: exceptions_json || []
-                }
-            });
-            return res.status(200).json(availability);
-        } catch (e) {
-            console.error(e);
-            return res.status(500).json({ error: 'Internal Error' });
-        }
-    }
+    await prisma.$transaction(async (tx /** @type {any} */) => {
+      await tx.proAvailabilityRule.deleteMany({
+        where: { structureId: proCtx.structureId },
+      });
 
-    return res.status(405).json({ error: 'Method not allowed' });
+      if (normalizedRules.length > 0) {
+        await tx.proAvailabilityRule.createMany({
+          data: normalizedRules.map((rule) => ({
+            structureId: proCtx.structureId,
+            weekday: rule.weekday,
+            startTime: rule.startTime,
+            endTime: rule.endTime,
+            timezone: rule.timezone || timezone,
+            isActive: rule.isActive !== false,
+          })),
+        });
+      }
+    });
+
+    return res.status(200).json({
+      ok: true,
+      rules: normalizedRules,
+      slots_json: rulesToSlotsJson(normalizedRules),
+      timezone,
+    });
+  }
+
+  return res.status(405).json({ error: 'Method not allowed' });
 }
 
 export default requireProAuth(handler);

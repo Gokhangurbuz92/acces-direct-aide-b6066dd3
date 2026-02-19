@@ -42,6 +42,7 @@ Il liste les routes définies et leurs gestionnaires.
 | `/api/pro/appointments/cancel` | `exact` | `./_handlers/pro/appointments/cancel.js` | Pro | - |
 | `/api/pro/availability` | `exact` | `./_handlers/pro/availability.js` | Pro | - |
 | `/api/pro/timeoff` | `exact` | `./_handlers/pro/timeoff.js` | Pro | - |
+| `/api/pro/rdv/settings` | `exact` | `./_handlers/pro/rdv-settings.js` | Pro | Parametres publication RDV structure (GET/PUT, gate readiness avant publish). |
 | `/api/public/messages` | `exact` | `./_handlers/public/messages.js` | Public | - |
 | `/api/public/suggest-structure` | `exact` | `./_handlers/public/suggest-structure.js` | Public | - |
 | `/api/public/stats` | `exact` | `./_handlers/public/stats.js` | Public | - |

@@ -27,7 +27,7 @@ import ProvenanceFreshness from '@/components/ProvenanceFreshness';
 import FalcSummary from '@/components/FalcSummary';
 import FalcToggle from '@/components/FalcToggle';
 import FalcContent from '@/components/FalcContent';
-import ReportContentButton from '@/components/ReportContentButton';
+import FeedbackButton from '@/components/FeedbackButton';
 import { formatProvenanceDate, getProvenance } from '@/lib/provenance';
 
 /** @typedef {Error & { status?: number, payload?: unknown }} ApiError */
@@ -424,10 +424,11 @@ export default function AideDetail() {
                   <Download className="mr-2 h-4 w-4" />
                   Télécharger en PDF (ou imprimer)
                 </Button>
-                <ReportContentButton
-                  contentType="aide"
-                  contentId={aide.id}
-                  pageUrl={window.location.href}
+                <FeedbackButton
+                  type="aide"
+                  entityId={aide.id}
+                  entitySlug={aide.slug}
+                  pageUrl={typeof window !== 'undefined' ? window.location.href : null}
                   variant="ghost"
                   size="default"
                 />

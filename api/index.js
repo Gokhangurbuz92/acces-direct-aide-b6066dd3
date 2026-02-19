@@ -64,6 +64,7 @@ function getRouteGroup(path) {
         'demarches',
         'dispositifs',
         'download',
+        'feedback',
         'guides',
         'login-pro-guard',
         'pro/',

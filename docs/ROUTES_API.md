@@ -26,9 +26,12 @@ L'authentification et les autorisations sont gérées par les handlers ou des mi
 | Méthode | Chemin | Handler | Description | Auth |
 |---|---|---|---|---|
 | POST | `/api/auth/login` | `_handlers/auth/login.js` | Connexion Admin (`AUTH_MODE=token|jwt`) | Public |
-| GET | `/api/auth/me` | `_handlers/auth/me.js` | Introspection session (admin token/jwt ou pro jwt) | Bearer Token |
+| GET | `/api/auth/me` | `_handlers/auth/me.js` | Introspection session (`session.kind=admin|pro`) | Bearer Token |
 
 ## 3. Espace Pro
+
+> Contrat P9-B: les routes `/api/pro/*` acceptent **uniquement** un Pro JWT valide.
+> `ADMIN_TOKEN` et les JWT admin sont explicitement refuses.
 
 | Méthode | Chemin | Handler | Description | Auth |
 |---|---|---|---|---|
@@ -104,6 +107,9 @@ Notes:
 | GET | `/api/cron/link-check` | `_handlers/cron/link-check.js` | Vérification liens | Cron Secret |
 
 ## 7. Administration (Back-office)
+
+> Contrat P9-B: les routes `/api/admin/*` acceptent uniquement les credentials admin
+> (token statique admin ou session admin JWT). Les Pro JWT sont refuses.
 
 | Méthode | Chemin | Handler | Description | Auth |
 |---|---|---|---|---|

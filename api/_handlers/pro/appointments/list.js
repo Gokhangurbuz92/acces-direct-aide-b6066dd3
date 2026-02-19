@@ -1,5 +1,5 @@
 import prisma from '../../../_utils/prisma.js';
-import { requireAuth } from '../../../lib/pro-auth.js';
+import { requireProAuth, requireProStructureContext } from '../../../_utils/auth.js';
 /**
  * @param {import('../../../_utils/http-types').ApiRequest} req
  * @param {import('../../../_utils/http-types').ApiResponse} res
@@ -11,6 +11,9 @@ async function handler(req, res) {
     }
 
     try {
+        const proCtx = requireProStructureContext(req, res);
+        if (!proCtx) return;
+
         const page = parseInt(req.query.page) || 1;
         const pageSize = Math.min(parseInt(req.query.pageSize) || 20, 50); // Max 50
         const skip = (page - 1) * pageSize;
@@ -20,7 +23,7 @@ async function handler(req, res) {
         const status = req.query.status;
 
         const where = {
-            structureId: req.user.structureId,
+            structureId: proCtx.structureId,
             ...(fromDate || toDate ? {
                 start_at: {
                     ...(fromDate && { gte: fromDate }),
@@ -77,4 +80,4 @@ async function handler(req, res) {
     }
 }
 
-export default requireAuth(handler);
+export default requireProAuth(handler);

@@ -1,5 +1,5 @@
 import prisma from '../../../_utils/prisma.js';
-import { requireAuth } from '../../../lib/pro-auth.js';
+import { requireProAuth, requireProStructureContext } from '../../../_utils/auth.js';
 /**
  * @param {import('../../../_utils/http-types').ApiRequest} req
  * @param {import('../../../_utils/http-types').ApiResponse} res
@@ -9,6 +9,9 @@ async function handler(req, res) {
     if (req.method !== 'POST') {
         return res.status(405).json({ error: 'Method not allowed' });
     }
+
+    const proCtx = requireProStructureContext(req, res);
+    if (!proCtx) return;
 
     const { id } = req.body;
     if (!id) return res.status(400).json({ error: 'Missing appointment ID' });
@@ -23,7 +26,7 @@ async function handler(req, res) {
         if (!appointment) return res.status(404).json({ error: 'Appointment not found' });
 
         // Ensure the pro belongs to the structure of the appointment
-        if (appointment.structureId !== req.user.structureId) {
+        if (appointment.structureId !== proCtx.structureId) {
             return res.status(403).json({ error: 'Forbidden' });
         }
 
@@ -41,4 +44,4 @@ async function handler(req, res) {
     }
 }
 
-export default requireAuth(handler);
+export default requireProAuth(handler);

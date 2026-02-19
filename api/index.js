@@ -67,6 +67,7 @@ function getRouteGroup(path) {
         'feedback',
         'guides',
         'login-pro-guard',
+        'pdf',
         'pro/',
         'public/',
         'reports',

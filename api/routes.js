@@ -15,6 +15,7 @@ import robots from './_handlers/robots.js';
 import sitemap from './_handlers/sitemap.js';
 import loginProGuard from './_handlers/login-pro-guard.js';
 import taxonomy from './_handlers/taxonomy.js';
+import pdf from './_handlers/pdf.js';
 
 // --- Auth (Admin) ---
 import authLogin from './_handlers/auth/login.js';
@@ -94,6 +95,7 @@ export const routes = [
     { path: 'sitemap', match: 'exact', handler: sitemap },
     { path: 'login-pro-guard', match: 'exact', handler: loginProGuard },
     { path: 'taxonomy', match: 'exact', handler: taxonomy },
+    { path: 'pdf', match: 'prefix', handler: pdf },
 
     // --- Auth (Admin) ---
     { path: 'auth/login', match: 'exact', handler: authLogin },

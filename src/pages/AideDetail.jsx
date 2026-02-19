@@ -165,6 +165,9 @@ export default function AideDetail() {
     'Autre';
   const provenance = getProvenance(aide);
   const fetchedAtLabel = formatProvenanceDate(provenance.fetchedAt);
+  const pdfDownloadUrl = (aide?.slug || aide?.id)
+    ? `/api/pdf/aides/${encodeURIComponent(aide.slug || aide.id)}`
+    : null;
 
   const getTerritoireLabel = () => {
     if (!aide.territoires?.length) return 'Non précisé';
@@ -416,14 +419,16 @@ export default function AideDetail() {
                     </a>
                   </Button>
                 )}
-                <Button
-                  variant="outline"
-                  className="w-full"
-                  onClick={() => window.print()}
-                >
-                  <Download className="mr-2 h-4 w-4" />
-                  Télécharger en PDF (ou imprimer)
-                </Button>
+                {pdfDownloadUrl && (
+                  <Button
+                    variant="outline"
+                    className="w-full"
+                    onClick={() => window.open(pdfDownloadUrl, '_blank', 'noopener,noreferrer')}
+                  >
+                    <Download className="mr-2 h-4 w-4" />
+                    Télécharger en PDF
+                  </Button>
+                )}
                 <FeedbackButton
                   type="aide"
                   entityId={aide.id}

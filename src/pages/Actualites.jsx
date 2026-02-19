@@ -13,6 +13,7 @@ import { Badge } from '@/components/ui/badge';
 import NewsFallback from '@/components/news/NewsFallback';
 import { generateBreadcrumbSchema } from '@/utils/schema';
 import { formatProvenanceDate, getProvenance } from '@/lib/provenance';
+import { htmlToPlainText } from '@/lib/htmlText';
 
 /**
  * @typedef {object} ActualiteListItem
@@ -346,12 +347,13 @@ export default function Actualites() {
 		              {actualites.map((actu) => {
 		                const typeKey = actu.type_actu || 'info';
 		                const TypeIcon = TYPE_ICONS[typeKey] || Info;
-		                const linkUrl = actu.slug ? `/actualites/${actu.slug}` : `/actualites/view?id=${actu.id}`;
+                const linkUrl = actu.slug ? `/actualites/${actu.slug}` : `/actualites/view?id=${actu.id}`;
 		                const sourceName = getSourceName(actu);
 		                const sourceUrl = getSourceUrl(actu);
                     const provenance = getProvenance(actu);
                     const verifiedAt = formatProvenanceDate(provenance.verifiedAt);
                     const sourceHost = provenance.sourceHost;
+                    const excerpt = htmlToPlainText(actu.summary_falc || actu.resume || '', { maxLength: 220 });
 
                 return (
                   <Card
@@ -394,7 +396,7 @@ export default function Actualites() {
                       </h2>
 
                       <p className="text-slate-600 mb-4 leading-relaxed line-clamp-3">
-                        {actu.summary_falc || actu.resume || ''}
+                        {excerpt}
                       </p>
 
                       <div className="flex flex-wrap items-center justify-between gap-4 pt-4 border-t border-slate-100 relative z-20">

@@ -1,9 +1,11 @@
+import { htmlToPlainText } from '@/lib/htmlText';
+
 export default function FalcSummary({
   text,
   title = "Résumé facile à lire",
   className = "",
 }) {
-  const value = typeof text === "string" ? text.trim() : "";
+  const value = typeof text === "string" ? htmlToPlainText(text).trim() : "";
   if (!value) return null;
 
   return (

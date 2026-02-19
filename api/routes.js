@@ -26,9 +26,11 @@ import proAuthForgotPassword from './_handlers/pro/auth/forgot-password.js';
 import proAuthResetPassword from './_handlers/pro/auth/reset-password.js';
 import proMe from './_handlers/pro/me.js';
 import proMessages from './_handlers/pro/messages.js';
-import proAppointmentsList from './_handlers/pro/appointments/list.js';
+import proServices from './_handlers/pro/services.js';
+import proAppointmentsIndex from './_handlers/pro/appointments/index.js';
 import proAppointmentsCancel from './_handlers/pro/appointments/cancel.js';
 import proAvailability from './_handlers/pro/availability.js';
+import proSlots from './_handlers/pro/slots.js';
 
 // --- Public Content ---
 import publicMessages from './_handlers/public/messages.js';
@@ -99,8 +101,10 @@ export const routes = [
     { path: 'pro/auth/forgot-password', match: 'exact', handler: proAuthForgotPassword },
     { path: 'pro/auth/reset-password', match: 'exact', handler: proAuthResetPassword },
     { path: 'pro/me', match: 'exact', handler: proMe },
+    { path: 'pro/services', match: 'exact', handler: proServices },
+    { path: 'pro/slots', match: 'exact', handler: proSlots },
     { path: 'pro/messages', match: 'exact', handler: proMessages },
-    { path: 'pro/appointments', match: 'exact', handler: proAppointmentsList },
+    { path: 'pro/appointments', match: 'exact', handler: proAppointmentsIndex },
     { path: 'pro/appointments/cancel', match: 'exact', handler: proAppointmentsCancel },
     { path: 'pro/availability', match: 'exact', handler: proAvailability },
 

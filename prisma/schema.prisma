@@ -227,6 +227,10 @@ model Structure {
   invitations    Invitation[]
   proUsers       ProUser[]
   proServices    Service[]
+  proRdvServices ProRdvService[]
+  proRdvRules    ProAvailabilityRule[]
+  proRdvSlots    ProAppointment[]
+  proRdvTimeOffs ProTimeOff[]
 
   @@index([source_id])
   @@index([raw_data_hash])
@@ -491,6 +495,7 @@ model ProUser {
   updatedAt     DateTime       @updatedAt
   appointments  Appointment[]
   availability  Availability[]
+  proAppointmentsCreated ProAppointment[] @relation("ProAppointmentCreatedBy")
   structure     Structure      @relation(fields: [structureId], references: [id])
 
   @@unique([structureId, email])
@@ -513,6 +518,73 @@ model Service {
   structure        Structure     @relation(fields: [structureId], references: [id])
 
   @@unique([structureId, slug])
+}
+
+model ProRdvService {
+  id                  String           @id @default(uuid())
+  structureId         String
+  name                String
+  durationMinutes     Int
+  bufferBeforeMinutes Int              @default(0)
+  bufferAfterMinutes  Int              @default(0)
+  isActive            Boolean          @default(true)
+  createdAt           DateTime         @default(now())
+  updatedAt           DateTime         @updatedAt
+  appointments        ProAppointment[]
+  structure           Structure        @relation(fields: [structureId], references: [id])
+
+  @@index([structureId, isActive])
+  @@index([structureId, updatedAt])
+}
+
+model ProAvailabilityRule {
+  id         String    @id @default(uuid())
+  structureId String
+  weekday    Int
+  startTime  String
+  endTime    String
+  timezone   String    @default("Europe/Paris")
+  isActive   Boolean   @default(true)
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+  structure  Structure @relation(fields: [structureId], references: [id])
+
+  @@index([structureId, weekday])
+}
+
+model ProAppointment {
+  id                 String         @id @default(uuid())
+  structureId        String
+  serviceId          String
+  startAt            DateTime
+  endAt              DateTime
+  status             String         @default("booked")
+  beneficiaryName    String
+  beneficiaryPhone   String?
+  notes              String?
+  createdByProUserId String?
+  createdAt          DateTime       @default(now())
+  updatedAt          DateTime       @updatedAt
+  createdByProUser   ProUser?       @relation("ProAppointmentCreatedBy", fields: [createdByProUserId], references: [id], onDelete: SetNull)
+  service            ProRdvService  @relation(fields: [serviceId], references: [id], onDelete: Cascade)
+  structure          Structure       @relation(fields: [structureId], references: [id], onDelete: Cascade)
+
+  @@index([structureId, startAt])
+  @@index([structureId, status, startAt])
+  @@index([serviceId, startAt])
+}
+
+model ProTimeOff {
+  id         String    @id @default(uuid())
+  structureId String
+  startAt    DateTime
+  endAt      DateTime
+  reason     String?
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+  structure  Structure @relation(fields: [structureId], references: [id], onDelete: Cascade)
+
+  @@index([structureId, startAt])
 }
 
 model Invitation {

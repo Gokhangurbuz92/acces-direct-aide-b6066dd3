@@ -1,5 +1,6 @@
 import prisma from '../../../_utils/prisma.js';
-import { requireProAuth, requireProStructureContext } from '../../../_utils/auth.js';
+import { requireProStructureContext } from '../../../_utils/auth.js';
+import { withProRdvHandler } from '../../../_utils/with-pro-rdv-handler.js';
 /**
  * @param {import('../../../_utils/http-types').ApiRequest} req
  * @param {import('../../../_utils/http-types').ApiResponse} res
@@ -42,4 +43,4 @@ async function handler(req, res) {
   });
 }
 
-export default requireProAuth(handler);
+export default withProRdvHandler('pro.appointments.cancel', handler);

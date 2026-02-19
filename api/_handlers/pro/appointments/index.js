@@ -1,10 +1,11 @@
 import prisma from '../../../_utils/prisma.js';
-import { requireProAuth, requireProStructureContext } from '../../../_utils/auth.js';
+import { requireProStructureContext } from '../../../_utils/auth.js';
 import {
   ACTIVE_APPOINTMENT_STATUSES,
   isSlotWithinRules,
   toBusyWindows,
 } from '../../../_utils/pro-rdv.js';
+import { withProRdvHandler } from '../../../_utils/with-pro-rdv-handler.js';
 
 /**
  * @param {unknown} value
@@ -281,4 +282,4 @@ async function handler(req, res) {
   return res.status(405).json({ error: 'Method not allowed' });
 }
 
-export default requireProAuth(handler);
+export default withProRdvHandler('pro.appointments', handler);

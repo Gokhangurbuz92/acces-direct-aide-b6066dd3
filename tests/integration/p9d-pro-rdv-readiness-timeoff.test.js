@@ -104,8 +104,23 @@ async function invokeApi(url, options = {}) {
   return res;
 }
 
+/**
+ * @param {unknown} query
+ * @returns {string}
+ */
+function getSqlFromQuery(query) {
+  return String(
+    query && typeof query === 'object' && Array.isArray(query.strings)
+      ? query.strings.join(' ')
+      : query || '',
+  );
+}
+
 const originalJwtSecret = process.env.JWT_SECRET;
 const originalAdminToken = process.env.ADMIN_TOKEN;
+const originalReadPerMin = process.env.PRO_RDV_RATE_LIMIT_READ_PER_MIN;
+const originalWritePerMin = process.env.PRO_RDV_RATE_LIMIT_WRITE_PER_MIN;
+const originalWritePerDay = process.env.PRO_RDV_RATE_LIMIT_WRITE_PER_DAY;
 
 /** @type {typeof prisma.$queryRaw} */
 let originalQueryRaw;
@@ -142,6 +157,9 @@ afterEach(async () => {
 
   process.env.JWT_SECRET = originalJwtSecret;
   process.env.ADMIN_TOKEN = originalAdminToken;
+  process.env.PRO_RDV_RATE_LIMIT_READ_PER_MIN = originalReadPerMin;
+  process.env.PRO_RDV_RATE_LIMIT_WRITE_PER_MIN = originalWritePerMin;
+  process.env.PRO_RDV_RATE_LIMIT_WRITE_PER_DAY = originalWritePerDay;
 });
 
 async function createProFixture() {
@@ -202,6 +220,35 @@ async function createProFixture() {
 
 describe('P9-D readiness monitor + pro timeoff contract', () => {
   it('GET /api/monitor/pro-rdv returns 200 with required table checks and technical headers', async () => {
+    prisma.$queryRaw = async (query) => {
+      const sql = getSqlFromQuery(query);
+
+      if (sql.includes('information_schema.tables')) {
+        return [
+          { table_name: 'ProRdvService' },
+          { table_name: 'ProAvailabilityRule' },
+          { table_name: 'ProAppointment' },
+          { table_name: 'ProTimeOff' },
+        ];
+      }
+
+      if (sql.includes('to_regclass')) {
+        return [{ migrations_regclass: 'public._prisma_migrations' }];
+      }
+
+      if (sql.includes('FROM "_prisma_migrations"')) {
+        return [
+          {
+            migration_name: '20260305000000_add_pro_rdv_core',
+            finished_at: new Date(),
+            rolled_back_at: null,
+          },
+        ];
+      }
+
+      return [];
+    };
+
     const res = await invokeApi('/api/monitor/pro-rdv');
 
     expect(res.statusCode).toBe(200);
@@ -213,15 +260,33 @@ describe('P9-D readiness monitor + pro timeoff contract', () => {
       checkedAt: expect.any(String),
       env: expect.any(String),
       missingTables: [],
+      prismaMigrationsOk: true,
+      missingMigrations: [],
     });
   });
 
   it('GET /api/monitor/pro-rdv returns 503 when one required table is missing', async () => {
-    prisma.$queryRaw = async () => [
-      { table_name: 'ProRdvService' },
-      { table_name: 'ProAvailabilityRule' },
-      { table_name: 'ProAppointment' },
-    ];
+    prisma.$queryRaw = async (query) => {
+      const sql = getSqlFromQuery(query);
+
+      if (sql.includes('information_schema.tables')) {
+        return [
+          { table_name: 'ProRdvService' },
+          { table_name: 'ProAvailabilityRule' },
+          { table_name: 'ProAppointment' },
+        ];
+      }
+
+      if (sql.includes('to_regclass')) {
+        return [{ migrations_regclass: 'public._prisma_migrations' }];
+      }
+
+      if (sql.includes('FROM "_prisma_migrations"')) {
+        return [];
+      }
+
+      return [];
+    };
 
     const res = await invokeApi('/api/monitor/pro-rdv');
 
@@ -232,7 +297,54 @@ describe('P9-D readiness monitor + pro timeoff contract', () => {
       ok: false,
       error: 'unavailable',
       missingTables: ['ProTimeOff'],
+      prismaMigrationsOk: false,
+      missingMigrations: ['20260305000000_add_pro_rdv_core'],
     });
+  });
+
+  it('returns 429 when pro write limit is exceeded on /api/pro/timeoff', async () => {
+    process.env.PRO_RDV_RATE_LIMIT_WRITE_PER_MIN = '1';
+    process.env.PRO_RDV_RATE_LIMIT_READ_PER_MIN = '60';
+    process.env.PRO_RDV_RATE_LIMIT_WRITE_PER_DAY = '300';
+
+    const fixture = await createProFixture();
+    const token = signProToken({
+      id: fixture.proUserA.id,
+      email: fixture.proUserA.email,
+      structureId: fixture.structureA.id,
+      role: fixture.proUserA.role,
+    });
+
+    const first = await invokeApi('/api/pro/timeoff', {
+      method: 'POST',
+      headers: { authorization: `Bearer ${token}` },
+      body: {
+        startAt: '2026-04-04T08:00:00.000Z',
+        endAt: '2026-04-04T09:00:00.000Z',
+        reason: 'Formation',
+      },
+    });
+    expect(first.statusCode).toBe(201);
+    createdTimeOffIds.push(first.body.item.id);
+
+    const second = await invokeApi('/api/pro/timeoff', {
+      method: 'POST',
+      headers: { authorization: `Bearer ${token}` },
+      body: {
+        startAt: '2026-04-04T10:00:00.000Z',
+        endAt: '2026-04-04T11:00:00.000Z',
+        reason: 'Atelier',
+      },
+    });
+
+    expect(second.statusCode).toBe(429);
+    expect(second.body).toMatchObject({
+      error: 'Too Many Requests',
+      code: 'PRO_RATE_LIMITED',
+    });
+    expect(String(second.getHeader('retry-after') || '')).not.toBe('');
+    expect(String(second.getHeader('x-ratelimit-limit') || '')).toBe('1');
+    expect(String(second.getHeader('x-ratelimit-remaining') || '')).toBe('0');
   });
 
   it('enforces pro-only auth and tenancy on /api/pro/timeoff', async () => {

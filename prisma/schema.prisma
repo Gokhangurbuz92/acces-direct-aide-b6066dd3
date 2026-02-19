@@ -222,16 +222,17 @@ model Structure {
   source_document_id String?
   sourceDocument     SourceDocument? @relation(fields: [source_document_id], references: [id])
 
-  appointments   Appointment[]
-  availabilities Availability[]
-  invitations    Invitation[]
-  proUsers       ProUser[]
-  proServices    Service[]
-  proRdvServices ProRdvService[]
-  proRdvRules    ProAvailabilityRule[]
-  proRdvSlots    ProAppointment[]
-  proRdvTimeOffs ProTimeOff[]
-  rdvSettings    StructureRdvSettings?
+  appointments     Appointment[]
+  availabilities   Availability[]
+  invitations      Invitation[]
+  proUsers         ProUser[]
+  proServices      Service[]
+  proRdvServices   ProRdvService[]
+  proRdvRules      ProAvailabilityRule[]
+  proRdvSlots      ProAppointment[]
+  proRdvTimeOffs   ProTimeOff[]
+  rdvSettings      StructureRdvSettings?
+  rdvConversations RdvConversation[]
 
   @@index([source_id])
   @@index([raw_data_hash])
@@ -472,16 +473,19 @@ model AdminUser {
 }
 
 model CitizenUser {
-  id              String      @id @default(uuid())
-  email           String      @unique
-  passwordHash    String
-  emailVerifiedAt DateTime?
-  phone           String?
-  phoneVerifiedAt DateTime?
-  createdAt       DateTime    @default(now())
-  updatedAt       DateTime    @updatedAt
-  authTokens      AuthToken[]
-  proAppointments ProAppointment[] @relation("ProAppointmentCitizenUser")
+  id                       String                   @id @default(uuid())
+  email                    String                   @unique
+  passwordHash             String
+  emailVerifiedAt          DateTime?
+  phone                    String?
+  phoneVerifiedAt          DateTime?
+  notificationEmailEnabled Boolean                  @default(true)
+  createdAt                DateTime                 @default(now())
+  updatedAt                DateTime                 @updatedAt
+  authTokens               AuthToken[]
+  proAppointments          ProAppointment[]         @relation("ProAppointmentCitizenUser")
+  rdvConversations         RdvConversation[]
+  rdvMessagesSent          RdvConversationMessage[] @relation("RdvMessageSenderCitizen")
 }
 
 model AuthToken {
@@ -512,18 +516,20 @@ model AuditLog {
 }
 
 model ProUser {
-  id                     String           @id @default(uuid())
-  email                  String
-  password_hash          String
-  role                   String
-  status                 String           @default("pending")
-  structureId            String
-  createdAt              DateTime         @default(now())
-  updatedAt              DateTime         @updatedAt
-  appointments           Appointment[]
-  availability           Availability[]
-  proAppointmentsCreated ProAppointment[] @relation("ProAppointmentCreatedBy")
-  structure              Structure        @relation(fields: [structureId], references: [id])
+  id                       String                   @id @default(uuid())
+  email                    String
+  password_hash            String
+  role                     String
+  status                   String                   @default("pending")
+  structureId              String
+  notificationEmailEnabled Boolean                  @default(true)
+  createdAt                DateTime                 @default(now())
+  updatedAt                DateTime                 @updatedAt
+  appointments             Appointment[]
+  availability             Availability[]
+  proAppointmentsCreated   ProAppointment[]         @relation("ProAppointmentCreatedBy")
+  rdvMessagesSent          RdvConversationMessage[] @relation("RdvMessageSenderPro")
+  structure                Structure                @relation(fields: [structureId], references: [id])
 
   @@unique([structureId, email])
 }
@@ -580,33 +586,84 @@ model ProAvailabilityRule {
 }
 
 model ProAppointment {
-  id                 String        @id @default(uuid())
-  structureId        String
-  serviceId          String
-  startAt            DateTime
-  endAt              DateTime
-  status             String        @default("booked")
-  beneficiaryName    String
-  beneficiaryPhone   String?
-  notes              String?
-  createdByProUserId String?
-  citizenUserId      String?
+  id                   String           @id @default(uuid())
+  structureId          String
+  serviceId            String
+  startAt              DateTime
+  endAt                DateTime
+  status               String           @default("booked")
+  beneficiaryName      String
+  beneficiaryPhone     String?
+  notes                String?
+  createdByProUserId   String?
+  citizenUserId        String?
   citizenEmailSnapshot String?
-  idempotencyKey     String?
-  cancelledAt        DateTime?
-  cancelledBy        String?
-  createdAt          DateTime      @default(now())
-  updatedAt          DateTime      @updatedAt
-  createdByProUser   ProUser?      @relation("ProAppointmentCreatedBy", fields: [createdByProUserId], references: [id], onDelete: SetNull)
-  citizenUser        CitizenUser?  @relation("ProAppointmentCitizenUser", fields: [citizenUserId], references: [id], onDelete: SetNull)
-  service            ProRdvService @relation(fields: [serviceId], references: [id], onDelete: Cascade)
-  structure          Structure     @relation(fields: [structureId], references: [id], onDelete: Cascade)
+  idempotencyKey       String?
+  cancelledAt          DateTime?
+  cancelledBy          String?
+  createdAt            DateTime         @default(now())
+  updatedAt            DateTime         @updatedAt
+  createdByProUser     ProUser?         @relation("ProAppointmentCreatedBy", fields: [createdByProUserId], references: [id], onDelete: SetNull)
+  citizenUser          CitizenUser?     @relation("ProAppointmentCitizenUser", fields: [citizenUserId], references: [id], onDelete: SetNull)
+  service              ProRdvService    @relation(fields: [serviceId], references: [id], onDelete: Cascade)
+  structure            Structure        @relation(fields: [structureId], references: [id], onDelete: Cascade)
+  conversation         RdvConversation?
 
+  @@unique([citizenUserId, idempotencyKey])
   @@index([structureId, startAt])
   @@index([structureId, status, startAt])
   @@index([serviceId, startAt])
   @@index([citizenUserId, startAt])
-  @@unique([citizenUserId, idempotencyKey])
+}
+
+model RdvConversation {
+  id            String                   @id @default(uuid())
+  appointmentId String                   @unique
+  structureId   String
+  citizenUserId String
+  lastMessageAt DateTime                 @default(now())
+  createdAt     DateTime                 @default(now())
+  updatedAt     DateTime                 @updatedAt
+  appointment   ProAppointment           @relation(fields: [appointmentId], references: [id], onDelete: Cascade)
+  structure     Structure                @relation(fields: [structureId], references: [id], onDelete: Cascade)
+  citizenUser   CitizenUser              @relation(fields: [citizenUserId], references: [id], onDelete: Cascade)
+  messages      RdvConversationMessage[]
+  notifications RdvNotificationLog[]
+
+  @@index([structureId, lastMessageAt])
+  @@index([citizenUserId, lastMessageAt])
+}
+
+model RdvConversationMessage {
+  id                  String               @id @default(uuid())
+  conversationId      String
+  senderType          String
+  senderCitizenUserId String?
+  senderProUserId     String?
+  body                String
+  createdAt           DateTime             @default(now())
+  conversation        RdvConversation      @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  senderCitizenUser   CitizenUser?         @relation("RdvMessageSenderCitizen", fields: [senderCitizenUserId], references: [id], onDelete: SetNull)
+  senderProUser       ProUser?             @relation("RdvMessageSenderPro", fields: [senderProUserId], references: [id], onDelete: SetNull)
+  notifications       RdvNotificationLog[]
+
+  @@index([conversationId, createdAt])
+  @@index([senderCitizenUserId])
+  @@index([senderProUserId])
+}
+
+model RdvNotificationLog {
+  id             String                 @id @default(uuid())
+  kind           String                 @default("MESSAGE_EMAIL")
+  conversationId String
+  messageId      String
+  recipientType  String
+  sentAt         DateTime               @default(now())
+  conversation   RdvConversation        @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  message        RdvConversationMessage @relation(fields: [messageId], references: [id], onDelete: Cascade)
+
+  @@unique([messageId, recipientType])
+  @@index([conversationId, sentAt])
 }
 
 model ProTimeOff {

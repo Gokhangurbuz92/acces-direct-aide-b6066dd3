@@ -1,7 +1,7 @@
 // @ts-nocheck
 import { useEffect, useState } from 'react';
 import { useNavigate, useLocation, Link, Outlet } from 'react-router-dom';
-import { Loader2, LayoutDashboard, Building2, Users, FileText, LogOut, CalendarDays, Clock3 } from 'lucide-react';
+import { Loader2, LayoutDashboard, Building2, Users, FileText, LogOut, CalendarDays, Clock3, MessageCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import SEO from '@/components/SEO';
 
@@ -77,6 +77,7 @@ export default function ProLayout() {
                     <NavLink to="/pro/rdv/services" icon={FileText}>Services RDV</NavLink>
                     <NavLink to="/pro/rdv/disponibilites" icon={Clock3}>Disponibilites</NavLink>
                     <NavLink to="/pro/rdv/absences" icon={Clock3}>Absences</NavLink>
+                    <NavLink to="/pro/messages" icon={MessageCircle}>Messages</NavLink>
                     {user?.role === 'STRUCTURE_ADMIN' || user?.role === 'SUPERADMIN' ? (
                         <>
                             <NavLink to="/pro/team" icon={Users}>Mon équipe</NavLink>

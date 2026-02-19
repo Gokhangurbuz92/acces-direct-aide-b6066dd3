@@ -46,6 +46,11 @@ const CONFIG = {
     RESET_PASSWORD: { limit: 3, window: 3600 }, // 3 per hour
     RDV_PUBLIC_READ: { limit: 60, window: 60 }, // 60/min per authenticated user+ip
     RDV_PUBLIC_WRITE: { limit: 10, window: 60 }, // 10/min per authenticated user+ip
+    MESSAGE_USER_READ: { limit: 60, window: 60 }, // 60/min per user+ip
+    MESSAGE_USER_SEND: { limit: 10, window: 300 }, // 10/5min per user+conversation+ip
+    MESSAGE_USER_WRITE: { limit: 20, window: 300 }, // helper actions (create/get conversation)
+    MESSAGE_PRO_READ: { limit: 120, window: 60 }, // 120/min per pro+ip
+    MESSAGE_PRO_SEND: { limit: 20, window: 300 }, // 20/5min per pro+conversation+ip
     // Search & Taxonomy
     SEARCH_AIDES: { limit: 30, window: 60 },      // 30 per min
     SEARCH_STRUCTURES: { limit: 30, window: 60 }, // 30 per min

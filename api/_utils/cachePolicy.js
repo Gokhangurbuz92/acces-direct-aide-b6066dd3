@@ -11,7 +11,7 @@ function parseUrl(req) {
 
 function isPrivatePath(pathname) {
     // Hard NO-STORE zones
-    if (/^\/api\/(admin|auth|pro|rdv|cron|health|monitor)\b/i.test(pathname)) return true;
+    if (/^\/api\/(admin|auth|pro|rdv|messages|cron|health|monitor)\b/i.test(pathname)) return true;
     if (/^\/api\/public\/(messages|appointments|suggest-structure)\b/i.test(pathname)) return true;
     if (/^\/api\/(upload|download)\b/i.test(pathname)) return true;
     return false;

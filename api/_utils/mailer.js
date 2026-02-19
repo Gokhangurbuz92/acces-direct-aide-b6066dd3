@@ -1,8 +1,16 @@
 import { env } from './env.js';
 
-/** @typedef {{ to: string, subject: string, text: string, html?: string, category?: string }} MailPayload */
+/**
+ * @typedef {{
+ *  filename: string,
+ *  contentType: string,
+ *  content: string
+ * }} MailAttachment
+ */
 
-/** @type {Array<{ to: string, subject: string, text: string, html?: string, sentAt: string, category: string }>} */
+/** @typedef {{ to: string, subject: string, text: string, html?: string, category?: string, attachments?: MailAttachment[] }} MailPayload */
+
+/** @type {Array<{ to: string, subject: string, text: string, html?: string, sentAt: string, category: string, attachments?: MailAttachment[] }>} */
 const testOutbox = [];
 const warnedProviders = new Set();
 
@@ -43,12 +51,21 @@ export async function sendMail(payload) {
   }
 
   if (provider === 'test') {
+    const attachments = Array.isArray(payload.attachments)
+      ? payload.attachments.map((attachment) => ({
+          filename: String(attachment?.filename || '').trim() || 'attachment.txt',
+          contentType: String(attachment?.contentType || '').trim() || 'application/octet-stream',
+          content: String(attachment?.content || ''),
+        }))
+      : [];
+
     testOutbox.push({
       to: payload.to,
       subject: payload.subject,
       text: payload.text,
       html: payload.html,
       category,
+      attachments,
       sentAt: new Date().toISOString(),
     });
     return { accepted: true, delivered: true, provider };
@@ -82,4 +99,3 @@ export function __getTestOutbox() {
 export function __clearTestOutbox() {
   testOutbox.length = 0;
 }
-

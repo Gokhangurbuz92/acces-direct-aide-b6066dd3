@@ -44,6 +44,8 @@ const CONFIG = {
     FORGOT_USER: { limit: 5, window: 3600 }, // 5 per hour
     RESET_USER: { limit: 5, window: 3600 }, // 5 per hour
     RESET_PASSWORD: { limit: 3, window: 3600 }, // 3 per hour
+    RDV_PUBLIC_READ: { limit: 60, window: 60 }, // 60/min per authenticated user+ip
+    RDV_PUBLIC_WRITE: { limit: 10, window: 60 }, // 10/min per authenticated user+ip
     // Search & Taxonomy
     SEARCH_AIDES: { limit: 30, window: 60 },      // 30 per min
     SEARCH_STRUCTURES: { limit: 30, window: 60 }, // 30 per min

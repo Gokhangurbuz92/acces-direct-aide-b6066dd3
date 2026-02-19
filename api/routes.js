@@ -20,6 +20,12 @@ import pdf from './_handlers/pdf.js';
 // --- Auth (Admin) ---
 import authLogin from './_handlers/auth/login.js';
 import authMe from './_handlers/auth/me.js';
+import authSignup from './_handlers/auth/signup.js';
+import authLogout from './_handlers/auth/logout.js';
+import authVerifyEmail from './_handlers/auth/verify-email.js';
+import authResendVerification from './_handlers/auth/resend-verification.js';
+import authForgotPassword from './_handlers/auth/forgot-password.js';
+import authResetPassword from './_handlers/auth/reset-password.js';
 
 // --- Pro Module ---
 import proAuthLogin from './_handlers/pro/auth/login.js';
@@ -99,7 +105,13 @@ export const routes = [
 
     // --- Auth (Admin) ---
     { path: 'auth/login', match: 'exact', handler: authLogin },
+    { path: 'auth/signup', match: 'exact', handler: authSignup },
+    { path: 'auth/logout', match: 'exact', handler: authLogout },
     { path: 'auth/me', match: 'exact', handler: authMe },
+    { path: 'auth/verify-email', match: 'exact', handler: authVerifyEmail },
+    { path: 'auth/resend-verification', match: 'exact', handler: authResendVerification },
+    { path: 'auth/forgot-password', match: 'exact', handler: authForgotPassword },
+    { path: 'auth/reset-password', match: 'exact', handler: authResetPassword },
 
     // --- Pro Module ---
     { path: 'pro/auth/login', match: 'exact', handler: proAuthLogin },

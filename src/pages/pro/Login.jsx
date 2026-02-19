@@ -1,6 +1,6 @@
 
 import { useState } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import { useNavigate, Link, useSearchParams } from 'react-router-dom';
 import SEO from '@/components/SEO';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -8,6 +8,7 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { AlertCircle, Loader2 } from 'lucide-react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import { appendNext, normalizeNextPath } from '@/lib/rdvRouting';
 
 export default function ProLogin() {
     const [email, setEmail] = useState('');
@@ -15,6 +16,10 @@ export default function ProLogin() {
     const [error, setError] = useState('');
     const [loading, setLoading] = useState(false);
     const navigate = useNavigate();
+    const [searchParams] = useSearchParams();
+    const next = normalizeNextPath(searchParams.get('next'), '/pro/dashboard');
+    const forgotPath = appendNext('/pro/forgot-password', next);
+    const registerPath = appendNext('/pro/register', next);
 
     const handleLogin = async (e) => {
         e.preventDefault();
@@ -35,7 +40,7 @@ export default function ProLogin() {
             }
 
             localStorage.setItem('pro_token', data.token);
-            navigate('/pro/dashboard');
+            navigate(next);
         } catch (err) {
             setError(err.message);
         } finally {
@@ -77,7 +82,7 @@ export default function ProLogin() {
                         <div className="space-y-2">
                             <div className="flex justify-between items-center">
                                 <Label htmlFor="password">Mot de passe</Label>
-                                <Link to="/pro/forgot-password" className="text-xs text-blue-600 hover:underline">Oublié ?</Link>
+                                <Link to={forgotPath} className="text-xs text-blue-600 hover:underline">Oublié ?</Link>
                             </div>
                             <Input
                                 id="password"
@@ -91,7 +96,7 @@ export default function ProLogin() {
                             {loading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : 'Se connecter'}
                         </Button>
                         <div className="text-center text-sm text-slate-600 mt-4">
-                            Pas encore de compte ? <Link to="/pro/register" className="text-blue-600 hover:underline">Créer ma structure</Link>
+                            Pas encore de compte ? <Link to={registerPath} className="text-blue-600 hover:underline">Créer ma structure</Link>
                         </div>
                     </form>
                 </CardContent>

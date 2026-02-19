@@ -25,6 +25,7 @@ import { generateBreadcrumbSchema, generateStructureSchema } from '@/utils/schem
 import ProvenanceFreshness from '@/components/ProvenanceFreshness';
 import FalcSummary from '@/components/FalcSummary';
 import { getProvenance } from '@/lib/provenance';
+import { buildPublicRdvPath } from '@/lib/rdvRouting';
 
 const TYPE_LABELS = {
   association: 'Association',
@@ -85,6 +86,7 @@ export default function StructureDetail() {
     generateStructureSchema(structure)
   ].filter(Boolean);
   const provenance = getProvenance(structure);
+  const rdvPath = buildPublicRdvPath(structure);
 
   return (
     <div className="min-h-screen bg-slate-50">
@@ -259,7 +261,7 @@ export default function StructureDetail() {
                     Cette structure propose la prise de rendez-vous en ligne.
                   </p>
                   <Button className="w-full bg-indigo-600 hover:bg-indigo-700" asChild>
-                    <Link to={createPageUrl('AppointmentRequest') + `?structure_id=${structure.id}`}>
+                    <Link to={rdvPath}>
                       Voir les créneaux disponibles
                     </Link>
                   </Button>
@@ -293,14 +295,14 @@ export default function StructureDetail() {
               <CardContent className="p-6 space-y-3">
                 {structure.is_pro_enabled ? (
                   <Button className="w-full bg-indigo-600 hover:bg-indigo-700" asChild>
-                    <Link to={createPageUrl('AppointmentRequest') + `?structure_id=${structure.id}`}>
+                    <Link to={rdvPath}>
                       <Calendar className="mr-2 h-4 w-4" />
                       Prendre rendez-vous
                     </Link>
                   </Button>
                 ) : (
                   <Button className="w-full bg-blue-600 hover:bg-blue-700" asChild>
-                    <Link to={createPageUrl('AppointmentRequest') + `?structure_id=${structure.id}`}>
+                    <Link to={rdvPath}>
                       <Calendar className="mr-2 h-4 w-4" />
                       Demander un RDV
                     </Link>

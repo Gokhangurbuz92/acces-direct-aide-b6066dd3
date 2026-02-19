@@ -292,6 +292,7 @@ export async function searchDemarches(prisma, params) {
     sort,
     page,
     pageSize,
+    hideTestContent = false,
   } = params;
 
   const effectiveCategory = theme || category;
@@ -327,6 +328,10 @@ export async function searchDemarches(prisma, params) {
 
   if (online === 'true' || online === '1') {
     conditions.push(Prisma.sql`("lien_officiel" IS NOT NULL AND "lien_officiel" <> '')`);
+  }
+
+  if (hideTestContent) {
+    conditions.push(Prisma.sql`NOT ("titre" ILIKE 'Test%' OR "titre" ILIKE 'Démarche Test%' OR "titre" ILIKE 'Demarche Test%')`);
   }
 
   const whereClause = conditions.length > 0

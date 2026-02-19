@@ -51,6 +51,7 @@ Il liste les routes définies et leurs gestionnaires.
 | `/api/dispositifs` | `prefix` | `./_handlers/dispositifs/index.js` | Public | - |
 | `/api/ressources` | `prefix` | `./_handlers/ressources.js` | Public | - |
 | `/api/reports` | `prefix` | `./_handlers/reports.js` | Public | - |
+| `/api/feedback` | `exact` | `./_handlers/feedback.js` | Public | Signalement public minimal (type, id/slug, message, email optionnel), rate-limité |
 | `/api/cron/pipeline` | `exact` | `./_handlers/cron/pipeline.js` | Public | - |
 | `/api/cron/actualites` | `exact` | `./_handlers/cron/actualites.js` | Public | - |
 | `/api/cron/review-queue/scan` | `exact` | `./_handlers/cron/review-queue-scan.js` | Public | - |

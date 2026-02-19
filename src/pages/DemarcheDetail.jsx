@@ -19,13 +19,13 @@ import {
   CheckCircle2,
   ChevronRight,
   Loader2,
-  Flag,
   Euro,
   Lightbulb
 } from 'lucide-react';
 import { generateBreadcrumbSchema, generateDemarcheSchema } from '@/utils/schema';
 import ProvenanceFreshness from '@/components/ProvenanceFreshness';
 import FalcSummary from '@/components/FalcSummary';
+import FeedbackButton from '@/components/FeedbackButton';
 import { getProvenance } from '@/lib/provenance';
 
 /** @typedef {Error & { status?: number, payload?: unknown }} ApiError */
@@ -393,12 +393,14 @@ export default function DemarcheDetail() {
                   <Download className="mr-2 h-4 w-4" />
                   Imprimer la fiche / PDF
                 </Button>
-                <Link to={createPageUrl('Contact') + `?page=${encodeURIComponent(window.location.href)}&sujet=signalement_erreur`}>
-                  <Button variant="ghost" className="w-full text-slate-600">
-                    <Flag className="mr-2 h-4 w-4" />
-                    Signaler une erreur
-                  </Button>
-                </Link>
+                <FeedbackButton
+                  type="demarche"
+                  entityId={demarche.id}
+                  entitySlug={demarche.slug}
+                  pageUrl={typeof window !== 'undefined' ? window.location.href : null}
+                  variant="ghost"
+                  size="default"
+                />
               </CardContent>
             </Card>
 

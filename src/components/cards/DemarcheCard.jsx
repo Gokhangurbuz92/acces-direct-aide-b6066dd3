@@ -8,12 +8,22 @@ import {
 } from 'lucide-react';
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
-import { formatProvenanceDate, getProvenance } from '@/lib/provenance';
+import { formatProvenanceDate, getFreshnessBadge, getProvenance } from '@/lib/provenance';
+
+const FRESHNESS_BADGE_CLASS = {
+  up_to_date: 'bg-emerald-100 text-emerald-800 border-emerald-200',
+  to_review: 'bg-amber-100 text-amber-800 border-amber-200',
+  at_risk: 'bg-rose-100 text-rose-800 border-rose-200',
+  not_verified: 'bg-slate-100 text-slate-700 border-slate-200',
+};
 
 export default function DemarcheCard({ demarche }) {
   const provenance = getProvenance(demarche);
   const verifiedAt = formatProvenanceDate(provenance.verifiedAt);
   const sourceHost = provenance.sourceHost;
+  const freshness = getFreshnessBadge(provenance.verifiedAt);
+  const verificationLabel = verifiedAt ? `Vérifié le ${verifiedAt}` : 'À vérifier';
+  const sourceLabel = sourceHost ? `Source: ${sourceHost}` : 'Source: non renseignée';
   const targetUrl = demarche.slug ? `/demarches/${demarche.slug}` : `/demarches/view?id=${demarche.id}`;
 
   return (
@@ -32,8 +42,17 @@ export default function DemarcheCard({ demarche }) {
             <Badge variant="outline" className="bg-slate-50">
               {demarche.category?.label || demarche.categorie}
             </Badge>
-            <div className="w-10 h-10 rounded-lg bg-blue-50 flex items-center justify-center">
-              <FileText className="h-5 w-5 text-blue-600" />
+            <div className="flex flex-col items-end gap-2">
+              <Badge
+                variant="outline"
+                className={FRESHNESS_BADGE_CLASS[freshness.state] || FRESHNESS_BADGE_CLASS.not_verified}
+                data-testid="demarche-freshness-badge"
+              >
+                {freshness.label}
+              </Badge>
+              <div className="w-10 h-10 rounded-lg bg-blue-50 flex items-center justify-center">
+                <FileText className="h-5 w-5 text-blue-600" />
+              </div>
             </div>
           </div>
           <h3 className="text-lg font-bold text-slate-900 group-hover:text-blue-700 transition-colors mb-2" data-testid="demarche-title">
@@ -52,22 +71,16 @@ export default function DemarcheCard({ demarche }) {
 	              <CheckCircle2 className="h-3.5 w-3.5 text-green-500" /> Guide pas à pas
 	            </span>
 	          </div>
-            {(verifiedAt || sourceHost) && (
-              <div className="mt-3 flex flex-wrap gap-4 text-xs text-slate-500">
-                {verifiedAt && (
-                  <span className="flex items-center gap-1.5">
-                    <Calendar className="h-3.5 w-3.5" />
-                    Vérifié: {verifiedAt}
-                  </span>
-                )}
-                {sourceHost && (
-                  <span className="flex items-center gap-1.5">
-                    <CheckCircle2 className="h-3.5 w-3.5 text-blue-600" />
-                    Source: {sourceHost}
-                  </span>
-                )}
-              </div>
-            )}
+            <div className="mt-3 flex flex-wrap gap-4 text-xs text-slate-500">
+              <span className="flex items-center gap-1.5">
+                <Calendar className="h-3.5 w-3.5" />
+                {verificationLabel}
+              </span>
+              <span className="flex items-center gap-1.5">
+                <CheckCircle2 className="h-3.5 w-3.5 text-blue-600" />
+                {sourceLabel}
+              </span>
+            </div>
 	        </div>
         <div className="bg-slate-50 px-6 py-3 border-t border-slate-100">
           <div

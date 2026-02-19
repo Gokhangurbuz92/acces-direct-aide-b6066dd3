@@ -17,7 +17,7 @@ test.describe('P10-A RDV public entrypoint', () => {
     await page.getByRole('link', { name: /Prendre rendez-vous|Demander un RDV/i }).first().click();
 
     await expect(page).toHaveURL(/\/auth\/login\?next=%2Frdv%2Fstructure-test/);
-    await expect(page.getByText('Connexion requise')).toBeVisible();
+    await expect(page.getByRole('heading', { name: /Connexion Particulier/i })).toBeVisible();
     await expect(page.getByRole('link', { name: /Je n'ai pas de compte/i })).toBeVisible();
   });
 

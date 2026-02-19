@@ -481,6 +481,7 @@ model CitizenUser {
   createdAt       DateTime    @default(now())
   updatedAt       DateTime    @updatedAt
   authTokens      AuthToken[]
+  proAppointments ProAppointment[] @relation("ProAppointmentCitizenUser")
 }
 
 model AuthToken {
@@ -589,15 +590,23 @@ model ProAppointment {
   beneficiaryPhone   String?
   notes              String?
   createdByProUserId String?
+  citizenUserId      String?
+  citizenEmailSnapshot String?
+  idempotencyKey     String?
+  cancelledAt        DateTime?
+  cancelledBy        String?
   createdAt          DateTime      @default(now())
   updatedAt          DateTime      @updatedAt
   createdByProUser   ProUser?      @relation("ProAppointmentCreatedBy", fields: [createdByProUserId], references: [id], onDelete: SetNull)
+  citizenUser        CitizenUser?  @relation("ProAppointmentCitizenUser", fields: [citizenUserId], references: [id], onDelete: SetNull)
   service            ProRdvService @relation(fields: [serviceId], references: [id], onDelete: Cascade)
   structure          Structure     @relation(fields: [structureId], references: [id], onDelete: Cascade)
 
   @@index([structureId, startAt])
   @@index([structureId, status, startAt])
   @@index([serviceId, startAt])
+  @@index([citizenUserId, startAt])
+  @@unique([citizenUserId, idempotencyKey])
 }
 
 model ProTimeOff {

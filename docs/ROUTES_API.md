@@ -47,6 +47,7 @@ Il liste les routes définies et leurs gestionnaires.
 | `/api/public/suggest-structure` | `exact` | `./_handlers/public/suggest-structure.js` | Public | - |
 | `/api/public/stats` | `exact` | `./_handlers/public/stats.js` | Public | - |
 | `/api/public/availability` | `exact` | `./_handlers/public/availability.js` | Public | - |
+| `/api/rdv` | `prefix` | `./_handlers/rdv.js` | Public/Auth (USER cookie) | Booking public: services publies, slots, creation idempotente, consultation/annulation owner-only. |
 | `/api/appointments` | `exact` | `./_handlers/public/appointments/create.js` | Public | - |
 | `/api/appointments/cancel` | `exact` | `./_handlers/public/appointments/cancel.js` | Public | - |
 | `/api/aides` | `prefix` | `./_handlers/aides.js` | Public | - |

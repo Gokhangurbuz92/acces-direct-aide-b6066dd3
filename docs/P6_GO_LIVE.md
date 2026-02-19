@@ -619,3 +619,50 @@ Sanity API timeoff (token Pro dans le terminal uniquement):
 curl -sS -H "Authorization: Bearer $PRO_JWT" \
   "https://www.accesdirectaide.fr/api/pro/timeoff"
 ```
+
+## Doctolib social public booking (P10-D)
+
+Objectif:
+- activer le parcours public usager: service -> creneau -> confirmation -> annulation owner-only
+- conserver un acces strictement authentifie USER (cookie), sans regression des routes Pro
+
+Checklist migration (additive only):
+1. Deployer la migration Prisma:
+   - `prisma/migrations/20260308000000_add_public_booking_appointments/migration.sql`
+2. Verifier les nouveaux champs `ProAppointment`:
+   - `citizenUserId`
+   - `citizenEmailSnapshot`
+   - `idempotencyKey`
+   - `cancelledAt`
+   - `cancelledBy`
+
+Sanity API (session USER dans le navigateur ou cookie de test):
+
+```bash
+# 1) services publics publies
+curl -sS --cookie "ada_user_session=<USER_SESSION>" \
+  "https://www.accesdirectaide.fr/api/rdv/structures/<STRUCTURE_SLUG>/services"
+
+# 2) creneaux publics
+curl -sS --cookie "ada_user_session=<USER_SESSION>" \
+  "https://www.accesdirectaide.fr/api/rdv/structures/<STRUCTURE_SLUG>/slots?serviceId=<SERVICE_ID>&from=2026-03-02&to=2026-03-02"
+
+# 3) creation idempotente
+curl -sS -X POST --cookie "ada_user_session=<USER_SESSION>" \
+  -H "Content-Type: application/json" \
+  -d '{"structureSlug":"<STRUCTURE_SLUG>","serviceId":"<SERVICE_ID>","startAt":"2026-03-02T09:00:00.000Z","idempotencyKey":"<UUID>"}' \
+  "https://www.accesdirectaide.fr/api/rdv/appointments"
+```
+
+Attendu:
+- `401` sans session USER valide.
+- `403` si email USER non verifie (`code=EMAIL_NOT_VERIFIED`).
+- `409` si le creneau est deja pris.
+- `200/201` pour les operations owner valides (`GET /api/rdv/appointments/:id`, `POST /api/rdv/appointments/:id/cancel`).
+
+Checklist fonctionnelle:
+1. Ouvrir `/rdv/<structure-slug>/services` avec un compte Particulier verifie.
+2. Selectionner un service puis ouvrir `/rdv/<structure-slug>/creneaux`.
+3. Confirmer un creneau et verifier l'encart `RDV confirme`.
+4. Annuler le RDV depuis la meme page.
+5. Verifier qu'un email de confirmation est envoye si `MAILER_PROVIDER` est configure (piece jointe ICS incluse en mode provider compatible / outbox test).

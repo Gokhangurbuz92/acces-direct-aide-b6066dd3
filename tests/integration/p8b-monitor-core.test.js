@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
-import apiHandler from '../../api/index.js';
+import monitorCoreHandler from '../../api/monitor/core.js';
 import prisma from '../../api/_utils/prisma.js';
 import { kv } from '../../api/_utils/kv.js';
 
@@ -96,7 +96,7 @@ async function invokeApi(url, options = {}) {
     query: options.query,
   });
   const res = createRes();
-  await apiHandler(req, res);
+  await monitorCoreHandler(req, res);
   return res;
 }
 

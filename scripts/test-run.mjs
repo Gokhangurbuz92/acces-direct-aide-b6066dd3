@@ -143,12 +143,16 @@ function run(cmd, args, env) {
 const env = buildTestEnv();
 
 // 1) Deterministic DB reset (schema from Prisma + seed).
-await ensureRequiredPgExtensions(env);
-const prismaStatus = run(npxCmd(), ['--no-install', 'prisma', 'db', 'push', '--skip-generate'], env);
-if (prismaStatus !== 0) process.exit(prismaStatus);
+if (!process.env.SKIP_DB_SETUP) {
+  await ensureRequiredPgExtensions(env);
+  const prismaStatus = run(npxCmd(), ['--no-install', 'prisma', 'db', 'push', '--skip-generate'], env);
+  if (prismaStatus !== 0) process.exit(prismaStatus);
 
-const seedStatus = run(npxCmd(), ['--no-install', 'prisma', 'db', 'seed'], env);
-if (seedStatus !== 0) process.exit(seedStatus);
+  const seedStatus = run(npxCmd(), ['--no-install', 'prisma', 'db', 'seed'], env);
+  if (seedStatus !== 0) process.exit(seedStatus);
+} else {
+  console.log('[test-run] Skipping DB setup (SKIP_DB_SETUP=1). Tests requiring DB will fail.');
+}
 
 // 2) Run Vitest (forward extra args).
 const vitestArgs = process.argv.slice(2);

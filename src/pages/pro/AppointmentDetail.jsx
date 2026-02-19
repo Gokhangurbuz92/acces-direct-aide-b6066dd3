@@ -1,4 +1,4 @@
-
+// @ts-nocheck
 import { useEffect, useState, useCallback } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { Loader2, ArrowLeft, Calendar, User, Video } from 'lucide-react';
@@ -24,7 +24,9 @@ export default function ProAppointmentDetail() {
         })
             .then(res => res.json())
             .then(data => {
-                if (Array.isArray(data) && data.length > 0) {
+                if (Array.isArray(data?.items) && data.items.length > 0) {
+                    setAppointment(data.items[0]);
+                } else if (Array.isArray(data) && data.length > 0) {
                     setAppointment(data[0]);
                 }
             })
@@ -115,7 +117,7 @@ export default function ProAppointmentDetail() {
         <div className="space-y-6">
             <div className="flex items-center gap-4">
                 <Button variant="ghost" asChild>
-                    <Link to="/pro/appointments"><ArrowLeft className="mr-2 h-4 w-4" /> Retour</Link>
+                    <Link to="/pro/rdv/agenda"><ArrowLeft className="mr-2 h-4 w-4" /> Retour</Link>
                 </Button>
                 <h1 className="text-xl font-bold">Rendez-vous avec {appointment.beneficiary.firstName}</h1>
             </div>

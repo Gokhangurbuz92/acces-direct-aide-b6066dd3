@@ -258,6 +258,84 @@ Le script vérifie:
 - meta noindex admin (best effort SPA)
 - OG defaults sur `/` (`og:image`, `twitter:image`, `og:image:alt`)
 - noindex + canonical sur route inconnue
+
+## P9-E hardening (PRO RDV)
+
+### Strategie migrations staging/prod (deterministe)
+
+Utiliser uniquement les commandes Prisma de deploy en environnement distant:
+
+```bash
+npm run db:status
+npm run db:deploy
+npm run db:status
+```
+
+Verification readiness apres migration:
+
+```bash
+curl -s https://www.accesdirectaide.fr/api/monitor/pro-rdv
+```
+
+Attendu:
+- `ok=true`
+- `missingTables=[]`
+- `prismaMigrationsOk=true`
+- `missingMigrations=[]`
+
+### Baseline Prisma RDV (cas DB deja peuplee)
+
+Si les tables RDV existent mais que l'historique `_prisma_migrations` n'est pas aligne:
+
+1. Dry-run (aucune action):
+
+```bash
+npm run db:baseline:rdv
+```
+
+2. Application explicite (gated):
+
+```bash
+DB_BASELINE_FORCE=1 npm run db:baseline:rdv
+```
+
+Le script baseline:
+- ne fait aucune operation destructive,
+- ne modifie que l'etat migration Prisma pour `20260305000000_add_pro_rdv_core` si necessaire,
+- echoue si le schema RDV n'est pas present.
+
+### Workflow manuel GitHub (optionnel)
+
+Workflow disponible: `.github/workflows/db-migrate-deploy.yml` (`workflow_dispatch`).
+
+Il tente `prisma migrate deploy` puis `prisma migrate status`:
+- staging si `DATABASE_URL_STAGING` est configure dans GitHub Secrets,
+- prod si `DATABASE_URL_PROD` est configure dans GitHub Secrets.
+
+### Observabilite RDV (Sentry)
+
+Les erreurs non gerees du module RDV PRO sont taggees:
+- `module=rdv`
+- `surface=pro` (API) ou `surface=pro-ui` (client)
+- `handler` / `endpoint`
+- `request_id` pour correlation API/UI
+
+Les captures restent privacy-safe:
+- pas de token/JWT,
+- pas de body brut,
+- `proUserId` hash uniquement.
+
+### Quotas & rate limits PRO
+
+Les endpoints `/api/pro/*` du module RDV appliquent des quotas tenant-scoped (`proUserId + structureId`):
+- lecture (`GET`): `PRO_RDV_RATE_LIMIT_READ_PER_MIN` (defaut `60/min`)
+- ecriture (`POST|PUT|PATCH|DELETE`): `PRO_RDV_RATE_LIMIT_WRITE_PER_MIN` (defaut `20/min`)
+- quota journalier ecriture (si KV configure): `PRO_RDV_RATE_LIMIT_WRITE_PER_DAY` (defaut `300/day`)
+
+Reponse en depassement:
+- `429`
+- `Retry-After`
+- `X-RateLimit-Limit`, `X-RateLimit-Remaining` (+ headers day quand applicable)
 - noindex sur fiche aide inexistante
 
 ## Verification performance / cache (P8-A)

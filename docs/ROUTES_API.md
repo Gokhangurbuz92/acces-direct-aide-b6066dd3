@@ -44,7 +44,7 @@ Il liste les routes définies et leurs gestionnaires.
 | `/api/aides` | `prefix` | `./_handlers/aides.js` | Public | - |
 | `/api/search` | `exact` | `./_handlers/search.js` | Public | - |
 | `/api/structures` | `prefix` | `./_handlers/structures.js` | Public | - |
-| `/api/demarches` | `prefix` | `./_handlers/demarches.js` | Public | - |
+| `/api/demarches` | `prefix` | `./_handlers/demarches.js` | Public | Filtre les titres de test sur la surface publique |
 | `/api/actualites` | `prefix` | `./_handlers/actualites.js` | Public | - |
 | `/api/guides` | `prefix` | `./_handlers/guides.js` | Public | - |
 | `/api/tools` | `prefix` | `./_handlers/tools.js` | Public | - |

@@ -88,7 +88,7 @@ describe('RBAC Middleware', () => {
         const handler = vi.fn();
         const wrapped = requireAuth(handler, [ROLE.STRUCTURE_ADMIN]);
 
-        const user = { id: '123', role: ROLE.PRO };
+        const user = { id: '123', email: 'pro@test.com', structureId: 's1', role: ROLE.PRO };
         const token = signProToken(user);
 
         const req = mockReq({ headers: { authorization: `Bearer ${token}` } });
@@ -104,7 +104,12 @@ describe('RBAC Middleware', () => {
         const handler = vi.fn();
         const wrapped = requireAuth(handler, [ROLE.STRUCTURE_ADMIN]);
 
-        const user = { id: 'admin', role: ROLE.SUPERADMIN };
+        const user = {
+            id: 'admin',
+            email: 'superadmin@test.com',
+            structureId: 's1',
+            role: ROLE.SUPERADMIN,
+        };
         const token = signProToken(user);
 
         const req = mockReq({ headers: { authorization: `Bearer ${token}` } });

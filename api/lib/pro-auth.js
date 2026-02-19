@@ -18,6 +18,9 @@ export const ROLE = {
     PRO: 'PRO'
 };
 
+const PRO_SESSION_ISSUER = 'accesdirectaide';
+const PRO_SESSION_AUDIENCE = 'accesdirectaide-pro';
+
 /**
  * Shared JWT helpers to avoid duplicating direct jsonwebtoken imports.
  *
@@ -55,10 +58,16 @@ export function signProToken(user) {
             userId: user.id,
             email: user.email,
             structureId: user.structureId,
-            role: user.role
+            role: user.role,
+            scope: 'pro'
         },
         JWT_SECRET,
-        { expiresIn: '8h' }
+        {
+            expiresIn: '8h',
+            issuer: PRO_SESSION_ISSUER,
+            audience: PRO_SESSION_AUDIENCE,
+            algorithm: 'HS256',
+        }
     );
 }
 // ... (rest is same)
@@ -75,12 +84,49 @@ export function verifyProToken(token) {
     if (!JWT_SECRET) return null;
 
     try {
-        return jwt.verify(token, JWT_SECRET, {
-            algorithms: ['HS256']
+        const strictDecoded = jwt.verify(token, JWT_SECRET, {
+            algorithms: ['HS256'],
+            issuer: PRO_SESSION_ISSUER,
+            audience: PRO_SESSION_AUDIENCE,
         });
+        return validateProClaims(strictDecoded);
     } catch {
-        return null;
+        try {
+            // Backward compatibility for existing tokens issued before issuer/audience claims.
+            const legacyDecoded = jwt.verify(token, JWT_SECRET, {
+                algorithms: ['HS256'],
+            });
+            return validateProClaims(legacyDecoded);
+        } catch {
+            return null;
+        }
     }
+}
+
+/**
+ * @param {unknown} decoded
+ * @returns {null | { userId: string, email?: string, structureId: string, role: string, scope?: string }}
+ */
+function validateProClaims(decoded) {
+    if (!decoded || typeof decoded !== 'object') return null;
+
+    const payload = /** @type {Record<string, any>} */ (decoded);
+    const scope = typeof payload.scope === 'string' ? payload.scope : '';
+    const userId = String(payload.userId || '').trim();
+    const structureId = String(payload.structureId || '').trim();
+    const roleRaw = String(payload.role || '').toUpperCase();
+
+    if (scope && scope !== 'pro') return null;
+    if (!userId || !structureId) return null;
+    if (![ROLE.PRO, ROLE.STRUCTURE_ADMIN, ROLE.SUPERADMIN].includes(roleRaw)) return null;
+
+    return {
+        userId,
+        structureId,
+        email: typeof payload.email === 'string' ? payload.email : undefined,
+        role: roleRaw,
+        scope: scope || undefined,
+    };
 }
 
 /**

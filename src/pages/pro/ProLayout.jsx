@@ -10,17 +10,14 @@ export default function ProLayout() {
     const location = useLocation();
     const [loading, setLoading] = useState(true);
     const [user, setUser] = useState(null);
+    const proLoginEntry = '/login?mode=pro';
 
     useEffect(() => {
-        console.log(`[ProLayout] Path: ${location.pathname}`);
         const token = localStorage.getItem('pro_token');
         if (!token) {
-            console.log("[ProLayout] No token found");
             if (location.pathname !== '/pro/login' && location.pathname !== '/pro/register' && location.pathname !== '/pro/forgot-password' && location.pathname !== '/pro/reset-password') {
-                console.log("[ProLayout] Redirecting to login");
-                navigate('/pro/login');
+                navigate(proLoginEntry, { replace: true });
             } else {
-                console.log("[ProLayout] Allowed public pro route");
                 setLoading(false);
             }
             return;
@@ -42,14 +39,14 @@ export default function ProLayout() {
             })
             .catch(() => {
                 localStorage.removeItem('pro_token');
-                navigate('/pro/login');
+                navigate(proLoginEntry, { replace: true });
             })
             .finally(() => setLoading(false));
-    }, [navigate, location.pathname]); // Added location.pathname dependency
+    }, [navigate, location.pathname, proLoginEntry]); // Added location.pathname dependency
 
     const handleLogout = () => {
         localStorage.removeItem('pro_token');
-        navigate('/pro/login');
+        navigate(proLoginEntry, { replace: true });
     };
 
     if (loading) {
@@ -58,7 +55,6 @@ export default function ProLayout() {
 
     // If on public auth pages, just render Outlet
     if (['/pro/login', '/pro/register', '/pro/forgot-password', '/pro/reset-password'].includes(location.pathname)) {
-        console.log(`[ProLayout] Rendering Outlet for ${location.pathname}`);
         return <Outlet />;
     }
 

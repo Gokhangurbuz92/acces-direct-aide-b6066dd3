@@ -14,6 +14,8 @@ export const AUTH_ROLE = {
   USER: 'user',
 };
 
+const NO_STORE_VALUE = 'private, no-store, max-age=0, must-revalidate';
+
 /**
  * @param {import('./http-types').ApiRequest} req
  * @returns {string | null}
@@ -136,6 +138,28 @@ function normalizeRole(role) {
 }
 
 /**
+ * @param {string | undefined} role
+ * @returns {boolean}
+ */
+export function isAdminRole(role) {
+  const normalized = normalizeRole(role);
+  return normalized === AUTH_ROLE.ADMIN || normalized === AUTH_ROLE.SUPERADMIN;
+}
+
+/**
+ * @param {string | undefined} role
+ * @returns {boolean}
+ */
+export function isProRole(role) {
+  const normalized = normalizeRole(role);
+  return (
+    normalized === AUTH_ROLE.PRO ||
+    normalized === AUTH_ROLE.STRUCTURE_ADMIN ||
+    normalized === AUTH_ROLE.SUPERADMIN
+  );
+}
+
+/**
  * @param {import('./http-types').ApiRequest} req
  * @returns {null | { role: string, authType: 'admin_token' | 'admin_jwt' | 'pro_jwt', email?: string, userId?: string, structureId?: string }}
  */
@@ -182,7 +206,7 @@ export function resolveAuthContext(req) {
  */
 export function verifyAdmin(req) {
   const auth = resolveAuthContext(req);
-  return Boolean(auth && (auth.role === AUTH_ROLE.ADMIN || auth.role === AUTH_ROLE.SUPERADMIN));
+  return Boolean(auth && isAdminRole(auth.role));
 }
 
 /**
@@ -234,7 +258,7 @@ export function requireRole(handler, roles, options = {}) {
     if (!auth) return res.status(401).json({ error: 'Unauthorized' });
 
     const role = normalizeRole(auth.role);
-    const isAdmin = role === AUTH_ROLE.ADMIN || role === AUTH_ROLE.SUPERADMIN;
+    const isAdmin = isAdminRole(role);
     const allowed = expected.length === 0 || expected.includes(role) || (allowAdminBypass && isAdmin);
 
     if (!allowed) {
@@ -243,4 +267,124 @@ export function requireRole(handler, roles, options = {}) {
 
     return handler(req, res);
   });
+}
+
+/**
+ * Strict admin-only auth guard.
+ * Accepts only admin token or admin session JWT.
+ *
+ * @param {(req: import('./http-types').ApiRequest, res: import('./http-types').ApiResponse) => any} handler
+ */
+export function requireAdminAuth(handler) {
+  /** @param {import('./http-types').ApiRequest} req @param {import('./http-types').ApiResponse} res */
+  return async function wrapped(req, res) {
+    res.setHeader('Cache-Control', NO_STORE_VALUE);
+
+    const auth = resolveAuthContext(req);
+    if (!auth) {
+      return res.status(401).json({ error: 'Unauthorized' });
+    }
+
+    const isAdminAuthType = auth.authType === 'admin_token' || auth.authType === 'admin_jwt';
+    if (!isAdminAuthType || !isAdminRole(auth.role)) {
+      return res.status(403).json({ error: 'Forbidden' });
+    }
+
+    req.auth = {
+      ...auth,
+      role: normalizeRole(auth.role),
+    };
+    return handler(req, res);
+  };
+}
+
+/**
+ * Strict pro-only auth guard.
+ * Accepts only pro JWT. Rejects static admin token and admin session JWT.
+ *
+ * @param {(req: import('./http-types').ApiRequest, res: import('./http-types').ApiResponse) => any} handler
+ */
+export function requireProAuth(handler) {
+  /** @param {import('./http-types').ApiRequest} req @param {import('./http-types').ApiResponse} res */
+  return async function wrapped(req, res) {
+    res.setHeader('Cache-Control', NO_STORE_VALUE);
+
+    const auth = resolveAuthContext(req);
+    if (!auth) {
+      return res.status(401).json({ error: 'Unauthorized' });
+    }
+
+    if (auth.authType !== 'pro_jwt') {
+      return res.status(401).json({ error: 'Unauthorized' });
+    }
+
+    const role = normalizeRole(auth.role);
+    if (!isProRole(role)) {
+      return res.status(403).json({ error: 'Forbidden' });
+    }
+
+    const userId = String(auth.userId || '').trim();
+    const structureId = String(auth.structureId || '').trim();
+    if (!userId || !structureId) {
+      return res.status(403).json({ error: 'Forbidden' });
+    }
+
+    req.auth = {
+      ...auth,
+      role,
+    };
+    req.user = {
+      userId,
+      role,
+      structureId,
+      email: auth.email || null,
+    };
+
+    return handler(req, res);
+  };
+}
+
+/**
+ * Pro role guard (pro JWT only).
+ *
+ * @param {(req: import('./http-types').ApiRequest, res: import('./http-types').ApiResponse) => any} handler
+ * @param {string[]} roles
+ */
+export function requireProRole(handler, roles) {
+  const expected = Array.isArray(roles) ? roles : [];
+
+  /** @param {import('./http-types').ApiRequest} req @param {import('./http-types').ApiResponse} res */
+  return requireProAuth(async function wrapped(req, res) {
+    if (expected.length > 0 && !expected.includes(req.user?.role)) {
+      return res.status(403).json({ error: 'Forbidden' });
+    }
+    return handler(req, res);
+  });
+}
+
+/**
+ * Enforces structure context for pro routes and optionally compares a target structure id.
+ *
+ * @param {import('./http-types').ApiRequest} req
+ * @param {import('./http-types').ApiResponse} res
+ * @param {string | undefined | null} targetStructureId
+ * @returns {{ structureId: string, userId: string, role: string } | null}
+ */
+export function requireProStructureContext(req, res, targetStructureId = null) {
+  const structureId = String(req?.user?.structureId || '').trim();
+  const userId = String(req?.user?.userId || '').trim();
+  const role = normalizeRole(req?.user?.role);
+
+  if (!structureId || !userId) {
+    res.status(403).json({ error: 'Forbidden' });
+    return null;
+  }
+
+  const target = String(targetStructureId || '').trim();
+  if (target && target !== structureId) {
+    res.status(403).json({ error: 'Forbidden' });
+    return null;
+  }
+
+  return { structureId, userId, role };
 }

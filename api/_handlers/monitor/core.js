@@ -3,6 +3,7 @@ import prisma from '../../_utils/prisma.js';
 import { kv } from '../../_utils/kv.js';
 import { env } from '../../_utils/env.js';
 import logger from '../../_utils/logger.js';
+import { applyNoIndex } from '../../_utils/robots.js';
 
 const TIMEOUT_MS = 2000;
 
@@ -73,6 +74,7 @@ export default async function handler(req, res) {
   res.setHeader('x-request-id', requestId);
   res.setHeader('Cache-Control', 'no-store');
   res.setHeader('Content-Type', 'application/json; charset=utf-8');
+  applyNoIndex(res);
 
   if (req.method !== 'GET') {
     return res.status(405).json({ error: 'Method not allowed', requestId });

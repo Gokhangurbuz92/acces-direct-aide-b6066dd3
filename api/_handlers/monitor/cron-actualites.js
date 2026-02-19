@@ -1,6 +1,7 @@
 import { randomUUID } from 'crypto';
 import prisma from '../../_utils/prisma.js';
 import { getActualitesCronFreshness } from '../../_utils/cron-freshness.js';
+import { applyNoIndex } from '../../_utils/robots.js';
 
 /**
  * Public uptime-friendly endpoint for external monitors.
@@ -21,6 +22,7 @@ export default async function handler(req, res) {
   res.setHeader('x-request-id', requestId);
   res.setHeader('Cache-Control', 'no-store');
   res.setHeader('Content-Type', 'application/json; charset=utf-8');
+  applyNoIndex(res);
 
   return res.status(isFresh ? 200 : 503).json({
     ok: isFresh,
@@ -32,4 +34,3 @@ export default async function handler(req, res) {
     requestId,
   });
 }
-

@@ -33,7 +33,7 @@ Accessibles à tous les utilisateurs.
 | `/dispositifs/:slug` | `DispositifDetail` | `/api/dispositifs/:slug` | Détail dispositif |
 | `/ressources` | `Ressources` | `/api/ressources` | Liste ressources |
 | `/ressources/:slug` | `RessourceDetail` | `/api/ressources/:slug` | Détail ressource |
-| `/orientation` | `Orientation` | - | Orientation |
+| `/orientation` | `Orientation` | - | Assistant bientot disponible (noindex) |
 | `/recherche` | `Recherche` | `/api/search` | Recherche globale |
 | `/a-propos` | `APropos` | - | Statique |
 | `/accessibilite` | `Accessibilite` | - | Statique |

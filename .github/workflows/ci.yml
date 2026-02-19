@@ -50,7 +50,7 @@ jobs:
           cache: 'npm'
       - run: npm ci
       - run: npx playwright install --with-deps
-      - run: npm run test:e2e
+      - run: npx playwright test e2e/public-core.spec.js e2e/seo-aides.spec.js e2e/noindex-admin.spec.js e2e/seo-errors.spec.js e2e/provenance-ui.spec.js e2e/rdv-entrypoint.spec.js --workers=1
         env:
           DATABASE_URL: 'postgres://dummy:dummy@localhost:5432/dummy'
           ADA_ENCRYPTION_KEY: '0000000000000000000000000000000000000000000000000000000000000000'

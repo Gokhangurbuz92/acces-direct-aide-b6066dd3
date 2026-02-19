@@ -28,10 +28,10 @@ test.describe('Public Core Navigation', () => {
         await expect(page.getByText('Démarche Test').first()).toBeVisible();
 
         await page.goto('/demarches/demarche-test');
-        await expect(page.getByText('Résumé démarche.')).toBeVisible();
+        await expect(page.getByText('Résumé démarche.').first()).toBeVisible();
 
         await page.reload();
-        await expect(page.getByText('Résumé démarche.')).toBeVisible();
+        await expect(page.getByText('Résumé démarche.').first()).toBeVisible();
     });
 
     test('Parcours Annuaire: List -> Detail -> Refresh', async ({ page }) => {

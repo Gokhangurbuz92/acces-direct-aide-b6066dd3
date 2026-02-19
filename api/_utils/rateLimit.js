@@ -38,6 +38,11 @@ const CONFIG = {
     FEEDBACK: { limit: 6, window: 600 },    // 6 per 10 min
     // Auth
     LOGIN_PRO: { limit: 5, window: 900 },   // 5 per 15 min
+    LOGIN_USER: { limit: 8, window: 900 },  // 8 per 15 min
+    SIGNUP_USER: { limit: 5, window: 3600 }, // 5 per hour
+    RESEND_VERIFY: { limit: 5, window: 3600 }, // 5 per hour
+    FORGOT_USER: { limit: 5, window: 3600 }, // 5 per hour
+    RESET_USER: { limit: 5, window: 3600 }, // 5 per hour
     RESET_PASSWORD: { limit: 3, window: 3600 }, // 3 per hour
     // Search & Taxonomy
     SEARCH_AIDES: { limit: 30, window: 60 },      // 30 per min
@@ -170,4 +175,12 @@ export async function checkRateLimit(action, identifier) {
         // Fallback for Dev/Preview without credentials
         return checkRateLimitInMemory(action, identifier);
     }
+}
+
+/**
+ * @param {{ status?: number } | null | undefined} result
+ * @returns {number}
+ */
+export function getRateLimitStatus(result) {
+    return typeof result?.status === 'number' ? result.status : 429;
 }

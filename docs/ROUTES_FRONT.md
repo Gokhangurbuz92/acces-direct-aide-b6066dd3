@@ -21,8 +21,11 @@ Accessibles à tous les utilisateurs.
 | `/rdv/:structureSlug` | `PublicRdvEntry` | `/api/structures/:slug`, `/api/auth/me` | Entrée publique RDV (redirige vers auth si non connecté) |
 | `/rdv/:structureSlug/services` | `PublicRdvEntry` | `/api/structures/:slug`, `/api/auth/me` | Étape choix service |
 | `/rdv/:structureSlug/creneaux` | `PublicRdvEntry` | `/api/structures/:slug`, `/api/auth/me` | Étape créneaux |
-| `/auth/login` | `AuthRdvAccess` | - | Portail connexion RDV public (noindex) |
-| `/auth/signup` | `AuthRdvAccess` | - | Portail inscription RDV public (noindex) |
+| `/auth/login` | `AuthRdvAccess` | `/api/auth/login`, `/api/auth/resend-verification` | Connexion Particulier (support `next=`, noindex). |
+| `/auth/signup` | `AuthRdvAccess` | `/api/auth/signup` | Inscription Particulier (support `next=`, noindex). |
+| `/auth/verify-email` | `AuthVerifyEmail` | `/api/auth/resend-verification` | Ecran verification email (pending/success/error, noindex). |
+| `/auth/forgot` | `AuthForgotPassword` | `/api/auth/forgot-password` | Demande de reinitialisation mot de passe (noindex). |
+| `/auth/reset` | `AuthResetPassword` | `/api/auth/reset-password` | Reset mot de passe via token (noindex). |
 | `/actualites` | `Actualites` | `/api/actualites` | Liste actualités |
 | `/actualites/:slug` | `ActualiteDetail` | `/api/actualites/:slug` | Détail actualité |
 | `/bonnes-pratiques` | `Guides` | `/api/guides` | Liste guides |

@@ -470,6 +470,31 @@ model AdminUser {
   lockoutUntil        DateTime?
 }
 
+model CitizenUser {
+  id              String      @id @default(uuid())
+  email           String      @unique
+  passwordHash    String
+  emailVerifiedAt DateTime?
+  phone           String?
+  phoneVerifiedAt DateTime?
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
+  authTokens      AuthToken[]
+}
+
+model AuthToken {
+  id        String      @id @default(uuid())
+  userId    String
+  type      String
+  tokenHash String      @unique
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime    @default(now())
+  user      CitizenUser @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, type])
+}
+
 model AuditLog {
   id        String   @id @default(uuid())
   action    String

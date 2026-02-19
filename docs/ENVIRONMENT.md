@@ -31,6 +31,9 @@ Legend:
 | `AUTH_SECRET` | server | no | no | Admin auth signing secret when `AUTH_MODE=jwt`. Alias: `AUTH_JWT_SECRET`. |
 | `AUTH_JWT_SECRET` | server | no | no | Alias for `AUTH_SECRET`. |
 | `AUTH_MAGICLINK_ENABLED` | server | no | no | Reserved feature flag for future passwordless flow (`0` default). |
+| `MAILER_PROVIDER` | server | no | no | Transactional mail provider (`noop` default, `test` in integration tests). |
+| `MAILER_FROM` | server | no | no | Sender address used by transactional emails (verification/reset). |
+| `MAILER_API_KEY` | server | no | no | API key for the configured transactional mail provider. |
 | `ADA_ENCRYPTION_KEY` | server | yes | yes | Server encryption key. |
 | `ADMIN_TOKEN` | server | no | yes | Admin API auth token (recommended locally, required on Vercel). |
 | `CRON_SECRET` | server | no | yes | Secures cron endpoints (recommended locally, required on Vercel). |

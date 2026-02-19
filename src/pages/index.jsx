@@ -48,6 +48,9 @@ const AppointmentCancel = lazy(() => import("./AppointmentCancel.jsx"));
 const AppointmentReschedule = lazy(() => import("./AppointmentReschedule.jsx"));
 const PublicRdvEntry = lazy(() => import("./PublicRdvEntry.jsx"));
 const AuthRdvAccess = lazy(() => import("./AuthRdvAccess.jsx"));
+const AuthVerifyEmail = lazy(() => import("./AuthVerifyEmail.jsx"));
+const AuthForgotPassword = lazy(() => import("./AuthForgotPassword.jsx"));
+const AuthResetPassword = lazy(() => import("./AuthResetPassword.jsx"));
 const Layout = lazy(() => import("./Layout.jsx"));
 const AdminGuard = lazy(() => import("@/components/AdminGuard"));
 const ProGuard = lazy(() => import("@/components/ProGuard"));
@@ -106,7 +109,7 @@ const PAGES = {
     DemarcheDetail, DispositifDetail, Login, LoginPro, Demarches, Home, Orientation,
     MentionsLegales, SourcesMethode, SentryTest, StructureDetail,
     AdminInbox, AdminRuns, AdminObservability, AdminReviewQueue, AppointmentRequest, AppointmentCancel, AppointmentReschedule, AdminStructures,
-    AdminDemarches, AdminDemarcheEdit, AdminAppointments, AdminReview, Status, PublicRdvEntry, AuthRdvAccess
+    AdminDemarches, AdminDemarcheEdit, AdminAppointments, AdminReview, Status, PublicRdvEntry, AuthRdvAccess, AuthVerifyEmail, AuthForgotPassword, AuthResetPassword
 };
 
 // Loading Fallback
@@ -121,11 +124,14 @@ function LegacyAideRedirect() {
     return <Navigate to={`/aides/${slug}`} replace />;
 }
 
+/**
+ * @param {string} url
+ */
 function _getCurrentPage(url) {
     if (url.endsWith('/')) {
         url = url.slice(0, -1);
     }
-    let urlLastPart = url.split('/').pop();
+    let urlLastPart = url.split('/').pop() || '';
     if (urlLastPart.includes('?')) {
         urlLastPart = urlLastPart.split('?')[0];
     }
@@ -197,6 +203,9 @@ function PagesContent() {
                     <Route path="/login" element={<Login />} />
                     <Route path="/auth/login" element={<AuthRdvAccess mode="login" />} />
                     <Route path="/auth/signup" element={<AuthRdvAccess mode="signup" />} />
+                    <Route path="/auth/verify-email" element={<AuthVerifyEmail />} />
+                    <Route path="/auth/forgot" element={<AuthForgotPassword />} />
+                    <Route path="/auth/reset" element={<AuthResetPassword />} />
                     <Route path="/a-propos" element={<APropos />} />
                     <Route path="/accessibilite" element={<Accessibilite />} />
                     <Route path="/actualites" element={<Actualites />} />

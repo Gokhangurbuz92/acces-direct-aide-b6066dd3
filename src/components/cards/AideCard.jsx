@@ -8,7 +8,7 @@ import {
 } from 'lucide-react';
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
-import { formatProvenanceDate, getProvenance } from '@/lib/provenance';
+import { formatProvenanceDate, getFreshnessBadge, getProvenance } from '@/lib/provenance';
 
 const CATEGORIE_COLORS = {
   logement: 'bg-orange-100 text-orange-800',
@@ -44,10 +44,20 @@ const CATEGORIE_LABELS = {
   autre: 'Autre',
 };
 
+const FRESHNESS_BADGE_CLASS = {
+  up_to_date: 'bg-emerald-100 text-emerald-800 border-emerald-200',
+  to_review: 'bg-amber-100 text-amber-800 border-amber-200',
+  at_risk: 'bg-rose-100 text-rose-800 border-rose-200',
+  not_verified: 'bg-slate-100 text-slate-700 border-slate-200',
+};
+
 export default function AideCard({ aide, compact = false }) {
   const provenance = getProvenance(aide);
   const verifiedAt = formatProvenanceDate(provenance.verifiedAt);
   const sourceHost = provenance.sourceHost;
+  const freshness = getFreshnessBadge(provenance.verifiedAt);
+  const verificationLabel = verifiedAt ? `Vérifié le ${verifiedAt}` : 'À vérifier';
+  const sourceLabel = sourceHost ? `Source: ${sourceHost}` : 'Source: non renseignée';
 
   const categorySlug = (() => {
     const raw = aide?.categorie || aide?.theme || aide?.category?.slug || aide?.category_code;
@@ -101,6 +111,13 @@ export default function AideCard({ aide, compact = false }) {
                 </Badge>
               )}
             </div>
+            <Badge
+              variant="outline"
+              className={FRESHNESS_BADGE_CLASS[freshness.state] || FRESHNESS_BADGE_CLASS.not_verified}
+              data-testid="aide-freshness-badge"
+            >
+              {freshness.label}
+            </Badge>
             {aide.sources?.some(s => s.type === 'officielle') && (
               <Badge variant="outline" className="text-green-700 border-green-300 flex items-center gap-1">
                 <CheckCircle2 className="h-3 w-3" />
@@ -127,18 +144,14 @@ export default function AideCard({ aide, compact = false }) {
                 {getTerritoireLabel()}
               </span>
             )}
-            {verifiedAt && (
-              <span className="flex items-center gap-1">
-                <Calendar className="h-4 w-4" />
-                Vérifié: {verifiedAt}
-              </span>
-            )}
-            {sourceHost && (
-              <span className="flex items-center gap-1">
-                <CheckCircle2 className="h-4 w-4" />
-                Source: {sourceHost}
-              </span>
-            )}
+            <span className="flex items-center gap-1">
+              <Calendar className="h-4 w-4" />
+              {verificationLabel}
+            </span>
+            <span className="flex items-center gap-1">
+              <CheckCircle2 className="h-4 w-4" />
+              {sourceLabel}
+            </span>
           </div>
 
           {/* Visual Link (Not interactive, just decoration) */}

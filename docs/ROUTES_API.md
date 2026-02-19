@@ -23,7 +23,13 @@ Il liste les routes définies et leurs gestionnaires.
 | `/api/taxonomy` | `exact` | `./_handlers/taxonomy.js` | Public | - |
 | `/api/pdf` | `prefix` | `./_handlers/pdf.js` | Public | Export PDF stable des fiches publiques (`/api/pdf/aides/:slug`, `/api/pdf/demarches/:slug`) |
 | `/api/auth/login` | `exact` | `./_handlers/auth/login.js` | Public/Auth | - |
+| `/api/auth/signup` | `exact` | `./_handlers/auth/signup.js` | Public/Auth | Creation compte Particulier (reponse neutre + envoi verification email). |
+| `/api/auth/logout` | `exact` | `./_handlers/auth/logout.js` | Public/Auth | Suppression session Particulier (cookie HttpOnly). |
 | `/api/auth/me` | `exact` | `./_handlers/auth/me.js` | Public/Auth | - |
+| `/api/auth/verify-email` | `exact` | `./_handlers/auth/verify-email.js` | Public/Auth | Verification email (token hash/usage unique), redirection vers `/auth/verify-email`. |
+| `/api/auth/resend-verification` | `exact` | `./_handlers/auth/resend-verification.js` | Public/Auth | Renvoi verification email (message neutre, rate-limit). |
+| `/api/auth/forgot-password` | `exact` | `./_handlers/auth/forgot-password.js` | Public/Auth | Initialisation reset password (message neutre, rate-limit). |
+| `/api/auth/reset-password` | `exact` | `./_handlers/auth/reset-password.js` | Public/Auth | Reset password via token a usage unique. |
 | `/api/pro/auth/login` | `exact` | `./_handlers/pro/auth/login.js` | Pro | - |
 | `/api/pro/auth/register` | `exact` | `./_handlers/pro/auth/register.js` | Pro | - |
 | `/api/pro/auth/forgot-password` | `exact` | `./_handlers/pro/auth/forgot-password.js` | Pro | - |

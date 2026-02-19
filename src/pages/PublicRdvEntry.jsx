@@ -55,20 +55,21 @@ export default function PublicRdvEntry({ view = 'landing' }) {
     data: authState,
     isLoading: authLoading,
   } = useQuery({
-    queryKey: ['public-rdv-auth', token ? 'token' : 'none'],
+    queryKey: ['public-rdv-auth', token ? 'bearer' : 'cookie'],
     enabled: true,
     staleTime: 30 * 1000,
     queryFn: async () => {
-      if (!token) {
-        return { authenticated: false, sessionKind: null };
+      /** @type {Record<string, string>} */
+      const headers = {
+        Accept: 'application/json',
+      };
+      if (token) {
+        headers.Authorization = `Bearer ${token}`;
       }
-
       const response = await fetch('/api/auth/me', {
         method: 'GET',
-        headers: {
-          Authorization: `Bearer ${token}`,
-          Accept: 'application/json',
-        },
+        headers,
+        credentials: 'include',
       }).catch(() => null);
 
       if (!response || !response.ok) {

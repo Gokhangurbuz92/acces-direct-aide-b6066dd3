@@ -130,7 +130,7 @@ export const apiClient = {
         login: async function (email, password) {
             var data = await apiRequest('/api/auth/login', {
                 method: 'POST',
-                body: { email: email, password: password }
+                body: { email: email, password: password, mode: 'admin' }
             });
             sessionStorage.setItem('access_token', data.token);
             return data.user;

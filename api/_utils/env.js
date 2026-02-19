@@ -243,6 +243,18 @@ export const env = {
     },
   },
 
+  mailer: {
+    get provider() {
+      return getEnv('MAILER_PROVIDER', { default: 'noop' }) || 'noop';
+    },
+    get from() {
+      return getEnv('MAILER_FROM');
+    },
+    get apiKey() {
+      return getEnv('MAILER_API_KEY');
+    },
+  },
+
   ai: {
     get geminiKey() {
       return envAliases('GEMINI_API_KEY', ['GOOGLE_API_KEY']);

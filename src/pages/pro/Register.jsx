@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import { useNavigate, Link, useSearchParams } from 'react-router-dom';
 import SEO from '@/components/SEO';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -7,6 +7,7 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { AlertCircle, Loader2 } from 'lucide-react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import { appendNext, normalizeNextPath } from '@/lib/rdvRouting';
 
 export default function ProRegister() {
     const [structureName, setStructureName] = useState('');
@@ -15,6 +16,9 @@ export default function ProRegister() {
     const [error, setError] = useState('');
     const [loading, setLoading] = useState(false);
     const navigate = useNavigate();
+    const [searchParams] = useSearchParams();
+    const next = normalizeNextPath(searchParams.get('next'), '/pro/dashboard');
+    const loginPath = appendNext('/pro/login', next);
 
     const handleRegister = async (e) => {
         e.preventDefault();
@@ -35,7 +39,7 @@ export default function ProRegister() {
             }
 
             localStorage.setItem('pro_token', data.token);
-            navigate('/pro/dashboard');
+            navigate(next);
         } catch (err) {
             setError(err.message);
         } finally {
@@ -100,7 +104,7 @@ export default function ProRegister() {
                             {loading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : "S'inscrire"}
                         </Button>
                         <div className="text-center text-sm text-slate-600 mt-4">
-                            Déjà un compte ? <Link to="/pro/login" className="text-blue-600 hover:underline">Se connecter</Link>
+                            Déjà un compte ? <Link to={loginPath} className="text-blue-600 hover:underline">Se connecter</Link>
                         </div>
                     </form>
                 </CardContent>

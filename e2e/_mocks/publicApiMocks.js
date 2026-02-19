@@ -84,6 +84,7 @@ const MOCK_STRUCTURES = {
             ville: 'Testville',
             statut: 'actif',
             type_structure: 'association',
+            is_pro_enabled: true,
             date_verification: '2025-07-10T10:00:00.000Z',
             provenance: {
                 verifiedAt: '2025-07-10T10:00:00.000Z',
@@ -104,6 +105,7 @@ const MOCK_STRUCTURE_DETAIL = {
     ville: 'Testville',
     statut: 'actif',
     type_structure: 'association',
+    is_pro_enabled: true,
     proServices: [],
     date_verification: '2025-07-10T10:00:00.000Z',
     provenance: {

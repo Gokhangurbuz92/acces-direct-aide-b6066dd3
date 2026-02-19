@@ -70,7 +70,7 @@ export default function AppointmentRequest() {
     };
 
     if (loadingStructure) return <div className="p-12 flex justify-center"><Loader2 className="animate-spin" /></div>;
-    if (!structure) return <div className="p-12 text-center">Structure introuvable</div>;
+    if (!structure) return <div className="p-12 text-center">Cette structure n&apos;existe pas.</div>;
 
     // Success View
     if (successData) {

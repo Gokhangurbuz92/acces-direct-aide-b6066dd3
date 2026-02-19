@@ -1,10 +1,16 @@
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { CheckCircle2, Cookie } from 'lucide-react';
+import SEO from '@/components/SEO';
 
 export default function Cookies() {
   return (
     <div className="min-h-screen bg-slate-50 py-12">
+      <SEO
+        title="Cookies"
+        description="Politique cookies d'AccesDirectAide: cookies necessaires uniquement et absence de tracking marketing."
+        path="/cookies"
+      />
       <div className="max-w-4xl mx-auto px-4 sm:px-6">
         <h1 className="text-3xl font-bold text-slate-900 mb-4">
           Cookies
@@ -105,10 +111,14 @@ export default function Cookies() {
             <CardTitle>Pourquoi pas de bandeau de consentement ?</CardTitle>
           </CardHeader>
           <CardContent>
-            <p className="text-slate-700">
+            <p className="text-slate-700 mb-3">
               Les cookies strictement nécessaires au fonctionnement d'un site 
               ne nécessitent pas de consentement préalable selon le RGPD et la CNIL. 
               C'est pourquoi vous ne verrez pas de bandeau de cookies sur AccesDirectAide.
+            </p>
+            <p className="text-sm text-slate-600">
+              Inventaire technique actuel : aucun script Google Analytics, GTM, Matomo, Plausible
+              ou PostHog n'est actif sur le site public.
             </p>
           </CardContent>
         </Card>

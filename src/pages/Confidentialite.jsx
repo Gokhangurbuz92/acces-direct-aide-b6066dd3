@@ -1,7 +1,14 @@
 
+import SEO from '@/components/SEO';
+
 export default function Confidentialite() {
   return (
     <div className="min-h-screen bg-slate-50 py-12">
+      <SEO
+        title="Politique de confidentialite"
+        description="Traitements de donnees, bases legales, durees de conservation et droits RGPD sur AccesDirectAide."
+        path="/politique-confidentialite"
+      />
       <div className="max-w-4xl mx-auto px-4 sm:px-6">
         <h1 className="text-3xl font-bold text-slate-900 mb-8">
           Politique de confidentialité
@@ -114,6 +121,21 @@ export default function Confidentialite() {
 
           <section>
             <h2 className="text-xl font-bold text-slate-900 mb-4">
+              Finalités et bases légales
+            </h2>
+            <ul className="list-disc list-inside text-slate-700 space-y-2 mb-4">
+              <li>Informer sur les aides et démarches : intérêt légitime.</li>
+              <li>Répondre aux messages de contact : exécution de votre demande.</li>
+              <li>Sécuriser le service et prévenir les abus : intérêt légitime.</li>
+            </ul>
+            <p className="text-slate-700">
+              Les préférences de notifications (email/SMS) feront l'objet d'un opt-in explicite
+              lors de l'ouverture des comptes particuliers.
+            </p>
+          </section>
+
+          <section>
+            <h2 className="text-xl font-bold text-slate-900 mb-4">
               Sécurité
             </h2>
             <p className="text-slate-700">
@@ -127,10 +149,12 @@ export default function Confidentialite() {
             <h2 className="text-xl font-bold text-slate-900 mb-4">
               Durée de conservation
             </h2>
-            <p className="text-slate-700">
-              Les messages de contact sont conservés 12 mois maximum puis supprimés. 
-              Les logs techniques sont conservés 30 jours.
-            </p>
+            <ul className="list-disc list-inside text-slate-700 space-y-2">
+              <li>Messages de contact : 12 mois maximum.</li>
+              <li>Logs techniques applicatifs : 30 jours.</li>
+              <li>Logs de notifications (email/SMS) : 90 jours maximum.</li>
+              <li>Messages usager/pro (quand activés) : 1 an, durée configurable.</li>
+            </ul>
           </section>
 
           <section>

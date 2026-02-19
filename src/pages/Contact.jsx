@@ -218,7 +218,7 @@ export default function Contact() {
 
               <p className="text-xs text-slate-500 text-center">
                 Vos données sont utilisées uniquement pour répondre à votre message. 
-                Consultez notre <a href="/confidentialite" className="text-blue-600 hover:underline">politique de confidentialité</a> pour plus d'informations.
+                Consultez notre <a href="/politique-confidentialite" className="text-blue-600 hover:underline">politique de confidentialité</a> pour plus d'informations.
               </p>
             </form>
           </CardContent>

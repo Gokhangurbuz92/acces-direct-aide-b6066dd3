@@ -48,6 +48,9 @@ Legend:
 | `MONITOR_DQ_OPEN_TOTAL_MAX` | server | no | no | Max open items before `/api/monitor/data-quality` returns `503` (default `500`). |
 | `MONITOR_DQ_OPEN_P0_MAX` | server | no | no | Max open `P0` items before `/api/monitor/data-quality` returns `503` (default `25`). |
 | `MONITOR_INGEST_FRESHNESS_MAX_AGE_HOURS` | server | no | no | Max age of latest `SourceDocument.fetched_at` before `/api/monitor/ingestion-freshness` returns `503` (default `48`). |
+| `PRO_RDV_RATE_LIMIT_READ_PER_MIN` | server | no | no | Per-tenant read quota on `/api/pro/*` RDV endpoints (default `60/min`). |
+| `PRO_RDV_RATE_LIMIT_WRITE_PER_MIN` | server | no | no | Per-tenant write quota on `/api/pro/*` RDV endpoints (default `20/min`). |
+| `PRO_RDV_RATE_LIMIT_WRITE_PER_DAY` | server | no | no | Per-tenant daily write quota on `/api/pro/*` RDV endpoints when KV is configured (default `300/day`). |
 | `BYPASS_SECRET` | server | no | no | Optional bypass for specific automation/test flows. |
 | `KV_REST_API_URL` | server | no | yes | Upstash/Vercel KV REST URL (required for prod rate limiting/locks). |
 | `KV_REST_API_TOKEN` | server | no | yes | Upstash/Vercel KV REST token. |

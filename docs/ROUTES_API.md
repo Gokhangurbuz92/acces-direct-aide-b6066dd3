@@ -15,7 +15,7 @@ L'authentification et les autorisations sont gérées par les handlers ou des mi
 | GET | `/api/monitor/core` | `_handlers/monitor/core.js` | Monitoring public uptime core (DB + KV) | Public |
 | GET | `/api/monitor/data-quality` | `_handlers/monitor/data-quality.js` | Monitoring public de la review queue (seuils P0/total) | Public |
 | GET | `/api/monitor/ingestion-freshness` | `_handlers/monitor/ingestion-freshness.js` | Monitoring public de fraicheur ingestion (SourceDocument) | Public |
-| GET | `/api/monitor/pro-rdv` | `_handlers/monitor/pro-rdv.js` | Readiness DB du module RDV Pro (`ProRdvService`, `ProAvailabilityRule`, `ProAppointment`, `ProTimeOff`) | Public |
+| GET | `/api/monitor/pro-rdv` | `_handlers/monitor/pro-rdv.js` | Readiness DB + baseline migration Prisma du module RDV Pro (`ProRdvService`, `ProAvailabilityRule`, `ProAppointment`, `ProTimeOff`) | Public |
 | GET | `/api/healthz` | `_handlers/health.js` | Alias Health | Public |
 | GET | `/api/robots.txt` | `_handlers/robots.js` | Robots API (root servi en statique via `public/robots.txt`) | Public |
 | GET | `/api/sitemap.xml` | `_handlers/sitemap.js` | Sitemap dynamique (exposé en root via `/sitemap.xml`) | Public |
@@ -54,6 +54,21 @@ Codes de réponse attendus sur le coeur P9-C/P9-D (`/api/pro/services`, `/api/pr
 - `400`: paramètres invalides (date range, payload incomplet, etc.).
 - `401`: token Pro manquant/invalide.
 - `403`: tentative cross-tenant (structure différente).
+- `429`: quota/rate-limit dépassé (`Retry-After`, `X-RateLimit-*`).
+
+Contrat monitor readiness PRO RDV (`GET /api/monitor/pro-rdv`):
+
+```json
+{
+  "ok": true,
+  "missingTables": [],
+  "prismaMigrationsOk": true,
+  "missingMigrations": [],
+  "checkedAt": "ISO",
+  "env": "production|preview|development",
+  "requestId": "..."
+}
+```
 
 ## 4. Contenu Public (Métier)
 

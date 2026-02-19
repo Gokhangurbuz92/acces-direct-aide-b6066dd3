@@ -307,6 +307,18 @@ export const env = {
     },
   },
 
+  proRdv: {
+    get readPerMinute() {
+      return toPositiveInt(getEnv('PRO_RDV_RATE_LIMIT_READ_PER_MIN', { default: '60' }), 60);
+    },
+    get writePerMinute() {
+      return toPositiveInt(getEnv('PRO_RDV_RATE_LIMIT_WRITE_PER_MIN', { default: '20' }), 20);
+    },
+    get writePerDay() {
+      return toPositiveInt(getEnv('PRO_RDV_RATE_LIMIT_WRITE_PER_DAY', { default: '300' }), 300);
+    },
+  },
+
   flags: {
     get devLoginEnabled() {
       return getEnv('VITE_DEV_LOGIN_ENABLED') === 'true';

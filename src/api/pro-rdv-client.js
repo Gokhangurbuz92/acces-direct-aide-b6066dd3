@@ -6,6 +6,74 @@
  *   signal?: AbortSignal,
  * }} ProRequestOptions
  */
+import { sentryRef } from '../observability/sentryRef.js';
+
+/**
+ * @returns {any}
+ */
+function getSentryClient() {
+  const client = sentryRef.current;
+  if (!client) return null;
+  if (typeof client.captureException !== 'function' && typeof client.captureMessage !== 'function') {
+    return null;
+  }
+  return client;
+}
+
+/**
+ * @param {'network_error' | 'request_failed'} kind
+ * @param {{ endpoint: string, method: string, status?: number, requestId?: string | null }} context
+ * @param {unknown=} error
+ */
+function captureProRdvClientIssue(kind, context, error) {
+  const Sentry = getSentryClient();
+  if (!Sentry) return;
+
+  const level = (context.status || 0) >= 500 ? 'error' : 'warning';
+  const requestId = context.requestId || null;
+
+  try {
+    if (typeof Sentry.withScope === 'function') {
+      Sentry.withScope((scope) => {
+        if (scope && typeof scope.setTag === 'function') {
+          scope.setTag('module', 'rdv');
+          scope.setTag('surface', 'pro-ui');
+          scope.setTag('endpoint', context.endpoint);
+          scope.setTag('http.method', context.method);
+          if (typeof context.status === 'number') scope.setTag('http.status_code', String(context.status));
+          if (requestId) scope.setTag('request_id', requestId);
+        }
+        if (scope && typeof scope.setContext === 'function') {
+          scope.setContext('rdv_client', {
+            endpoint: context.endpoint,
+            method: context.method,
+            status: typeof context.status === 'number' ? context.status : null,
+            requestId,
+          });
+        }
+
+        if (error && typeof Sentry.captureException === 'function') {
+          Sentry.captureException(error);
+          return;
+        }
+        if (typeof Sentry.captureMessage === 'function') {
+          Sentry.captureMessage(`pro_rdv_${kind}`, { level });
+        }
+      });
+      return;
+    }
+
+    if (error && typeof Sentry.captureException === 'function') {
+      Sentry.captureException(error);
+      return;
+    }
+    if (typeof Sentry.captureMessage === 'function') {
+      Sentry.captureMessage(`pro_rdv_${kind}`, { level });
+    }
+  } catch {
+    // best-effort: never break UI flow because Sentry failed
+  }
+}
 
 /**
  * @returns {string | null}
@@ -50,12 +118,28 @@ export async function proRdvRequest(path, options = {}) {
     throw new Error('Pro authentication required');
   }
 
-  const response = await fetch(`${path}${buildQueryString(options.query)}`, {
-    method: options.method || 'GET',
-    headers: buildProAuthHeaders(token),
-    body: typeof options.body === 'undefined' ? undefined : JSON.stringify(options.body),
-    signal: options.signal,
-  });
+  const endpoint = `${path}${buildQueryString(options.query)}`;
+  const method = options.method || 'GET';
+
+  /** @type {Response} */
+  let response;
+  try {
+    response = await fetch(endpoint, {
+      method,
+      headers: buildProAuthHeaders(token),
+      body: typeof options.body === 'undefined' ? undefined : JSON.stringify(options.body),
+      signal: options.signal,
+    });
+  } catch (networkError) {
+    captureProRdvClientIssue(
+      'network_error',
+      { endpoint: path, method: String(method).toUpperCase() },
+      networkError,
+    );
+    throw new Error('Pro API network error');
+  }
+
+  const requestId = response.headers.get('x-request-id');
 
   const contentType = response.headers.get('content-type') || '';
   const payload = contentType.includes('application/json')
@@ -63,11 +147,20 @@ export async function proRdvRequest(path, options = {}) {
     : await response.text().catch(() => null);
 
   if (!response.ok) {
+    captureProRdvClientIssue('request_failed', {
+      endpoint: path,
+      method: String(method).toUpperCase(),
+      status: response.status,
+      requestId,
+    });
+
     const error = new Error(`Pro API error (${response.status})`);
     // @ts-ignore
     error.status = response.status;
     // @ts-ignore
     error.payload = payload;
+    // @ts-ignore
+    error.requestId = requestId;
     throw error;
   }
 
@@ -78,10 +171,20 @@ export async function proRdvRequest(path, options = {}) {
  * @param {string} path
  */
 export async function fetchProRdvReadiness(path = '/api/monitor/pro-rdv') {
-  const response = await fetch(path, {
-    method: 'GET',
-    headers: { Accept: 'application/json' },
-  });
+  let response;
+  try {
+    response = await fetch(path, {
+      method: 'GET',
+      headers: { Accept: 'application/json' },
+    });
+  } catch (networkError) {
+    captureProRdvClientIssue(
+      'network_error',
+      { endpoint: path, method: 'GET' },
+      networkError,
+    );
+    throw networkError;
+  }
 
   let payload = null;
   try {

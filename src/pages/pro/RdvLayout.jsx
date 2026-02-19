@@ -5,6 +5,7 @@ import { AlertTriangle, Loader2, RefreshCw } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
 import { fetchProRdvReadiness } from '@/api/pro-rdv-client';
+import ProRdvErrorBoundary from './ProRdvErrorBoundary';
 
 const RDV_LINKS = [
   { to: '/pro/rdv/agenda', label: 'Agenda' },
@@ -41,6 +42,10 @@ export default function ProRdvLayout() {
     const candidate = readiness.payload?.missingTables;
     return Array.isArray(candidate) ? candidate : [];
   }, [readiness.payload]);
+  const missingMigrations = useMemo(() => {
+    const candidate = readiness.payload?.missingMigrations;
+    return Array.isArray(candidate) ? candidate : [];
+  }, [readiness.payload]);
 
   return (
     <div className="space-y-6" data-testid="pro-rdv-layout">
@@ -67,6 +72,8 @@ export default function ProRdvLayout() {
               <p className="font-medium">Base RDV non initialisee sur cet environnement. Voir doc go-live.</p>
               {missingTables.length > 0 ? (
                 <p className="text-xs">Tables manquantes: {missingTables.join(', ')}</p>
+              ) : missingMigrations.length > 0 ? (
+                <p className="text-xs">Migrations manquantes: {missingMigrations.join(', ')}</p>
               ) : (
                 <p className="text-xs">Readiness indisponible. Reessayez apres migration.</p>
               )}
@@ -94,13 +101,15 @@ export default function ProRdvLayout() {
         })}
       </nav>
 
-      <Outlet
-        context={{
-          ...parentContext,
-          user: parentContext.user || null,
-          rdvReadiness: readiness,
-        }}
-      />
+      <ProRdvErrorBoundary>
+        <Outlet
+          context={{
+            ...parentContext,
+            user: parentContext.user || null,
+            rdvReadiness: readiness,
+          }}
+        />
+      </ProRdvErrorBoundary>
     </div>
   );
 }

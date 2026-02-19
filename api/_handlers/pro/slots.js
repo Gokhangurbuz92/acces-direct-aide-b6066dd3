@@ -1,11 +1,12 @@
 import prisma from '../../_utils/prisma.js';
-import { requireProAuth, requireProStructureContext } from '../../_utils/auth.js';
+import { requireProStructureContext } from '../../_utils/auth.js';
 import {
   ACTIVE_APPOINTMENT_STATUSES,
   generateSlots,
   toBusyWindows,
   validateDateRange,
 } from '../../_utils/pro-rdv.js';
+import { withProRdvHandler } from '../../_utils/with-pro-rdv-handler.js';
 
 const MAX_RANGE_DAYS = 31;
 
@@ -111,4 +112,4 @@ async function handler(req, res) {
   });
 }
 
-export default requireProAuth(handler);
+export default withProRdvHandler('pro.slots', handler);

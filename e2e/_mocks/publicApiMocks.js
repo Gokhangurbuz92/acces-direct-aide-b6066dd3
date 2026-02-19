@@ -44,14 +44,14 @@ const MOCK_DEMARCHES = {
         {
             id: 'demarche-1',
             slug: 'demarche-test',
-            titre: 'Démarche Test',
-            summary_falc: 'Résumé démarche.',
+            titre: 'Demander le RSA',
+            summary_falc: 'Resume demarche RSA.',
             statut: 'publie',
             date_verification: '2025-10-10T10:00:00.000Z',
             provenance: {
                 verifiedAt: '2025-10-10T10:00:00.000Z',
                 fetchedAt: '2026-02-10T10:00:00.000Z',
-                sourceUrl: 'https://www.service-public.fr/demarche-test',
+                sourceUrl: 'https://www.service-public.fr/demander-rsa',
                 sourceHost: 'www.service-public.fr'
             }
         }
@@ -62,14 +62,14 @@ const MOCK_DEMARCHES = {
 const MOCK_DEMARCHE_DETAIL = {
     id: 'demarche-1',
     slug: 'demarche-test',
-    titre: 'Démarche Test',
-    summary_falc: 'Résumé démarche.',
+    titre: 'Demander le RSA',
+    summary_falc: 'Resume demarche RSA.',
     statut: 'publie',
     date_verification: '2025-10-10T10:00:00.000Z',
     provenance: {
         verifiedAt: '2025-10-10T10:00:00.000Z',
         fetchedAt: '2026-02-10T10:00:00.000Z',
-        sourceUrl: 'https://www.service-public.fr/demarche-test',
+        sourceUrl: 'https://www.service-public.fr/demander-rsa',
         sourceHost: 'www.service-public.fr'
     }
 };

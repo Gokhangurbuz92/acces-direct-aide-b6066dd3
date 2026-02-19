@@ -1,5 +1,4 @@
 import fs from 'fs';
-import path from 'path';
 
 const ROUTES_FILE = 'api/routes.js';
 const OUTPUT_FILE = 'docs/ROUTES_API.md';

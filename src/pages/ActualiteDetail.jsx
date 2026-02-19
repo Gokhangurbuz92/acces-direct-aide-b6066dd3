@@ -9,6 +9,7 @@ import Gone from './Gone';
 import { generateActualiteSchema, generateBreadcrumbSchema } from '@/utils/schema';
 import ProvenanceFreshness from '@/components/ProvenanceFreshness';
 import FalcSummary from '@/components/FalcSummary';
+import { htmlToPlainText } from '@/lib/htmlText';
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
@@ -136,6 +137,11 @@ export default function ActualiteDetail() {
   const sourceName = actu.source_nom || actu.source_name || actu.source || '';
   const sourceUrl = actu.canonical_url || actu.lien_url || actu.url || actu.source_url || '';
   const provenance = getProvenance(actu);
+  const descriptionText = htmlToPlainText(
+    actu.summary_falc || actu.resume || actu.contenu || '',
+    { maxLength: 160 },
+  );
+  const contentText = htmlToPlainText(actu.contenu || '');
 
   const breadcrumbs = [
     { name: 'Accueil', url: '/' },
@@ -152,7 +158,7 @@ export default function ActualiteDetail() {
     <div className="min-h-screen bg-slate-50">
       <SEO
         title={actu.titre}
-        description={actu.summary_falc || actu.resume || actu.contenu?.substring(0, 150)}
+        description={descriptionText}
         path={`/actualites/${actu.slug}`}
         schema={schema}
       />
@@ -219,7 +225,7 @@ export default function ActualiteDetail() {
             </div>
 
             <div className="prose prose-slate max-w-none text-slate-700 leading-relaxed whitespace-pre-line">
-              {actu.contenu}
+              {contentText}
             </div>
 
             {sourceUrl && (

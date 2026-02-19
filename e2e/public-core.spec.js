@@ -25,13 +25,13 @@ test.describe('Public Core Navigation', () => {
 
     test('Parcours Demarches: List -> Detail -> Refresh', async ({ page }) => {
         await page.goto('/demarches');
-        await expect(page.getByText('Démarche Test').first()).toBeVisible();
+        await expect(page.getByText('Demander le RSA').first()).toBeVisible();
 
         await page.goto('/demarches/demarche-test');
-        await expect(page.getByText('Résumé démarche.').first()).toBeVisible();
+        await expect(page.getByText('Resume demarche RSA.').first()).toBeVisible();
 
         await page.reload();
-        await expect(page.getByText('Résumé démarche.').first()).toBeVisible();
+        await expect(page.getByText('Resume demarche RSA.').first()).toBeVisible();
     });
 
     test('Parcours Annuaire: List -> Detail -> Refresh', async ({ page }) => {

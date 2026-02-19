@@ -666,3 +666,45 @@ Checklist fonctionnelle:
 3. Confirmer un creneau et verifier l'encart `RDV confirme`.
 4. Annuler le RDV depuis la meme page.
 5. Verifier qu'un email de confirmation est envoye si `MAILER_PROVIDER` est configure (piece jointe ICS incluse en mode provider compatible / outbox test).
+
+## Messagerie RDV (P10-E)
+
+Objectif:
+- activer un thread de messagerie par rendez-vous entre usager et structure
+- garder un controle strict: owner-only cote usager, tenant-scope cote Pro
+
+Checklist migration (additive only):
+1. Deployer la migration Prisma:
+   - `prisma/migrations/20260309000000_add_rdv_messaging/migration.sql`
+2. Verifier la presence des tables:
+   - `RdvConversation`
+   - `RdvConversationMessage`
+   - `RdvNotificationLog`
+
+Sanity API (sans exposer de secrets):
+
+```bash
+# Usager: liste conversations
+curl -sS --cookie "ada_user_session=<USER_SESSION>" \
+  "https://www.accesdirectaide.fr/api/messages/conversations"
+
+# Usager: get-or-create depuis un RDV owner
+curl -sS -X POST --cookie "ada_user_session=<USER_SESSION>" \
+  "https://www.accesdirectaide.fr/api/messages/from-appointment/<APPOINTMENT_ID>"
+
+# Pro: liste conversations structure
+curl -sS -H "Authorization: Bearer $PRO_JWT" \
+  "https://www.accesdirectaide.fr/api/pro/messages/conversations"
+```
+
+Attendu:
+- `401` sans session USER ou JWT Pro valide.
+- `403` en cas d'acces hors proprietaire/hors structure.
+- `200` sur lecture, `201` sur envoi.
+- emails "nouveau message" uniquement si opt-in et sans doublon par `(messageId, recipientType)`.
+
+Checklist fonctionnelle:
+1. Depuis un RDV confirme cote usager, ouvrir "Ecrire un message".
+2. Envoyer un message usager puis verifier sa visibilite cote `/pro/messages/:conversationId`.
+3. Repondre cote Pro puis verifier la reception cote `/compte/messages/:conversationId`.
+4. Verifier que les pages messages sont bien en `noindex`.

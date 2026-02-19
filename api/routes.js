@@ -34,6 +34,7 @@ import proAuthForgotPassword from './_handlers/pro/auth/forgot-password.js';
 import proAuthResetPassword from './_handlers/pro/auth/reset-password.js';
 import proMe from './_handlers/pro/me.js';
 import proMessages from './_handlers/pro/messages.js';
+import proMessagesConversations from './_handlers/pro/messages-conversations.js';
 import proServices from './_handlers/pro/services.js';
 import proAppointmentsIndex from './_handlers/pro/appointments/index.js';
 import proAppointmentsCancel from './_handlers/pro/appointments/cancel.js';
@@ -49,6 +50,7 @@ import publicStats from './_handlers/public/stats.js';
 import publicAvailability from './_handlers/public/availability.js';
 import publicAppointmentsCreate from './_handlers/public/appointments/create.js';
 import publicAppointmentsCancel from './_handlers/public/appointments/cancel.js';
+import rdvMessages from './_handlers/messages.js';
 
 // --- Core Data ---
 import aides from './_handlers/aides.js';
@@ -124,6 +126,7 @@ export const routes = [
     { path: 'pro/services', match: 'exact', handler: proServices },
     { path: 'pro/slots', match: 'exact', handler: proSlots },
     { path: 'pro/messages', match: 'exact', handler: proMessages },
+    { path: 'pro/messages/conversations', match: 'prefix', handler: proMessagesConversations },
     { path: 'pro/appointments', match: 'exact', handler: proAppointmentsIndex },
     { path: 'pro/appointments/cancel', match: 'exact', handler: proAppointmentsCancel },
     { path: 'pro/availability', match: 'exact', handler: proAvailability },
@@ -132,6 +135,7 @@ export const routes = [
 
     // --- Public Content ---
     { path: 'public/messages', match: 'exact', handler: publicMessages },
+    { path: 'messages', match: 'prefix', handler: rdvMessages },
     { path: 'public/suggest-structure', match: 'exact', handler: publicSuggestStructure },
     { path: 'public/stats', match: 'exact', handler: publicStats },
     { path: 'public/availability', match: 'exact', handler: publicAvailability },

@@ -20,9 +20,9 @@ export function isTechnicalNoIndexPath(path) {
     path === 'health' ||
     path === 'healthz' ||
     path === 'health/deep' ||
+    path.startsWith('messages/') ||
     path.startsWith('cron/') ||
     path.startsWith('monitor/') ||
     path.startsWith('admin/')
   );
 }
-

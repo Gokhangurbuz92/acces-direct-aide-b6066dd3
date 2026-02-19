@@ -465,3 +465,43 @@ Contrat API associe (public):
 - `provenance.fetchedAt`
 - `provenance.sourceUrl`
 - `provenance.sourceHost`
+
+## Doctolib social pro API core (P9-C)
+
+Objectif:
+- activer le socle DB + API pro-only pour motifs, disponibilites, slots et rendez-vous
+- conserver un scope strict par structure (`requireProStructureContext`) et refuser le cross-tenant
+
+Checklist migration (additive only):
+1. Deployer les migrations Prisma en environnement cible.
+2. Verifier que les nouvelles tables existent:
+   - `ProRdvService`
+   - `ProAvailabilityRule`
+   - `ProAppointment`
+   - `ProTimeOff`
+3. Verifier qu'aucune table historique n'a ete alteree/supprimee.
+
+Sanity API (token Pro dans le terminal uniquement):
+
+```bash
+# 1) services
+curl -sS -H "Authorization: Bearer $PRO_JWT" \
+  "https://www.accesdirectaide.fr/api/pro/services"
+
+# 2) disponibilites
+curl -sS -H "Authorization: Bearer $PRO_JWT" \
+  "https://www.accesdirectaide.fr/api/pro/availability"
+
+# 3) slots
+curl -sS -H "Authorization: Bearer $PRO_JWT" \
+  "https://www.accesdirectaide.fr/api/pro/slots?serviceId=<SERVICE_ID>&from=2026-03-01T00:00:00.000Z&to=2026-03-03T00:00:00.000Z"
+
+# 4) appointments
+curl -sS -H "Authorization: Bearer $PRO_JWT" \
+  "https://www.accesdirectaide.fr/api/pro/appointments?from=2026-03-01T00:00:00.000Z&to=2026-03-03T00:00:00.000Z"
+```
+
+Attendu:
+- `401` sans JWT pro.
+- `403` en cross-tenant.
+- `200/201` pour les operations valides sur la structure du ProUser.

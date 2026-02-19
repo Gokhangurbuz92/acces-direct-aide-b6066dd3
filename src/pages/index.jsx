@@ -79,10 +79,14 @@ const ProForgotPassword = lazy(() => import("./pro/ForgotPassword.jsx"));
 const ProResetPassword = lazy(() => import("./pro/ResetPassword.jsx"));
 const ProDashboard = lazy(() => import("./pro/Dashboard.jsx"));
 const ProServices = lazy(() => import("./pro/Services.jsx"));
+const ProAvailability = lazy(() => import("./pro/Availability.jsx"));
 const ProTeam = lazy(() => import("./pro/Team.jsx"));
 const ProStructure = lazy(() => import("./pro/Structure.jsx"));
 const ProAppointments = lazy(() => import("./pro/Appointments.jsx"));
 const ProAppointmentDetail = lazy(() => import("./pro/AppointmentDetail.jsx"));
+const ProRdvLayout = lazy(() => import("./pro/RdvLayout.jsx"));
+const ProRdvNew = lazy(() => import("./pro/RdvNew.jsx"));
+const ProRdvAbsences = lazy(() => import("./pro/RdvAbsences.jsx"));
 
 // Sentry
 const SentryTest = lazy(() => import("@/components/SentryTest.jsx"));
@@ -163,10 +167,19 @@ function PagesContent() {
                         <Route path="forgot-password" element={<ProForgotPassword />} />
                         <Route path="reset-password" element={<ProResetPassword />} />
                         <Route path="dashboard" element={<ProGuard><ProDashboard /></ProGuard>} />
-                        <Route path="services" element={<ProGuard><ProServices /></ProGuard>} />
+                        <Route path="rdv" element={<ProGuard><ProRdvLayout /></ProGuard>}>
+                            <Route index element={<Navigate to="agenda" replace />} />
+                            <Route path="services" element={<ProServices />} />
+                            <Route path="disponibilites" element={<ProAvailability />} />
+                            <Route path="agenda" element={<ProAppointments />} />
+                            <Route path="new" element={<ProRdvNew />} />
+                            <Route path="absences" element={<ProRdvAbsences />} />
+                        </Route>
+                        <Route path="services" element={<Navigate to="/pro/rdv/services" replace />} />
+                        <Route path="availability" element={<Navigate to="/pro/rdv/disponibilites" replace />} />
+                        <Route path="appointments" element={<Navigate to="/pro/rdv/agenda" replace />} />
                         <Route path="team" element={<ProGuard><ProTeam /></ProGuard>} />
                         <Route path="structure" element={<ProGuard><ProStructure /></ProGuard>} />
-                        <Route path="appointments" element={<ProGuard><ProAppointments /></ProGuard>} />
                         <Route path="appointments/:id" element={<ProGuard><ProAppointmentDetail /></ProGuard>} />
                     </Route>
                 </Routes>

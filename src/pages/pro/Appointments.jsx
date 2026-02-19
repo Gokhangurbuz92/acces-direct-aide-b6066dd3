@@ -1,136 +1,244 @@
+// @ts-nocheck
+import { useCallback, useEffect, useMemo, useState } from 'react';
+import { Link } from 'react-router-dom';
+import { Calendar, CheckCircle, Loader2, RefreshCw, XCircle } from 'lucide-react';
 
-import { useEffect, useState } from 'react';
-import { useOutletContext } from 'react-router-dom';
-import { Loader2, Calendar, User, Clock, CheckCircle, XCircle, AlertCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { format, parseISO } from 'date-fns';
-import { fr } from 'date-fns/locale';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { useToast } from "@/components/ui/use-toast";
+import { Input } from '@/components/ui/input';
+import { proRdvClient } from '@/api/pro-rdv-client';
 
-const STATUS_CONFIG = {
-    requested: { label: 'À confirmer', color: 'bg-yellow-100 text-yellow-800', icon: AlertCircle },
-    confirmed: { label: 'Confirmé', color: 'bg-green-100 text-green-800', icon: CheckCircle },
-    cancelled: { label: 'Annulé', color: 'bg-red-100 text-red-800', icon: XCircle },
-    locked: { label: 'Réservé', color: 'bg-blue-100 text-blue-800', icon: Clock }
+function formatDateTime(raw) {
+  if (!raw) return '-';
+  const date = new Date(String(raw));
+  if (Number.isNaN(date.getTime())) return '-';
+  return date.toLocaleString('fr-FR', {
+    dateStyle: 'short',
+    timeStyle: 'short',
+    timeZone: 'Europe/Paris',
+  });
+}
+
+function toDateIso(dateValue, kind) {
+  const normalized = String(dateValue || '').trim();
+  if (!normalized) return '';
+  const suffix = kind === 'start' ? 'T00:00:00.000Z' : 'T23:59:59.999Z';
+  return `${normalized}${suffix}`;
+}
+
+const STATUS_STYLES = {
+  booked: 'border-blue-200 bg-blue-50 text-blue-800',
+  cancelled: 'border-rose-200 bg-rose-50 text-rose-800',
+  done: 'border-emerald-200 bg-emerald-50 text-emerald-800',
 };
 
 export default function ProAppointments() {
-    useOutletContext();
-    const [appointments, setAppointments] = useState([]);
-    const [loading, setLoading] = useState(true);
-    const { toast } = useToast();
+  const [loading, setLoading] = useState(true);
+  const [updatingId, setUpdatingId] = useState('');
+  const [error, setError] = useState('');
+  const [services, setServices] = useState([]);
+  const [appointments, setAppointments] = useState([]);
+  const [filters, setFilters] = useState({
+    serviceId: '',
+    status: '',
+    fromDate: new Date().toISOString().slice(0, 10),
+    toDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10),
+  });
 
-    const fetchAppointments = () => {
-        setLoading(true);
-        const token = localStorage.getItem('pro_token');
-        fetch('/api/pro/appointments?pageSize=50', {
-            headers: { Authorization: `Bearer ${token}` }
-        })
-            .then(res => {
-                if (!res.ok) throw new Error("Unauthorized");
-                return res.json();
-            })
-            .then(data => setAppointments(data.items || []))
-            .catch(err => console.error(err))
-            .finally(() => setLoading(false));
-    };
+  const loadData = useCallback(async () => {
+    setLoading(true);
+    setError('');
 
-    useEffect(() => {
-        fetchAppointments();
-    }, []);
+    const from = toDateIso(filters.fromDate, 'start');
+    const to = toDateIso(filters.toDate, 'end');
 
-    const handleCancel = async (id) => {
-        if(!confirm("Voulez-vous vraiment annuler ce rendez-vous ?")) return;
+    try {
+      const [servicesResponse, appointmentsResponse] = await Promise.all([
+        proRdvClient.services.list(),
+        proRdvClient.appointments.list({
+          from: from || undefined,
+          to: to || undefined,
+          status: filters.status || undefined,
+          pageSize: 100,
+        }),
+      ]);
 
-        const token = localStorage.getItem('pro_token');
-        try {
-            const res = await fetch('/api/pro/appointments/cancel', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    Authorization: `Bearer ${token}`
-                },
-                body: JSON.stringify({ id })
-            });
+      setServices(Array.isArray(servicesResponse) ? servicesResponse : []);
+      const items = Array.isArray(appointmentsResponse?.items) ? appointmentsResponse.items : [];
+      const filteredByService =
+        filters.serviceId && filters.serviceId !== ''
+          ? items.filter((item) => item.serviceId === filters.serviceId)
+          : items;
+      setAppointments(filteredByService);
+    } catch {
+      setError('Impossible de charger l\'agenda.');
+    } finally {
+      setLoading(false);
+    }
+  }, [filters.fromDate, filters.toDate, filters.status, filters.serviceId]);
 
-            if (!res.ok) throw new Error("Failed to cancel");
+  useEffect(() => {
+    loadData();
+  }, [loadData]);
 
-            toast({ title: "Rendez-vous annulé" });
-            fetchAppointments(); // Refresh list
-        } catch (e) {
-            console.error(e);
-            toast({ variant: "destructive", title: "Erreur", description: "Impossible d'annuler ce rendez-vous." });
-        }
-    };
+  const serviceOptions = useMemo(() => {
+    return services.map((service) => ({ id: service.id, name: service.name }));
+  }, [services]);
 
-    if (loading) return <div className="flex justify-center p-12"><Loader2 className="animate-spin h-8 w-8 text-indigo-600" /></div>;
+  const updateStatus = async (id, status) => {
+    setUpdatingId(id);
+    setError('');
+    try {
+      if (status === 'cancelled') {
+        await proRdvClient.appointments.cancelLegacy(id);
+      } else {
+        await proRdvClient.appointments.update(id, { status });
+      }
+      await loadData();
+    } catch {
+      setError('Impossible de mettre a jour ce rendez-vous.');
+    } finally {
+      setUpdatingId('');
+    }
+  };
 
-    return (
-        <div className="space-y-6">
-            <div className="flex justify-between items-center">
-                <h1 className="text-2xl font-bold text-slate-900">Mes Rendez-vous</h1>
-                <Button variant="outline" onClick={fetchAppointments}>Actualiser</Button>
-            </div>
-
-            <div className="grid gap-4">
-                {appointments.length === 0 && (
-                    <div className="text-center p-12 bg-slate-50 rounded-lg border border-dashed border-slate-300">
-                        <Calendar className="h-12 w-12 text-slate-300 mx-auto mb-3" />
-                        <p className="text-slate-600">Aucun rendez-vous planifié.</p>
-                    </div>
-                )}
-
-                {appointments.map(app => {
-                    const status = STATUS_CONFIG[app.status] || STATUS_CONFIG.requested;
-                    const StatusIcon = status.icon;
-
-                    return (
-                        <div key={app.id} className="bg-white p-5 rounded-lg shadow-sm border border-slate-200 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-                            <div className="flex items-start gap-4">
-                                <div className="bg-indigo-50 p-3 rounded-lg hidden sm:block">
-                                    <Calendar className="h-6 w-6 text-indigo-600" />
-                                </div>
-                                <div>
-                                    <div className="flex items-center gap-2 mb-1">
-                                        <span className="font-semibold text-lg text-slate-900">
-                                            {format(parseISO(app.start_at), 'PPPP à HH:mm', { locale: fr })}
-                                        </span>
-                                        <Badge variant="secondary" className={`${status.color} border-0 flex items-center gap-1`}>
-                                            <StatusIcon className="h-3 w-3" />
-                                            {status.label}
-                                        </Badge>
-                                    </div>
-                                    <div className="flex items-center gap-3 text-sm text-slate-600">
-                                        <div className="flex items-center gap-1">
-                                            <User className="h-4 w-4" />
-                                            {app.beneficiary?.contactMasked || 'Bénéficiaire'}
-                                        </div>
-                                        <span className="text-slate-300">|</span>
-                                        <div className="flex items-center gap-1">
-                                            <Clock className="h-4 w-4" />
-                                            1h
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <div className="flex gap-2 w-full sm:w-auto">
-                                <Button variant="outline" className="flex-1 sm:flex-none">Détails</Button>
-                                {app.status !== 'cancelled' && (
-                                    <Button
-                                        variant="ghost"
-                                        className="text-red-600 hover:text-red-700 hover:bg-red-50 flex-1 sm:flex-none"
-                                        onClick={() => handleCancel(app.id)}
-                                    >
-                                        Annuler
-                                    </Button>
-                                )}
-                            </div>
-                        </div>
-                    );
-                })}
-            </div>
+  return (
+    <div className="space-y-6">
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <h2 className="text-xl font-bold text-slate-900">Agenda</h2>
+        <div className="flex flex-wrap gap-2">
+          <Button variant="outline" onClick={loadData}>
+            <RefreshCw className="mr-2 h-4 w-4" />
+            Actualiser
+          </Button>
+          <Button asChild>
+            <Link to="/pro/rdv/new">Creer un RDV</Link>
+          </Button>
         </div>
-    );
+      </div>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Filtres</CardTitle>
+        </CardHeader>
+        <CardContent className="grid gap-3 md:grid-cols-4">
+          <label className="space-y-1 text-sm">
+            <span className="text-slate-700">Service</span>
+            <select
+              className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm"
+              value={filters.serviceId}
+              onChange={(event) => setFilters((prev) => ({ ...prev, serviceId: event.target.value }))}
+            >
+              <option value="">Tous</option>
+              {serviceOptions.map((service) => (
+                <option key={service.id} value={service.id}>
+                  {service.name}
+                </option>
+              ))}
+            </select>
+          </label>
+
+          <label className="space-y-1 text-sm">
+            <span className="text-slate-700">Statut</span>
+            <select
+              className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm"
+              value={filters.status}
+              onChange={(event) => setFilters((prev) => ({ ...prev, status: event.target.value }))}
+            >
+              <option value="">Tous</option>
+              <option value="booked">booked</option>
+              <option value="cancelled">cancelled</option>
+              <option value="done">done</option>
+            </select>
+          </label>
+
+          <label className="space-y-1 text-sm">
+            <span className="text-slate-700">Du</span>
+            <Input
+              type="date"
+              value={filters.fromDate}
+              onChange={(event) => setFilters((prev) => ({ ...prev, fromDate: event.target.value }))}
+            />
+          </label>
+
+          <label className="space-y-1 text-sm">
+            <span className="text-slate-700">Au</span>
+            <Input
+              type="date"
+              value={filters.toDate}
+              onChange={(event) => setFilters((prev) => ({ ...prev, toDate: event.target.value }))}
+            />
+          </label>
+        </CardContent>
+      </Card>
+
+      {error ? (
+        <div className="rounded-md border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-800">{error}</div>
+      ) : null}
+
+      {loading ? (
+        <div className="flex items-center gap-2 text-sm text-slate-600">
+          <Loader2 className="h-4 w-4 animate-spin" /> Chargement...
+        </div>
+      ) : appointments.length === 0 ? (
+        <Card>
+          <CardContent className="flex flex-col items-center gap-2 py-8 text-sm text-slate-600">
+            <Calendar className="h-10 w-10 text-slate-300" />
+            Aucun rendez-vous sur cette periode.
+          </CardContent>
+        </Card>
+      ) : (
+        <div className="space-y-3">
+          {appointments.map((appointment) => {
+            const statusClass = STATUS_STYLES[appointment.status] || 'border-slate-200 bg-slate-100 text-slate-700';
+            return (
+              <Card key={appointment.id}>
+                <CardContent className="flex flex-col gap-3 p-4 md:flex-row md:items-center md:justify-between">
+                  <div className="space-y-1">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <p className="font-semibold text-slate-900">{formatDateTime(appointment.startAt || appointment.start_at)}</p>
+                      <Badge className={statusClass}>{appointment.status}</Badge>
+                    </div>
+                    <p className="text-sm text-slate-700">
+                      {appointment.serviceName || 'Service'}
+                      {' - '}
+                      {appointment.beneficiaryName || 'Beneficiaire'}
+                    </p>
+                    {appointment.notes ? <p className="text-xs text-slate-500">{appointment.notes}</p> : null}
+                  </div>
+
+                  <div className="flex flex-wrap gap-2">
+                    {appointment.status !== 'done' ? (
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => updateStatus(appointment.id, 'done')}
+                        disabled={updatingId === appointment.id}
+                      >
+                        {updatingId === appointment.id ? <Loader2 className="mr-1 h-4 w-4 animate-spin" /> : <CheckCircle className="mr-1 h-4 w-4" />}
+                        Marquer done
+                      </Button>
+                    ) : null}
+
+                    {appointment.status !== 'cancelled' ? (
+                      <Button
+                        size="sm"
+                        variant="destructive"
+                        onClick={() => updateStatus(appointment.id, 'cancelled')}
+                        disabled={updatingId === appointment.id}
+                      >
+                        {updatingId === appointment.id ? <Loader2 className="mr-1 h-4 w-4 animate-spin" /> : <XCircle className="mr-1 h-4 w-4" />}
+                        Annuler
+                      </Button>
+                    ) : null}
+                  </div>
+                </CardContent>
+              </Card>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
 }

@@ -158,6 +158,9 @@ export default function DemarcheDetail() {
     categorySlug ||
     'Autre';
   const provenance = getProvenance(demarche);
+  const pdfDownloadUrl = (demarche?.slug || demarche?.id)
+    ? `/api/pdf/demarches/${encodeURIComponent(demarche.slug || demarche.id)}`
+    : null;
 
   const canonicalPath = demarche.slug
     ? `/demarches/${demarche.slug}`
@@ -389,10 +392,16 @@ export default function DemarcheDetail() {
                     </a>
                   </Button>
                 )}
-                <Button variant="outline" className="w-full" onClick={() => window.print()}>
-                  <Download className="mr-2 h-4 w-4" />
-                  Imprimer la fiche / PDF
-                </Button>
+                {pdfDownloadUrl && (
+                  <Button
+                    variant="outline"
+                    className="w-full"
+                    onClick={() => window.open(pdfDownloadUrl, '_blank', 'noopener,noreferrer')}
+                  >
+                    <Download className="mr-2 h-4 w-4" />
+                    Télécharger en PDF
+                  </Button>
+                )}
                 <FeedbackButton
                   type="demarche"
                   entityId={demarche.id}

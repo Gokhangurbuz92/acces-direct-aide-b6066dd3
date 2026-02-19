@@ -6,6 +6,17 @@ import { logger } from '../lib/logger.js';
 import * as Sentry from '@sentry/node';
 import crypto from 'crypto';
 import { buildProvenance } from '../_utils/provenance.js';
+
+const DEMARCHE_TEST_TITLE_PATTERN = /^(?:d[ée]marche\s+)?test\b/i;
+
+/**
+ * @param {string | null | undefined} titre
+ * @returns {boolean}
+ */
+function isTestDemarcheTitle(titre) {
+    if (!titre) return false;
+    return DEMARCHE_TEST_TITLE_PATTERN.test(String(titre).trim());
+}
 /**
  * @param {string | null | undefined} url
  * @param {string | null | undefined} host
@@ -123,6 +134,9 @@ export default async function handler(req, res) {
             if (!isAdmin && demarche.statut !== 'publie') {
                 return res.status(404).json({ error: "Démarche non trouvée" });
             }
+            if (!isAdmin && isTestDemarcheTitle(demarche.titre)) {
+                return res.status(404).json({ error: "Démarche non trouvée" });
+            }
             const { sourceDocument, ...safeDemarche } = demarche;
             return res.status(200).json({
               ...safeDemarche,
@@ -136,7 +150,10 @@ export default async function handler(req, res) {
 
         // 2. Search / List
         logger.info('SEARCH_DEMARCHES_START', { requestId, path: req.url, query: rawQuery });
-        const { items, total } = await searchDemarches(prisma, effectiveParams);
+        const { items, total } = await searchDemarches(prisma, {
+            ...effectiveParams,
+            hideTestContent: !isAdmin,
+        });
 
         return res.status(200).json({
             items,

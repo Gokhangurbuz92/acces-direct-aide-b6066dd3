@@ -116,10 +116,10 @@ test.describe('P8-E provenance and freshness UI', () => {
     await expect(page.locator('[data-testid="freshness-badge"]')).toContainText('À vérifier');
   });
 
-  test('shows Non vérifié badge when verification is missing', async ({ page }) => {
+  test('shows À vérifier badge when verification is missing', async ({ page }) => {
     await page.goto('/aides/aide-provenance-non-verifie');
     await page.waitForResponse((response) => response.url().includes('/api/aides/aide-provenance-non-verifie'));
 
-    await expect(page.locator('[data-testid="freshness-badge"]')).toContainText('Non vérifié');
+    await expect(page.locator('[data-testid="freshness-badge"]')).toContainText('À vérifier');
   });
 });

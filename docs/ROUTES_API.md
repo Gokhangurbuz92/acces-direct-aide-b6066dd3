@@ -15,6 +15,7 @@ L'authentification et les autorisations sont gérées par les handlers ou des mi
 | GET | `/api/monitor/core` | `_handlers/monitor/core.js` | Monitoring public uptime core (DB + KV) | Public |
 | GET | `/api/monitor/data-quality` | `_handlers/monitor/data-quality.js` | Monitoring public de la review queue (seuils P0/total) | Public |
 | GET | `/api/monitor/ingestion-freshness` | `_handlers/monitor/ingestion-freshness.js` | Monitoring public de fraicheur ingestion (SourceDocument) | Public |
+| GET | `/api/monitor/pro-rdv` | `_handlers/monitor/pro-rdv.js` | Readiness DB du module RDV Pro (`ProRdvService`, `ProAvailabilityRule`, `ProAppointment`, `ProTimeOff`) | Public |
 | GET | `/api/healthz` | `_handlers/health.js` | Alias Health | Public |
 | GET | `/api/robots.txt` | `_handlers/robots.js` | Robots API (root servi en statique via `public/robots.txt`) | Public |
 | GET | `/api/sitemap.xml` | `_handlers/sitemap.js` | Sitemap dynamique (exposé en root via `/sitemap.xml`) | Public |
@@ -45,9 +46,10 @@ L'authentification et les autorisations sont gérées par les handlers ou des mi
 | GET | `/api/pro/slots` | `_handlers/pro/slots.js` | Génération de créneaux (`serviceId`, `from`, `to`) | Pro JWT |
 | GET/POST/PATCH | `/api/pro/appointments` | `_handlers/pro/appointments/index.js` | Liste + création + mise à jour statut RDV | Pro JWT |
 | POST | `/api/pro/appointments/cancel` | `_handlers/pro/appointments/cancel.js` | Annulation RDV (compat héritée) | Pro JWT |
+| GET/POST/PATCH/PUT/DELETE | `/api/pro/timeoff` | `_handlers/pro/timeoff.js` | CRUD absences structure (impact slots) | Pro JWT |
 | GET/POST | `/api/pro/messages` | `_handlers/pro/messages.js` | Messagerie Pro | Pro JWT |
 
-Codes de réponse attendus sur le coeur P9-C (`/api/pro/services`, `/api/pro/availability`, `/api/pro/slots`, `/api/pro/appointments`):
+Codes de réponse attendus sur le coeur P9-C/P9-D (`/api/pro/services`, `/api/pro/availability`, `/api/pro/slots`, `/api/pro/appointments`, `/api/pro/timeoff`):
 - `200`/`201`: succès.
 - `400`: paramètres invalides (date range, payload incomplet, etc.).
 - `401`: token Pro manquant/invalide.

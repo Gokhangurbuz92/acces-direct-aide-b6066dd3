@@ -64,11 +64,18 @@ Routes imbriquées sous le layout `ProLayout`.
 | `/pro/forgot-password` | `ProForgotPassword` | `/api/pro/auth/forgot-password` | Mot de passe oublié |
 | `/pro/reset-password` | `ProResetPassword` | `/api/pro/auth/reset-password` | Reset mot de passe |
 | `/pro/dashboard` | `ProDashboard` | `/api/pro/me` | Tableau de bord (Protégé par `ProGuard`) |
-| `/pro/services` | `ProServices` | `/api/pro/services` | Gestion services (Protégé par `ProGuard`) |
+| `/pro/rdv` | `ProRdvLayout` | `/api/monitor/pro-rdv` | Shell RDV Pro + banner readiness (Protégé par `ProGuard`) |
+| `/pro/rdv/services` | `ProServices` | `/api/pro/services` | Gestion services RDV (Protégé par `ProGuard`) |
+| `/pro/rdv/disponibilites` | `ProAvailability` | `/api/pro/availability` | Gestion disponibilites (Protégé par `ProGuard`) |
+| `/pro/rdv/agenda` | `ProAppointments` | `/api/pro/appointments` | Agenda RDV (Protégé par `ProGuard`) |
+| `/pro/rdv/new` | `ProRdvNew` | `/api/pro/slots`, `/api/pro/appointments` | Creation RDV (Protégé par `ProGuard`) |
+| `/pro/rdv/absences` | `ProRdvAbsences` | `/api/pro/timeoff` | Gestion absences (Protégé par `ProGuard`) |
+| `/pro/services` | `Navigate` -> `/pro/rdv/services` | `/api/pro/services` | Alias legacy |
 | `/pro/team` | `ProTeam` | `/api/pro/team` | Gestion équipe (Protégé par `ProGuard`) |
 | `/pro/structure` | `ProStructure` | `/api/pro/structure` | Gestion structure (Protégé par `ProGuard`) |
-| `/pro/appointments` | `ProAppointments` | `/api/pro/appointments` | Liste RDV (Protégé par `ProGuard`) |
+| `/pro/appointments` | `Navigate` -> `/pro/rdv/agenda` | `/api/pro/appointments` | Alias legacy |
 | `/pro/appointments/:id` | `ProAppointmentDetail` | `/api/pro/appointments/:id` | Détail RDV (Protégé par `ProGuard`) |
+| `/pro/availability` | `Navigate` -> `/pro/rdv/disponibilites` | `/api/pro/availability` | Alias legacy |
 | `/login/pro` | `LoginPro` | - | Legacy / Dev only |
 
 ## 3. Administration (`/admin`)

@@ -505,3 +505,39 @@ Attendu:
 - `401` sans JWT pro.
 - `403` en cross-tenant.
 - `200/201` pour les operations valides sur la structure du ProUser.
+
+## Doctolib social pro UI + readiness DB (P9-D)
+
+Objectif:
+- livrer une UI Pro minimale sous `/pro/rdv/*` (agenda, services, disponibilites, absences, creation RDV)
+- verifier rapidement que les tables P9-C sont bien presentes via un endpoint readiness
+
+Routes front principales:
+- `/pro/rdv/agenda`
+- `/pro/rdv/services`
+- `/pro/rdv/disponibilites`
+- `/pro/rdv/new`
+- `/pro/rdv/absences`
+
+Endpoint readiness:
+- `GET /api/monitor/pro-rdv`
+  - `200`: toutes les tables RDV sont presentes
+  - `503`: au moins une table manque (`missingTables`)
+
+Checklist de deploiement:
+1. Appliquer la migration SQL P9-C sur staging/prod:
+   - `prisma/migrations/20260305000000_add_pro_rdv_core/migration.sql`
+2. Verifier l'endpoint readiness:
+   - `curl -sS "https://www.accesdirectaide.fr/api/monitor/pro-rdv"`
+3. Verifier l'espace Pro:
+   - connexion Pro JWT
+   - acces `/pro/rdv/agenda`
+   - creation d'un RDV via `/pro/rdv/new`
+   - creation d'une absence via `/pro/rdv/absences`
+
+Sanity API timeoff (token Pro dans le terminal uniquement):
+
+```bash
+curl -sS -H "Authorization: Bearer $PRO_JWT" \
+  "https://www.accesdirectaide.fr/api/pro/timeoff"
+```

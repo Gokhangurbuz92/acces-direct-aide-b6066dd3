@@ -46,6 +46,8 @@ const BeneficiaryMessages = lazy(() => import("./BeneficiaryMessages.jsx"));
 const AppointmentRequest = lazy(() => import("./AppointmentRequest.jsx"));
 const AppointmentCancel = lazy(() => import("./AppointmentCancel.jsx"));
 const AppointmentReschedule = lazy(() => import("./AppointmentReschedule.jsx"));
+const PublicRdvEntry = lazy(() => import("./PublicRdvEntry.jsx"));
+const AuthRdvAccess = lazy(() => import("./AuthRdvAccess.jsx"));
 const Layout = lazy(() => import("./Layout.jsx"));
 const AdminGuard = lazy(() => import("@/components/AdminGuard"));
 const ProGuard = lazy(() => import("@/components/ProGuard"));
@@ -104,7 +106,7 @@ const PAGES = {
     DemarcheDetail, DispositifDetail, Login, LoginPro, Demarches, Home, Orientation,
     MentionsLegales, SourcesMethode, SentryTest, StructureDetail,
     AdminInbox, AdminRuns, AdminObservability, AdminReviewQueue, AppointmentRequest, AppointmentCancel, AppointmentReschedule, AdminStructures,
-    AdminDemarches, AdminDemarcheEdit, AdminAppointments, AdminReview, Status
+    AdminDemarches, AdminDemarcheEdit, AdminAppointments, AdminReview, Status, PublicRdvEntry, AuthRdvAccess
 };
 
 // Loading Fallback
@@ -193,6 +195,8 @@ function PagesContent() {
                 <Routes>
                     <Route path="/" element={<Home />} />
                     <Route path="/login" element={<Login />} />
+                    <Route path="/auth/login" element={<AuthRdvAccess mode="login" />} />
+                    <Route path="/auth/signup" element={<AuthRdvAccess mode="signup" />} />
                     <Route path="/a-propos" element={<APropos />} />
                     <Route path="/accessibilite" element={<Accessibilite />} />
                     <Route path="/actualites" element={<Actualites />} />
@@ -218,6 +222,9 @@ function PagesContent() {
                     <Route path="/appointments/request" element={<AppointmentRequest />} />
                     <Route path="/appointments/cancel/:token" element={<AppointmentCancel />} />
                     <Route path="/appointments/reschedule/:token" element={<AppointmentReschedule />} />
+                    <Route path="/rdv/:structureSlug" element={<PublicRdvEntry view="landing" />} />
+                    <Route path="/rdv/:structureSlug/services" element={<PublicRdvEntry view="services" />} />
+                    <Route path="/rdv/:structureSlug/creneaux" element={<PublicRdvEntry view="creneaux" />} />
                     <Route path="/admin/appointments" element={<AdminGuard><AdminAppointments /></AdminGuard>} />
                     <Route path="/admin/structures" element={<AdminGuard><AdminStructures /></AdminGuard>} />
                     <Route path="/admin/demarches" element={<AdminGuard><AdminDemarches /></AdminGuard>} />

@@ -4,9 +4,9 @@ import { getFreshnessBadge, getFreshnessState } from '../../src/lib/provenance.j
 describe('freshness helpers', () => {
   const now = new Date('2026-02-18T00:00:00.000Z');
 
-  it('returns non verified when verification date is missing', () => {
+  it('returns to review label when verification date is missing', () => {
     expect(getFreshnessState(null, now)).toBe('not_verified');
-    expect(getFreshnessBadge(null, now).label).toBe('Non vérifié');
+    expect(getFreshnessBadge(null, now).label).toBe('À vérifier');
   });
 
   it('returns up to date when verification is <= 90 days', () => {

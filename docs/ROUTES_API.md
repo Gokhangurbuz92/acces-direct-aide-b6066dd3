@@ -21,6 +21,7 @@ Il liste les routes définies et leurs gestionnaires.
 | `/api/sitemap` | `exact` | `./_handlers/sitemap.js` | Public | - |
 | `/api/login-pro-guard` | `exact` | `./_handlers/login-pro-guard.js` | Public | - |
 | `/api/taxonomy` | `exact` | `./_handlers/taxonomy.js` | Public | - |
+| `/api/pdf` | `prefix` | `./_handlers/pdf.js` | Public | Export PDF stable des fiches publiques (`/api/pdf/aides/:slug`, `/api/pdf/demarches/:slug`) |
 | `/api/auth/login` | `exact` | `./_handlers/auth/login.js` | Public/Auth | - |
 | `/api/auth/me` | `exact` | `./_handlers/auth/me.js` | Public/Auth | - |
 | `/api/pro/auth/login` | `exact` | `./_handlers/pro/auth/login.js` | Pro | - |

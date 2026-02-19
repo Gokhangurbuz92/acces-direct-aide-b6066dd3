@@ -12,10 +12,10 @@ Accessibles à tous les utilisateurs.
 | `/` | `Home` | `/api/public/stats` | Page d'accueil |
 | `/login` | `Login` | - | Entrée de connexion unifiée (admin/pro, noindex) |
 | `/aides` | `Aides` | `/api/aides`, `/api/taxonomy` | Recherche aides |
-| `/aides/:slug` | `AideDetail` | `/api/aides/:slug`, `/api/feedback` | Détail aide + bloc provenance/fraicheur + CTA “Signaler une info” |
+| `/aides/:slug` | `AideDetail` | `/api/aides/:slug`, `/api/pdf/aides/:slug`, `/api/feedback` | Détail aide + bloc provenance/fraicheur + export PDF stable + CTA “Signaler une info” |
 | `/status` | `Status` | `/api/monitor/data-quality`, `/api/monitor/ingestion-freshness` | Statut public (noindex) |
 | `/demarches` | `Demarches` | `/api/demarches` | Liste démarches |
-| `/demarches/:slug` | `DemarcheDetail` | `/api/demarches/:slug`, `/api/feedback` | Détail démarche + bloc provenance/fraicheur + CTA “Signaler une info” |
+| `/demarches/:slug` | `DemarcheDetail` | `/api/demarches/:slug`, `/api/pdf/demarches/:slug`, `/api/feedback` | Détail démarche + bloc provenance/fraicheur + export PDF stable + CTA “Signaler une info” |
 | `/annuaire` | `Annuaire` | `/api/structures` | Liste structures |
 | `/structures/:slug` | `StructureDetail` | `/api/structures/:slug` | Détail structure |
 | `/rdv/:structureSlug` | `PublicRdvEntry` | `/api/structures/:slug`, `/api/auth/me` | Entrée publique RDV (redirige vers auth si non connecté) |

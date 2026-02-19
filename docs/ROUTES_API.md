@@ -40,10 +40,18 @@ L'authentification et les autorisations sont gérées par les handlers ou des mi
 | POST | `/api/pro/auth/forgot-password` | `_handlers/pro/auth/forgot-password.js` | Oubli mot de passe | Public |
 | POST | `/api/pro/auth/reset-password` | `_handlers/pro/auth/reset-password.js` | Reset mot de passe | Public |
 | GET | `/api/pro/me` | `_handlers/pro/me.js` | Profil Pro | Pro JWT |
+| GET/POST/PATCH/PUT/DELETE | `/api/pro/services` | `_handlers/pro/services.js` | CRUD motifs RDV (scope structure Pro) | Pro JWT |
+| GET/PUT/POST | `/api/pro/availability` | `_handlers/pro/availability.js` | Règles de disponibilités (`rules` / `slots_json`) | Pro JWT |
+| GET | `/api/pro/slots` | `_handlers/pro/slots.js` | Génération de créneaux (`serviceId`, `from`, `to`) | Pro JWT |
+| GET/POST/PATCH | `/api/pro/appointments` | `_handlers/pro/appointments/index.js` | Liste + création + mise à jour statut RDV | Pro JWT |
+| POST | `/api/pro/appointments/cancel` | `_handlers/pro/appointments/cancel.js` | Annulation RDV (compat héritée) | Pro JWT |
 | GET/POST | `/api/pro/messages` | `_handlers/pro/messages.js` | Messagerie Pro | Pro JWT |
-| GET | `/api/pro/appointments` | `_handlers/pro/appointments/list.js` | Liste RDV Pro | Pro JWT |
-| POST | `/api/pro/appointments/cancel` | `_handlers/pro/appointments/cancel.js` | Annulation RDV Pro | Pro JWT |
-| GET/PUT | `/api/pro/availability` | `_handlers/pro/availability.js` | Disponibilités Pro | Pro JWT |
+
+Codes de réponse attendus sur le coeur P9-C (`/api/pro/services`, `/api/pro/availability`, `/api/pro/slots`, `/api/pro/appointments`):
+- `200`/`201`: succès.
+- `400`: paramètres invalides (date range, payload incomplet, etc.).
+- `401`: token Pro manquant/invalide.
+- `403`: tentative cross-tenant (structure différente).
 
 ## 4. Contenu Public (Métier)
 

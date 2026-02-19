@@ -48,7 +48,6 @@ coverage/
 cookies*.txt
 test-img*.jpg
 test-img*
-*.jpg
 
 # Local Storage (Mock)
 uploads_mock/

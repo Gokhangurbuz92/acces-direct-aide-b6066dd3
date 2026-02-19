@@ -1,65 +1,48 @@
-# API Contract
+# Contrat d'Interface API
 
-L'API AccesDirectAide suit une structure de réponse standardisée pour garantir la prévisibilité côté client.
-Tous les endpoints JSON (hors fichiers binaires) respectent ce format.
+Ce document décrit le format standard des réponses et erreurs de l'API AccesDirectAide.
 
-## Format de Réponse (Enveloppe)
-
-Chaque réponse HTTP 200 (OK) contient une enveloppe JSON :
+## 1. Format de Réponse Standard (JSON)
+Toutes les réponses API réussies (200-299) suivent ce format, sauf exception (ex: binaire).
 
 ```json
 {
-  "data": <Any> | <Array>,
-  "meta": {
-    "requestId": "string (UUID)",
-    "pagination": {             // Présent si liste paginée
+  "data": { ... },       // Objet ou Tableau de données
+  "meta": {              // Métadonnées optionnelles
+    "pagination": {
+      "total": 100,
       "page": 1,
-      "limit": 10,
-      "totalItems": 100,
-      "totalPages": 10
-    }
-  },
-  "error": null
-}
-```
-
-### Cas particulier : Listes paginées
-Si le handler renvoie un objet `{ items: [...], pagination: {...} }`, l'enveloppe place `items` dans `data` et `pagination` dans `meta.pagination`.
-
-## Gestion des Erreurs
-
-En cas d'erreur (4xx, 5xx), le corps de la réponse suit le même format, mais `data` est null et `error` est peuplé.
-
-```json
-{
-  "data": null,
-  "meta": {
-    "requestId": "123e4567-e89b-12d3-a456-426614174000"
-  },
-  "error": {
-    "code": "VALIDATION_ERROR", // Code machine (enum)
-    "message": "Le champ email est invalide.", // Message humain
-    "details": [ ... ] // Détails optionnels (ex: champs Zod en erreur)
+      "pageSize": 20
+    },
+    "requestId": "req_123..."
   }
 }
 ```
 
-### Codes HTTP Standards
+## 2. Gestion des Erreurs
+Les erreurs renvoient un code HTTP approprié (4xx, 5xx) et un corps JSON standard.
 
-| Code | Signification | Contexte |
-|---|---|---|
-| **200** | OK | Succès standard (GET, POST, PUT, DELETE). |
-| **201** | Created | Ressource créée (souvent retournée dans `data`). |
-| **204** | No Content | Succès sans contenu (rarement utilisé, on préfère 200 avec data null). |
-| **400** | Bad Request | Validation échouée (Zod), paramètres manquants. |
-| **401** | Unauthorized | Token manquant ou invalide. |
-| **403** | Forbidden | Token valide mais permissions insuffisantes (ex: Pro vs Admin). |
-| **404** | Not Found | Ressource non trouvée. |
-| **409** | Conflict | Ressource déjà existante (ex: email unique) ou double booking. |
-| **429** | Too Many Requests | Rate limit dépassé. |
-| **500** | Internal Server Error | Bug serveur non géré. |
+```json
+{
+  "error": {
+    "code": "RESOURCE_NOT_FOUND",
+    "message": "La ressource demandée n'existe pas.",
+    "details": { ... } // Optionnel
+  }
+}
+```
 
-## Headers Standards
+### Codes HTTP Courants
+- `200 OK` : Succès.
+- `400 Bad Request` : Erreur de validation (paramètres manquants ou invalides).
+- `401 Unauthorized` : Token manquant ou invalide.
+- `403 Forbidden` : Token valide mais permissions insuffisantes (ex: Pro accédant à Admin).
+- `404 Not Found` : Ressource introuvable.
+- `409 Conflict` : Conflit de données (ex: double réservation).
+- `429 Too Many Requests` : Rate limit dépassé.
+- `500 Internal Server Error` : Erreur serveur inattendue.
 
-- `X-Request-ID`: Identifiant unique de la requête (pour traçabilité logs/Sentry).
-- `Authorization`: `Bearer <token>` pour les routes authentifiées.
+## 3. Headers
+- `Authorization`: `Bearer <token>` (JWT pour Pro, Token statique pour Admin).
+- `Content-Type`: `application/json` (Requis pour POST/PUT).
+- `X-Request-ID`: Identifiant unique de requête (utile pour le debugging).

@@ -23,16 +23,15 @@ test.describe('Public Core Navigation', () => {
         await expect(page.getByText('Description longue')).toBeVisible();
     });
 
-    // TODO: Fix 500 Error in Dev Server for DemarcheDetail
-    test.skip('Parcours Demarches: List -> Detail -> Refresh', async ({ page }) => {
+    test('Parcours Demarches: List -> Detail -> Refresh', async ({ page }) => {
         await page.goto('/demarches');
         await expect(page.getByText('Démarche Test').first()).toBeVisible();
 
         await page.goto('/demarches/demarche-test');
-        await expect(page.getByText('Résumé démarche.')).toBeVisible();
+        await expect(page.getByText('Résumé démarche.').first()).toBeVisible();
 
         await page.reload();
-        await expect(page.getByText('Résumé démarche.')).toBeVisible();
+        await expect(page.getByText('Résumé démarche.').first()).toBeVisible();
     });
 
     test('Parcours Annuaire: List -> Detail -> Refresh', async ({ page }) => {
@@ -46,8 +45,7 @@ test.describe('Public Core Navigation', () => {
         await expect(page.getByText('Testville')).toBeVisible();
     });
 
-    // TODO: Fix 500 Error in Dev Server for ActualiteDetail
-    test.skip('Parcours Actualites: List -> Detail -> Refresh', async ({ page }) => {
+    test('Parcours Actualites: List -> Detail -> Refresh', async ({ page }) => {
         await page.goto('/actualites');
         await expect(page.getByText('Actualité Test').first()).toBeVisible();
 

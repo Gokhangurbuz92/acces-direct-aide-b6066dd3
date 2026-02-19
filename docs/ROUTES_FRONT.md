@@ -18,6 +18,11 @@ Accessibles à tous les utilisateurs.
 | `/demarches/:slug` | `DemarcheDetail` | `/api/demarches/:slug` | Détail démarche |
 | `/annuaire` | `Annuaire` | `/api/structures` | Liste structures |
 | `/structures/:slug` | `StructureDetail` | `/api/structures/:slug` | Détail structure |
+| `/rdv/:structureSlug` | `PublicRdvEntry` | `/api/structures/:slug`, `/api/auth/me` | Entrée publique RDV (redirige vers auth si non connecté) |
+| `/rdv/:structureSlug/services` | `PublicRdvEntry` | `/api/structures/:slug`, `/api/auth/me` | Étape choix service |
+| `/rdv/:structureSlug/creneaux` | `PublicRdvEntry` | `/api/structures/:slug`, `/api/auth/me` | Étape créneaux |
+| `/auth/login` | `AuthRdvAccess` | - | Portail connexion RDV public (noindex) |
+| `/auth/signup` | `AuthRdvAccess` | - | Portail inscription RDV public (noindex) |
 | `/actualites` | `Actualites` | `/api/actualites` | Liste actualités |
 | `/actualites/:slug` | `ActualiteDetail` | `/api/actualites/:slug` | Détail actualité |
 | `/bonnes-pratiques` | `Guides` | `/api/guides` | Liste guides |
@@ -45,7 +50,7 @@ Accessibles à tous les utilisateurs.
 | `/partenaires` | `Partners` | - | Statique |
 | `/proposer-une-structure` | `SuggestStructure` | `/api/public/suggest-structure` | Formulaire |
 | `/dossier-subventions` | `SubventionDossier` | - | Statique |
-| `/appointments/request` | `AppointmentRequest` | `/api/public/appointments` | Prise RDV |
+| `/appointments/request` | `AppointmentRequest` | `/api/public/appointments` | Legacy prise RDV |
 | `/appointments/cancel/:token` | `AppointmentCancel` | `/api/public/appointments/cancel` | Annulation RDV |
 | `/appointments/reschedule/:token` | `AppointmentReschedule` | - | Replanification RDV |
 | `/r/:token/messages` | `BeneficiaryMessages` | `/api/public/messages` | Messagerie bénéficiaire |

@@ -38,12 +38,14 @@ Il liste les routes définies et leurs gestionnaires.
 | `/api/pro/services` | `exact` | `./_handlers/pro/services.js` | Pro | - |
 | `/api/pro/slots` | `exact` | `./_handlers/pro/slots.js` | Pro | - |
 | `/api/pro/messages` | `exact` | `./_handlers/pro/messages.js` | Pro | - |
+| `/api/pro/messages/conversations` | `prefix` | `./_handlers/pro/messages-conversations.js` | Pro | Messagerie RDV structure (liste, detail, envoi), tenant-scope strict. |
 | `/api/pro/appointments` | `exact` | `./_handlers/pro/appointments/index.js` | Pro | - |
 | `/api/pro/appointments/cancel` | `exact` | `./_handlers/pro/appointments/cancel.js` | Pro | - |
 | `/api/pro/availability` | `exact` | `./_handlers/pro/availability.js` | Pro | - |
 | `/api/pro/timeoff` | `exact` | `./_handlers/pro/timeoff.js` | Pro | - |
 | `/api/pro/rdv/settings` | `exact` | `./_handlers/pro/rdv-settings.js` | Pro | Parametres publication RDV structure (GET/PUT, gate readiness avant publish). |
 | `/api/public/messages` | `exact` | `./_handlers/public/messages.js` | Public | - |
+| `/api/messages` | `prefix` | `./_handlers/messages.js` | Public/Auth (USER cookie) | Messagerie RDV usager (liste, detail, envoi, get-or-create depuis appointment). |
 | `/api/public/suggest-structure` | `exact` | `./_handlers/public/suggest-structure.js` | Public | - |
 | `/api/public/stats` | `exact` | `./_handlers/public/stats.js` | Public | - |
 | `/api/public/availability` | `exact` | `./_handlers/public/availability.js` | Public | - |

@@ -91,6 +91,19 @@ describe('pro rdv client', () => {
     expect(fetchSpy).toHaveBeenCalledTimes(1);
   });
 
+  it('supports rdv settings update endpoint', async () => {
+    installToken('pro-token-456');
+    global.fetch = vi.fn(async (url, init) => {
+      expect(url).toBe('/api/pro/rdv/settings');
+      expect(init?.method).toBe('PUT');
+      expect(init?.headers?.Authorization).toBe('Bearer pro-token-456');
+      return jsonResponse(200, { isPublished: true, bookingMode: 'IN_PERSON' });
+    });
+
+    const result = await proRdvClient.settings.update({ isPublished: true });
+    expect(result).toMatchObject({ isPublished: true, bookingMode: 'IN_PERSON' });
+  });
+
   it('returns monitor readiness payload without requiring pro token', async () => {
     global.fetch = vi.fn(async () => jsonResponse(200, { ok: true, missingTables: [] }));
 

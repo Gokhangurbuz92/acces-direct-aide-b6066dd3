@@ -54,7 +54,7 @@ test.describe('P10-A RDV public entrypoint', () => {
 
     await page.goto('/rdv/structure-test');
 
-    await expect(page.getByText('RDV indisponible pour cette structure')).toBeVisible();
+    await expect(page.getByText('RDV indisponible (non publie)')).toBeVisible();
     await expect(page.getByRole('link', { name: /Demander à être rappelé/i })).toBeVisible();
   });
 });

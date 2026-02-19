@@ -51,6 +51,8 @@ const AuthRdvAccess = lazy(() => import("./AuthRdvAccess.jsx"));
 const AuthVerifyEmail = lazy(() => import("./AuthVerifyEmail.jsx"));
 const AuthForgotPassword = lazy(() => import("./AuthForgotPassword.jsx"));
 const AuthResetPassword = lazy(() => import("./AuthResetPassword.jsx"));
+const CompteMessages = lazy(() => import("./CompteMessages.jsx"));
+const CompteMessageThread = lazy(() => import("./CompteMessageThread.jsx"));
 const Layout = lazy(() => import("./Layout.jsx"));
 const AdminGuard = lazy(() => import("@/components/AdminGuard"));
 const ProGuard = lazy(() => import("@/components/ProGuard"));
@@ -92,6 +94,8 @@ const ProAppointmentDetail = lazy(() => import("./pro/AppointmentDetail.jsx"));
 const ProRdvLayout = lazy(() => import("./pro/RdvLayout.jsx"));
 const ProRdvNew = lazy(() => import("./pro/RdvNew.jsx"));
 const ProRdvAbsences = lazy(() => import("./pro/RdvAbsences.jsx"));
+const ProMessages = lazy(() => import("./pro/Messages.jsx"));
+const ProMessageThread = lazy(() => import("./pro/MessageThread.jsx"));
 
 // Sentry
 const SentryTest = lazy(() => import("@/components/SentryTest.jsx"));
@@ -109,7 +113,8 @@ const PAGES = {
     DemarcheDetail, DispositifDetail, Login, LoginPro, Demarches, Home, Orientation,
     MentionsLegales, SourcesMethode, SentryTest, StructureDetail,
     AdminInbox, AdminRuns, AdminObservability, AdminReviewQueue, AppointmentRequest, AppointmentCancel, AppointmentReschedule, AdminStructures,
-    AdminDemarches, AdminDemarcheEdit, AdminAppointments, AdminReview, Status, PublicRdvEntry, AuthRdvAccess, AuthVerifyEmail, AuthForgotPassword, AuthResetPassword
+    AdminDemarches, AdminDemarcheEdit, AdminAppointments, AdminReview, Status, PublicRdvEntry, AuthRdvAccess, AuthVerifyEmail, AuthForgotPassword, AuthResetPassword,
+    CompteMessages, CompteMessageThread, ProMessages, ProMessageThread
 };
 
 // Loading Fallback
@@ -183,6 +188,8 @@ function PagesContent() {
                             <Route path="new" element={<ProRdvNew />} />
                             <Route path="absences" element={<ProRdvAbsences />} />
                         </Route>
+                        <Route path="messages" element={<ProGuard><ProMessages /></ProGuard>} />
+                        <Route path="messages/:conversationId" element={<ProGuard><ProMessageThread /></ProGuard>} />
                         <Route path="services" element={<Navigate to="/pro/rdv/services" replace />} />
                         <Route path="availability" element={<Navigate to="/pro/rdv/disponibilites" replace />} />
                         <Route path="appointments" element={<Navigate to="/pro/rdv/agenda" replace />} />
@@ -206,6 +213,8 @@ function PagesContent() {
                     <Route path="/auth/verify-email" element={<AuthVerifyEmail />} />
                     <Route path="/auth/forgot" element={<AuthForgotPassword />} />
                     <Route path="/auth/reset" element={<AuthResetPassword />} />
+                    <Route path="/compte/messages" element={<CompteMessages />} />
+                    <Route path="/compte/messages/:conversationId" element={<CompteMessageThread />} />
                     <Route path="/a-propos" element={<APropos />} />
                     <Route path="/accessibilite" element={<Accessibilite />} />
                     <Route path="/actualites" element={<Actualites />} />

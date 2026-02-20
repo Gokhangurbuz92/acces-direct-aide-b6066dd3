@@ -363,11 +363,11 @@ export default function Layout({ children, currentPageName }) {
               <div className="mb-6">
                 <Logo variant="full" tone="white" size={48} />
               </div>
-              <p className="text-white/80 text-sm mb-4">
+              <p className="text-white text-sm mb-4">
                 Un site non lucratif pour vous aider à trouver les aides,
                 les démarches et les structures d&apos;accompagnement près de chez vous.
               </p>
-              <p className="text-white/80 text-sm">
+              <p className="text-white text-sm">
                 Toutes les informations sont vérifiées et sourcées.
                 Zéro fake news, zéro approximation.
               </p>
@@ -381,7 +381,7 @@ export default function Layout({ children, currentPageName }) {
                   <li key={link.label + idx}>
                     <Link
                       to={link.href || createPageUrl(link.page)}
-                      className="text-white/70 hover:text-white text-sm transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-highlight focus-visible:ring-offset-2 focus-visible:ring-offset-brand-primary rounded"
+                      className="text-white hover:text-slate-200 text-sm transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-highlight focus-visible:ring-offset-2 focus-visible:ring-offset-brand-primary rounded"
                     >
                       {link.label}
                     </Link>
@@ -398,7 +398,7 @@ export default function Layout({ children, currentPageName }) {
                   <li key={link.label + idx}>
                     <Link
                       to={link.href || createPageUrl(link.page)}
-                      className="text-white/70 hover:text-white text-sm transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-highlight focus-visible:ring-offset-2 focus-visible:ring-offset-brand-primary rounded"
+                      className="text-white hover:text-slate-200 text-sm transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-highlight focus-visible:ring-offset-2 focus-visible:ring-offset-brand-primary rounded"
                     >
                       {link.label}
                     </Link>
@@ -408,7 +408,7 @@ export default function Layout({ children, currentPageName }) {
             </div>
           </div>
 
-          <div className="border-t border-white/20 mt-8 pt-8 text-center text-sm text-white/60">
+          <div className="border-t border-white/20 mt-8 pt-8 text-center text-sm text-white">
             <p>© {new Date().getFullYear()} AccesDirectAide. Site non lucratif.</p>
             <p className="mt-2">
               Territoire couvert : Alsace (Bas-Rhin, Haut-Rhin) et aides nationales.

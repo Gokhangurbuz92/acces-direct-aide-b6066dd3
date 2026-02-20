@@ -75,6 +75,15 @@ For detailed information about our Production and Staging environments, DNS conf
 - [Infrastructure Source of Truth](docs/INFRASTRUCTURE.md)
 - [Vercel Migration Guide](docs/VERCEL_MIGRATION_GUIDE.md)
 
+## Setup Chromatic
+
+To enable the blocking visual regression CI:
+1. Go to your GitHub repository **Settings** -> **Secrets and variables** -> **Actions**
+2. Click **New repository secret**.
+3. Name MUST be exactly: `CHROMATIC_PROJECT_TOKEN`
+4. Value: The token obtained from your Chromatic project dashboard.
+*(Never commit this token into the codebase).*
+
 ## Contribuer / Guardrails
 
 ### Préflight

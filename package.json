@@ -43,7 +43,9 @@
     "secrets:scan": "npm run security:scan",
     "secrets:scan:git": "npm run security:scan:git",
     "vercel:env:check": "node scripts/vercel-env-sync.mjs",
-    "preflight": "npm ci && npm run lint && npm run typecheck && npm test && npm run build"
+    "preflight": "npm ci && npm run lint && npm run typecheck && npm test && npm run build",
+    "lint:design-system": "node scripts/lint-design-system.mjs",
+    "verify": "npm run lint && npm run typecheck && npm test && npm run build && npm run lint:design-system"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.980.0",

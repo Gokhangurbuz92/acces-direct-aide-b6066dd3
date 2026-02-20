@@ -6,12 +6,12 @@ import { QueryClientProvider } from '@tanstack/react-query'
 import { queryClient } from "@/lib/queryClient";
 import ErrorBoundary from "@/components/ErrorBoundary";
 
-function App() {
+function App({ url }) {
   return (
     <ErrorBoundary>
       <QueryClientProvider client={queryClient}>
         <HelmetProvider>
-          <Pages />
+          <Pages url={url} />
           <Toaster />
         </HelmetProvider>
       </QueryClientProvider>

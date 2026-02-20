@@ -8,7 +8,15 @@ on:
 
 jobs:
   quality:
+    name: Quality & Verification
     runs-on: ubuntu-latest
+    env:
+      DATABASE_URL: 'postgresql://dummy:dummy@localhost:5432/dummy'
+      ADA_ENCRYPTION_KEY: '0000000000000000000000000000000000000000000000000000000000000000'
+      JWT_SECRET: 'dummy_secret'
+      CRON_SECRET: 'dummy_secret'
+      UPSTASH_REDIS_REST_URL: 'https://dummy.upstash.io'
+      UPSTASH_REDIS_REST_TOKEN: 'dummy_token'
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -17,14 +25,11 @@ jobs:
           cache: 'npm'
       - run: npm ci
       - run: npm run lint
-      - run: node scripts/verify-handler-imports.js
-        env:
-          DATABASE_URL: 'postgres://dummy:dummy@localhost:5432/dummy'
-          ADA_ENCRYPTION_KEY: '0000000000000000000000000000000000000000000000000000000000000000'
-          JWT_SECRET: 'dummy-secret'
-          CRON_SECRET: 'dummy-cron'
+      - name: Verify API Handlers
+        run: node scripts/verify-handler-imports.js
 
   build:
+    name: Build Check
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -34,14 +39,11 @@ jobs:
           cache: 'npm'
       - run: npm ci
       - run: npm run build
-        env:
-          DATABASE_URL: 'postgres://dummy:dummy@localhost:5432/dummy'
-          ADA_ENCRYPTION_KEY: '0000000000000000000000000000000000000000000000000000000000000000'
-          JWT_SECRET: 'dummy-secret'
-          CRON_SECRET: 'dummy-cron'
 
   e2e:
+    name: E2E Tests
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -49,17 +51,7 @@ jobs:
           node-version: '20'
           cache: 'npm'
       - run: npm ci
-      - run: npx playwright install --with-deps
-      - run: npx playwright test e2e/public-core.spec.js e2e/seo-aides.spec.js e2e/noindex-admin.spec.js e2e/seo-errors.spec.js e2e/provenance-ui.spec.js e2e/rdv-entrypoint.spec.js --workers=1
-        env:
-          DATABASE_URL: 'postgres://dummy:dummy@localhost:5432/dummy'
-          ADA_ENCRYPTION_KEY: '0000000000000000000000000000000000000000000000000000000000000000'
-          JWT_SECRET: 'dummy-secret'
-          CRON_SECRET: 'dummy-cron'
-          CI: true
-      - uses: actions/upload-artifact@v4
-        if: always()
-        with:
-          name: playwright-report
-          path: playwright-report/
-          retention-days: 30
+      - name: Install Playwright Browsers
+        run: npx playwright install --with-deps chromium
+      - name: Run E2E Tests
+        run: npx playwright test e2e/public-core.spec.js

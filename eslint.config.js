@@ -14,6 +14,7 @@ export default [
       'coverage/**',
       'release/**',
       '.vercel/**',
+      'storybook-static/**',
       '**/*.min.js',
     ],
   },

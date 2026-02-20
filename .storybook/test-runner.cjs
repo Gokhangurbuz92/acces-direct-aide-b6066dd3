@@ -19,7 +19,7 @@ module.exports = {
                 includedImpacts: ['critical', 'serious']
             });
         } catch (error) {
-            console.error(`A11y violation in ${context.id}: `, error);
+            console.error(`A11y violation in ${context.id}: `, JSON.stringify(error, null, 2));
             throw error;
         }
     },

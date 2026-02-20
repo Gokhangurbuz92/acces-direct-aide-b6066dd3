@@ -40,7 +40,7 @@
 
 /* Motion Tokens */
 :root {
-  --ease-apple: cubic-bezier(.2,.8,.2,1);
+  --ease-apple: cubic-bezier(.2, .8, .2, 1);
   --duration-micro: 160ms;
   --duration-layout: 240ms;
   --duration-page: 360ms;
@@ -63,7 +63,7 @@
     --muted-foreground: 215.4 16.3% 46.9%;
     --accent: 210 40% 96.1%;
     --accent-foreground: 222.2 47.4% 11.2%;
-    --destructive: 0 84.2% 60.2%;
+    --destructive: 0 72.2% 40.0%;
     --destructive-foreground: 210 40% 98%;
     --border: 214.3 31.8% 91.4%;
     --input: 214.3 31.8% 91.4%;
@@ -96,6 +96,7 @@
   * {
     @apply border-border;
   }
+
   body {
     @apply bg-background text-foreground;
   }
@@ -103,6 +104,7 @@
 
 /* Reduced Motion Support */
 @media (prefers-reduced-motion: reduce) {
+
   *,
   *::before,
   *::after {
@@ -114,6 +116,7 @@
 
 /* Print Styles */
 @media print {
+
   /* Hide navigation, footer, and interactive elements */
   header,
   footer,

@@ -85,6 +85,14 @@ module.exports = {
 					ring: 'hsl(var(--sidebar-ring))'
 				},
 
+				// ✅ Core Brand tokens (from tokens.css)
+				brand: {
+					primary: 'rgb(var(--color-brand-primary) / <alpha-value>)',
+					secondary: 'rgb(var(--color-brand-secondary) / <alpha-value>)',
+					highlight: 'rgb(var(--color-brand-highlight) / <alpha-value>)',
+					background: 'rgb(var(--color-brand-background) / <alpha-value>)',
+				},
+
 				// ✅ Blueprint Trust tokens (namespaced to avoid collisions)
 				bt: {
 					ink: '#0B1220',

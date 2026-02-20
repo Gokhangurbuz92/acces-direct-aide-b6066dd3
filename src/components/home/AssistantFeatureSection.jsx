@@ -16,7 +16,7 @@ export default function AssistantFeatureSection() {
           <div className="mt-8 flex flex-wrap gap-3">
             <Link
               to="/orientation"
-              className="rounded-xl bg-blue-500 px-5 py-3 text-sm font-semibold text-white transition hover:bg-blue-400"
+              className="rounded-xl bg-blue-600 px-5 py-3 text-sm font-semibold text-white transition hover:bg-blue-700"
             >
               Lancer le diagnostic
             </Link>

@@ -14,7 +14,7 @@ export default function FalcContent({ falcData, entityType }) {
   void entityType;
   if (!falcData) {
     return (
-      <div className="falc-content-empty" style={{ padding: '1rem', color: '#666' }}>
+      <div className="falc-content-empty" style={{ padding: '1rem', color: 'hsl(var(--muted-foreground))' }}>
         <p>Aucun contenu FALC disponible.</p>
       </div>
     );
@@ -38,13 +38,13 @@ export default function FalcContent({ falcData, entityType }) {
       {/* Main Summary */}
       {summary && (
         <section className="falc-summary" style={{ marginBottom: '2rem' }}>
-          <h2 style={{ fontSize: '1.5rem', fontWeight: '600', marginBottom: '1rem', color: '#0066cc' }}>
+          <h2 style={{ fontSize: '1.5rem', fontWeight: '600', marginBottom: '1rem', color: 'hsl(var(--primary))' }}>
             📖 C'est quoi ?
           </h2>
-          <div 
-            style={{ 
-              fontSize: '1.125rem', 
-              color: '#333',
+          <div
+            style={{
+              fontSize: '1.125rem',
+              color: 'hsl(var(--foreground))',
               whiteSpace: 'pre-wrap'
             }}
           >
@@ -56,13 +56,13 @@ export default function FalcContent({ falcData, entityType }) {
       {/* Conditions (for Aide) */}
       {conditions_falc && (
         <section className="falc-conditions" style={{ marginBottom: '2rem' }}>
-          <h2 style={{ fontSize: '1.5rem', fontWeight: '600', marginBottom: '1rem', color: '#0066cc' }}>
+          <h2 style={{ fontSize: '1.5rem', fontWeight: '600', marginBottom: '1rem', color: 'hsl(var(--primary))' }}>
             ✅ Pour qui ?
           </h2>
-          <div 
-            style={{ 
-              fontSize: '1.125rem', 
-              color: '#333',
+          <div
+            style={{
+              fontSize: '1.125rem',
+              color: 'hsl(var(--foreground))',
               whiteSpace: 'pre-wrap'
             }}
           >
@@ -74,13 +74,13 @@ export default function FalcContent({ falcData, entityType }) {
       {/* Amount (for Aide) */}
       {montant_falc && (
         <section className="falc-montant" style={{ marginBottom: '2rem' }}>
-          <h2 style={{ fontSize: '1.5rem', fontWeight: '600', marginBottom: '1rem', color: '#0066cc' }}>
+          <h2 style={{ fontSize: '1.5rem', fontWeight: '600', marginBottom: '1rem', color: 'hsl(var(--primary))' }}>
             💰 Combien ?
           </h2>
-          <div 
-            style={{ 
-              fontSize: '1.125rem', 
-              color: '#333',
+          <div
+            style={{
+              fontSize: '1.125rem',
+              color: 'hsl(var(--foreground))',
               whiteSpace: 'pre-wrap'
             }}
           >
@@ -92,23 +92,23 @@ export default function FalcContent({ falcData, entityType }) {
       {/* Key Points */}
       {keyPoints.length > 0 && (
         <section className="falc-key-points" style={{ marginBottom: '2rem' }}>
-          <h2 style={{ fontSize: '1.5rem', fontWeight: '600', marginBottom: '1rem', color: '#0066cc' }}>
+          <h2 style={{ fontSize: '1.5rem', fontWeight: '600', marginBottom: '1rem', color: 'hsl(var(--primary))' }}>
             🔑 Points importants
           </h2>
-          <ul style={{ 
-            listStyle: 'none', 
+          <ul style={{
+            listStyle: 'none',
             padding: 0,
             margin: 0
           }}>
             {keyPoints.map((point, index) => (
-              <li 
+              <li
                 key={index}
                 style={{
                   fontSize: '1.125rem',
                   padding: '0.75rem',
                   marginBottom: '0.5rem',
-                  backgroundColor: '#f0f8ff',
-                  borderLeft: '4px solid #0066cc',
+                  backgroundColor: 'hsl(var(--muted))',
+                  borderLeft: '4px solid hsl(var(--primary))',
                   borderRadius: '0.25rem'
                 }}
               >
@@ -120,19 +120,19 @@ export default function FalcContent({ falcData, entityType }) {
       )}
 
       {/* Help Text */}
-      <div 
-        className="falc-help" 
-        style={{ 
+      <div
+        className="falc-help"
+        style={{
           marginTop: '2rem',
           padding: '1rem',
-          backgroundColor: '#fff9e6',
+          backgroundColor: 'hsl(var(--accent))',
           borderRadius: '0.5rem',
           fontSize: '0.875rem',
-          color: '#666'
+          color: 'hsl(var(--muted-foreground))'
         }}
       >
         <p style={{ margin: 0 }}>
-          💡 <strong>FALC</strong> = Facile à Lire et à Comprendre. 
+          💡 <strong>FALC</strong> = Facile à Lire et à Comprendre.
           Ce texte est simplifié pour être plus facile à comprendre.
         </p>
       </div>

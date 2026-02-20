@@ -1,11 +1,11 @@
 import { useState, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
-import { 
-  Eye, 
-  Type, 
-  Moon, 
-  Sun, 
-  Minus, 
+import {
+  Eye,
+  Type,
+  Moon,
+  Sun,
+  Minus,
   Plus,
   RotateCcw,
   Maximize2
@@ -33,21 +33,21 @@ export default function AccessibilityToolbar() {
 
   useEffect(() => {
     localStorage.setItem('accessibilitySettings', JSON.stringify(settings));
-    
+
     document.documentElement.style.fontSize = `${settings.fontSize}%`;
-    
+
     document.body.classList.remove('high-contrast', 'dark-mode');
     if (settings.contrast === 'high') {
       document.body.classList.add('high-contrast');
     } else if (settings.contrast === 'dark') {
       document.body.classList.add('dark-mode');
     }
-    
+
     document.body.classList.remove('large-line-height');
     if (settings.lineHeight === 'large') {
       document.body.classList.add('large-line-height');
     }
-    
+
     document.body.classList.toggle('simplified-mode', settings.simplifiedMode);
   }, [settings]);
 
@@ -70,10 +70,10 @@ export default function AccessibilityToolbar() {
   return (
     <Popover>
       <PopoverTrigger asChild>
-        <Button 
-          variant="outline" 
+        <Button
+          variant="outline"
           size="sm"
-          className="gap-2 text-slate-700 border-slate-300 hover:bg-slate-100"
+          className="gap-2 text-foreground border-border hover:bg-accent hover:text-accent-foreground"
           aria-label="Options d'accessibilité"
         >
           <Eye className="h-4 w-4" />
@@ -82,13 +82,13 @@ export default function AccessibilityToolbar() {
       </PopoverTrigger>
       <PopoverContent className="w-72 p-4" align="end">
         <div className="space-y-4">
-          <h3 className="font-semibold text-slate-900 text-lg">
+          <h3 className="font-semibold text-foreground text-lg">
             Adapter l'affichage
           </h3>
-          
+
           {/* Taille du texte */}
           <div className="space-y-2">
-            <label className="text-sm font-medium text-slate-700">
+            <label className="text-sm font-medium text-muted-foreground">
               Taille du texte
             </label>
             <div className="flex items-center gap-2">
@@ -101,7 +101,7 @@ export default function AccessibilityToolbar() {
               >
                 <Minus className="h-4 w-4" />
               </Button>
-              <span className="flex-1 text-center font-medium">
+              <span className="flex-1 text-center font-medium text-foreground">
                 {settings.fontSize}%
               </span>
               <Button
@@ -118,7 +118,7 @@ export default function AccessibilityToolbar() {
 
           {/* Contraste */}
           <div className="space-y-2">
-            <label className="text-sm font-medium text-slate-700">
+            <label className="text-sm font-medium text-muted-foreground">
               Contraste
             </label>
             <div className="flex gap-2">
@@ -154,7 +154,7 @@ export default function AccessibilityToolbar() {
 
           {/* Interligne */}
           <div className="space-y-2">
-            <label className="text-sm font-medium text-slate-700">
+            <label className="text-sm font-medium text-muted-foreground">
               Espacement des lignes
             </label>
             <div className="flex gap-2">
@@ -196,7 +196,7 @@ export default function AccessibilityToolbar() {
             variant="ghost"
             size="sm"
             onClick={resetSettings}
-            className="w-full text-slate-500"
+            className="w-full text-muted-foreground"
           >
             <RotateCcw className="h-4 w-4 mr-2" />
             Réinitialiser

@@ -45,6 +45,7 @@ __pycache__/
 test-results/
 playwright-report/
 coverage/
+storybook-static/
 cookies*.txt
 test-img*.jpg
 test-img*

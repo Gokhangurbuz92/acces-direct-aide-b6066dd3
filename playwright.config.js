@@ -12,7 +12,7 @@ const BASE_URL = REMOTE_BASE_URL || LOCAL_BASE_URL;
 const SHOULD_START_WEBSERVER = !!process.env.CI || !REMOTE_BASE_URL;
 
 export default defineConfig({
-  testDir: './e2e',
+  testDir: process.env.TEST_A11Y ? './tests/a11y' : './e2e',
   fullyParallel: true,
   forbidOnly: !!process.env.CI,
   retries: process.env.CI ? 2 : 0,

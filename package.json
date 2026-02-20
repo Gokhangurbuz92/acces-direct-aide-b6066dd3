@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "vite build",
+    "build": "vite build && node scripts/prerender.mjs",
     "vercel-build": "node scripts/vercel-build.mjs",
     "db:status": "prisma migrate status",
     "db:deploy": "prisma migrate deploy",

@@ -10,30 +10,30 @@ export default function EmptyState({
     type = 'info' // 'info', 'warning', 'search'
 }) {
     const bgColor = {
-        info: 'bg-blue-50',
-        warning: 'bg-amber-50',
-        search: 'bg-slate-50'
+        info: 'bg-primary/10',
+        warning: 'bg-secondary/10',
+        search: 'bg-muted'
     }[type];
 
     const iconColor = {
-        info: 'text-blue-500',
-        warning: 'text-amber-500',
-        search: 'text-slate-400'
+        info: 'text-primary',
+        warning: 'text-secondary',
+        search: 'text-muted-foreground'
     }[type];
 
     return (
-        <div className={`text-center py-12 px-6 rounded-2xl ${bgColor} border-2 border-dashed border-slate-200`}>
+        <div className={`text-center py-12 px-6 rounded-2xl ${bgColor} border-2 border-dashed border-border`}>
             <div className="flex justify-center mb-4">
-                <div className={`w-16 h-16 rounded-full flex items-center justify-center bg-white shadow-sm`}>
+                <div className={`w-16 h-16 rounded-full flex items-center justify-center bg-background shadow-sm border border-border`}>
                     <Icon className={`h-8 w-8 ${iconColor}`} />
                 </div>
             </div>
 
-            <h3 className="text-xl font-bold text-slate-900 mb-2">
+            <h3 className="text-xl font-bold text-foreground mb-2">
                 {title}
             </h3>
 
-            <p className="text-slate-600 max-w-md mx-auto mb-8 leading-relaxed">
+            <p className="text-muted-foreground max-w-md mx-auto mb-8 leading-relaxed">
                 {message}
             </p>
 

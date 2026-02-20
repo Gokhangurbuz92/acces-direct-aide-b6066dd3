@@ -28,11 +28,11 @@ export default function FalcToggle({ hasFalcContent, onChange, className = '' })
 
   const handleToggle = () => {
     if (!hasFalcContent) return;
-    
+
     const newValue = !isFalcMode;
     setIsFalcMode(newValue);
     onChange?.(newValue);
-    
+
     try {
       localStorage.setItem('falc-mode-preference', String(newValue));
     } catch (error) {
@@ -64,9 +64,9 @@ export default function FalcToggle({ hasFalcContent, onChange, className = '' })
           gap: '0.5rem',
           padding: '0.5rem 1rem',
           border: '2px solid',
-          borderColor: hasFalcContent ? (isFalcMode ? '#0066cc' : '#ccc') : '#e0e0e0',
+          borderColor: hasFalcContent ? (isFalcMode ? 'hsl(var(--primary))' : 'hsl(var(--muted-foreground))') : 'hsl(var(--border))',
           borderRadius: '0.5rem',
-          backgroundColor: isFalcMode ? '#e6f2ff' : '#fff',
+          backgroundColor: isFalcMode ? 'hsl(var(--primary)/20)' : 'hsl(var(--background))',
           cursor: hasFalcContent ? 'pointer' : 'not-allowed',
           opacity: hasFalcContent ? 1 : 0.6,
           transition: 'all 0.2s ease',
@@ -82,7 +82,7 @@ export default function FalcToggle({ hasFalcContent, onChange, className = '' })
             width: '2.5rem',
             height: '1.5rem',
             position: 'relative',
-            backgroundColor: isFalcMode ? '#0066cc' : '#ccc',
+            backgroundColor: isFalcMode ? 'hsl(var(--primary))' : 'hsl(var(--muted-foreground))',
             borderRadius: '1rem',
             transition: 'background-color 0.2s ease',
           }}
@@ -94,7 +94,7 @@ export default function FalcToggle({ hasFalcContent, onChange, className = '' })
               left: isFalcMode ? '1.125rem' : '0.125rem',
               width: '1.25rem',
               height: '1.25rem',
-              backgroundColor: '#fff',
+              backgroundColor: 'hsl(var(--background))',
               borderRadius: '50%',
               transition: 'left 0.2s ease',
             }}
@@ -105,12 +105,12 @@ export default function FalcToggle({ hasFalcContent, onChange, className = '' })
         </span>
       </button>
       {!hasFalcContent && (
-        <p 
-          className="falc-unavailable-message" 
-          style={{ 
-            marginTop: '0.5rem', 
-            fontSize: '0.875rem', 
-            color: '#666',
+        <p
+          className="falc-unavailable-message"
+          style={{
+            marginTop: '0.5rem',
+            fontSize: '0.875rem',
+            color: 'hsl(var(--muted-foreground))',
             fontStyle: 'italic'
           }}
         >

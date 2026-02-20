@@ -1,5 +1,5 @@
 import { Suspense, lazy } from "react";
-import { BrowserRouter as Router, Route, Routes, useLocation, Navigate, useParams } from 'react-router-dom';
+import { BrowserRouter, MemoryRouter, Route, Routes, useLocation, Navigate, useParams } from 'react-router-dom';
 import { frontendEnv } from "@/config/env";
 
 // [LAZY LOADED PAGES]
@@ -328,10 +328,18 @@ function PagesContent() {
     );
 }
 
-export default function Pages() {
+export default function Pages({ url }) {
+    const isServer = typeof window === 'undefined' || url !== undefined;
+    if (isServer) {
+        return (
+            <MemoryRouter initialEntries={[url || '/']}>
+                <PagesContent />
+            </MemoryRouter>
+        );
+    }
     return (
-        <Router>
+        <BrowserRouter>
             <PagesContent />
-        </Router>
+        </BrowserRouter>
     );
 }

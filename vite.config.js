@@ -214,7 +214,7 @@ export default defineConfig({
       "api/**/*.{test,spec}.{js,mjs,cjs,ts,mts,cts,jsx,tsx}",
       "scripts/**/*.{test,spec}.{js,mjs,cjs,ts,mts,cts,jsx,tsx}",
     ],
-    exclude: ["node_modules", "dist", ".vercel", "e2e", "**/*.spec.js"],
+    exclude: ["node_modules", "dist", ".vercel", "e2e", "**/*.spec.js", "**/*.spec.ts"],
     setupFiles: ["./tests/setup-env.js"],
   },
 });

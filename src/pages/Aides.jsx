@@ -8,9 +8,11 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
-import EmptyState from '@/components/ui/EmptyState';
 import AideCard from '@/components/cards/AideCard';
+import FilterPanel from '@/components/organisms/FilterPanel';
+import AidGrid from '@/components/organisms/AidGrid';
 import { buildAidesItemListSchema, buildBreadcrumbSchema } from '@/lib/seo';
+import { getProvenance, formatProvenanceDate, extractSourceHost } from '@/lib/provenance';
 
 const DEFAULT_LIMIT = 20;
 const LIMIT_OPTIONS = [10, 20, 50];
@@ -31,12 +33,22 @@ function parseLimit(value) {
   return parsed;
 }
 
+const INITIAL_LOCAL_FILTERS = { search: '', category: '', urgentOnly: false };
+
 export default function Aides() {
   const location = useLocation();
   const navigate = useNavigate();
   const { slug } = useParams();
   const [searchParams, setSearchParams] = useSearchParams();
   const [isFiltersOpen, setIsFiltersOpen] = useState(false);
+  const [localFilters, setLocalFilters] = useState(INITIAL_LOCAL_FILTERS);
+
+  const hasActiveLocalFilters =
+    localFilters.search.trim() !== '' ||
+    localFilters.category !== '' ||
+    localFilters.urgentOnly;
+
+  const resetLocalFilters = () => setLocalFilters(INITIAL_LOCAL_FILTERS);
 
   // Legacy pretty routes -> canonical query params
   useEffect(() => {
@@ -369,85 +381,123 @@ export default function Aides() {
         </div>
       </div>
 
-      {/* Results */}
+      {/* Main content: sidebar + results */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8">
-        {error && (
-          <div
-            className="rounded-2xl border border-red-200 bg-red-50 p-6 text-red-900"
-            role="alert"
-            data-testid="aides-error-state"
-          >
-            <h2 className="text-lg font-semibold">Impossible de charger les aides</h2>
-            <p className="mt-2 text-sm">
-              Une erreur est survenue. Vous pouvez réessayer.
-            </p>
-            <Button type="button" variant="outline" className="mt-4" onClick={() => refetch()}>
-              <RotateCcw className="mr-2 h-4 w-4" />
-              Réessayer
-            </Button>
-          </div>
-        )}
-
-        {(isLoading || isFetching) && !error && (
-          <div className="space-y-3" data-testid="aides-loading-state">
-            {[1, 2, 3, 4, 5, 6].map((value) => (
-              <div key={value} className="rounded-xl border border-slate-200 bg-white p-5">
-                <Skeleton className="h-4 w-24" />
-                <Skeleton className="mt-3 h-5 w-3/4" />
-                <Skeleton className="mt-2 h-4 w-full" />
-                <Skeleton className="mt-2 h-4 w-2/3" />
-              </div>
-            ))}
-          </div>
-        )}
-
-        {!error && !isLoading && !isFetching && items.length === 0 && (
-          <div data-testid="aides-empty-state">
-            <EmptyState
-              title="Aucune aide trouvée"
-              message="Essayez une autre recherche ou ajustez les filtres."
-              actionLabel="Réinitialiser les filtres"
-              onAction={clearFilters}
-              type="search"
+        <div className="flex flex-col gap-8 lg:flex-row">
+          {/* Sidebar FilterPanel */}
+          <div className="w-full shrink-0 lg:w-64">
+            <FilterPanel
+              filters={localFilters}
+              onChange={setLocalFilters}
+              onReset={resetLocalFilters}
             />
           </div>
-        )}
 
-        {!error && items.length > 0 && (
-          <>
-            <p className="mb-4 text-sm text-slate-600" data-testid="aides-success-state">
-              {pagination.total ?? items.length} aide{(pagination.total ?? items.length) > 1 ? 's' : ''} trouvée{(pagination.total ?? items.length) > 1 ? 's' : ''}.
-            </p>
-            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3" data-testid="aides-results-list">
-              {items.map((aide) => (
-                <AideCard key={aide.id} aide={aide} />
-              ))}
-            </div>
-
-            {/* Pagination */}
-            {totalPages > 1 && (
-              <div className="flex justify-center mt-10 gap-2">
-                <Button
-                  variant="outline"
-                  disabled={page <= 1}
-                  onClick={() => handlePageChange(page - 1)}
-                >
-                  Précédent
-                </Button>
-                <span className="flex items-center px-4 text-sm font-medium">
-                  Page {page} / {totalPages}
-                </span>
-                <Button
-                  variant="outline"
-                  disabled={!hasNext}
-                  onClick={() => handlePageChange(page + 1)}
-                >
-                  Suivant
+          {/* Results column */}
+          <div className="min-w-0 flex-1">
+            {error && (
+              <div
+                className="rounded-2xl border border-destructive/30 bg-destructive/5 p-6 text-destructive"
+                role="alert"
+                data-testid="aides-error-state"
+              >
+                <h2 className="text-lg font-semibold">Impossible de charger les aides</h2>
+                <p className="mt-2 text-sm">
+                  Une erreur est survenue. Vous pouvez réessayer.
+                </p>
+                <Button type="button" variant="outline" className="mt-4" onClick={() => refetch()}>
+                  <RotateCcw className="mr-2 h-4 w-4" />
+                  Réessayer
                 </Button>
               </div>
             )}
-          </>
-        )}
+
+            {(isLoading || isFetching) && !error && (
+              <div className="space-y-3" data-testid="aides-loading-state">
+                {[1, 2, 3, 4, 5, 6].map((value) => (
+                  <div key={value} className="rounded-xl border border-border bg-card p-5">
+                    <Skeleton className="h-4 w-24" />
+                    <Skeleton className="mt-3 h-5 w-3/4" />
+                    <Skeleton className="mt-2 h-4 w-full" />
+                    <Skeleton className="mt-2 h-4 w-2/3" />
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {!error && !isLoading && !isFetching && (() => {
+              // Apply local filters on top of API results
+              const localSearch = localFilters.search.trim().toLowerCase();
+              const filtered = items.filter((aide) => {
+                if (localFilters.urgentOnly && !aide.est_urgent) return false;
+                if (localFilters.category) {
+                  const cat = aide?.categorie || aide?.theme || aide?.category?.slug || aide?.category_code || '';
+                  if (String(cat).toLowerCase() !== localFilters.category) return false;
+                }
+                if (localSearch) {
+                  const title = (aide.titre || '').toLowerCase();
+                  const desc = (aide.cest_quoi || '').toLowerCase();
+                  if (!title.includes(localSearch) && !desc.includes(localSearch)) return false;
+                }
+                return true;
+              });
+
+              // Build AidCardProps for AidGrid
+              const gridItems = filtered.map((aide) => {
+                const prov = getProvenance(aide);
+                return {
+                  title: aide.titre || '',
+                  href: aide.slug ? `/aides/${aide.slug}` : `/aide/view?id=${aide.id}`,
+                  summary: aide.cest_quoi || undefined,
+                  isUrgent: Boolean(aide.est_urgent),
+                  verifiedAt: prov.verifiedAt || undefined,
+                  sourceLabel: prov.sourceHost || undefined,
+                  sourceUrl: prov.sourceUrl || undefined,
+                };
+              });
+
+              const hasAnyFilters = hasActiveLocalFilters ||
+                Boolean(q) || Boolean(category) || Boolean(situation) || Boolean(territory);
+
+              return (
+                <>
+                  {filtered.length > 0 && (
+                    <p className="mb-4 text-sm text-muted-foreground" data-testid="aides-success-state">
+                      {filtered.length} aide{filtered.length > 1 ? 's' : ''} trouvée{filtered.length > 1 ? 's' : ''}.
+                    </p>
+                  )}
+                  <AidGrid
+                    items={gridItems}
+                    hasActiveFilters={hasAnyFilters}
+                    onReset={() => { clearFilters(); resetLocalFilters(); }}
+                  />
+                  {/* Legacy card grid for items not handled by AidGrid (pagination) */}
+                  {filtered.length > 0 && totalPages > 1 && (
+                    <div className="flex justify-center mt-10 gap-2">
+                      <Button
+                        variant="outline"
+                        disabled={page <= 1}
+                        onClick={() => handlePageChange(page - 1)}
+                      >
+                        Précédent
+                      </Button>
+                      <span className="flex items-center px-4 text-sm font-medium text-foreground">
+                        Page {page} / {totalPages}
+                      </span>
+                      <Button
+                        variant="outline"
+                        disabled={!hasNext}
+                        onClick={() => handlePageChange(page + 1)}
+                      >
+                        Suivant
+                      </Button>
+                    </div>
+                  )}
+                </>
+              );
+            })()}
+          </div>
+        </div>
       </div>
     </div>
   );

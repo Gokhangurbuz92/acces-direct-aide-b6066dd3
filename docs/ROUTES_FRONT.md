@@ -134,5 +134,13 @@ Routes maintenues pour la compatibilité (SEO, anciens liens).
 | `/DemarcheDetail` | `/demarches` | |
 | `/confidentialite` | `/politique-confidentialite` | Alias legacy confidentialité |
 
+## 5. Pages Utilitaires & Dev
+
+| Route | Page / Composant | API Calls | Notes |
+|---|---|---|---|
+| `/__sentry_test` | `SentryTestPage` | - | Test Sentry (actif uniquement si `VITE_PUBLIC_DIAGNOSTICS=true`) |
+| `/sentry-test` | `SentryTest` | - | Composant test Sentry intégré (actif uniquement si `VITE_PUBLIC_DIAGNOSTICS=true`) |
+| - | `Gone` | - | Page 410 "Contenu retiré", utilisée par `ActualiteDetail`, `AideDetail`, `DemarcheDetail` |
+
 ---
 *Généré automatiquement à partir de `src/pages/index.jsx`.*

@@ -74,3 +74,11 @@ Outils de maintenance, vérification et CI.
 | :--- | :--- | :--- | :--- | :--- |
 | `e2e/` | Tests bout-en-bout (Playwright) | Playwright | QA | Tests flaky, temps d'exécution long |
 | `tests/` | Tests unitaires/intégration | Vitest | Dev | Couverture insuffisante |
+
+## 9. Décisions Techniques Structurantes
+
+| Décision | Contexte | Statut |
+| :--- | :--- | :--- |
+| **JS vs TS** | Le projet est majoritairement JS. Pas de migration globale. TS autorisé incrémentalement si strict et isolé (fichiers `.ts` ou `.d.ts`). | **Stable** (JS dominant) |
+| **API Client** | `src/api/client.js` est l'unique client API pour le front. Pas de version `.jsx`. | **Appliqué** |
+| **FALC Logic** | `api/lib/falc-summarizer.js` est la source de vérité pour le résumé FALC (côté serveur). Pas de duplication dans `lib/`. | **Appliqué** |

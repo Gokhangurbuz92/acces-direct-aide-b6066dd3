@@ -19,6 +19,7 @@ find . -type f \
   -not -path '*/venv/*' \
   -not -path '*/__pycache__/*' \
   -not -path '*/.cursor/*' \
+  -not -path '*/uploads_mock/*' \
   -not -name '.DS_Store' \
   -not -name '.env*' \
   -not -name 'cookies*.txt' \
@@ -30,12 +31,15 @@ find . -type f \
   -not -name 'lerna-debug.log*' \
   | sort > "$OUTPUT_FILE"
 
-# Add .env.example back if it was excluded by .env*
+# Add allowed env files back if they were excluded by .env*
 if [ -f .env.example ]; then
   echo "./.env.example" >> "$OUTPUT_FILE"
 fi
+if [ -f .env.template ]; then
+  echo "./.env.template" >> "$OUTPUT_FILE"
+fi
 
-# Sort again to place .env.example correctly
+# Sort again to place env files correctly
 sort -o "$OUTPUT_FILE" "$OUTPUT_FILE"
 
 echo "Done. File list written to $OUTPUT_FILE."

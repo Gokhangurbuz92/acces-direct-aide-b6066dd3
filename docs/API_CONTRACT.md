@@ -67,3 +67,22 @@ L'API utilise le header `Authorization` :
 
 - `X-Request-Id` : Identifiant unique de la requête (retourné dans la réponse).
 - `X-App-Version` : Version de l'application (optionnel).
+
+## 6. Provenance et Dates
+
+Chaque aide expose des champs de **provenance** qui tracent la fraîcheur et la source :
+
+| Champ | Type | Description |
+| :--- | :--- | :--- |
+| `provenance.verifiedAt` | `string` (ISO 8601) | Date de dernière vérification de la source |
+| `provenance.fetchedAt` | `string` (ISO 8601) | Date de collecte par le pipeline |
+| `provenance.sourceHost` | `string` | Nom de domaine de la source (ex: `service-public.fr`) |
+| `provenance.sourceUrl` | `string` | URL complète de la source officielle |
+| `date_verification` | `string` (ISO 8601) | Fallback : date de vérification (champ racine) |
+
+### Règles côté front-end (trust policy)
+
+- **Dates futures** : rejetées si > `now + 2 jours` (→ `null`). Couvre les erreurs d'import et le décalage horaire.
+- **URL invalide** : si `sourceUrl` n'est pas `http(s)://…` → `null`.
+- **Label vide** : si `sourceHost` est vide ou whitespace → `null`.
+- **Aucun fallback textuel** : la data layer ne fabrique jamais `"Non renseigné"`. Les composants UI affichent `"Date inconnue"` ou masquent l'élément.

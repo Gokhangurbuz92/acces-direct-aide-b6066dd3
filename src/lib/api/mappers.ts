@@ -5,12 +5,14 @@
  * into the prop shapes expected by AidCard and AidDetailLayout.
  *
  * Rules:
- *   - verifiedAt is kept as ISO string (compatible with freshness.ts)
+ *   - Dates are normalized via trust/normalize (future-clamped, parsed safely)
  *   - Missing fields → null/undefined (never "Non renseigné")
  *   - sourceLabel comes from provenance.sourceHost (domain name)
+ *   - Invalid URLs → null
  */
 
 import type { ApiAideListItem, ApiAideDetail } from "@/types/api";
+import { buildProvenance } from "@/lib/trust/normalize";
 
 // ---------------------------------------------------------------------------
 // View-model types (match AidCardProps / AidDetailLayoutProps without React)
@@ -73,14 +75,16 @@ function pickSummary(
 // ---------------------------------------------------------------------------
 
 export function mapAideToCard(item: ApiAideListItem): AidCardViewModel {
+    const prov = buildProvenance(item.provenance, item.date_verification);
+
     return {
         title: item.titre,
         href: buildHref(item.slug),
         summary: pickSummary(item.summary_falc, item.cest_quoi),
         isUrgent: item.est_urgent || undefined,
-        verifiedAt: item.provenance?.verifiedAt ?? item.date_verification ?? null,
-        sourceLabel: item.provenance?.sourceHost ?? undefined,
-        sourceUrl: item.provenance?.sourceUrl ?? undefined,
+        verifiedAt: prov.verifiedAt,
+        sourceLabel: prov.sourceLabel ?? undefined,
+        sourceUrl: prov.sourceUrl ?? undefined,
     };
 }
 
@@ -198,13 +202,15 @@ export function mapAideToDetail(item: ApiAideDetail): AidDetailViewModel {
         ? { label: "Faire la demande", href: item.lien_demande }
         : undefined;
 
+    const prov = buildProvenance(item.provenance, item.date_verification);
+
     return {
         title: item.titre,
         summary: pickSummary(item.summary_falc, item.cest_quoi),
         isUrgent: item.est_urgent || undefined,
-        verifiedAt: item.provenance?.verifiedAt ?? item.date_verification ?? null,
-        sourceLabel: item.provenance?.sourceHost ?? undefined,
-        sourceUrl: item.provenance?.sourceUrl ?? undefined,
+        verifiedAt: prov.verifiedAt,
+        sourceLabel: prov.sourceLabel ?? undefined,
+        sourceUrl: prov.sourceUrl ?? undefined,
         sections,
         primaryCta,
         backHref: "/aides",

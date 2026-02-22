@@ -56,6 +56,17 @@ Platform connecting professional aid structures with beneficiaries, featuring se
     - Sensitive data (names, contacts, messages, files) encrypted with `AES-256-GCM`.
     - Rate limiting via Vercel KV.
 
+## API Environment Variable
+
+The front-end API client reads `VITE_API_BASE_URL` from environment.
+
+| Value | Behaviour |
+|-------|-----------|
+| *(empty / unset)* | Same-origin requests (`/api/…`) — **default on Vercel** |
+| `https://staging.example.com` | Proxy to a remote API (useful in dev) |
+
+Set it in `.env.local` for local development if needed.
+
 ## Deployment
 
 1.  **Build**

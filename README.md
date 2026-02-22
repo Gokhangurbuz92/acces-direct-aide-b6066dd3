@@ -67,6 +67,18 @@ The front-end API client reads `VITE_API_BASE_URL` from environment.
 
 Set it in `.env.local` for local development if needed.
 
+## API Cache Policy
+
+The data layer uses an in-memory TTL cache (`src/lib/api/cache.ts`) to avoid redundant network requests:
+
+| Scope | TTL | Description |
+|-------|-----|-------------|
+| Listing (`/api/aides?…`) | 60 s | Short TTL — filters change frequently |
+| Detail (`/api/aides/:slug`) | 5 min | Longer TTL — detail content is stable |
+
+**Inflight deduplication**: identical concurrent requests share the same `Promise` (no double-fetch).
+**Refetch**: the "Réessayer" button invalidates the relevant cache entries and forces a fresh network call.
+
 ## Deployment
 
 1.  **Build**

@@ -2,14 +2,14 @@
  * useAidesListing — source of truth for the Aides listing page.
  *
  * Uses V2-01 client layer (listAides + mapAideToCard).
- * No external dependencies (no react-query, no zod).
+ * V2-04: Cache-aware — instant display from cache, refetch bypasses cache.
  *
  * State machine: idle → loading → success | error
  * Debounce: 250ms on query text changes.
  */
 
 import { useState, useEffect, useCallback, useRef } from "react";
-import { listAides } from "@/lib/api/endpoints";
+import { listAides, invalidateListAidesCache } from "@/lib/api/endpoints";
 import { mapAideToCard } from "@/lib/api/mappers";
 import type { AidCardViewModel } from "@/lib/api/mappers";
 import type { ListAidesParams } from "@/lib/api/endpoints";
@@ -73,7 +73,7 @@ export function useAidesListing(filters: AidesListingFilters): AidesListingResul
     // Track current fetch version to ignore stale responses.
     const versionRef = useRef(0);
 
-    const doFetch = useCallback(async (f: AidesListingFilters) => {
+    const doFetch = useCallback(async (f: AidesListingFilters, skipCache = false) => {
         // Cancel previous in-flight request.
         if (abortRef.current) {
             abortRef.current.abort();
@@ -82,7 +82,11 @@ export function useAidesListing(filters: AidesListingFilters): AidesListingResul
         abortRef.current = controller;
 
         const version = ++versionRef.current;
-        setStatus("loading");
+
+        // Only show loading if we don't already have data (avoid flash on cache hit).
+        if (items.length === 0 || skipCache) {
+            setStatus("loading");
+        }
         setErrorMessage(undefined);
 
         const params: ListAidesParams = {
@@ -97,7 +101,7 @@ export function useAidesListing(filters: AidesListingFilters): AidesListingResul
         if (f.territoire) params.territoire = f.territoire;
 
         try {
-            const response = await listAides(params);
+            const response = await listAides(params, { skipCache });
 
             // Ignore stale response.
             if (version !== versionRef.current) return;
@@ -118,6 +122,7 @@ export function useAidesListing(filters: AidesListingFilters): AidesListingResul
             setErrorMessage("Impossible de charger les aides. Réessayez.");
             setStatus("error");
         }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
     // Trigger fetch with debounce on `q`, immediate for other changes.
@@ -131,7 +136,6 @@ export function useAidesListing(filters: AidesListingFilters): AidesListingResul
         return () => {
             clearTimeout(timer);
         };
-        // Stringify filters for dependency tracking.
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [
         filters.q,
@@ -152,8 +156,10 @@ export function useAidesListing(filters: AidesListingFilters): AidesListingResul
         };
     }, []);
 
+    // Refetch: invalidate cache then re-fetch.
     const refetch = useCallback(() => {
-        doFetch(filters);
+        invalidateListAidesCache();
+        doFetch(filters, true);
     }, [doFetch, filters]);
 
     return { status, items, pagination, facets, errorMessage, refetch };

@@ -2,7 +2,7 @@
  * useAideDetail — source of truth for the Aide detail page.
  *
  * Uses V2-01 client layer (getAideBySlug + mapAideToDetail).
- * No external dependencies (no react-query).
+ * V2-04: Cache-aware — instant display from cache, refetch bypasses cache.
  *
  * State machine: loading → success | error | not_found
  */
@@ -12,6 +12,7 @@ import { getAideBySlug } from "@/lib/api/endpoints";
 import { mapAideToDetail } from "@/lib/api/mappers";
 import type { AidDetailViewModel } from "@/lib/api/mappers";
 import type { ApiError, ApiAideDetail } from "@/types/api";
+import { clearCache } from "@/lib/api/cache";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -43,17 +44,21 @@ export function useAideDetail(slug: string | null | undefined): AideDetailResult
     const abortRef = useRef<AbortController | null>(null);
     const versionRef = useRef(0);
 
-    const doFetch = useCallback(async (s: string) => {
+    const doFetch = useCallback(async (s: string, skipCache = false) => {
         if (abortRef.current) abortRef.current.abort();
         const controller = new AbortController();
         abortRef.current = controller;
 
         const version = ++versionRef.current;
-        setStatus("loading");
+
+        // Only show loading if we don't already have data (avoid flash on cache hit).
+        if (!data || skipCache) {
+            setStatus("loading");
+        }
         setErrorMessage(undefined);
 
         try {
-            const response = await getAideBySlug(s);
+            const response = await getAideBySlug(s, { skipCache });
 
             if (version !== versionRef.current) return;
 
@@ -79,6 +84,7 @@ export function useAideDetail(slug: string | null | undefined): AideDetailResult
             setErrorMessage("Impossible de charger cette aide. Vérifiez votre connexion et réessayez.");
             setStatus("error");
         }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
     useEffect(() => {
@@ -96,8 +102,12 @@ export function useAideDetail(slug: string | null | undefined): AideDetailResult
         };
     }, [slug, doFetch]);
 
+    // Refetch: invalidate cache for this slug then re-fetch.
     const refetch = useCallback(() => {
-        if (slug) doFetch(slug);
+        if (slug) {
+            clearCache(`/api/aides/${encodeURIComponent(slug)}`);
+            doFetch(slug, true);
+        }
     }, [slug, doFetch]);
 
     return { status, data, raw, errorMessage, refetch };

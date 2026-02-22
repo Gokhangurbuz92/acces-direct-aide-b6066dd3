@@ -6,6 +6,7 @@
  * - Structured error handling (ApiError)
  * - Safe JSON parsing
  * - No external dependencies
+ * - Inflight deduplication (anti double-fetch)
  */
 
 import { getApiBaseUrl, API_TIMEOUT_MS } from "./config";
@@ -132,4 +133,40 @@ export async function apiGet<T>(
             `Invalid JSON response: ${path}`,
         );
     }
+}
+
+// ---------------------------------------------------------------------------
+// Inflight deduplication
+// ---------------------------------------------------------------------------
+
+/**
+ * Map of currently in-flight requests keyed by cache key.
+ * Prevents duplicate network calls for the same URL+params.
+ */
+const inflight = new Map<string, Promise<unknown>>();
+
+/**
+ * Deduplicated GET: if an identical request is already in-flight,
+ * return the same Promise instead of launching a new fetch.
+ *
+ * @param cacheKey - Deterministic key for this request (see cache.ts buildCacheKey)
+ * @param path     - API path
+ * @param params   - Query parameters
+ * @param options  - Fetch options (signal, timeout)
+ */
+export async function apiGetDeduped<T>(
+    cacheKey: string,
+    path: string,
+    params?: Record<string, string | number | boolean | undefined | null>,
+    options?: { signal?: AbortSignal; timeoutMs?: number },
+): Promise<T> {
+    const existing = inflight.get(cacheKey) as Promise<T> | undefined;
+    if (existing) return existing;
+
+    const promise = apiGet<T>(path, params, options).finally(() => {
+        inflight.delete(cacheKey);
+    });
+
+    inflight.set(cacheKey, promise);
+    return promise;
 }

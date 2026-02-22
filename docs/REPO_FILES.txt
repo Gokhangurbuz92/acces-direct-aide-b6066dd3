@@ -1,6 +1,6 @@
+./.cursor/rules/snyk_rules.mdc
 ./.editorconfig
 ./.env.example
-./.env.template
 ./.github/CODEOWNERS
 ./.github/pull_request_template.md
 ./.github/workflows/a11y.yml
@@ -123,6 +123,7 @@
 ./api/_handlers/upload.js
 ./api/_handlers/version.js
 ./api/_utils/auth.js
+./api/_utils/build-info.js
 ./api/_utils/cache.js
 ./api/_utils/cachePolicy.js
 ./api/_utils/contentHash.js
@@ -410,6 +411,7 @@
 ./middleware.js
 ./package-lock.json
 ./package.json
+./playwright-report/index.html
 ./playwright.config.js
 ./postcss.config.js
 ./prisma/migrations/20250202120000_add_aides_fields_and_unaccent/migration.sql
@@ -692,6 +694,9 @@
 ./src/components/cards/StructureCard.jsx
 ./src/components/chat/ChatAssistant.jsx
 ./src/components/chat/ChatWidget.jsx
+./src/components/features/falc/FalcToggle.stories.tsx
+./src/components/features/falc/FalcToggle.tsx
+./src/components/features/falc/falc.rules.md
 ./src/components/feedback/EmptyState.jsx
 ./src/components/feedback/ListSkeleton.jsx
 ./src/components/foundation/TokenSwatches.stories.tsx
@@ -711,6 +716,17 @@
 ./src/components/molecules/FreshnessTag.tsx
 ./src/components/navigation/Breadcrumbs.jsx
 ./src/components/news/NewsFallback.jsx
+./src/components/organisms/AidDetailFalc.stories.tsx
+./src/components/organisms/AidDetailLayout.stories.tsx
+./src/components/organisms/AidDetailLayout.tsx
+./src/components/organisms/AidGrid.stories.tsx
+./src/components/organisms/AidGrid.tsx
+./src/components/organisms/FilterPanel.stories.tsx
+./src/components/organisms/FilterPanel.tsx
+./src/components/organisms/HeroSearch.stories.tsx
+./src/components/organisms/HeroSearch.tsx
+./src/components/organisms/ProvenancePanel.stories.tsx
+./src/components/organisms/ProvenancePanel.tsx
 ./src/components/providers/ThemeProvider.tsx
 ./src/components/search/AidesSearchForm.jsx
 ./src/components/search/SearchBar.jsx
@@ -785,6 +801,7 @@
 ./src/entry-server.jsx
 ./src/hooks/use-mobile.jsx
 ./src/index.css
+./src/lib/falc.ts
 ./src/lib/freshness.ts
 ./src/lib/htmlText.js
 ./src/lib/jsonld.js
@@ -796,6 +813,7 @@
 ./src/lib/seo.js
 ./src/lib/seo.ts
 ./src/lib/theme.ts
+./src/lib/trust.ts
 ./src/lib/utils.js
 ./src/main.jsx
 ./src/observability/initSentry.js

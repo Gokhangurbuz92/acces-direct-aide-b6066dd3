@@ -54,4 +54,4 @@ jobs:
       - name: Install Playwright Browsers
         run: npx playwright install --with-deps chromium
       - name: Run E2E Tests
-        run: npx playwright test e2e/public-core.spec.js
+        run: npx playwright test e2e/public-core.spec.js e2e/booking.spec.js

@@ -8,16 +8,15 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
-import AideCard from '@/components/cards/AideCard';
 import FilterPanel from '@/components/organisms/FilterPanel';
 import AidGrid from '@/components/organisms/AidGrid';
 import { buildAidesItemListSchema, buildBreadcrumbSchema } from '@/lib/seo';
-import { getProvenance, formatProvenanceDate, extractSourceHost } from '@/lib/provenance';
+import { useAidesListing } from '@/lib/hooks/useAidesListing';
 
 const DEFAULT_LIMIT = 20;
 const LIMIT_OPTIONS = [10, 20, 50];
-/** @type {Array<Record<string, unknown>>} */
-const EMPTY_ITEMS = [];
+
+const INITIAL_LOCAL_FILTERS = { search: '', category: '', urgentOnly: false };
 
 function parsePage(value) {
   const parsed = Number.parseInt(String(value ?? '1'), 10);
@@ -32,8 +31,6 @@ function parseLimit(value) {
   if (parsed > 50) return 50;
   return parsed;
 }
-
-const INITIAL_LOCAL_FILTERS = { search: '', category: '', urgentOnly: false };
 
 export default function Aides() {
   const location = useLocation();
@@ -87,42 +84,72 @@ export default function Aides() {
     setQueryInput(q);
   }, [q]);
 
+  // ------------------------------------------------------------------
+  // V2-02: Use useAidesListing hook instead of react-query
+  // ------------------------------------------------------------------
+  const { status, items: apiItems, pagination, facets, errorMessage, refetch } = useAidesListing({
+    q,
+    theme: category,
+    urgent: false, // urgent filter handled locally
+    sort,
+    page,
+    pageSize: limit,
+    situation,
+    territoire: territory,
+  });
+
+  const isLoading = status === 'loading' || status === 'idle';
+  const isError = status === 'error';
+  const isSuccess = status === 'success';
+
+  // ------------------------------------------------------------------
+  // Taxonomy (keep react-query for taxonomy — it's not Aides data)
+  // ------------------------------------------------------------------
   const { data: taxonomy } = useQuery({
     queryKey: ['taxonomy'],
     queryFn: () => client.taxonomy.get(),
   });
 
-  const {
-    data,
-    isLoading,
-    isFetching,
-    error,
-    refetch,
-  } = useQuery({
-    queryKey: ['aides', { q, category, situation, territory, sort, page, limit }],
-    queryFn: () => client.entities.Aide.filter({
-      q,
-      category,
-      situation,
-      territory,
-      sort,
-      page,
-      limit,
-      statut: 'publie',
-    }),
-  });
+  // ------------------------------------------------------------------
+  // Apply local filters ON TOP of API results
+  // ------------------------------------------------------------------
+  const filteredItems = useMemo(() => {
+    if (!apiItems.length) return apiItems;
 
-  const items = data?.items ?? EMPTY_ITEMS;
-  const pagination = data?.pagination || {};
-  const facets = data?.facets || {};
+    const localSearch = localFilters.search.trim().toLowerCase();
 
+    return apiItems.filter((item) => {
+      if (localFilters.urgentOnly && !item.isUrgent) return false;
+      if (localFilters.category) {
+        // Local category filter (rough match on href slug)
+        const itemSlug = item.href.split('/').pop() || '';
+        // This is a secondary local filter — if the API already filters by theme,
+        // this catches category-level refinement from the sidebar.
+        // Simple approach: skip items that don't contain the category in their summary/title
+        const searchStr = `${item.title} ${item.summary || ''}`.toLowerCase();
+        if (!searchStr.includes(localFilters.category.toLowerCase())) return false;
+      }
+      if (localSearch) {
+        const searchStr = `${item.title} ${item.summary || ''}`.toLowerCase();
+        if (!searchStr.includes(localSearch)) return false;
+      }
+      return true;
+    });
+  }, [apiItems, localFilters]);
+
+  const hasAnyFilters = hasActiveLocalFilters ||
+    Boolean(q) || Boolean(category) || Boolean(situation) || Boolean(territory);
+
+  // ------------------------------------------------------------------
+  // SEO & live message
+  // ------------------------------------------------------------------
   const liveMessage = useMemo(() => {
-    if (isLoading || isFetching) return 'Chargement des aides...';
-    if (error) return "Erreur lors du chargement des aides.";
-    if (!items.length) return 'Aucune aide trouvée.';
-    const total = typeof pagination.total === 'number' ? pagination.total : items.length;
+    if (isLoading) return 'Chargement des aides...';
+    if (isError) return "Erreur lors du chargement des aides.";
+    if (!filteredItems.length) return 'Aucune aide trouvée.';
+    const total = typeof pagination?.total === 'number' ? pagination.total : filteredItems.length;
     return `${total} aide${total > 1 ? 's' : ''} trouvée${total > 1 ? 's' : ''}.`;
-  }, [isLoading, isFetching, error, items.length, pagination.total]);
+  }, [isLoading, isError, filteredItems.length, pagination?.total]);
 
   const handleParamChange = (key, value) => {
     const params = new URLSearchParams(searchParams);
@@ -182,9 +209,10 @@ export default function Aides() {
       { name: 'Accueil', url: '/' },
       { name: 'Aides', url: '/aides' },
     ]);
-    const itemList = buildAidesItemListSchema(items);
+    // Pass raw items for SEO (buildAidesItemListSchema expects raw aide objects)
+    const itemList = buildAidesItemListSchema(filteredItems);
     return [breadcrumb, itemList].filter(Boolean);
-  }, [items]);
+  }, [filteredItems]);
 
   const territoryOptions = useMemo(() => {
     const facetTerritories = facets?.territoires || {};
@@ -209,8 +237,8 @@ export default function Aides() {
     return [{ value: '', label: 'Tous les territoires' }, ...formatted];
   }, [facets?.territoires]);
 
-  const hasNext = Boolean(pagination.hasNext);
-  const totalPages = pagination.totalPages || 1;
+  const hasNext = Boolean(pagination?.hasNext);
+  const totalPages = pagination?.totalPages || 1;
 
   return (
     <div className="min-h-screen bg-slate-50">
@@ -395,7 +423,8 @@ export default function Aides() {
 
           {/* Results column */}
           <div className="min-w-0 flex-1">
-            {error && (
+            {/* Error state */}
+            {isError && (
               <div
                 className="rounded-2xl border border-destructive/30 bg-destructive/5 p-6 text-destructive"
                 role="alert"
@@ -403,7 +432,7 @@ export default function Aides() {
               >
                 <h2 className="text-lg font-semibold">Impossible de charger les aides</h2>
                 <p className="mt-2 text-sm">
-                  Une erreur est survenue. Vous pouvez réessayer.
+                  {errorMessage || 'Une erreur est survenue. Vous pouvez réessayer.'}
                 </p>
                 <Button type="button" variant="outline" className="mt-4" onClick={() => refetch()}>
                   <RotateCcw className="mr-2 h-4 w-4" />
@@ -412,7 +441,8 @@ export default function Aides() {
               </div>
             )}
 
-            {(isLoading || isFetching) && !error && (
+            {/* Loading state — show skeletons */}
+            {isLoading && !isError && (
               <div className="space-y-3" data-testid="aides-loading-state">
                 {[1, 2, 3, 4, 5, 6].map((value) => (
                   <div key={value} className="rounded-xl border border-border bg-card p-5">
@@ -425,54 +455,43 @@ export default function Aides() {
               </div>
             )}
 
-            {!error && !isLoading && !isFetching && (() => {
-              // Apply local filters on top of API results
-              const localSearch = localFilters.search.trim().toLowerCase();
-              const filtered = items.filter((aide) => {
-                if (localFilters.urgentOnly && !aide.est_urgent) return false;
-                if (localFilters.category) {
-                  const cat = aide?.categorie || aide?.theme || aide?.category?.slug || aide?.category_code || '';
-                  if (String(cat).toLowerCase() !== localFilters.category) return false;
-                }
-                if (localSearch) {
-                  const title = (aide.titre || '').toLowerCase();
-                  const desc = (aide.cest_quoi || '').toLowerCase();
-                  if (!title.includes(localSearch) && !desc.includes(localSearch)) return false;
-                }
-                return true;
-              });
-
-              // Build AidCardProps for AidGrid
-              const gridItems = filtered.map((aide) => {
-                const prov = getProvenance(aide);
-                return {
-                  title: aide.titre || '',
-                  href: aide.slug ? `/aides/${aide.slug}` : `/aide/view?id=${aide.id}`,
-                  summary: aide.cest_quoi || undefined,
-                  isUrgent: Boolean(aide.est_urgent),
-                  verifiedAt: prov.verifiedAt || undefined,
-                  sourceLabel: prov.sourceHost || undefined,
-                  sourceUrl: prov.sourceUrl || undefined,
-                };
-              });
-
-              const hasAnyFilters = hasActiveLocalFilters ||
-                Boolean(q) || Boolean(category) || Boolean(situation) || Boolean(territory);
-
+            {/* Success state */}
+            {isSuccess && !isError && (() => {
               return (
                 <>
-                  {filtered.length > 0 && (
+                  {filteredItems.length > 0 && (
                     <p className="mb-4 text-sm text-muted-foreground" data-testid="aides-success-state">
-                      {filtered.length} aide{filtered.length > 1 ? 's' : ''} trouvée{filtered.length > 1 ? 's' : ''}.
+                      {pagination?.total ?? filteredItems.length} aide{(pagination?.total ?? filteredItems.length) > 1 ? 's' : ''} trouvée{(pagination?.total ?? filteredItems.length) > 1 ? 's' : ''}.
                     </p>
                   )}
-                  <AidGrid
-                    items={gridItems}
-                    hasActiveFilters={hasAnyFilters}
-                    onReset={() => { clearFilters(); resetLocalFilters(); }}
-                  />
-                  {/* Legacy card grid for items not handled by AidGrid (pagination) */}
-                  {filtered.length > 0 && totalPages > 1 && (
+
+                  {/* Empty without active filters — neutral message, NOT EmptyState */}
+                  {filteredItems.length === 0 && !hasAnyFilters && (
+                    <p className="py-8 text-center text-sm text-muted-foreground" data-testid="aides-empty-neutral">
+                      Aucune aide disponible pour le moment.
+                    </p>
+                  )}
+
+                  {/* Empty with active filters — EmptyState via AidGrid */}
+                  {filteredItems.length === 0 && hasAnyFilters && (
+                    <AidGrid
+                      items={[]}
+                      hasActiveFilters={true}
+                      onReset={() => { clearFilters(); resetLocalFilters(); }}
+                    />
+                  )}
+
+                  {/* Items grid */}
+                  {filteredItems.length > 0 && (
+                    <AidGrid
+                      items={filteredItems}
+                      hasActiveFilters={hasAnyFilters}
+                      onReset={() => { clearFilters(); resetLocalFilters(); }}
+                    />
+                  )}
+
+                  {/* Pagination */}
+                  {filteredItems.length > 0 && totalPages > 1 && (
                     <div className="flex justify-center mt-10 gap-2">
                       <Button
                         variant="outline"

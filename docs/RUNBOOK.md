@@ -58,3 +58,35 @@ Voir `docs/ROTATE_SECRETS.md`.
 | **Tech Lead** | Slack / Email | Décision Rollback, Architecture. |
 | **DevOps** | Slack / Email | Infra Vercel, DB, Secrets. |
 | **Produit** | Slack / Email | Communication usagers si downtime. |
+
+## 4. SEO Prerender & Sitemap
+
+### Build pipeline
+
+`npm run build` exécute dans l'ordre :
+
+1. `vite build` — bundle client
+2. `node scripts/prerender.mjs` — SSG pour `/`, `/aides`, et top 50 fiches `/aides/:slug`
+3. `node scripts/generate-sitemap.mjs` — génère `dist/sitemap.xml`
+
+### Personnaliser le nombre de fiches
+
+```bash
+# Prerender top 100 au lieu de 50
+node scripts/prerender.mjs --limit 100
+node scripts/generate-sitemap.mjs --limit 100
+```
+
+### Prérequis
+
+- `DATABASE_URL` doit être défini pour que les scripts puissent interroger les slugs publiés.
+- Si `DATABASE_URL` n'est pas disponible (ex: CI sans DB), seules les routes statiques (`/`, `/aides`) sont générées. C'est non-bloquant.
+
+### Vérification
+
+```bash
+npm run build
+ls dist/sitemap.xml              # doit exister
+head -20 dist/sitemap.xml        # doit contenir <url> entries
+ls dist/aides/*/index.html | head -3  # fiches prerendues
+```

@@ -90,3 +90,16 @@ ls dist/sitemap.xml              # doit exister
 head -20 dist/sitemap.xml        # doit contenir <url> entries
 ls dist/aides/*/index.html | head -3  # fiches prerendues
 ```
+
+## 5. Auth — Routes exposées
+
+| Route | Audience | Liée dans le Header ? |
+| :--- | :--- | :--- |
+| `/login` | Public (hub de connexion) | ✅ Oui |
+| `/pro/login` | Professionnels | ✅ Oui (mobile : "Espace Pro") |
+| `/pro/register` | Professionnels | ✅ Oui ("Créer un compte") |
+| `/auth/login` | Bénéficiaires (RDV) | Non (accès via parcours RDV) |
+| `/auth/signup` | Bénéficiaires (RDV) | Non (accès via parcours RDV) |
+| `/admin/login` | Administration | ⛔ Non (accès par URL directe uniquement) |
+
+> **Note** : `/admin/login` existe mais n'est volontairement pas liée dans la navigation publique pour des raisons de sécurité.

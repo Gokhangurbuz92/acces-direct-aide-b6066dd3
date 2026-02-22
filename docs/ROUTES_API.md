@@ -1,82 +1,82 @@
-# Documentation API Routes
+# Routes API
 
-Ce fichier est généré automatiquement à partir de `api/routes.js`.
-Il liste les routes définies et leurs gestionnaires.
+Ce document liste les routes définies dans le backend Serverless (`api/routes.js`).
 
-| Path | Match | Handler File | Auth (Estimé) | Description |
-|---|---|---|---|---|
-| `/api/upload` | `exact` | `./_handlers/upload.js` | Public | - |
-| `/api/download` | `exact` | `./_handlers/download.js` | Public | - |
-| `/api/health` | `exact` | `./_handlers/health.js` | Public | - |
-| `/api/health/deep` | `exact` | `./_handlers/health-deep.js` | Public | - |
-| `/api/monitor/cron/actualites` | `exact` | `./_handlers/monitor/cron-actualites.js` | Public | - |
-| `/api/monitor/core` | `exact` | `./_handlers/monitor/core.js` | Public | - |
-| `/api/monitor/data-quality` | `exact` | `./_handlers/monitor/data-quality.js` | Public | - |
-| `/api/monitor/ingestion-freshness` | `exact` | `./_handlers/monitor/ingestion-freshness.js` | Public | - |
-| `/api/monitor/pro-rdv` | `exact` | `./_handlers/monitor/pro-rdv.js` | Public | - |
-| `/api/healthz` | `exact` | `./_handlers/health.js` | Public | - |
-| `/api/robots.txt` | `exact` | `./_handlers/robots.js` | Public | - |
-| `/api/robots` | `exact` | `./_handlers/robots.js` | Public | - |
-| `/api/sitemap.xml` | `exact` | `./_handlers/sitemap.js` | Public | - |
-| `/api/sitemap` | `exact` | `./_handlers/sitemap.js` | Public | - |
-| `/api/login-pro-guard` | `exact` | `./_handlers/login-pro-guard.js` | Public | - |
-| `/api/taxonomy` | `exact` | `./_handlers/taxonomy.js` | Public | - |
-| `/api/pdf` | `prefix` | `./_handlers/pdf.js` | Public | Export PDF stable des fiches publiques (`/api/pdf/aides/:slug`, `/api/pdf/demarches/:slug`) |
-| `/api/auth/login` | `exact` | `./_handlers/auth/login.js` | Public/Auth | - |
-| `/api/auth/signup` | `exact` | `./_handlers/auth/signup.js` | Public/Auth | Creation compte Particulier (reponse neutre + envoi verification email). |
-| `/api/auth/logout` | `exact` | `./_handlers/auth/logout.js` | Public/Auth | Suppression session Particulier (cookie HttpOnly). |
-| `/api/auth/me` | `exact` | `./_handlers/auth/me.js` | Public/Auth | - |
-| `/api/auth/verify-email` | `exact` | `./_handlers/auth/verify-email.js` | Public/Auth | Verification email (token hash/usage unique), redirection vers `/auth/verify-email`. |
-| `/api/auth/resend-verification` | `exact` | `./_handlers/auth/resend-verification.js` | Public/Auth | Renvoi verification email (message neutre, rate-limit). |
-| `/api/auth/forgot-password` | `exact` | `./_handlers/auth/forgot-password.js` | Public/Auth | Initialisation reset password (message neutre, rate-limit). |
-| `/api/auth/reset-password` | `exact` | `./_handlers/auth/reset-password.js` | Public/Auth | Reset password via token a usage unique. |
-| `/api/pro/auth/login` | `exact` | `./_handlers/pro/auth/login.js` | Pro | - |
-| `/api/pro/auth/register` | `exact` | `./_handlers/pro/auth/register.js` | Pro | - |
-| `/api/pro/auth/forgot-password` | `exact` | `./_handlers/pro/auth/forgot-password.js` | Pro | - |
-| `/api/pro/auth/reset-password` | `exact` | `./_handlers/pro/auth/reset-password.js` | Pro | - |
-| `/api/pro/me` | `exact` | `./_handlers/pro/me.js` | Pro | - |
-| `/api/pro/services` | `exact` | `./_handlers/pro/services.js` | Pro | - |
-| `/api/pro/slots` | `exact` | `./_handlers/pro/slots.js` | Pro | - |
-| `/api/pro/messages` | `exact` | `./_handlers/pro/messages.js` | Pro | - |
-| `/api/pro/messages/conversations` | `prefix` | `./_handlers/pro/messages-conversations.js` | Pro | Messagerie RDV structure (liste, detail, envoi), tenant-scope strict. |
-| `/api/pro/appointments` | `exact` | `./_handlers/pro/appointments/index.js` | Pro | - |
-| `/api/pro/appointments/cancel` | `exact` | `./_handlers/pro/appointments/cancel.js` | Pro | - |
-| `/api/pro/availability` | `exact` | `./_handlers/pro/availability.js` | Pro | - |
-| `/api/pro/timeoff` | `exact` | `./_handlers/pro/timeoff.js` | Pro | - |
-| `/api/pro/rdv/settings` | `exact` | `./_handlers/pro/rdv-settings.js` | Pro | Parametres publication RDV structure (GET/PUT, gate readiness avant publish). |
-| `/api/public/messages` | `exact` | `./_handlers/public/messages.js` | Public | - |
-| `/api/messages` | `prefix` | `./_handlers/messages.js` | Public/Auth (USER cookie) | Messagerie RDV usager (liste, detail, envoi, get-or-create depuis appointment). |
-| `/api/public/suggest-structure` | `exact` | `./_handlers/public/suggest-structure.js` | Public | - |
-| `/api/public/stats` | `exact` | `./_handlers/public/stats.js` | Public | - |
-| `/api/public/availability` | `exact` | `./_handlers/public/availability.js` | Public | - |
-| `/api/rdv` | `prefix` | `./_handlers/rdv.js` | Public/Auth (USER cookie) | Booking public: services publies, slots, creation idempotente, consultation/annulation owner-only. |
-| `/api/appointments` | `exact` | `./_handlers/public/appointments/create.js` | Public | - |
-| `/api/appointments/cancel` | `exact` | `./_handlers/public/appointments/cancel.js` | Public | - |
-| `/api/aides` | `prefix` | `./_handlers/aides.js` | Public | - |
-| `/api/search` | `exact` | `./_handlers/search.js` | Public | - |
-| `/api/structures` | `prefix` | `./_handlers/structures.js` | Public | - |
-| `/api/demarches` | `prefix` | `./_handlers/demarches.js` | Public | Filtre les titres de test sur la surface publique |
-| `/api/actualites` | `prefix` | `./_handlers/actualites.js` | Public | - |
-| `/api/guides` | `prefix` | `./_handlers/guides.js` | Public | - |
-| `/api/tools` | `prefix` | `./_handlers/tools.js` | Public | - |
-| `/api/dispositifs` | `prefix` | `./_handlers/dispositifs/index.js` | Public | - |
-| `/api/ressources` | `prefix` | `./_handlers/ressources.js` | Public | - |
-| `/api/reports` | `prefix` | `./_handlers/reports.js` | Public | - |
-| `/api/feedback` | `exact` | `./_handlers/feedback.js` | Public | Signalement public minimal (type, id/slug, message, email optionnel), rate-limité |
-| `/api/cron/pipeline` | `exact` | `./_handlers/cron/pipeline.js` | Public | - |
-| `/api/cron/actualites` | `exact` | `./_handlers/cron/actualites.js` | Public | - |
-| `/api/cron/review-queue/scan` | `exact` | `./_handlers/cron/review-queue-scan.js` | Public | - |
-| `/api/cron/ingest-structures` | `exact` | `./_handlers/cron/ingest-structures.js` | Public | - |
-| `/api/cron/ingest-aids` | `exact` | `./_handlers/cron/ingest-aids.js` | Public | - |
-| `/api/cron/purge` | `exact` | `./_handlers/cron/purge.js` | Public | - |
-| `/api/cron/link-check` | `exact` | `./_handlers/cron/link-check.js` | Public | - |
-| `/api/admin/privacy/export` | `exact` | `./_handlers/admin/privacy/export.js` | Admin | - |
-| `/api/admin/privacy/delete` | `exact` | `./_handlers/admin/privacy/delete.js` | Admin | - |
-| `/api/admin/inbox` | `exact` | `./_handlers/admin/inbox.js` | Admin | - |
-| `/api/admin/actions` | `exact` | `./_handlers/admin/actions.js` | Admin | - |
-| `/api/admin/runs` | `exact` | `./_handlers/admin/runs.js` | Admin | - |
-| `/api/admin/cron-runs` | `prefix` | `./_handlers/admin/cron-runs.js` | Admin | - |
-| `/api/admin/partnerships` | `exact` | `./_handlers/admin/partnerships.js` | Admin | - |
-| `/api/admin/link-checks` | `exact` | `./_handlers/admin/link-checks.js` | Admin | - |
-| `/api/admin/validate-publication` | `exact` | `./_handlers/admin/validate-publication.js` | Admin | - |
-| `/api/admin/review-queue` | `prefix` | `./_handlers/admin/review-queue.js` | Admin | - |
+## 1. Routes Publiques (Core)
+
+Accessibles sans authentification.
+
+| Method | Path | Handler File | Rôle |
+| :--- | :--- | :--- | :--- |
+| `GET` | `/api/health` | `api/_handlers/health.js` | Check santé service |
+| `GET` | `/api/aides*` | `api/_handlers/aides.js` | Recherche/Détail aides |
+| `GET` | `/api/demarches*` | `api/_handlers/demarches.js` | Recherche/Détail démarches |
+| `GET` | `/api/structures*` | `api/_handlers/structures.js` | Annuaire structures |
+| `GET` | `/api/actualites*` | `api/_handlers/actualites.js` | Actualités |
+| `GET` | `/api/guides*` | `api/_handlers/guides.js` | Guides |
+| `GET` | `/api/tools*` | `api/_handlers/tools.js` | Outils |
+| `GET` | `/api/dispositifs*` | `api/_handlers/dispositifs/index.js` | Dispositifs |
+| `GET` | `/api/ressources*` | `api/_handlers/ressources.js` | Ressources documentaires |
+| `POST` | `/api/search` | `api/_handlers/search.js` | Recherche globale |
+| `GET` | `/api/taxonomy` | `api/_handlers/taxonomy.js` | Taxonomie (catégories) |
+| `GET` | `/api/public/stats` | `api/_handlers/public/stats.js` | Statistiques publiques |
+| `POST` | `/api/public/messages` | `api/_handlers/public/messages.js` | Envoi message contact |
+| `POST` | `/api/public/suggest-structure` | `api/_handlers/public/suggest-structure.js` | Suggestion ajout structure |
+
+## 2. Routes Rendez-vous (Public)
+
+| Method | Path | Handler File | Rôle |
+| :--- | :--- | :--- | :--- |
+| `GET` | `/api/public/availability` | `api/_handlers/public/availability.js` | Disponibilités structure |
+| `POST` | `/api/appointments` | `api/_handlers/public/appointments/create.js` | Création RDV |
+| `POST` | `/api/appointments/cancel` | `api/_handlers/public/appointments/cancel.js` | Annulation RDV |
+| `GET` | `/api/messages*` | `api/_handlers/messages.js` | Messagerie RDV |
+
+## 3. Routes Pro (Authentifiées)
+
+Authentification via JWT (Header `Authorization: Bearer <token>`).
+
+| Method | Path | Handler File | Rôle |
+| :--- | :--- | :--- | :--- |
+| `POST` | `/api/pro/auth/login` | `api/_handlers/pro/auth/login.js` | Login Pro |
+| `POST` | `/api/pro/auth/register` | `api/_handlers/pro/auth/register.js` | Inscription Pro |
+| `GET` | `/api/pro/me` | `api/_handlers/pro/me.js` | Profil courant |
+| `GET` | `/api/pro/appointments` | `api/_handlers/pro/appointments/index.js` | Liste RDV |
+| `POST` | `/api/pro/appointments/cancel` | `api/_handlers/pro/appointments/cancel.js` | Annuler RDV |
+| `GET/POST` | `/api/pro/availability` | `api/_handlers/pro/availability.js` | Gestion dispos |
+| `GET/POST` | `/api/pro/services` | `api/_handlers/pro/services.js` | Gestion services |
+| `GET/POST` | `/api/pro/slots` | `api/_handlers/pro/slots.js` | Gestion créneaux |
+| `GET/POST` | `/api/pro/messages` | `api/_handlers/pro/messages.js` | Messagerie Pro |
+| `GET` | `/api/pro/messages/conversations` | `api/_handlers/pro/messages-conversations.js` | Conversations |
+
+## 4. Routes Admin (Authentifiées)
+
+Authentification via Token statique ou Session Admin.
+
+| Method | Path | Handler File | Rôle |
+| :--- | :--- | :--- | :--- |
+| `POST` | `/api/auth/login` | `api/_handlers/auth/login.js` | Login Admin |
+| `GET` | `/api/auth/me` | `api/_handlers/auth/me.js` | Profil Admin |
+| `GET` | `/api/admin/inbox` | `api/_handlers/admin/inbox.js` | Boîte réception |
+| `POST` | `/api/admin/actions` | `api/_handlers/admin/actions.js` | Actions manuelles |
+| `GET` | `/api/admin/runs` | `api/_handlers/admin/runs.js` | Logs jobs |
+| `GET` | `/api/admin/cron-runs` | `api/_handlers/admin/cron-runs.js` | Détail cron |
+| `POST` | `/api/admin/link-checks` | `api/_handlers/admin/link-checks.js` | Vérification liens |
+| `GET` | `/api/admin/review-queue` | `api/_handlers/admin/review-queue.js` | File de révision |
+
+## 5. Cron & System
+
+Routes appelées par Vercel Cron ou scripts de maintenance.
+
+| Method | Path | Handler File | Rôle |
+| :--- | :--- | :--- | :--- |
+| `GET` | `/api/cron/pipeline` | `api/_handlers/cron/pipeline.js` | Pipeline global |
+| `GET` | `/api/cron/actualites` | `api/_handlers/cron/actualites.js` | Ingestion Actus |
+| `GET` | `/api/cron/ingest-aids` | `api/_handlers/cron/ingest-aids.js` | Ingestion Aides |
+| `GET` | `/api/cron/ingest-structures` | `api/_handlers/cron/ingest-structures.js` | Ingestion Structures |
+| `GET` | `/api/cron/link-check` | `api/_handlers/cron/link-check.js` | Check liens morts |
+| `GET` | `/api/cron/purge` | `api/_handlers/cron/purge.js` | Purge RGPD |
+| `GET` | `/api/sitemap.xml` | `api/_handlers/sitemap.js` | Sitemap |
+| `GET` | `/api/robots.txt` | `api/_handlers/robots.js` | Robots.txt |
+| `GET` | `/api/upload` | `api/_handlers/upload.js` | Upload fichier |
+| `GET` | `/api/download` | `api/_handlers/download.js` | Téléchargement |

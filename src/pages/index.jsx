@@ -41,7 +41,7 @@ const SubventionDossier = lazy(() => import("./SubventionDossier.jsx"));
 const Status = lazy(() => import("./Status.jsx"));
 const StructureDetail = lazy(() => import("./StructureDetail.jsx"));
 const NotFound = lazy(() => import("./NotFound.jsx"));
-const LoginPro = lazy(() => import("./LoginPro.jsx"));
+
 const BeneficiaryMessages = lazy(() => import("./BeneficiaryMessages.jsx"));
 const AppointmentRequest = lazy(() => import("./AppointmentRequest.jsx"));
 const AppointmentCancel = lazy(() => import("./AppointmentCancel.jsx"));
@@ -110,7 +110,7 @@ const PAGES = {
     AdminAideEdit, AdminAides, AdminGuideSync, AdminMessages,
     AdminRecentSyncs, AdminSources, AdminSync, AdminTestSync,
     AideDetail, Aides, Annuaire, Confidentialite, Contact, Cookies,
-    DemarcheDetail, DispositifDetail, Login, LoginPro, Demarches, Home, Orientation,
+    DemarcheDetail, DispositifDetail, Login, Demarches, Home, Orientation,
     MentionsLegales, SourcesMethode, SentryTest, StructureDetail,
     AdminInbox, AdminRuns, AdminObservability, AdminReviewQueue, AppointmentRequest, AppointmentCancel, AppointmentReschedule, AdminStructures,
     AdminDemarches, AdminDemarcheEdit, AdminAppointments, AdminReview, Status, PublicRdvEntry, AuthRdvAccess, AuthVerifyEmail, AuthForgotPassword, AuthResetPassword,
@@ -142,8 +142,6 @@ function _getCurrentPage(url) {
     }
 
     const pageName = Object.keys(PAGES).find(page => {
-        // Handle special case for nested path like /login/pro
-        if (page === 'LoginPro' && url.endsWith('/login/pro')) return true;
         return page.toLowerCase() === urlLastPart.toLowerCase()
     });
     return pageName || 'Home';
@@ -276,10 +274,8 @@ function PagesContent() {
                     <Route path="/demarches/view" element={<DemarcheDetail />} />
                     <Route path="/demarches/:slug" element={<DemarcheDetail />} />
 
-                    {/* Conditional Route */}
-                    {frontendEnv.flags.devLoginEnabled && (
-                        <Route path="/login/pro" element={<LoginPro />} />
-                    )}
+                    {/* Legacy alias — canonical route is /pro/login */}
+                    <Route path="/login/pro" element={<Navigate to="/pro/login" replace />} />
 
                     <Route path="/orientation" element={<Orientation />} />
                     <Route path="/demarches" element={<Demarches />} />

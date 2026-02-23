@@ -74,6 +74,21 @@ export const EmptyWithoutActiveFilters: Story = {
     },
 };
 
+/** Mobile viewport (375 px) — single column, full width */
+export const MobileWidth: Story = {
+    args: {
+        items: MOCK_ITEMS,
+        hasActiveFilters: false,
+    },
+    decorators: [
+        (Story) => (
+            <div style={{ maxWidth: 375 }}>
+                <Story />
+            </div>
+        ),
+    ],
+};
+
 // ---------------------------------------------------------------------------
 // Page-level state demos (loading / error)
 // These render the same skeleton/error patterns used in Aides.jsx

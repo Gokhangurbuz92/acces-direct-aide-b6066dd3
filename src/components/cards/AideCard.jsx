@@ -88,7 +88,7 @@ export default function AideCard({ aide, compact = false }) {
       <Link
         to={targetUrl}
         data-testid={`aide-card-link-${aide.id}`}
-        className="absolute inset-0 z-10 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 rounded-xl"
+        className="absolute inset-0 z-10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 rounded-xl"
         aria-label={`Voir l'aide ${aide.titre}`}
       >
         <span className="sr-only">Voir l'aide {aide.titre}</span>

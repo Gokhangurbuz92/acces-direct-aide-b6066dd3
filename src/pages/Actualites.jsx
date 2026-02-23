@@ -263,7 +263,7 @@ export default function Actualites() {
                     </label>
                     <select
                       id="actualites-source"
-                      className="w-full h-10 rounded-md border border-slate-200 bg-white px-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      className="w-full h-10 rounded-md border border-slate-200 bg-white px-3 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
                       value={source}
                       onChange={(e) => handleParamChange('source', e.target.value)}
                     >
@@ -281,7 +281,7 @@ export default function Actualites() {
                     </label>
                     <select
                       id="actualites-limit"
-                      className="w-full h-10 rounded-md border border-slate-200 bg-white px-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      className="w-full h-10 rounded-md border border-slate-200 bg-white px-3 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
                       value={String(limit)}
                       onChange={(e) => handleParamChange('limit', e.target.value)}
                     >
@@ -342,18 +342,18 @@ export default function Actualites() {
             onAction={() => refetch()}
           />
         ) : actualites.length > 0 ? (
-	          <>
-	            <div className="space-y-6" data-testid="actualites-results-list">
-		              {actualites.map((actu) => {
-		                const typeKey = actu.type_actu || 'info';
-		                const TypeIcon = TYPE_ICONS[typeKey] || Info;
+          <>
+            <div className="space-y-6" data-testid="actualites-results-list">
+              {actualites.map((actu) => {
+                const typeKey = actu.type_actu || 'info';
+                const TypeIcon = TYPE_ICONS[typeKey] || Info;
                 const linkUrl = actu.slug ? `/actualites/${actu.slug}` : `/actualites/view?id=${actu.id}`;
-		                const sourceName = getSourceName(actu);
-		                const sourceUrl = getSourceUrl(actu);
-                    const provenance = getProvenance(actu);
-                    const verifiedAt = formatProvenanceDate(provenance.verifiedAt);
-                    const sourceHost = provenance.sourceHost;
-                    const excerpt = htmlToPlainText(actu.summary_falc || actu.resume || '', { maxLength: 220 });
+                const sourceName = getSourceName(actu);
+                const sourceUrl = getSourceUrl(actu);
+                const provenance = getProvenance(actu);
+                const verifiedAt = formatProvenanceDate(provenance.verifiedAt);
+                const sourceHost = provenance.sourceHost;
+                const excerpt = htmlToPlainText(actu.summary_falc || actu.resume || '', { maxLength: 220 });
 
                 return (
                   <Card
@@ -364,21 +364,21 @@ export default function Actualites() {
                     {/* Overlay Link */}
                     <Link
                       to={linkUrl}
-                      className="absolute inset-0 z-10 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 rounded-xl"
+                      className="absolute inset-0 z-10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 rounded-xl"
                       aria-label={`Lire l'actualité ${actu.titre}`}
                     >
                       <span className="sr-only">Lire l'actualité {actu.titre}</span>
                     </Link>
 
-	                    <CardContent className="p-6">
-	                      <div className="flex flex-wrap gap-2 mb-3">
-	                        <Badge className={TYPE_COLORS[typeKey] || 'bg-slate-100 text-slate-800'}>
-	                          <TypeIcon className="h-3 w-3 mr-1" />
-	                          {typeKey === 'nouveaute' ? 'Nouveauté'
-	                            : typeKey === 'modification' ? 'Modification'
-	                              : typeKey === 'alerte' ? 'Alerte'
-	                                : 'Information'}
-	                        </Badge>
+                    <CardContent className="p-6">
+                      <div className="flex flex-wrap gap-2 mb-3">
+                        <Badge className={TYPE_COLORS[typeKey] || 'bg-slate-100 text-slate-800'}>
+                          <TypeIcon className="h-3 w-3 mr-1" />
+                          {typeKey === 'nouveaute' ? 'Nouveauté'
+                            : typeKey === 'modification' ? 'Modification'
+                              : typeKey === 'alerte' ? 'Alerte'
+                                : 'Information'}
+                        </Badge>
                         {actu.categorie && (
                           <Badge variant="outline">
                             {CATEGORIES[actu.categorie] || actu.categorie}

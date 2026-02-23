@@ -1,82 +1,62 @@
 # Routes API
 
-Ce document liste les routes définies dans le backend Serverless (`api/routes.js`).
+Ce document liste toutes les routes définies dans `api/routes.js` et leur contrat.
 
-## 1. Routes Publiques (Core)
+## Public Endpoints
 
-Accessibles sans authentification.
+| Method | Path | Handler | Auth | Response | Errors |
+| :--- | :--- | :--- | :--- | :--- | :--- |
+| `GET` | `/api/health` | `_handlers/health.js` | None | `{ status: "ok", env: "..." }` | - |
+| `GET` | `/api/taxonomy` | `_handlers/taxonomy.js` | None | `{ categories: [], situations: [] }` | - |
+| `GET` | `/api/aides` | `_handlers/aides.js` | None | `{ data: [], meta: {} }` | 400 |
+| `GET` | `/api/aides/:slug` | `_handlers/aides.js` | None | `{ data: {} }` | 404 |
+| `GET` | `/api/demarches` | `_handlers/demarches.js` | None | `{ data: [], meta: {} }` | 400 |
+| `GET` | `/api/demarches/:slug` | `_handlers/demarches.js` | None | `{ data: {} }` | 404 |
+| `GET` | `/api/structures` | `_handlers/structures.js` | None | `{ data: [], meta: {} }` | 400 |
+| `GET` | `/api/structures/:slug` | `_handlers/structures.js` | None | `{ data: {} }` | 404 |
+| `GET` | `/api/actualites` | `_handlers/actualites.js` | None | `{ data: [], meta: {} }` | 400 |
+| `GET` | `/api/actualites/:slug` | `_handlers/actualites.js` | None | `{ data: {} }` | 404 |
+| `GET` | `/api/search` | `_handlers/search.js` | None | `{ data: [], meta: {} }` | 400 |
+| `POST` | `/api/public/messages` | `_handlers/public/messages.js` | None | `{ success: true }` | 400 |
+| `POST` | `/api/public/suggest-structure` | `_handlers/public/suggest-structure.js` | None | `{ success: true }` | 400 |
+| `POST` | `/api/appointments` | `_handlers/public/appointments/create.js` | None | `{ appointmentId: "..." }` | 400, 409 |
+| `GET` | `/api/public/availability` | `_handlers/public/availability.js` | None | `{ slots: [] }` | 400 |
+| `POST` | `/api/appointments/cancel` | `_handlers/public/appointments/cancel.js` | Token | `{ success: true }` | 400, 404 |
 
-| Method | Path | Handler File | Rôle |
-| :--- | :--- | :--- | :--- |
-| `GET` | `/api/health` | `api/_handlers/health.js` | Check santé service |
-| `GET` | `/api/aides*` | `api/_handlers/aides.js` | Recherche/Détail aides |
-| `GET` | `/api/demarches*` | `api/_handlers/demarches.js` | Recherche/Détail démarches |
-| `GET` | `/api/structures*` | `api/_handlers/structures.js` | Annuaire structures |
-| `GET` | `/api/actualites*` | `api/_handlers/actualites.js` | Actualités |
-| `GET` | `/api/guides*` | `api/_handlers/guides.js` | Guides |
-| `GET` | `/api/tools*` | `api/_handlers/tools.js` | Outils |
-| `GET` | `/api/dispositifs*` | `api/_handlers/dispositifs/index.js` | Dispositifs |
-| `GET` | `/api/ressources*` | `api/_handlers/ressources.js` | Ressources documentaires |
-| `POST` | `/api/search` | `api/_handlers/search.js` | Recherche globale |
-| `GET` | `/api/taxonomy` | `api/_handlers/taxonomy.js` | Taxonomie (catégories) |
-| `GET` | `/api/public/stats` | `api/_handlers/public/stats.js` | Statistiques publiques |
-| `POST` | `/api/public/messages` | `api/_handlers/public/messages.js` | Envoi message contact |
-| `POST` | `/api/public/suggest-structure` | `api/_handlers/public/suggest-structure.js` | Suggestion ajout structure |
+## Pro Endpoints (`/api/pro`)
 
-## 2. Routes Rendez-vous (Public)
+| Method | Path | Handler | Auth | Response | Errors |
+| :--- | :--- | :--- | :--- | :--- | :--- |
+| `POST` | `/api/pro/auth/login` | `_handlers/pro/auth/login.js` | None | `{ token: "..." }` | 401 |
+| `GET` | `/api/pro/me` | `_handlers/pro/me.js` | JWT (Pro) | `{ user: {}, structure: {} }` | 401 |
+| `GET` | `/api/pro/appointments` | `_handlers/pro/appointments/index.js` | JWT (Pro) | `{ data: [] }` | 401 |
+| `POST` | `/api/pro/availability` | `_handlers/pro/availability.js` | JWT (Pro) | `{ success: true }` | 400 |
+| `GET` | `/api/pro/messages` | `_handlers/pro/messages.js` | JWT (Pro) | `{ data: [] }` | 401 |
 
-| Method | Path | Handler File | Rôle |
-| :--- | :--- | :--- | :--- |
-| `GET` | `/api/public/availability` | `api/_handlers/public/availability.js` | Disponibilités structure |
-| `POST` | `/api/appointments` | `api/_handlers/public/appointments/create.js` | Création RDV |
-| `POST` | `/api/appointments/cancel` | `api/_handlers/public/appointments/cancel.js` | Annulation RDV |
-| `GET` | `/api/messages*` | `api/_handlers/messages.js` | Messagerie RDV |
+## Admin Endpoints (`/api/admin`)
 
-## 3. Routes Pro (Authentifiées)
+| Method | Path | Handler | Auth | Response | Errors |
+| :--- | :--- | :--- | :--- | :--- | :--- |
+| `POST` | `/api/auth/login` | `_handlers/auth/login.js` | None | `{ token: "..." }` | 401 |
+| `GET` | `/api/auth/me` | `_handlers/auth/me.js` | Bearer (Admin) | `{ user: "admin" }` | 401 |
+| `GET` | `/api/admin/inbox` | `_handlers/admin/inbox.js` | Bearer (Admin) | `{ messages: [] }` | 401 |
+| `POST` | `/api/admin/actions` | `_handlers/admin/actions.js` | Bearer (Admin) | `{ success: true }` | 401 |
+| `GET` | `/api/admin/runs` | `_handlers/admin/runs.js` | Bearer (Admin) | `{ runs: [] }` | 401 |
 
-Authentification via JWT (Header `Authorization: Bearer <token>`).
+## Cron Endpoints (`/api/cron`)
 
-| Method | Path | Handler File | Rôle |
-| :--- | :--- | :--- | :--- |
-| `POST` | `/api/pro/auth/login` | `api/_handlers/pro/auth/login.js` | Login Pro |
-| `POST` | `/api/pro/auth/register` | `api/_handlers/pro/auth/register.js` | Inscription Pro |
-| `GET` | `/api/pro/me` | `api/_handlers/pro/me.js` | Profil courant |
-| `GET` | `/api/pro/appointments` | `api/_handlers/pro/appointments/index.js` | Liste RDV |
-| `POST` | `/api/pro/appointments/cancel` | `api/_handlers/pro/appointments/cancel.js` | Annuler RDV |
-| `GET/POST` | `/api/pro/availability` | `api/_handlers/pro/availability.js` | Gestion dispos |
-| `GET/POST` | `/api/pro/services` | `api/_handlers/pro/services.js` | Gestion services |
-| `GET/POST` | `/api/pro/slots` | `api/_handlers/pro/slots.js` | Gestion créneaux |
-| `GET/POST` | `/api/pro/messages` | `api/_handlers/pro/messages.js` | Messagerie Pro |
-| `GET` | `/api/pro/messages/conversations` | `api/_handlers/pro/messages-conversations.js` | Conversations |
+Ces endpoints sont protégés par `CRON_SECRET` dans les headers.
 
-## 4. Routes Admin (Authentifiées)
+| Method | Path | Handler | Auth | Description |
+| :--- | :--- | :--- | :--- | :--- |
+| `GET` | `/api/cron/pipeline` | `_handlers/cron/pipeline.js` | Cron Secret | Pipeline global d'ingestion |
+| `GET` | `/api/cron/ingest-structures` | `_handlers/cron/ingest-structures.js` | Cron Secret | Ingestion structures |
+| `GET` | `/api/cron/ingest-aids` | `_handlers/cron/ingest-aids.js` | Cron Secret | Ingestion aides |
+| `GET` | `/api/cron/link-check` | `_handlers/cron/link-check.js` | Cron Secret | Vérification liens morts |
 
-Authentification via Token statique ou Session Admin.
+## Monitoring Endpoints
 
-| Method | Path | Handler File | Rôle |
-| :--- | :--- | :--- | :--- |
-| `POST` | `/api/auth/login` | `api/_handlers/auth/login.js` | Login Admin |
-| `GET` | `/api/auth/me` | `api/_handlers/auth/me.js` | Profil Admin |
-| `GET` | `/api/admin/inbox` | `api/_handlers/admin/inbox.js` | Boîte réception |
-| `POST` | `/api/admin/actions` | `api/_handlers/admin/actions.js` | Actions manuelles |
-| `GET` | `/api/admin/runs` | `api/_handlers/admin/runs.js` | Logs jobs |
-| `GET` | `/api/admin/cron-runs` | `api/_handlers/admin/cron-runs.js` | Détail cron |
-| `POST` | `/api/admin/link-checks` | `api/_handlers/admin/link-checks.js` | Vérification liens |
-| `GET` | `/api/admin/review-queue` | `api/_handlers/admin/review-queue.js` | File de révision |
-
-## 5. Cron & System
-
-Routes appelées par Vercel Cron ou scripts de maintenance.
-
-| Method | Path | Handler File | Rôle |
-| :--- | :--- | :--- | :--- |
-| `GET` | `/api/cron/pipeline` | `api/_handlers/cron/pipeline.js` | Pipeline global |
-| `GET` | `/api/cron/actualites` | `api/_handlers/cron/actualites.js` | Ingestion Actus |
-| `GET` | `/api/cron/ingest-aids` | `api/_handlers/cron/ingest-aids.js` | Ingestion Aides |
-| `GET` | `/api/cron/ingest-structures` | `api/_handlers/cron/ingest-structures.js` | Ingestion Structures |
-| `GET` | `/api/cron/link-check` | `api/_handlers/cron/link-check.js` | Check liens morts |
-| `GET` | `/api/cron/purge` | `api/_handlers/cron/purge.js` | Purge RGPD |
-| `GET` | `/api/sitemap.xml` | `api/_handlers/sitemap.js` | Sitemap |
-| `GET` | `/api/robots.txt` | `api/_handlers/robots.js` | Robots.txt |
-| `GET` | `/api/upload` | `api/_handlers/upload.js` | Upload fichier |
-| `GET` | `/api/download` | `api/_handlers/download.js` | Téléchargement |
+| Method | Path | Handler | Auth | Description |
+| :--- | :--- | :--- | :--- | :--- |
+| `GET` | `/api/monitor/core` | `_handlers/monitor/core.js` | None | Métriques de base |
+| `GET` | `/api/monitor/pro-rdv` | `_handlers/monitor/pro-rdv.js` | None | Métriques RDV Pro |

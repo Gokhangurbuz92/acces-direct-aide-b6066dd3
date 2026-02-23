@@ -1,14 +1,13 @@
 import prisma from '../../_utils/prisma.js';
-import { getAuthenticatedUser } from '../_utils/auth.js';
-import { restoreVersion } from '../_utils/snapshot.js';
+import { verifyAdmin, resolveAuthContext } from '../../_utils/auth.js';
+import { restoreVersion } from '../../_utils/snapshot.js';
 /**
  * @param {import('../../_utils/http-types').ApiRequest} req
  * @param {import('../../_utils/http-types').ApiResponse} res
  */
 
 export default async function handler(req, res) {
-    const user = await getAuthenticatedUser(req);
-    if (!user) return res.status(401).json({ error: "Unauthorized" });
+    if (!verifyAdmin(req)) return res.status(401).json({ error: "Unauthorized" });
 
     const { entity_type, entity_id } = req.query;
 
@@ -34,7 +33,8 @@ export default async function handler(req, res) {
             const { versionId } = req.body;
             if (!versionId) return res.status(400).json({ error: "Missing versionId" });
 
-            const restored = await restoreVersion(versionId, user.email);
+            const auth = resolveAuthContext(req);
+            const restored = await restoreVersion(versionId, auth?.email || 'admin');
             return res.status(200).json({ success: true, restored });
         }
 

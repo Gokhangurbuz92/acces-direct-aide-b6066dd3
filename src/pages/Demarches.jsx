@@ -160,7 +160,7 @@ export default function Demarches() {
   }, []);
 
   return (
-    <div className="min-h-screen bg-slate-50">
+    <div className="min-h-screen overflow-x-hidden bg-slate-50">
       <SEO
         title={getTitle()}
         description={getDescription()}
@@ -173,8 +173,8 @@ export default function Demarches() {
       </p>
 
       {/* Header */}
-      <div className="bg-white border-b border-slate-200 py-6 sticky top-0 z-10 shadow-sm">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 flex flex-col gap-4">
+      <div className="bg-white border-b border-slate-200 py-6 sticky top-16 z-10 shadow-sm">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col gap-4">
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
             <div>
               <h1 className="text-2xl font-bold text-slate-900">Démarches</h1>
@@ -307,7 +307,7 @@ export default function Demarches() {
       </div>
 
       {/* Results */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
         {error && (
           <div
             className="rounded-2xl border border-red-200 bg-red-50 p-6 text-red-900"

@@ -107,3 +107,42 @@ ls dist/aides/*/index.html | head -3  # fiches prerendues
 > 📖 Pour les détails complets (tokens, guards, variables d'env) : voir [docs/Auth.md](./Auth.md).
 
 > **Alias legacy** : `/login/pro` redirige automatiquement (`301 replace`) vers `/pro/login`. Ne pas créer de liens vers `/login/pro` — utiliser `/pro/login` comme route canonique.
+
+## 6. Assistant Chat API (Gemini)
+
+### Endpoint
+
+`POST /api/assistant/chat`
+
+### Variables d'environnement requises
+
+| Variable | Description |
+| :--- | :--- |
+| `GEMINI_API_KEY` (ou `GOOGLE_API_KEY`) | Clé API Google Generative AI. **SERVER ONLY — ne jamais exposer côté client.** |
+
+### Rate limit
+
+10 requêtes / minute / IP (KV si disponible, sinon in-memory).
+
+### Exemple curl
+
+```bash
+curl -X POST https://<domain>/api/assistant/chat \
+  -H 'Content-Type: application/json' \
+  -d '{"message":"Suis-je éligible à l APL en tant que locataire ?"}'
+```
+
+### Réponse type (200)
+
+```json
+{
+  "answer": "...",
+  "citations": [],
+  "meta": { "model": "gemini-1.5-flash", "rulepack": "apl_v1", "requestId": "..." }
+}
+```
+
+### Sécurité
+
+- Les données sensibles (NIR, IBAN, numéro de carte bancaire) sont détectées et bloquées côté serveur avant tout appel à Gemini.
+- Le modèle utilise `temperature: 0.2` et des instructions système strictes pour éviter les hallucinations.

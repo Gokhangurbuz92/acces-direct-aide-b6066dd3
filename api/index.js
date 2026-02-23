@@ -60,6 +60,7 @@ function getRouteGroup(path) {
         'aides',
         'actualites',
         'appointments',
+        'assistant/',
         'auth/',
         'demarches',
         'dispositifs',

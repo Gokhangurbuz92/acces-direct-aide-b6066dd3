@@ -57,7 +57,8 @@ const CONFIG = {
     SEARCH_RESSOURCES: { limit: 60, window: 60 }, // 60 per min
     TAXONOMY: { limit: 60, window: 60 },          // 60 per min
     // Assistant (AI)
-    ASSISTANT_CHAT: { limit: 10, window: 60 }     // 10 per min
+    ASSISTANT_CHAT: { limit: 10, window: 60 },    // 10 per min
+    ASSISTANT_RECOS: { limit: 15, window: 60 }    // 15 per min
 };
 
 function hashKey(key) {

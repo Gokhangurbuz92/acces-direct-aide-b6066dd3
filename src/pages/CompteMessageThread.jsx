@@ -153,7 +153,7 @@ export default function CompteMessageThread() {
                 onChange={(event) => setBody(event.target.value)}
                 rows={4}
                 maxLength={2000}
-                className="w-full rounded-md border border-slate-300 bg-white p-3 text-sm focus:border-primary focus:outline-none"
+                className="w-full rounded-md border border-slate-300 bg-white p-3 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
                 placeholder="Ecrivez votre message..."
               />
               <div className="flex items-center gap-3">

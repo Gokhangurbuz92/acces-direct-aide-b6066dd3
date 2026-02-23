@@ -204,7 +204,7 @@ export default function Annuaire() {
                     </label>
                     <select
                       id="structures-type"
-                      className="w-full h-10 rounded-md border border-slate-200 bg-white px-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      className="w-full h-10 rounded-md border border-slate-200 bg-white px-3 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
                       value={type}
                       onChange={(e) => handleParamChange('type', e.target.value)}
                     >
@@ -248,7 +248,7 @@ export default function Annuaire() {
                     </label>
                     <select
                       id="structures-sort"
-                      className="w-full h-10 rounded-md border border-slate-200 bg-white px-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      className="w-full h-10 rounded-md border border-slate-200 bg-white px-3 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
                       value={sort}
                       onChange={(e) => handleParamChange('sort', e.target.value)}
                     >
@@ -267,7 +267,7 @@ export default function Annuaire() {
                     </label>
                     <select
                       id="structures-limit"
-                      className="w-full h-10 rounded-md border border-slate-200 bg-white px-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      className="w-full h-10 rounded-md border border-slate-200 bg-white px-3 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
                       value={String(limit)}
                       onChange={(e) => handleParamChange('limit', e.target.value)}
                     >

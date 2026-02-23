@@ -2,6 +2,7 @@ import { useState } from "react";
 import { NavLink } from "react-router-dom";
 import { Menu, X, LogIn, UserPlus } from "lucide-react";
 import { buttonVariants } from "@/components/ui/button";
+import ADALogo from "@/components/Brand/ADALogo";
 
 const NAV_ITEMS = [
   { label: "Accueil", to: "/" },
@@ -13,8 +14,8 @@ const NAV_ITEMS = [
 
 function navClassName(isActive) {
   return `rounded-lg px-3 py-2 text-sm font-medium transition-colors ${isActive
-      ? "bg-slate-100 text-slate-900"
-      : "text-slate-600 hover:bg-slate-50 hover:text-slate-900"
+    ? "bg-slate-100 text-slate-900"
+    : "text-slate-600 hover:bg-slate-50 hover:text-slate-900"
     }`;
 }
 
@@ -38,7 +39,7 @@ export function Header() {
               className="flex items-center gap-3 rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-400"
               onClick={() => setMobileOpen(false)}
             >
-              <img src="/logo.svg" alt="AccesDirectAide" className="h-9 w-9" />
+              <ADALogo size={36} className="text-[#1F3A5F] shrink-0" />
               <div className="hidden sm:block">
                 <p className="text-base font-semibold text-slate-900">AccesDirectAide</p>
                 <p className="text-xs text-slate-500">L'information sociale claire</p>

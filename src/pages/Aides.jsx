@@ -9,6 +9,7 @@ import { Input } from '@/components/ui/input';
 import { Card, CardContent } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import FilterPanel from '@/components/organisms/FilterPanel';
+import EmptyState from '@/components/ui/EmptyState';
 import AidGrid from '@/components/organisms/AidGrid';
 import { buildAidesItemListSchema, buildBreadcrumbSchema } from '@/lib/seo';
 import { useAidesListing } from '@/lib/hooks/useAidesListing';
@@ -425,20 +426,19 @@ export default function Aides() {
           <div className="min-w-0 flex-1">
             {/* Error state */}
             {isError && (
-              <div
-                className="rounded-2xl border border-destructive/30 bg-destructive/5 p-6 text-destructive"
+              <EmptyState
+                title="Impossible de charger les aides"
+                description={errorMessage || 'Vérifiez votre connexion puis réessayez.'}
+                icon={<RotateCcw className="h-6 w-6" />}
+                actions={
+                  <Button type="button" variant="outline" onClick={() => refetch()}>
+                    <RotateCcw className="mr-2 h-4 w-4" />
+                    Réessayer
+                  </Button>
+                }
                 role="alert"
                 data-testid="aides-error-state"
-              >
-                <h2 className="text-lg font-semibold">Impossible de charger les aides</h2>
-                <p className="mt-2 text-sm">
-                  {errorMessage || 'Une erreur est survenue. Vous pouvez réessayer.'}
-                </p>
-                <Button type="button" variant="outline" className="mt-4" onClick={() => refetch()}>
-                  <RotateCcw className="mr-2 h-4 w-4" />
-                  Réessayer
-                </Button>
-              </div>
+              />
             )}
 
             {/* Loading state — show skeletons */}

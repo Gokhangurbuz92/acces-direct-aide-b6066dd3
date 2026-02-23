@@ -1,7 +1,7 @@
 
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
-import Logo from '@/components/Brand/Logo';
+import ADALogo from '@/components/Brand/ADALogo';
 import { createPageUrl } from '@/utils';
 import {
   Menu,
@@ -93,6 +93,23 @@ export default function Layout({ children, currentPageName }) {
     <div className="min-h-screen flex flex-col bg-slate-50">
       {/* Styles d'accessibilité */}
       <style>{`
+        /* ADA brand text gradient — P1 optional premium effect */
+        .ada-brand-text {
+          background: linear-gradient(135deg, #1F3A5F 0%, #2E5A8E 50%, #4A7AB5 100%);
+          -webkit-background-clip: text;
+          background-clip: text;
+          -webkit-text-fill-color: transparent;
+        }
+        @media (prefers-reduced-motion: reduce) {
+          .ada-brand-text {
+            background: none;
+            -webkit-background-clip: unset;
+            background-clip: unset;
+            -webkit-text-fill-color: unset;
+            color: #1F3A5F;
+          }
+        }
+
         :root {
           --primary-color: #2563eb;
           --text-color: #1e293b;
@@ -204,25 +221,17 @@ export default function Layout({ children, currentPageName }) {
       <header className="bg-surface border-b border-border sticky top-0 z-40 shadow-sm">
         <div className="max-w-7xl mx-auto px-4 sm:px-6">
           <div className="flex items-center justify-between h-16">
-            {/* Logo */}
-            <div className="flex items-center">
-              {/* Mobile: Logo Icon Only */}
-              <Link
-                to={createPageUrl('Home')}
-                className="sm:hidden inline-flex items-center gap-2 rounded-full px-2.5 py-1.5 transition-colors hover:bg-slate-50/80 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-600 focus-visible:ring-offset-2"
-                aria-label="AccesDirectAide - Accueil"
-              >
-                <Logo variant="icon" size={40} />
-              </Link>
-              {/* Desktop: Logo Full */}
-              <Link
-                to={createPageUrl('Home')}
-                className="hidden sm:inline-flex items-center gap-2 rounded-full px-2.5 py-1.5 transition-colors hover:bg-slate-50/80 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-600 focus-visible:ring-offset-2"
-                aria-label="AccesDirectAide - Accueil"
-              >
-                <Logo variant="full" size={40} />
-              </Link>
-            </div>
+            {/* Logo — transparent, no halo/pill/background */}
+            <Link
+              to={createPageUrl('Home')}
+              className="inline-flex items-center gap-3 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-600 focus-visible:ring-offset-2 rounded-lg"
+              aria-label="AccesDirectAide - Accueil"
+            >
+              <ADALogo size={36} className="text-[#1F3A5F] shrink-0" />
+              <span className="hidden sm:block text-lg font-semibold ada-brand-text">
+                AccesDirectAide
+              </span>
+            </Link>
 
             {/* Navigation desktop */}
             <nav className="hidden lg:flex items-center gap-1" role="navigation" aria-label="Navigation principale">
@@ -411,8 +420,9 @@ export default function Layout({ children, currentPageName }) {
           <div className="grid md:grid-cols-4 gap-8">
             {/* Logo et description */}
             <div className="md:col-span-2">
-              <div className="mb-6">
-                <Logo variant="full" tone="white" size={48} />
+              <div className="mb-6 flex items-center gap-3">
+                <ADALogo size={40} className="text-white shrink-0" />
+                <span className="text-xl font-semibold text-white">AccesDirectAide</span>
               </div>
               <p className="text-white text-sm mb-4">
                 Un site non lucratif pour vous aider à trouver les aides,

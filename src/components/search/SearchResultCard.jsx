@@ -26,7 +26,7 @@ export default function SearchResultCard({ result }) {
       <h2 className="text-lg font-semibold text-slate-900">
         <Link
           to={targetUrl}
-          className="focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600 focus-visible:ring-offset-2 rounded-sm"
+          className="focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 rounded-sm"
         >
           {result.title}
         </Link>
@@ -39,7 +39,7 @@ export default function SearchResultCard({ result }) {
       <div className="mt-4">
         <Link
           to={targetUrl}
-          className="inline-flex items-center gap-2 text-sm font-semibold text-blue-700 hover:text-blue-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600 focus-visible:ring-offset-2 rounded-sm"
+          className="inline-flex items-center gap-2 text-sm font-semibold text-blue-700 hover:text-blue-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 rounded-sm"
         >
           Voir le détail
           <ArrowRight className="h-4 w-4" />

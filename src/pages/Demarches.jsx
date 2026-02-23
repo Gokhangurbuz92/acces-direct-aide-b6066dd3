@@ -223,7 +223,7 @@ export default function Demarches() {
                     </label>
                     <select
                       id="demarches-category"
-                      className="w-full h-10 rounded-md border border-slate-200 bg-white px-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      className="w-full h-10 rounded-md border border-slate-200 bg-white px-3 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
                       value={category}
                       onChange={(e) => handleParamChange('category', e.target.value)}
                     >
@@ -242,7 +242,7 @@ export default function Demarches() {
                     </label>
                     <select
                       id="demarches-situation"
-                      className="w-full h-10 rounded-md border border-slate-200 bg-white px-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      className="w-full h-10 rounded-md border border-slate-200 bg-white px-3 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
                       value={situation}
                       onChange={(e) => handleParamChange('situation', e.target.value)}
                     >
@@ -261,7 +261,7 @@ export default function Demarches() {
                     </label>
                     <select
                       id="demarches-sort"
-                      className="w-full h-10 rounded-md border border-slate-200 bg-white px-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      className="w-full h-10 rounded-md border border-slate-200 bg-white px-3 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
                       value={sort}
                       onChange={(e) => handleParamChange('sort', e.target.value)}
                     >
@@ -279,7 +279,7 @@ export default function Demarches() {
                     </label>
                     <select
                       id="demarches-limit"
-                      className="w-full h-10 rounded-md border border-slate-200 bg-white px-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      className="w-full h-10 rounded-md border border-slate-200 bg-white px-3 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
                       value={String(limit)}
                       onChange={(e) => handleParamChange('limit', e.target.value)}
                     >

@@ -146,3 +146,10 @@ curl -X POST https://<domain>/api/assistant/chat \
 
 - Les données sensibles (NIR, IBAN, numéro de carte bancaire) sont détectées et bloquées côté serveur avant tout appel à Gemini.
 - Le modèle utilise `temperature: 0.2` et des instructions système strictes pour éviter les hallucinations.
+
+### Tester l'interface
+
+1. S'assurer que `GEMINI_API_KEY` est défini dans `.env.local`
+2. Lancer `npm run dev`
+3. Naviguer vers `/orientation` — le chat est embarqué dans la page
+4. Le composant `ChatAssistant` est aussi disponible en widget flottant (sans prop `embedded`)

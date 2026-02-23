@@ -66,6 +66,9 @@ import reports from './_handlers/reports.js';
 import feedback from './_handlers/feedback.js';
 import rdv from './_handlers/rdv.js';
 
+// --- Assistant (AI) ---
+import assistantChat from './_handlers/assistant/chat.js';
+
 // --- Cron ---
 import cronPipeline from './_handlers/cron/pipeline.js';
 import cronActualites from './_handlers/cron/actualites.js';
@@ -155,6 +158,9 @@ export const routes = [
     { path: 'reports', match: 'prefix', handler: reports },
     { path: 'feedback', match: 'exact', handler: feedback },
     { path: 'rdv', match: 'prefix', handler: rdv },
+
+    // --- Assistant (AI) ---
+    { path: 'assistant/chat', match: 'exact', handler: assistantChat },
 
     // --- Cron ---
     { path: 'cron/pipeline', match: 'exact', handler: cronPipeline },

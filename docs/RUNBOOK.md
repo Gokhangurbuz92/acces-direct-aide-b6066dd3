@@ -153,3 +153,22 @@ curl -X POST https://<domain>/api/assistant/chat \
 2. Lancer `npm run dev`
 3. Naviguer vers `/orientation` — le chat est embarqué dans la page
 4. Le composant `ChatAssistant` est aussi disponible en widget flottant (sans prop `embedded`)
+
+### POST /api/assistant/recommendations
+
+Recommandations basées sur la recherche ADA (embedding + lexical).
+
+| Paramètre  | Type       | Défaut | Description |
+|:-----------|:-----------|:-------|:------------|
+| `need`     | string     | (requis) | Besoin de l'utilisateur (1-200 car.) |
+| `territory`| string     | —      | Code postal ou ville |
+| `limit`    | number     | 6      | Nombre max de résultats (1-20) |
+| `types`    | string[]   | all    | `["aide","demarche","structure"]` |
+
+```bash
+curl -X POST https://<domain>/api/assistant/recommendations \
+  -H 'Content-Type: application/json' \
+  -d '{"need":"logement social","territory":"75","limit":4}'
+```
+
+Réponse : `{ items: [{ type, slug, title, excerpt, url, sourceUrl?, verifiedAt? }], meta: { from, method, requestId } }`

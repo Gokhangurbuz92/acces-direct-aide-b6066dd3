@@ -1,7 +1,7 @@
 # Authentification — Parcours Public / Pro / Admin
 
 > **Dernière mise à jour** : 2026-02-23
-> Voir aussi : [SECURITY_MODEL.md](./SECURITY_MODEL.md) · [RUNBOOK.md](./RUNBOOK.md)
+> Voir aussi : [AuthIntegration.md](./AuthIntegration.md) (guide d'intégration JWT) · [SECURITY_MODEL.md](./SECURITY_MODEL.md) · [RUNBOOK.md](./RUNBOOK.md)
 
 ---
 

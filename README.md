@@ -98,6 +98,7 @@ For detailed information about our Production and Staging environments, DNS conf
 - [Infrastructure Source of Truth](docs/INFRASTRUCTURE.md)
 - [Vercel Migration Guide](docs/VERCEL_MIGRATION_GUIDE.md)
 - [Authentification — Parcours Public / Pro / Admin](docs/Auth.md)
+- [Guide d'intégration Auth JWT](docs/AuthIntegration.md)
 
 ## Setup Chromatic
 

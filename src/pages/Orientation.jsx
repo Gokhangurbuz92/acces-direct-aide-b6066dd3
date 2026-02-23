@@ -3,7 +3,7 @@ import SEO from '@/components/SEO';
 import { Link } from 'react-router-dom';
 import { ArrowRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import ChatAssistant from '@/components/chat/ChatAssistant';
+import Wizard from '@/components/assistant/Wizard';
 
 export default function Orientation() {
   return (
@@ -17,14 +17,14 @@ export default function Orientation() {
       <section className="mx-auto max-w-3xl px-4 py-12 sm:px-6">
         <h1 className="mb-2 text-3xl font-bold text-slate-900">Mon Assistant</h1>
         <p className="mb-6 text-slate-600">
-          Posez vos questions sur les aides sociales. L&apos;assistant vous oriente en fonction de votre situation.
+          Répondez à quelques questions pour recevoir des recommandations personnalisées.
         </p>
 
-        <ChatAssistant embedded />
+        <Wizard />
 
         <div className="mt-6 flex flex-wrap gap-3">
           <Link to="/aides">
-            <Button>Voir les aides</Button>
+            <Button variant="outline">Voir toutes les aides</Button>
           </Link>
           <Link to="/demarches">
             <Button variant="outline">Voir les demarches</Button>

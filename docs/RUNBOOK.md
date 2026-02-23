@@ -103,3 +103,5 @@ ls dist/aides/*/index.html | head -3  # fiches prerendues
 | `/admin/login` | Administration | ⛔ Non (accès par URL directe uniquement) |
 
 > **Note** : `/admin/login` existe mais n'est volontairement pas liée dans la navigation publique pour des raisons de sécurité.
+
+> **Alias legacy** : `/login/pro` redirige automatiquement (`301 replace`) vers `/pro/login`. Ne pas créer de liens vers `/login/pro` — utiliser `/pro/login` comme route canonique.

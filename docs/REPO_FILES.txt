@@ -123,7 +123,6 @@
 ./api/_handlers/upload.js
 ./api/_handlers/version.js
 ./api/_utils/auth.js
-./api/_utils/build-info.js
 ./api/_utils/cache.js
 ./api/_utils/cachePolicy.js
 ./api/_utils/contentHash.js
@@ -411,7 +410,6 @@
 ./middleware.js
 ./package-lock.json
 ./package.json
-./playwright-report/index.html
 ./playwright.config.js
 ./postcss.config.js
 ./prisma/migrations/20250202120000_add_aides_fields_and_unaccent/migration.sql
@@ -580,6 +578,7 @@
 ./scripts/generate-api-docs.js
 ./scripts/generate-build-info.js
 ./scripts/generate-repo-map.sh
+./scripts/generate-sitemap.mjs
 ./scripts/guard-no-legacy-key.sh
 ./scripts/guard-prisma.js
 ./scripts/healthcheck_prod.sh
@@ -801,8 +800,15 @@
 ./src/entry-server.jsx
 ./src/hooks/use-mobile.jsx
 ./src/index.css
+./src/lib/api/cache.ts
+./src/lib/api/client.ts
+./src/lib/api/config.ts
+./src/lib/api/endpoints.ts
+./src/lib/api/mappers.ts
 ./src/lib/falc.ts
 ./src/lib/freshness.ts
+./src/lib/hooks/useAideDetail.ts
+./src/lib/hooks/useAidesListing.ts
 ./src/lib/htmlText.js
 ./src/lib/jsonld.js
 ./src/lib/provenance.js
@@ -814,6 +820,8 @@
 ./src/lib/seo.ts
 ./src/lib/theme.ts
 ./src/lib/trust.ts
+./src/lib/trust/normalize.ts
+./src/lib/trust/policy.ts
 ./src/lib/utils.js
 ./src/main.jsx
 ./src/observability/initSentry.js
@@ -910,6 +918,7 @@
 ./src/pages/pro/Structure.jsx
 ./src/pages/pro/Team.jsx
 ./src/styles/tokens.css
+./src/types/api.ts
 ./src/utils/analytics.js
 ./src/utils/index.js
 ./src/utils/schema.js

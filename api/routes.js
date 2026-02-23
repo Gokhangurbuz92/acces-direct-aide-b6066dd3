@@ -68,6 +68,7 @@ import rdv from './_handlers/rdv.js';
 
 // --- Assistant (AI) ---
 import assistantChat from './_handlers/assistant/chat.js';
+import assistantRecommendations from './_handlers/assistant/recommendations.js';
 
 // --- Cron ---
 import cronPipeline from './_handlers/cron/pipeline.js';
@@ -161,6 +162,7 @@ export const routes = [
 
     // --- Assistant (AI) ---
     { path: 'assistant/chat', match: 'exact', handler: assistantChat },
+    { path: 'assistant/recommendations', match: 'exact', handler: assistantRecommendations },
 
     // --- Cron ---
     { path: 'cron/pipeline', match: 'exact', handler: cronPipeline },

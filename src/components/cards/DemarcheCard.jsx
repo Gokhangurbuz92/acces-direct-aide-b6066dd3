@@ -23,7 +23,7 @@ export default function DemarcheCard({ demarche }) {
   const sourceHost = provenance.sourceHost;
   const freshness = getFreshnessBadge(provenance.verifiedAt);
   const verificationLabel = verifiedAt ? `Vérifié le ${verifiedAt}` : 'À vérifier';
-  const sourceLabel = sourceHost ? `Source: ${sourceHost}` : 'Source: non renseignée';
+  const sourceLabel = sourceHost ? `Source: ${sourceHost}` : null;
   const targetUrl = demarche.slug ? `/demarches/${demarche.slug}` : `/demarches/view?id=${demarche.id}`;
 
   return (
@@ -61,27 +61,29 @@ export default function DemarcheCard({ demarche }) {
           <p className="text-slate-600 text-sm line-clamp-2 mb-6">
             {demarche.summary_falc || demarche.description_courte}
           </p>
-	          <div className="flex flex-wrap gap-4 text-xs text-slate-500">
+          <div className="flex flex-wrap gap-4 text-xs text-slate-500">
             {demarche.delai && (
               <span className="flex items-center gap-1.5">
                 <Clock className="h-3.5 w-3.5" /> {demarche.delai}
               </span>
             )}
-	            <span className="flex items-center gap-1.5">
-	              <CheckCircle2 className="h-3.5 w-3.5 text-green-500" /> Guide pas à pas
-	            </span>
-	          </div>
-            <div className="mt-3 flex flex-wrap gap-4 text-xs text-slate-500">
-              <span className="flex items-center gap-1.5">
-                <Calendar className="h-3.5 w-3.5" />
-                {verificationLabel}
-              </span>
+            <span className="flex items-center gap-1.5">
+              <CheckCircle2 className="h-3.5 w-3.5 text-green-500" /> Guide pas à pas
+            </span>
+          </div>
+          <div className="mt-3 flex flex-wrap gap-4 text-xs text-slate-500">
+            <span className="flex items-center gap-1.5">
+              <Calendar className="h-3.5 w-3.5" />
+              {verificationLabel}
+            </span>
+            {sourceLabel && (
               <span className="flex items-center gap-1.5">
                 <CheckCircle2 className="h-3.5 w-3.5 text-blue-600" />
                 {sourceLabel}
               </span>
-            </div>
-	        </div>
+            )}
+          </div>
+        </div>
         <div className="bg-slate-50 px-6 py-3 border-t border-slate-100">
           <div
             className="inline-flex items-center gap-2 text-blue-600 font-bold text-sm group-hover:text-blue-800 transition-colors"

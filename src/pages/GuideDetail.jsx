@@ -3,6 +3,7 @@ import { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import SEO from '@/components/SEO';
 import { Printer } from 'lucide-react';
+import EmptyState from '@/components/ui/EmptyState';
 
 export default function GuideDetail() {
     const { slug } = useParams();
@@ -18,8 +19,20 @@ export default function GuideDetail() {
             .finally(() => setLoading(false));
     }, [slug]);
 
-    if (loading) return <div className="p-8 text-center">Chargement...</div>;
-    if (!guide) return <div className="p-8 text-center text-red-500">Guide introuvable</div>;
+    if (loading) return <div className="p-8 text-center text-muted-foreground">Chargement…</div>;
+    if (!guide) return (
+        <div className="max-w-4xl mx-auto px-4 py-8">
+            <EmptyState
+                title="Guide introuvable"
+                description="Cette page n'existe pas ou a été déplacée."
+                actions={
+                    <Link to="/bonnes-pratiques" className="inline-flex items-center gap-2 rounded-md border border-input bg-background px-4 py-2 text-sm font-medium hover:bg-accent">
+                        Retour aux bonnes pratiques
+                    </Link>
+                }
+            />
+        </div>
+    );
 
     const steps = typeof guide.contenu_json === 'string'
         ? JSON.parse(guide.contenu_json)

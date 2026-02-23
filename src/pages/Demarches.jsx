@@ -309,20 +309,19 @@ export default function Demarches() {
       {/* Results */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
         {error && (
-          <div
-            className="rounded-2xl border border-red-200 bg-red-50 p-6 text-red-900"
+          <EmptyState
+            title="Impossible de charger les démarches"
+            description="Vérifiez votre connexion puis réessayez."
+            icon={<RotateCcw className="h-6 w-6" />}
+            actions={
+              <Button type="button" variant="outline" onClick={() => refetch()}>
+                <RotateCcw className="mr-2 h-4 w-4" />
+                Réessayer
+              </Button>
+            }
             role="alert"
             data-testid="demarches-error-state"
-          >
-            <h2 className="text-lg font-semibold">Impossible de charger les démarches</h2>
-            <p className="mt-2 text-sm">
-              Une erreur est survenue. Vous pouvez réessayer.
-            </p>
-            <Button type="button" variant="outline" className="mt-4" onClick={() => refetch()}>
-              <RotateCcw className="mr-2 h-4 w-4" />
-              Réessayer
-            </Button>
-          </div>
+          />
         )}
 
         {(isLoading || isFetching) && !error && (

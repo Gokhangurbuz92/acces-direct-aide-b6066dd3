@@ -322,17 +322,16 @@ export default function Annuaire() {
             ))}
           </div>
         ) : error ? (
-          <Card className="border-slate-200">
-            <CardContent className="p-6">
-              <p className="text-slate-700 font-medium">Une erreur est survenue lors du chargement de l'annuaire.</p>
-              <p className="text-slate-600 text-sm mt-2">Vérifiez votre connexion puis réessayez.</p>
-              <div className="mt-4">
-                <Button type="button" onClick={() => refetch()}>
-                  Réessayer
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
+          <EmptyState
+            title="Impossible de charger l'annuaire"
+            description="Vérifiez votre connexion puis réessayez."
+            actions={
+              <Button type="button" onClick={() => refetch()}>
+                Réessayer
+              </Button>
+            }
+            role="alert"
+          />
         ) : structures.length > 0 ? (
           <>
             <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6" data-testid="structures-results-list">

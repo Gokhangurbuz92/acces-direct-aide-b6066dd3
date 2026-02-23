@@ -8,6 +8,7 @@ import { client } from '@/api/client';
 import { useQuery } from '@tanstack/react-query';
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import EmptyState from '@/components/ui/EmptyState';
 import { Card, CardContent } from "@/components/ui/card";
 import {
   ArrowLeft,
@@ -122,20 +123,24 @@ export default function DemarcheDetail() {
 
     return (
       <div className="min-h-screen bg-slate-50 flex items-center justify-center px-4 sm:px-6 py-12">
-        <div className="w-full max-w-md rounded-2xl border border-red-200 bg-red-50 p-6 text-red-900" role="alert">
-          <h1 className="text-lg font-semibold">Impossible de charger la démarche</h1>
-          <p className="mt-2 text-sm">Une erreur est survenue. Vous pouvez réessayer.</p>
-          <div className="mt-4 flex flex-wrap gap-3">
-            <Button type="button" variant="outline" onClick={() => refetch()}>
-              Réessayer
-            </Button>
-            <Link to={createPageUrl('Demarches')}>
-              <Button type="button" variant="ghost">
-                Retour aux démarches
+        <EmptyState
+          title="Impossible de charger la démarche"
+          description="Vérifiez votre connexion puis réessayez."
+          icon={<Loader2 className="h-6 w-6" />}
+          actions={
+            <div className="flex flex-wrap gap-3">
+              <Button type="button" variant="outline" onClick={() => refetch()}>
+                Réessayer
               </Button>
-            </Link>
-          </div>
-        </div>
+              <Link to={createPageUrl('Demarches')}>
+                <Button type="button" variant="ghost">
+                  Retour aux démarches
+                </Button>
+              </Link>
+            </div>
+          }
+          role="alert"
+        />
       </div>
     );
   }

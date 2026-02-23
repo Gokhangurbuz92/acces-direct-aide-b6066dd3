@@ -57,7 +57,7 @@ export default function AideCard({ aide, compact = false }) {
   const sourceHost = provenance.sourceHost;
   const freshness = getFreshnessBadge(provenance.verifiedAt);
   const verificationLabel = verifiedAt ? `Vérifié le ${verifiedAt}` : 'À vérifier';
-  const sourceLabel = sourceHost ? `Source: ${sourceHost}` : 'Source: non renseignée';
+  const sourceLabel = sourceHost ? `Source: ${sourceHost}` : null;
 
   const categorySlug = (() => {
     const raw = aide?.categorie || aide?.theme || aide?.category?.slug || aide?.category_code;
@@ -148,10 +148,12 @@ export default function AideCard({ aide, compact = false }) {
               <Calendar className="h-4 w-4" />
               {verificationLabel}
             </span>
-            <span className="flex items-center gap-1">
-              <CheckCircle2 className="h-4 w-4" />
-              {sourceLabel}
-            </span>
+            {sourceLabel && (
+              <span className="flex items-center gap-1">
+                <CheckCircle2 className="h-4 w-4" />
+                {sourceLabel}
+              </span>
+            )}
           </div>
 
           {/* Visual Link (Not interactive, just decoration) */}

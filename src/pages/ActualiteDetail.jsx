@@ -13,6 +13,7 @@ import { htmlToPlainText } from '@/lib/htmlText';
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
+import EmptyState from '@/components/ui/EmptyState';
 import {
   ArrowLeft,
   Calendar,
@@ -116,15 +117,18 @@ export default function ActualiteDetail() {
 
     return (
       <div className="min-h-screen bg-slate-50 flex items-center justify-center">
-        <div className="text-center max-w-md px-4">
-          <p className="text-slate-600 mb-4">Impossible de charger cette actualité.</p>
-          <div className="flex items-center justify-center gap-2">
-            <Button variant="outline" onClick={() => refetch()}>Réessayer</Button>
-            <Link to={createPageUrl('Actualites')}>
-              <Button>Retour aux actualités</Button>
-            </Link>
-          </div>
-        </div>
+        <EmptyState
+          title="Impossible de charger cette actualité"
+          description="Vérifiez votre connexion puis réessayez."
+          actions={
+            <div className="flex items-center justify-center gap-2">
+              <Button variant="outline" onClick={() => refetch()}>Réessayer</Button>
+              <Link to={createPageUrl('Actualites')}>
+                <Button>Retour aux actualités</Button>
+              </Link>
+            </div>
+          }
+        />
       </div>
     );
   }

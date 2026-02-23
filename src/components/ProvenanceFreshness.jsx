@@ -36,23 +36,27 @@ export default function ProvenanceFreshness({ provenance }) {
         </div>
 
         <dl className="space-y-3 text-sm">
-          <div className="flex items-start justify-between gap-4">
-            <dt className="font-medium text-slate-700">Dernière vérification</dt>
-            <dd className="text-slate-900">{verifiedAt || 'Non renseigné'}</dd>
-          </div>
+          {verifiedAt && (
+            <div className="flex items-start justify-between gap-4">
+              <dt className="font-medium text-slate-700">Dernière vérification</dt>
+              <dd className="text-slate-900">{verifiedAt}</dd>
+            </div>
+          )}
 
-          <div className="flex items-start justify-between gap-4">
-            <dt className="font-medium text-slate-700 flex items-center gap-1">
-              <Calendar className="h-4 w-4" aria-hidden="true" />
-              Dernière collecte
-            </dt>
-            <dd className="text-slate-900">{fetchedAt || 'Non renseigné'}</dd>
-          </div>
+          {fetchedAt && (
+            <div className="flex items-start justify-between gap-4">
+              <dt className="font-medium text-slate-700 flex items-center gap-1">
+                <Calendar className="h-4 w-4" aria-hidden="true" />
+                Dernière collecte
+              </dt>
+              <dd className="text-slate-900">{fetchedAt}</dd>
+            </div>
+          )}
 
-          <div className="flex items-start justify-between gap-4">
-            <dt className="font-medium text-slate-700">Source</dt>
-            <dd className="text-right text-slate-900">
-              {normalized.sourceUrl ? (
+          {normalized.sourceUrl && (
+            <div className="flex items-start justify-between gap-4">
+              <dt className="font-medium text-slate-700">Source</dt>
+              <dd className="text-right text-slate-900">
                 <a
                   href={normalized.sourceUrl}
                   target="_blank"
@@ -63,11 +67,9 @@ export default function ProvenanceFreshness({ provenance }) {
                   {normalized.sourceHost || 'Voir la source'}
                   <ExternalLink className="h-3 w-3" aria-hidden="true" />
                 </a>
-              ) : (
-                'Non renseignée'
-              )}
-            </dd>
-          </div>
+              </dd>
+            </div>
+          )}
         </dl>
 
         <p className="text-xs text-slate-600">

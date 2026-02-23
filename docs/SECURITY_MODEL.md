@@ -19,9 +19,11 @@ Trois niveaux d'authentification sont définis :
 
 3.  **Administrateur (Admin)**
     - Routes `/api/admin/*`, `/api/cron/*` (si appel externe).
-    - Authentification via **ADMIN_TOKEN** (Bearer) statique (stocké en variable d'environnement `ADMIN_TOKEN`).
+    - Authentification via **ADMIN_TOKEN** (Bearer) statique ou **JWT session** admin (HS256, 8h).
     - **Pouvoirs** : Full access (CRUD, suppression, logs, jobs).
     - **Protection** : IP whitelist (optionnel, via Vercel Firewall), HTTPS obligatoire.
+    - **Frontend** : Toutes les routes `/admin/**` (sauf `/admin/login`) sont protégées par `<AdminGuard>` → redirect `/admin/login` si non-admin.
+    - **Backend** : Tous les handlers `api/_handlers/admin/**` doivent utiliser `verifyAdmin(req)` de `api/_utils/auth.js`. Ne jamais utiliser de vérification custom ni de bypass `devLoginEnabled`.
 
 ## 2. Rate Limiting
 

@@ -3,6 +3,7 @@ import { validateForPublication, generateValidationReport } from '../../lib/publ
 import logger from '../../_utils/logger.js';
 import Sentry from '../../_utils/sentry.js';
 import { env } from '../../_utils/env.js';
+import { verifyAdmin } from '../../_utils/auth.js';
 
 const ENTITY_MODELS = {
   aide: prisma.aide,
@@ -33,7 +34,7 @@ export default async function handler(req, res) {
 
   try {
     // Check authentication
-    if (!req.user || req.user.role !== 'admin') {
+    if (!verifyAdmin(req)) {
       return res.status(401).json({ error: 'Unauthorized' });
     }
 

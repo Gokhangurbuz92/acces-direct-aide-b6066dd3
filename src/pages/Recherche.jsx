@@ -4,6 +4,7 @@ import { Search, RotateCcw } from 'lucide-react';
 import SEO from '@/components/SEO';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
+import EmptyState from '@/components/ui/EmptyState';
 import AidesSearchForm from '@/components/search/AidesSearchForm';
 import SearchResultsList from '@/components/search/SearchResultsList';
 import { isAbortError, normalizeSearchCategory, searchAides } from '@/lib/searchClient';
@@ -47,9 +48,9 @@ export default function Recherche() {
   const situationFromUrl = (searchParams.get('situation') || searchParams.get('situations') || '').trim();
   const categoryFromUrl = normalizeSearchCategory(
     searchParams.get('cat') ||
-      searchParams.get('category') ||
-      searchParams.get('categorie') ||
-      searchParams.get('theme')
+    searchParams.get('category') ||
+    searchParams.get('categorie') ||
+    searchParams.get('theme')
   );
   const limitFromUrl = parseLimit(searchParams.get('limit'));
 
@@ -225,30 +226,33 @@ export default function Recherche() {
           )}
 
           {status === 'error' && (
-            <div
-              className="rounded-2xl border border-red-200 bg-red-50 p-6 text-red-900"
+            <EmptyState
+              title="Impossible de charger les résultats"
+              description={errorMessage}
+              icon={<RotateCcw className="h-6 w-6" />}
+              actions={
+                <Button type="button" variant="outline" onClick={handleRetry}>
+                  <RotateCcw className="mr-2 h-4 w-4" />
+                  Réessayer
+                </Button>
+              }
               role="alert"
               data-testid="search-error-state"
-            >
-              <h2 className="text-lg font-semibold">La recherche a rencontré une erreur</h2>
-              <p className="mt-2 text-sm">{errorMessage}</p>
-              <Button type="button" variant="outline" className="mt-4" onClick={handleRetry}>
-                <RotateCcw className="mr-2 h-4 w-4" />
-                Réessayer
-              </Button>
-            </div>
+            />
           )}
 
           {status === 'empty' && (
-            <div className="rounded-2xl border border-slate-200 bg-white p-6" data-testid="search-empty-state">
-              <h2 className="text-lg font-semibold text-slate-900">Aucun résultat trouvé</h2>
-              <p className="mt-2 text-sm text-slate-600">
-                Essayez avec d&apos;autres mots-clés, une catégorie différente, ou une limite plus large.
-              </p>
-              <Button type="button" variant="outline" className="mt-4" onClick={handleRetry}>
-                Relancer la recherche
-              </Button>
-            </div>
+            <EmptyState
+              title="Aucun résultat"
+              description="Essayez de modifier vos filtres ou de réinitialiser votre recherche."
+              icon={<Search className="h-6 w-6" />}
+              actions={
+                <Button type="button" variant="outline" onClick={handleRetry}>
+                  Relancer la recherche
+                </Button>
+              }
+              data-testid="search-empty-state"
+            />
           )}
 
           {status === 'success' && (

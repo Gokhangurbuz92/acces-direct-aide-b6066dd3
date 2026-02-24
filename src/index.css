@@ -114,6 +114,25 @@
   }
 }
 
+/* iOS Safe Area — notch / Dynamic Island / home indicator */
+@supports (padding: env(safe-area-inset-bottom)) {
+  .safe-area-bottom {
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+  .safe-area-top {
+    padding-top: env(safe-area-inset-top);
+  }
+}
+
+/* iOS Safari: prevent auto-zoom on input focus (requires >= 16px) */
+@supports (-webkit-touch-callout: none) {
+  input,
+  select,
+  textarea {
+    font-size: max(16px, 1em);
+  }
+}
+
 /* Print Styles */
 @media print {
 

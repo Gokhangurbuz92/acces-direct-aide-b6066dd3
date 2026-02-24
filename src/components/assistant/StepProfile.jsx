@@ -36,9 +36,9 @@ export default function StepProfile({ onNext, onBack }) {
                             role="radio"
                             aria-checked={situation === key}
                             onClick={() => setSituation(key)}
-                            className={`rounded-lg border px-3 py-2 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600 focus-visible:ring-offset-2 ${situation === key
-                                    ? 'border-blue-600 bg-blue-50 text-blue-700'
-                                    : 'border-slate-200 bg-white text-slate-700 hover:bg-slate-50'
+                            className={`rounded-lg border px-3 py-2 min-h-[2.75rem] text-base sm:text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600 focus-visible:ring-offset-2 ${situation === key
+                                ? 'border-blue-600 bg-blue-50 text-blue-700'
+                                : 'border-slate-200 bg-white text-slate-700 hover:bg-slate-50'
                                 }`}
                         >
                             {label}
@@ -57,9 +57,9 @@ export default function StepProfile({ onNext, onBack }) {
                             role="radio"
                             aria-checked={statut === key}
                             onClick={() => setStatut(key)}
-                            className={`rounded-lg border px-3 py-2 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600 focus-visible:ring-offset-2 ${statut === key
-                                    ? 'border-blue-600 bg-blue-50 text-blue-700'
-                                    : 'border-slate-200 bg-white text-slate-700 hover:bg-slate-50'
+                            className={`rounded-lg border px-3 py-2 min-h-[2.75rem] text-base sm:text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600 focus-visible:ring-offset-2 ${statut === key
+                                ? 'border-blue-600 bg-blue-50 text-blue-700'
+                                : 'border-slate-200 bg-white text-slate-700 hover:bg-slate-50'
                                 }`}
                         >
                             {label}

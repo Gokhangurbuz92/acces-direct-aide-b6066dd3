@@ -37,17 +37,19 @@ import { htmlToPlainText } from '@/lib/htmlText';
  */
 
 const CATEGORIES = {
-  logement: 'Logement',
-  sante: 'Santé',
-  handicap: 'Handicap',
-  emploi: 'Emploi',
-  famille: 'Famille',
-  budget: 'Budget',
-  mobilite: 'Mobilité',
-  justice: 'Justice',
-  numerique: 'Numérique',
-  etrangers: 'Nouveaux arrivants',
-  general: 'Général',
+  'papiers-citoyennete': 'Papiers - Citoyenneté',
+  'famille': 'Famille',
+  'social-sante': 'Social - Santé',
+  'personnes-agees': 'Personnes âgées',
+  'handicap': 'Handicap',
+  'travail-formation': 'Travail - Formation',
+  'logement': 'Logement',
+  'transports': 'Transports',
+  'argent': 'Argent - Impôts',
+  'justice': 'Justice',
+  'etranger': 'Étranger',
+  'loisirs': 'Loisirs - Sport - Culture',
+  'lgbtqi-plus': 'LGBTQI+',
 };
 
 const TYPE_ICONS = {

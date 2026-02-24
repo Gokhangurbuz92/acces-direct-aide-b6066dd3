@@ -166,7 +166,7 @@ export default async function handler(req, res) {
     } catch (error) {
         const errorName = error instanceof Error ? error.name : 'unknown';
         const errorMsg = error instanceof Error ? error.message : String(error);
-        log.error({ msg: 'assistant.chat_failed', errorName, requestId });
+        log.error({ msg: 'assistant.chat_failed', errorName, errorMsg, requestId });
 
         Sentry.captureException(error, {
             tags: {
@@ -175,8 +175,22 @@ export default async function handler(req, res) {
             },
         });
 
-        // Surface missing API key as 503 rather than generic 500
-        if (errorMsg.includes('Missing required environment variable')) {
+        // Classify Gemini / Google AI errors as 503 (service unavailable)
+        // This includes: missing key, invalid key, quota exceeded, model errors, API failures.
+        const isGeminiError =
+            errorMsg.includes('Missing required environment variable') ||
+            errorMsg.includes('API_KEY') ||
+            errorMsg.includes('GoogleGenerativeAI') ||
+            errorMsg.includes('PERMISSION_DENIED') ||
+            errorMsg.includes('RESOURCE_EXHAUSTED') ||
+            errorMsg.includes('quota') ||
+            errorMsg.includes('models/') ||
+            errorName === 'GoogleGenerativeAIError' ||
+            errorName === 'GoogleGenerativeAIFetchError' ||
+            errorName === 'GoogleGenerativeAIRequestInputError' ||
+            errorName === 'GoogleGenerativeAIResponseError';
+
+        if (isGeminiError) {
             return res.status(503).json({
                 ok: false,
                 requestId,

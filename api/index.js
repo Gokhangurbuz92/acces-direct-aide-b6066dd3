@@ -58,6 +58,7 @@ function getRouteGroup(path) {
 
     const publicPrefixes = [
         'aides',
+        'aids',
         'actualites',
         'appointments',
         'assistant/',
@@ -65,6 +66,7 @@ function getRouteGroup(path) {
         'demarches',
         'dispositifs',
         'download',
+        'drees',
         'feedback',
         'guides',
         'login-pro-guard',

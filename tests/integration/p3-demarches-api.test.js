@@ -79,7 +79,7 @@ describe.skipIf(!hasDatabase)('P3 Demarches API (requires DB)', () => {
 
   it('GET /api/demarches/:slug returns 200 for a seeded demarche', async () => {
     const req = createMockReq({
-      url: '/api/demarches/demarche-test-1',
+      url: '/api/demarches/demander-le-rsa',
       query: {},
     });
     const res = createMockRes();
@@ -87,7 +87,7 @@ describe.skipIf(!hasDatabase)('P3 Demarches API (requires DB)', () => {
     await demarchesHandler(req, res);
 
     expect(res.statusCode).toBe(200);
-    expect(res.body).toEqual(expect.objectContaining({ slug: 'demarche-test-1' }));
+    expect(res.body).toEqual(expect.objectContaining({ slug: 'demander-le-rsa' }));
   });
 
   it('GET /api/demarches/:slug returns 404 for unknown slug', async () => {

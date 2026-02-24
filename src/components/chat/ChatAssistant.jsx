@@ -72,7 +72,11 @@ export default function ChatAssistant({ embedded = false }) {
         ]);
       } catch (err) {
         if (err instanceof AssistantError) {
-          setError(err.userMessage);
+          if (err.status === 503 || err.code === 'service_unavailable') {
+            setError('L\u2019assistant est temporairement indisponible. Utilisez le diagnostic d\u2019orientation pour un accompagnement personnalisé.');
+          } else {
+            setError(err.userMessage);
+          }
         } else if (err instanceof DOMException && err.name === 'AbortError') {
           // Request was cancelled (e.g. new message sent), don't show error
           return;
@@ -210,17 +214,27 @@ function ChatMessages({ messages, isLoading, error, onRetry, endOfMessagesRef })
       )}
 
       {error && (
-        <div className="flex justify-start">
+        <div className="flex justify-start" data-testid="chat-error">
           <div className="flex max-w-[85%] flex-col gap-2 rounded-2xl border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
             <p>{error}</p>
-            <button
-              type="button"
-              onClick={onRetry}
-              className="inline-flex items-center gap-1 self-start rounded-md px-2 py-1 text-xs font-medium text-red-600 transition-colors hover:bg-red-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500"
-            >
-              <RefreshCw className="h-3 w-3" aria-hidden="true" />
-              Réessayer
-            </button>
+            <div className="flex flex-wrap gap-2">
+              {error.includes('indisponible') && (
+                <a
+                  href="/orientation"
+                  className="inline-flex items-center gap-1 self-start rounded-md bg-blue-600 px-2 py-1 text-xs font-medium text-white transition-colors hover:bg-blue-700"
+                >
+                  Aller au diagnostic
+                </a>
+              )}
+              <button
+                type="button"
+                onClick={onRetry}
+                className="inline-flex items-center gap-1 self-start rounded-md px-2 py-1 text-xs font-medium text-red-600 transition-colors hover:bg-red-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500"
+              >
+                <RefreshCw className="h-3 w-3" aria-hidden="true" />
+                Réessayer
+              </button>
+            </div>
           </div>
         </div>
       )}

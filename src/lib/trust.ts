@@ -11,19 +11,19 @@ export interface TrustDisplayPolicy {
 }
 
 export const DEFAULT_TRUST_POLICY: TrustDisplayPolicy = {
-    missingDate: "label",
+    missingDate: "hide",
 };
 
-/** Label to display when a date is missing and policy is "label" */
+/** @deprecated Policy default is now 'hide' — this label should no longer appear in UI */
 export const MISSING_DATE_LABEL = "Date inconnue";
 
 /**
- * Returns a formatted date string or the appropriate missing-data fallback.
- * Returns `null` when the line should be hidden entirely.
+ * Returns a formatted date string or null when the line should be hidden.
+ * Default policy is now 'hide' — no more 'Date inconnue'.
  */
 export function resolveDateDisplay(
     date: Date | string | null | undefined,
-    policy: MissingDatePolicy = "label",
+    policy: MissingDatePolicy = "hide",
 ): string | null {
     if (!date) {
         return policy === "label" ? MISSING_DATE_LABEL : null;

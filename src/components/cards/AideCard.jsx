@@ -8,41 +8,8 @@ import {
 } from 'lucide-react';
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
+import CategoryChip, { resolveCategory } from "@/components/ui/CategoryChip";
 import { formatProvenanceDate, getFreshnessBadge, getProvenance } from '@/lib/provenance';
-
-const CATEGORIE_COLORS = {
-  logement: 'bg-orange-100 text-orange-800',
-  sante: 'bg-green-100 text-green-800',
-  handicap: 'bg-purple-100 text-purple-800',
-  emploi: 'bg-blue-100 text-blue-800',
-  famille: 'bg-pink-100 text-pink-800',
-  budget: 'bg-yellow-100 text-yellow-800',
-  mobilite: 'bg-cyan-100 text-cyan-800',
-  justice: 'bg-red-100 text-red-800',
-  numerique: 'bg-indigo-100 text-indigo-800',
-  etrangers: 'bg-teal-100 text-teal-800',
-  isolement: 'bg-rose-100 text-rose-800',
-  lgbtqia: 'bg-violet-100 text-violet-800',
-  vieillissement: 'bg-amber-100 text-amber-800',
-  autre: 'bg-slate-100 text-slate-800',
-};
-
-const CATEGORIE_LABELS = {
-  logement: 'Logement',
-  sante: 'Santé',
-  handicap: 'Handicap',
-  emploi: 'Emploi',
-  famille: 'Famille',
-  budget: 'Budget',
-  mobilite: 'Mobilité',
-  justice: 'Justice',
-  numerique: 'Numérique',
-  etrangers: 'Nouveaux arrivants',
-  isolement: 'Isolement',
-  lgbtqia: 'LGBTQIA+',
-  vieillissement: 'Autonomie',
-  autre: 'Autre',
-};
 
 const FRESHNESS_BADGE_CLASS = {
   up_to_date: 'bg-emerald-100 text-emerald-800 border-emerald-200',
@@ -56,8 +23,10 @@ export default function AideCard({ aide, compact = false }) {
   const verifiedAt = formatProvenanceDate(provenance.verifiedAt);
   const sourceHost = provenance.sourceHost;
   const freshness = getFreshnessBadge(provenance.verifiedAt);
-  const verificationLabel = verifiedAt ? `Vérifié le ${verifiedAt}` : 'À vérifier';
-  const sourceLabel = sourceHost ? `Source: ${sourceHost}` : null;
+  // Replace "À vérifier" — show source or verified date, never "À vérifier"
+  const verificationLabel = verifiedAt
+    ? `Vérifié le ${verifiedAt}`
+    : (sourceHost ? `Source : ${sourceHost}` : null);
 
   const categorySlug = (() => {
     const raw = aide?.categorie || aide?.theme || aide?.category?.slug || aide?.category_code;
@@ -66,9 +35,6 @@ export default function AideCard({ aide, compact = false }) {
     if (!value) return null;
     return /^[A-Z_]+$/.test(value) ? value.toLowerCase() : value;
   })();
-
-  const categoryLabel = (categorySlug && CATEGORIE_LABELS[categorySlug]) || aide?.category?.label || categorySlug;
-  const categoryColor = (categorySlug && CATEGORIE_COLORS[categorySlug]) || 'bg-slate-100 text-slate-800';
 
   const getTerritoireLabel = () => {
     if (!aide.territoires?.length) return null;
@@ -91,7 +57,7 @@ export default function AideCard({ aide, compact = false }) {
         className="absolute inset-0 z-10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 rounded-xl"
         aria-label={`Voir l'aide ${aide.titre}`}
       >
-        <span className="sr-only">Voir l'aide {aide.titre}</span>
+        <span className="sr-only">Voir l&apos;aide {aide.titre}</span>
       </Link>
 
       <CardContent className={compact ? 'p-4' : 'p-6'}>
@@ -99,11 +65,7 @@ export default function AideCard({ aide, compact = false }) {
           {/* En-tête avec badges */}
           <div className="flex flex-wrap gap-2 items-start justify-between relative z-0">
             <div className="flex flex-wrap gap-2">
-              {categoryLabel && (
-                <Badge className={categoryColor}>
-                  {categoryLabel}
-                </Badge>
-              )}
+              <CategoryChip slug={categorySlug} label={aide?.category?.label} />
               {aide.est_urgent && (
                 <Badge className="bg-red-100 text-red-800 flex items-center gap-1">
                   <AlertTriangle className="h-3 w-3" />
@@ -144,14 +106,10 @@ export default function AideCard({ aide, compact = false }) {
                 {getTerritoireLabel()}
               </span>
             )}
-            <span className="flex items-center gap-1">
-              <Calendar className="h-4 w-4" />
-              {verificationLabel}
-            </span>
-            {sourceLabel && (
+            {verificationLabel && (
               <span className="flex items-center gap-1">
-                <CheckCircle2 className="h-4 w-4" />
-                {sourceLabel}
+                <Calendar className="h-4 w-4" />
+                {verificationLabel}
               </span>
             )}
           </div>

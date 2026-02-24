@@ -31,23 +31,9 @@ import FalcContent from '@/components/FalcContent';
 import FeedbackButton from '@/components/FeedbackButton';
 import { formatProvenanceDate, getProvenance } from '@/lib/provenance';
 import { useAideDetail } from '@/lib/hooks/useAideDetail';
+import CategoryChip, { resolveCategory } from '@/components/ui/CategoryChip';
 
-const CATEGORIE_LABELS = {
-  logement: 'Logement',
-  sante: 'Santé',
-  handicap: 'Handicap',
-  emploi: 'Emploi',
-  famille: 'Famille',
-  budget: 'Budget',
-  mobilite: 'Mobilité',
-  justice: 'Justice',
-  numerique: 'Numérique',
-  etrangers: 'Nouveaux arrivants',
-  isolement: 'Isolement',
-  lgbtqia: 'LGBTQIA+',
-  vieillissement: 'Autonomie',
-  autre: 'Autre',
-};
+
 
 export default function AideDetail() {
   const { slug } = useParams();
@@ -201,11 +187,8 @@ export default function AideDetail() {
     return /^[A-Z_]+$/.test(value) ? value.toLowerCase() : value;
   })();
 
-  const categoryLabel =
-    (categorySlug && CATEGORIE_LABELS[categorySlug]) ||
-    aide?.category?.label ||
-    categorySlug ||
-    'Autre';
+  const resolved = resolveCategory(categorySlug) || (aide?.category?.label ? { label: aide.category.label } : null);
+  const categoryLabel = resolved?.label || null;
   const provenance = getProvenance(aide);
   const fetchedAtLabel = formatProvenanceDate(provenance.fetchedAt);
   const pdfDownloadUrl = (aide?.slug || aide?.id)
@@ -259,9 +242,7 @@ export default function AideDetail() {
         {/* En-tête */}
         <div className="bg-white rounded-2xl p-6 md:p-8 border border-slate-200 mb-6">
           <div className="flex flex-wrap gap-2 mb-4">
-            <Badge className="bg-blue-100 text-blue-800">
-              {categoryLabel}
-            </Badge>
+            {categoryLabel && <CategoryChip slug={categorySlug} label={categoryLabel} />}
             {aide.est_urgent && (
               <Badge className="bg-red-100 text-red-800">
                 <AlertCircle className="h-3 w-3 mr-1" />

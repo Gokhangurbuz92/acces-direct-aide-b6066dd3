@@ -1,2 +1,2 @@
 
-export { default } from '../_handlers/drees.js';
+export { default } from './_handlers/drees.js';

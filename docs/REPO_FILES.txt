@@ -1,6 +1,7 @@
 ./.cursor/rules/snyk_rules.mdc
 ./.editorconfig
 ./.env.example
+./.env.template
 ./.github/CODEOWNERS
 ./.github/pull_request_template.md
 ./.github/workflows/a11y.yml
@@ -37,6 +38,8 @@
 ./api/_handlers/admin/validate-publication.js
 ./api/_handlers/admin/versions.js
 ./api/_handlers/aides.js
+./api/_handlers/assistant/chat.js
+./api/_handlers/assistant/recommendations.js
 ./api/_handlers/auth/forgot-password.js
 ./api/_handlers/auth/login.js
 ./api/_handlers/auth/logout.js
@@ -215,6 +218,8 @@
 ./docs/ACCESSIBILITY_AUDIT.md
 ./docs/ADMIN_GUIDE.md
 ./docs/API_CONTRACT.md
+./docs/Auth.md
+./docs/AuthIntegration.md
 ./docs/BACKUP_RESTORE.md
 ./docs/BRANDING.md
 ./docs/CI_PIPELINE.md
@@ -669,7 +674,9 @@
 ./src/api/integrations.js
 ./src/api/pro-rdv-client.js
 ./src/api/rdv-messaging-client.js
+./src/assets/brand/ada-mark.svg
 ./src/components/AdminGuard.jsx
+./src/components/Brand/ADALogo.tsx
 ./src/components/Brand/Logo.tsx
 ./src/components/ErrorBoundary.jsx
 ./src/components/FalcContent.jsx
@@ -805,6 +812,7 @@
 ./src/lib/api/config.ts
 ./src/lib/api/endpoints.ts
 ./src/lib/api/mappers.ts
+./src/lib/assistant/client.ts
 ./src/lib/falc.ts
 ./src/lib/freshness.ts
 ./src/lib/hooks/useAideDetail.ts
@@ -927,6 +935,7 @@
 ./tests/a11y/a11y.utils.ts
 ./tests/a11y/home.spec.ts
 ./tests/a11y/listing-aides.spec.ts
+./tests/a11y/navigation.spec.ts
 ./tests/auth_crossing.test.js
 ./tests/integration/actualites.test.js
 ./tests/integration/aides_v2.test.js

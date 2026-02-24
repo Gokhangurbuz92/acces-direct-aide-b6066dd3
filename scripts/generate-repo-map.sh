@@ -15,7 +15,7 @@ find . -type f \
   -not -path '*/coverage/*' \
   -not -path '*/test-results/*' \
   -not -path '*/venv/*' \
-  -not \( -name '.env*' -not -name '.env.example' \) \
+  -not \( -name '.env*' -not -name '.env.example' -not -name '.env.template' \) \
   -not -path '*/uploads_mock/*' \
   -not -path '*/cookies*.txt' \
   -not -path '*/test-img*.jpg' \

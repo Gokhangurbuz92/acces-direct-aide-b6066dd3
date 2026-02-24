@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { Link, useParams, useSearchParams, useNavigate } from 'react-router-dom';
 import SEO from '@/components/SEO';
 import NotFound from "./NotFound";
@@ -24,6 +24,8 @@ import {
 import { generateBreadcrumbSchema, generateStructureSchema } from '@/utils/schema';
 import ProvenanceFreshness from '@/components/ProvenanceFreshness';
 import FalcSummary from '@/components/FalcSummary';
+import FalcToggle from '@/components/FalcToggle';
+import FalcContent from '@/components/FalcContent';
 import { getProvenance } from '@/lib/provenance';
 import { buildPublicRdvPath } from '@/lib/rdvRouting';
 
@@ -36,7 +38,12 @@ const TYPE_LABELS = {
   mdph: 'MDPH',
   france_travail: 'France Travail',
   cpam: 'CPAM',
-  autre: 'Autre',
+  ccas: 'CCAS',
+  ehpad: 'EHPAD',
+  france_services: 'France Services',
+  carsat: 'CARSAT',
+  mission_locale: 'Mission Locale',
+  pmi: 'PMI',
 };
 
 export default function StructureDetail() {
@@ -44,6 +51,9 @@ export default function StructureDetail() {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const structureId = searchParams.get('id');
+
+  // FALC mode state
+  const [isFalcMode, setIsFalcMode] = useState(false);
 
   const { data: queryData, isLoading } = useQuery({
     queryKey: ['structure', slug || structureId],
@@ -126,9 +136,11 @@ export default function StructureDetail() {
             <Card>
               <CardContent className="p-6 md:p-8">
                 <div className="flex flex-wrap gap-2 mb-4">
-                  <Badge className="bg-blue-100 text-blue-800">
-                    {TYPE_LABELS[structure.type_structure] || structure.type_structure}
-                  </Badge>
+                  {TYPE_LABELS[structure.type_structure] && (
+                    <Badge className="bg-blue-100 text-blue-800">
+                      {TYPE_LABELS[structure.type_structure]}
+                    </Badge>
+                  )}
                   {structure.accessibilite_pmr && (
                     <Badge variant="outline" className="text-green-700 border-green-300">
                       <Accessibility className="h-3 w-3 mr-1" />
@@ -149,140 +161,158 @@ export default function StructureDetail() {
               </CardContent>
             </Card>
 
-            {/* FALC Summary */}
-            <FalcSummary text={structure?.resume_falc || structure?.summary_falc || structure?.description_falc} />
+            {/* FALC Toggle */}
+            <div className="mb-4">
+              <FalcToggle
+                hasFalcContent={!!(structure?.resume_falc || structure?.summary_falc || structure?.description_falc)}
+                onChange={setIsFalcMode}
+              />
+            </div>
 
-            {/* Coordonnées */}
-            <Card>
-              <CardContent className="p-6">
-                <h2 className="text-lg font-bold text-slate-900 mb-4">Coordonnées</h2>
-                <div className="space-y-4">
-                  {structure.adresse && (
-                    <div className="flex items-start gap-3">
-                      <MapPin className="h-5 w-5 text-blue-600 mt-0.5" />
-                      <div>
-                        <p className="font-medium text-slate-900">Adresse</p>
-                        <p className="text-slate-600">
-                          {structure.adresse}<br />
-                          {structure.code_postal} {structure.ville}
-                        </p>
-                      </div>
-                    </div>
-                  )}
-
-                  {structure.telephone && (
-                    <div className="flex items-start gap-3">
-                      <Phone className="h-5 w-5 text-blue-600 mt-0.5" />
-                      <div>
-                        <p className="font-medium text-slate-900">Téléphone</p>
-                        <a
-                          href={`tel:${structure.telephone}`}
-                          className="text-blue-600 hover:underline"
-                        >
-                          {structure.telephone}
-                        </a>
-                      </div>
-                    </div>
-                  )}
-
-                  {structure.email && (
-                    <div className="flex items-start gap-3">
-                      <Mail className="h-5 w-5 text-blue-600 mt-0.5" />
-                      <div>
-                        <p className="font-medium text-slate-900">Email</p>
-                        <a
-                          href={`mailto:${structure.email}`}
-                          className="text-blue-600 hover:underline"
-                        >
-                          {structure.email}
-                        </a>
-                      </div>
-                    </div>
-                  )}
-
-                  {structure.site_web && (
-                    <div className="flex items-start gap-3">
-                      <Globe className="h-5 w-5 text-blue-600 mt-0.5" />
-                      <div>
-                        <p className="font-medium text-slate-900">Site web</p>
-                        <a
-                          href={structure.site_web}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="text-blue-600 hover:underline flex items-center gap-1"
-                        >
-                          Visiter le site
-                          <ExternalLink className="h-3 w-3" />
-                        </a>
-                      </div>
-                    </div>
-                  )}
-
-                  {structure.horaires && (
-                    <div className="flex items-start gap-3">
-                      <Clock className="h-5 w-5 text-blue-600 mt-0.5" />
-                      <div>
-                        <p className="font-medium text-slate-900">Horaires</p>
-                        <p className="text-slate-600 whitespace-pre-line">
-                          {structure.horaires}
-                        </p>
-                      </div>
-                    </div>
-                  )}
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* Services */}
-            {structure.services?.length > 0 && (
+            {isFalcMode ? (
               <Card>
                 <CardContent className="p-6">
-                  <h2 className="text-lg font-bold text-slate-900 mb-4">Services proposés</h2>
-                  <div className="flex flex-wrap gap-2">
-                    {structure.services.map((service, idx) => (
-                      <Badge key={idx} variant="secondary" className="bg-slate-100 text-slate-700">
-                        {service}
-                      </Badge>
-                    ))}
-                  </div>
+                  <FalcContent falcData={structure} entityType="structure" />
                 </CardContent>
               </Card>
-            )}
+            ) : (
+              <>
+                {/* FALC Summary */}
+                <FalcSummary text={structure?.resume_falc || structure?.summary_falc || structure?.description_falc} />
 
-            {/* Pro Services (Lot 4) */}
-            {structure.is_pro_enabled && (
-              <Card className="border-indigo-100 bg-indigo-50/30">
-                <CardContent className="p-6">
-                  <h2 className="text-lg font-bold text-indigo-900 mb-4 flex items-center gap-2">
-                    <Calendar className="h-5 w-5" />
-                    Prendre rendez-vous
-                  </h2>
-                  <p className="text-slate-700 mb-4">
-                    Cette structure propose la prise de rendez-vous en ligne.
-                  </p>
-                  <Button className="w-full bg-indigo-600 hover:bg-indigo-700" asChild>
-                    <Link to={rdvPath}>
-                      Voir les créneaux disponibles
-                    </Link>
-                  </Button>
-                </CardContent>
-              </Card>
-            )}
+                {/* Coordonnées */}
+                <Card>
+                  <CardContent className="p-6">
+                    <h2 className="text-lg font-bold text-slate-900 mb-4">Coordonnées</h2>
+                    <div className="space-y-4">
+                      {structure.adresse && (
+                        <div className="flex items-start gap-3">
+                          <MapPin className="h-5 w-5 text-blue-600 mt-0.5" />
+                          <div>
+                            <p className="font-medium text-slate-900">Adresse</p>
+                            <p className="text-slate-600">
+                              {structure.adresse}<br />
+                              {structure.code_postal} {structure.ville}
+                            </p>
+                          </div>
+                        </div>
+                      )}
 
-            {/* Publics accueillis */}
-            {structure.publics_accueillis?.length > 0 && (
-              <Card>
-                <CardContent className="p-6">
-                  <h2 className="text-lg font-bold text-slate-900 mb-4">Publics accueillis</h2>
-                  <div className="flex flex-wrap gap-2">
-                    {structure.publics_accueillis.map((public_, idx) => (
-                      <Badge key={idx} variant="outline" className="border-slate-300 text-slate-700">
-                        {public_}
-                      </Badge>
-                    ))}
-                  </div>
-                </CardContent>
-              </Card>
+                      {structure.telephone && (
+                        <div className="flex items-start gap-3">
+                          <Phone className="h-5 w-5 text-blue-600 mt-0.5" />
+                          <div>
+                            <p className="font-medium text-slate-900">Téléphone</p>
+                            <a
+                              href={`tel:${structure.telephone}`}
+                              className="text-blue-600 hover:underline"
+                            >
+                              {structure.telephone}
+                            </a>
+                          </div>
+                        </div>
+                      )}
+
+                      {structure.email && (
+                        <div className="flex items-start gap-3">
+                          <Mail className="h-5 w-5 text-blue-600 mt-0.5" />
+                          <div>
+                            <p className="font-medium text-slate-900">Email</p>
+                            <a
+                              href={`mailto:${structure.email}`}
+                              className="text-blue-600 hover:underline"
+                            >
+                              {structure.email}
+                            </a>
+                          </div>
+                        </div>
+                      )}
+
+                      {structure.site_web && (
+                        <div className="flex items-start gap-3">
+                          <Globe className="h-5 w-5 text-blue-600 mt-0.5" />
+                          <div>
+                            <p className="font-medium text-slate-900">Site web</p>
+                            <a
+                              href={structure.site_web}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="text-blue-600 hover:underline flex items-center gap-1"
+                            >
+                              Visiter le site
+                              <ExternalLink className="h-3 w-3" />
+                            </a>
+                          </div>
+                        </div>
+                      )}
+
+                      {structure.horaires && (
+                        <div className="flex items-start gap-3">
+                          <Clock className="h-5 w-5 text-blue-600 mt-0.5" />
+                          <div>
+                            <p className="font-medium text-slate-900">Horaires</p>
+                            <p className="text-slate-600 whitespace-pre-line">
+                              {structure.horaires}
+                            </p>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  </CardContent>
+                </Card>
+
+                {/* Services */}
+                {structure.services?.length > 0 && (
+                  <Card>
+                    <CardContent className="p-6">
+                      <h2 className="text-lg font-bold text-slate-900 mb-4">Services proposés</h2>
+                      <div className="flex flex-wrap gap-2">
+                        {structure.services.map((service, idx) => (
+                          <Badge key={idx} variant="secondary" className="bg-slate-100 text-slate-700">
+                            {service}
+                          </Badge>
+                        ))}
+                      </div>
+                    </CardContent>
+                  </Card>
+                )}
+
+                {/* Pro Services (Lot 4) */}
+                {structure.is_pro_enabled && (
+                  <Card className="border-indigo-100 bg-indigo-50/30">
+                    <CardContent className="p-6">
+                      <h2 className="text-lg font-bold text-indigo-900 mb-4 flex items-center gap-2">
+                        <Calendar className="h-5 w-5" />
+                        Prendre rendez-vous
+                      </h2>
+                      <p className="text-slate-700 mb-4">
+                        Cette structure propose la prise de rendez-vous en ligne.
+                      </p>
+                      <Button className="w-full bg-indigo-600 hover:bg-indigo-700" asChild>
+                        <Link to={rdvPath}>
+                          Voir les créneaux disponibles
+                        </Link>
+                      </Button>
+                    </CardContent>
+                  </Card>
+                )}
+
+                {/* Publics accueillis */}
+                {structure.publics_accueillis?.length > 0 && (
+                  <Card>
+                    <CardContent className="p-6">
+                      <h2 className="text-lg font-bold text-slate-900 mb-4">Publics accueillis</h2>
+                      <div className="flex flex-wrap gap-2">
+                        {structure.publics_accueillis.map((public_, idx) => (
+                          <Badge key={idx} variant="outline" className="border-slate-300 text-slate-700">
+                            {public_}
+                          </Badge>
+                        ))}
+                      </div>
+                    </CardContent>
+                  </Card>
+                )}
+              </>
             )}
           </div>
 

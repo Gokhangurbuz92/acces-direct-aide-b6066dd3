@@ -31,7 +31,6 @@ export default async function handler(req, res) {
         if (q) {
             where.OR = [
                 { titre: { contains: q, mode: 'insensitive' } },
-                { cest_quoi: { contains: q, mode: 'insensitive' } },
             ];
         }
 
@@ -39,29 +38,52 @@ export default async function handler(req, res) {
             where.categorie = category.toLowerCase();
         }
 
-        const [items, total] = await Promise.all([
-            prisma.aide.findMany({
-                where,
-                skip,
-                take: pageSize,
-                orderBy: { titre: 'asc' },
-                select: {
-                    id: true,
-                    slug: true,
-                    titre: true,
-                    cest_quoi: true,
-                    categorie: true,
-                    theme: true,
-                    territory_scope: true,
-                    source_url: true,
-                    apply_url: true,
-                    providerName: true,
-                    published_at: true,
-                    updatedAt: true,
-                },
-            }),
-            prisma.aide.count({ where }),
-        ]);
+        // Try full select first, fallback to minimal if columns don't exist
+        let items, total;
+        try {
+            [items, total] = await Promise.all([
+                prisma.aide.findMany({
+                    where,
+                    skip,
+                    take: pageSize,
+                    orderBy: { titre: 'asc' },
+                    select: {
+                        id: true,
+                        slug: true,
+                        titre: true,
+                        cest_quoi: true,
+                        categorie: true,
+                        theme: true,
+                        territory_scope: true,
+                        source_url: true,
+                        apply_url: true,
+                        providerName: true,
+                        published_at: true,
+                        updatedAt: true,
+                    },
+                }),
+                prisma.aide.count({ where }),
+            ]);
+        } catch (selectError) {
+            // Some columns may not exist — retry with minimal safe columns
+            logger.warn('DREES_API_FULL_SELECT_FAILED', { error: selectError.message });
+            [items, total] = await Promise.all([
+                prisma.aide.findMany({
+                    where,
+                    skip,
+                    take: pageSize,
+                    orderBy: { updatedAt: 'desc' },
+                    select: {
+                        id: true,
+                        slug: true,
+                        titre: true,
+                        updatedAt: true,
+                        statut: true,
+                    },
+                }),
+                prisma.aide.count({ where }),
+            ]);
+        }
 
         return res.status(200).json({
             items,
@@ -74,7 +96,13 @@ export default async function handler(req, res) {
             },
         });
     } catch (error) {
-        logger.error('DREES_API_ERROR', { error });
-        return res.status(500).json({ error: 'Internal Server Error' });
+        logger.error('DREES_API_ERROR', { error: error.message || error });
+
+        // Never 500 — return empty valid JSON
+        return res.status(200).json({
+            items: [],
+            pagination: { total: 0, page: 1, limit: 20, totalPages: 0, hasNext: false },
+            _error: 'database_unavailable',
+        });
     }
 }

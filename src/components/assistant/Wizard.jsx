@@ -4,7 +4,9 @@ import StepNeed from './StepNeed';
 import StepTerritory from './StepTerritory';
 import StepProfile from './StepProfile';
 import StepUrgency from './StepUrgency';
+import StepDiagnostic from './StepDiagnostic';
 import ResultPanel from './ResultPanel';
+import DiagnosticResults from './DiagnosticResults';
 
 const NEED_LABELS = {
     logement: 'logement',
@@ -14,15 +16,16 @@ const NEED_LABELS = {
     urgence: 'aide urgente hébergement alimentaire',
 };
 
-const TOTAL_STEPS = 4;
+const TOTAL_STEPS = 5;
 
 export default function Wizard() {
     const [step, setStep] = useState(0);
     const [data, setData] = useState({});
-    const [phase, setPhase] = useState('wizard'); // wizard | loading | results | error
+    const [phase, setPhase] = useState('wizard'); // wizard | loading | results | error | diagnostic-loading | diagnostic-results | diagnostic-error
     const [items, setItems] = useState([]);
     const [summary, setSummary] = useState(null);
     const [error, setError] = useState(null);
+    const [diagnosticData, setDiagnosticData] = useState(null);
     const abortRef = useRef(null);
 
     useEffect(() => {
@@ -88,6 +91,38 @@ export default function Wizard() {
         }
     }, []);
 
+    const fetchDiagnostic = useCallback(async (wizardData) => {
+        setPhase('diagnostic-loading');
+        setError(null);
+        setDiagnosticData(null);
+
+        abortRef.current?.abort();
+        const controller = new AbortController();
+        abortRef.current = controller;
+
+        try {
+            const res = await fetch('/api/diagnostic', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ answers: wizardData }),
+                signal: controller.signal,
+            });
+
+            if (!res.ok) {
+                const errData = await res.json().catch(() => ({}));
+                throw new Error(errData.message || `Erreur ${res.status}`);
+            }
+
+            const result = await res.json();
+            setDiagnosticData(result);
+            setPhase('diagnostic-results');
+        } catch (err) {
+            if (err instanceof DOMException && err.name === 'AbortError') return;
+            setPhase('diagnostic-error');
+            setError(err.message || 'Le service de calcul est temporairement indisponible.');
+        }
+    }, []);
+
     const handleNext = useCallback(
         (stepData) => {
             const merged = { ...data, ...stepData };
@@ -96,10 +131,11 @@ export default function Wizard() {
             if (step < TOTAL_STEPS - 1) {
                 setStep(step + 1);
             } else {
-                fetchResults(merged);
+                // Last step (StepDiagnostic) → call OpenFisca
+                fetchDiagnostic(merged);
             }
         },
-        [step, data, fetchResults],
+        [step, data, fetchDiagnostic],
     );
 
     const handleBack = useCallback(() => {
@@ -114,11 +150,16 @@ export default function Wizard() {
         setItems([]);
         setSummary(null);
         setError(null);
+        setDiagnosticData(null);
     }, []);
 
     const handleRetry = useCallback(() => {
-        fetchResults(data);
-    }, [data, fetchResults]);
+        if (phase === 'diagnostic-error') {
+            fetchDiagnostic(data);
+        } else {
+            fetchResults(data);
+        }
+    }, [data, fetchResults, fetchDiagnostic, phase]);
 
     const progress = phase === 'wizard' ? ((step + 1) / TOTAL_STEPS) * 100 : 100;
 
@@ -145,6 +186,20 @@ export default function Wizard() {
                 {phase === 'wizard' && step === 1 && <StepTerritory onNext={handleNext} onBack={handleBack} />}
                 {phase === 'wizard' && step === 2 && <StepProfile onNext={handleNext} onBack={handleBack} />}
                 {phase === 'wizard' && step === 3 && <StepUrgency onNext={handleNext} onBack={handleBack} />}
+                {phase === 'wizard' && step === 4 && <StepDiagnostic onNext={handleNext} onBack={handleBack} />}
+                {(phase === 'diagnostic-loading' || phase === 'diagnostic-results' || phase === 'diagnostic-error') && (
+                    <DiagnosticResults
+                        rights={diagnosticData?.rights}
+                        period={diagnosticData?.period}
+                        meta={diagnosticData?.meta}
+                        isLoading={phase === 'diagnostic-loading'}
+                        error={phase === 'diagnostic-error' ? error : null}
+                        onRetry={handleRetry}
+                        onRestart={handleRestart}
+                        answers={data}
+                        isPro={false}
+                    />
+                )}
                 {(phase === 'loading' || phase === 'results' || phase === 'error') && (
                     <ResultPanel
                         items={items}

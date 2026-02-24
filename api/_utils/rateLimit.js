@@ -55,6 +55,7 @@ const CONFIG = {
     SEARCH_AIDES: { limit: 30, window: 60 },      // 30 per min
     SEARCH_STRUCTURES: { limit: 30, window: 60 }, // 30 per min
     SEARCH_RESSOURCES: { limit: 60, window: 60 }, // 60 per min
+    DREES_API: { limit: 30, window: 60 },         // 30 per min
     TAXONOMY: { limit: 60, window: 60 },          // 60 per min
     // Assistant (AI)
     ASSISTANT_CHAT: { limit: 10, window: 60 },    // 10 per min
@@ -161,9 +162,15 @@ function getErrorObject() {
     };
 }
 
+// Default fallback config for unknown actions — never crash
+const DEFAULT_RATE_LIMIT = { limit: 30, window: 60 };
+
 export async function checkRateLimit(action, identifier) {
-    const config = CONFIG[action];
-    if (!config) throw new Error(`Unknown action: ${action}`);
+    let config = CONFIG[action];
+    if (!config) {
+        console.warn(`[RateLimit] Unknown action "${action}" — using default (${DEFAULT_RATE_LIMIT.limit}/${DEFAULT_RATE_LIMIT.window}s)`);
+        config = DEFAULT_RATE_LIMIT;
+    }
 
     if (hasHttpKv) {
         return checkRateLimitKV(action, identifier);

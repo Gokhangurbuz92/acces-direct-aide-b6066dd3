@@ -14,13 +14,25 @@ export interface FilterPanelProps {
     onReset: () => void;
 }
 
+/**
+ * All 13 canonical categories — mirrors api/data/taxonomy.json.
+ * This is the single source of truth for sidebar category filters.
+ */
 const CATEGORIES = [
     { value: "", label: "Toutes les catégories" },
-    { value: "logement", label: "Logement" },
-    { value: "sante", label: "Santé" },
+    { value: "papiers-citoyennete", label: "Papiers - Citoyenneté" },
+    { value: "famille", label: "Famille" },
+    { value: "social-sante", label: "Social - Santé" },
+    { value: "personnes-agees", label: "Personnes âgées" },
     { value: "handicap", label: "Handicap" },
-    { value: "emploi", label: "Emploi" },
-    { value: "urgence", label: "Urgence" },
+    { value: "travail-formation", label: "Travail - Formation" },
+    { value: "logement", label: "Logement" },
+    { value: "transports", label: "Transports" },
+    { value: "argent", label: "Argent - Impôts" },
+    { value: "justice", label: "Justice" },
+    { value: "etranger", label: "Étranger" },
+    { value: "loisirs", label: "Loisirs - Sport - Culture" },
+    { value: "lgbtqi-plus", label: "LGBTQI+" },
 ] as const;
 
 export default function FilterPanel({

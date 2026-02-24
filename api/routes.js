@@ -54,6 +54,7 @@ import rdvMessages from './_handlers/messages.js';
 
 // --- Core Data ---
 import aides from './_handlers/aides.js';
+import drees from './_handlers/drees.js';
 import search from './_handlers/search.js';
 import structures from './_handlers/structures.js';
 import demarches from './_handlers/demarches.js';
@@ -148,6 +149,8 @@ export const routes = [
 
     // --- Core Data ---
     { path: 'aides', match: 'prefix', handler: aides },
+    { path: 'aids', match: 'prefix', handler: aides },
+    { path: 'drees', match: 'prefix', handler: drees },
     { path: 'search', match: 'exact', handler: search },
     { path: 'structures', match: 'prefix', handler: structures },
     { path: 'demarches', match: 'prefix', handler: demarches },

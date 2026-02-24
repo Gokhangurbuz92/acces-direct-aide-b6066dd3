@@ -256,6 +256,24 @@ export default function Demarches() {
                   </div>
 
                   <div>
+                    <label htmlFor="demarches-source" className="block text-sm font-semibold text-slate-900 mb-1">
+                      Source
+                    </label>
+                    <select
+                      id="demarches-source"
+                      className="w-full h-10 rounded-md border border-slate-200 bg-white px-3 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                      value={searchParams.get('source') || ''}
+                      onChange={(e) => handleParamChange('source', e.target.value)}
+                    >
+                      <option value="">Toutes les sources</option>
+                      <option value="aides-territoires">Aides Territoires</option>
+                      <option value="drees">DREES</option>
+                      <option value="grand-est">Grand Est</option>
+                      <option value="agefiph">Agefiph</option>
+                    </select>
+                  </div>
+
+                  <div>
                     <label htmlFor="demarches-sort" className="block text-sm font-semibold text-slate-900 mb-1">
                       Trier
                     </label>

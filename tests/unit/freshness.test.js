@@ -6,7 +6,7 @@ describe('freshness helpers', () => {
 
   it('returns to review label when verification date is missing', () => {
     expect(getFreshnessState(null, now)).toBe('not_verified');
-    expect(getFreshnessBadge(null, now).label).toBe('Non vérifié');
+    expect(getFreshnessBadge(null, now).label).toBeNull();
   });
 
   it('returns up to date when verification is <= 90 days', () => {

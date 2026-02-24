@@ -25,6 +25,12 @@ const TYPE_STRUCTURES = [
   { value: 'mdph', label: 'MDPH' },
   { value: 'france_travail', label: 'France Travail' },
   { value: 'cpam', label: 'CPAM' },
+  { value: 'ccas', label: 'CCAS' },
+  { value: 'ehpad', label: 'EHPAD' },
+  { value: 'france_services', label: 'France Services' },
+  { value: 'carsat', label: 'CARSAT' },
+  { value: 'mission_locale', label: 'Mission Locale' },
+  { value: 'pmi', label: 'PMI' },
 ];
 
 /** @param {unknown} value */

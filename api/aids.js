@@ -1,2 +1,2 @@
 
-export { default } from '../_handlers/aides.js';
+export { default } from './_handlers/aides.js';

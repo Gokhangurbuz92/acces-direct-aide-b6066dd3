@@ -136,6 +136,18 @@ export default async function handler(req, res) {
         return res.status(400).json({ ...SENSITIVE_RESPONSE, requestId });
     }
 
+    // --- Early check: Gemini API key availability ---
+    const geminiKey = process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY;
+    if (!geminiKey) {
+        log.warn({ msg: 'assistant.api_key_missing', requestId });
+        return res.status(503).json({
+            ok: false,
+            requestId,
+            error: 'service_unavailable',
+            message: 'Le service assistant est temporairement indisponible.',
+        });
+    }
+
     // --- Call Gemini via chatWithRulePack ---
     try {
         const answer = await chatWithRulePack(trimmedMessage);

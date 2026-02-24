@@ -1,6 +1,47 @@
-import { Suspense, lazy } from "react";
+import { Suspense, lazy, Component } from "react";
 import { BrowserRouter, MemoryRouter, Route, Routes, useLocation, Navigate, useParams } from 'react-router-dom';
 import { frontendEnv } from "@/config/env";
+
+/**
+ * ErrorBoundary — catches chunk-load or mount errors in lazy-loaded routes.
+ * Displays a clear fallback instead of a blank page.
+ */
+class RouteErrorBoundary extends Component {
+    constructor(props) {
+        super(props);
+        this.state = { hasError: false, errorMessage: '' };
+    }
+    static getDerivedStateFromError(error) {
+        return {
+            hasError: true,
+            errorMessage: error?.message || 'Erreur inconnue',
+        };
+    }
+    render() {
+        if (this.state.hasError) {
+            return (
+                <div className="flex min-h-[50vh] items-center justify-center p-4">
+                    <div className="w-full max-w-md rounded-lg border border-red-200 bg-red-50 p-6 text-center">
+                        <h1 className="mb-2 text-xl font-bold text-red-800">
+                            Impossible de charger cette page
+                        </h1>
+                        <p className="mb-4 text-sm text-red-700">
+                            Une erreur est survenue lors du chargement. Veuillez rafraîchir la page.
+                        </p>
+                        <button
+                            type="button"
+                            onClick={() => window.location.reload()}
+                            className="inline-flex items-center rounded-md bg-red-600 px-4 py-2 text-sm font-medium text-white hover:bg-red-700"
+                        >
+                            Rafraîchir
+                        </button>
+                    </div>
+                </div>
+            );
+        }
+        return this.props.children;
+    }
+}
 
 // [LAZY LOADED PAGES]
 // Public
@@ -206,8 +247,8 @@ function PagesContent() {
                 <Routes>
                     <Route path="/" element={<Home />} />
                     <Route path="/login" element={<Login />} />
-                    <Route path="/auth/login" element={<AuthRdvAccess mode="login" />} />
-                    <Route path="/auth/signup" element={<AuthRdvAccess mode="signup" />} />
+                    <Route path="/auth/login" element={<RouteErrorBoundary><AuthRdvAccess mode="login" /></RouteErrorBoundary>} />
+                    <Route path="/auth/signup" element={<RouteErrorBoundary><AuthRdvAccess mode="signup" /></RouteErrorBoundary>} />
                     <Route path="/auth/verify-email" element={<AuthVerifyEmail />} />
                     <Route path="/auth/forgot" element={<AuthForgotPassword />} />
                     <Route path="/auth/reset" element={<AuthResetPassword />} />
@@ -316,6 +357,9 @@ function PagesContent() {
                     <Route path="/demarchedetail" element={<Navigate to="/demarches" replace />} />
                     <Route path="/Annuaire" element={<Navigate to="/annuaire" replace />} />
                     <Route path="/Aides" element={<Navigate to="/aides" replace />} />
+
+                    {/* Phase 1: /assistant redirect → /orientation */}
+                    <Route path="/assistant" element={<Navigate to="/orientation" replace />} />
 
                     <Route path="*" element={<NotFound />} />
                 </Routes>

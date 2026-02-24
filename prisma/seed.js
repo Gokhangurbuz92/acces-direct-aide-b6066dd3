@@ -329,24 +329,22 @@ async function seedGoldenAids(categoryMap, situationMap) {
 
 async function seedDemarches(categoryId) {
   const demarchesCatalogue = [
-    { titre: 'Demander le RSA', description: 'Guide pour ouvrir vos droits au RSA et preparer les justificatifs.' },
-    { titre: 'Renouveler sa CNI ou son passeport', description: 'Etapes pour prendre rendez-vous et finaliser votre dossier en mairie.' },
-    { titre: 'Faire une demande d APL', description: 'Parcours pour declarer votre logement et transmettre les pieces utiles.' },
-    { titre: 'Declarer un changement de situation CAF', description: 'Marche a suivre pour signaler un demenagement, une naissance ou une reprise d emploi.' },
-    { titre: 'Inscription France Travail', description: 'Comment creer votre espace et valider votre inscription demandeur d emploi.' },
-    { titre: 'Constituer un dossier MDPH', description: 'Checklist des formulaires et certificats pour une demande MDPH complete.' },
-    { titre: 'Ouvrir ses droits a la CSS', description: 'Procedure pour verifier votre eligibilite et envoyer votre dossier CSS.' },
-    { titre: 'Demander une aide alimentaire locale', description: 'Orientation vers les structures locales et documents a fournir.' },
-    { titre: 'Mettre a jour son dossier logement social', description: 'Actions a faire pour renouveler votre demande logement social a temps.' },
-    { titre: 'Demander une aide mobilite', description: 'Etapes pour solliciter un soutien transport ou permis selon votre situation.' },
+    { slug: 'demander-le-rsa', titre: 'Demander le RSA', description: 'Guide pour ouvrir vos droits au RSA et preparer les justificatifs.' },
+    { slug: 'renouveler-cni-passeport', titre: 'Renouveler sa CNI ou son passeport', description: 'Etapes pour prendre rendez-vous et finaliser votre dossier en mairie.' },
+    { slug: 'demande-apl', titre: 'Faire une demande d APL', description: 'Parcours pour declarer votre logement et transmettre les pieces utiles.' },
+    { slug: 'changement-situation-caf', titre: 'Declarer un changement de situation CAF', description: 'Marche a suivre pour signaler un demenagement, une naissance ou une reprise d emploi.' },
+    { slug: 'inscription-france-travail', titre: 'Inscription France Travail', description: 'Comment creer votre espace et valider votre inscription demandeur d emploi.' },
+    { slug: 'dossier-mdph', titre: 'Constituer un dossier MDPH', description: 'Checklist des formulaires et certificats pour une demande MDPH complete.' },
+    { slug: 'ouvrir-droits-css', titre: 'Ouvrir ses droits a la CSS', description: 'Procedure pour verifier votre eligibilite et envoyer votre dossier CSS.' },
+    { slug: 'aide-alimentaire-locale', titre: 'Demander une aide alimentaire locale', description: 'Orientation vers les structures locales et documents a fournir.' },
+    { slug: 'logement-social-mise-a-jour', titre: 'Mettre a jour son dossier logement social', description: 'Actions a faire pour renouveler votre demande logement social a temps.' },
+    { slug: 'aide-mobilite', titre: 'Demander une aide mobilite', description: 'Etapes pour solliciter un soutien transport ou permis selon votre situation.' },
   ];
 
-  for (let i = 1; i <= 10; i += 1) {
-    const slug = `demarche-test-${i}`;
+  for (const entry of demarchesCatalogue) {
     const now = seedNow();
-    const entry = demarchesCatalogue[i - 1];
     await prisma.demarche.upsert({
-      where: { slug },
+      where: { slug: entry.slug },
       update: {
         titre: entry.titre,
         statut: 'publie',
@@ -355,7 +353,7 @@ async function seedDemarches(categoryId) {
         description_courte: entry.description,
       },
       create: {
-        slug,
+        slug: entry.slug,
         titre: entry.titre,
         statut: 'publie',
         published_at: now,

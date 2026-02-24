@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { useSearchParams } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { Search, RotateCcw, SlidersHorizontal } from 'lucide-react';
 import SEO from '@/components/SEO';
@@ -340,12 +340,25 @@ export default function Demarches() {
         {!error && !isLoading && !isFetching && items.length === 0 && (
           <div data-testid="demarches-empty-state">
             <EmptyState
-              title="Aucune démarche trouvée"
-              message="Essayez une autre recherche ou ajustez les filtres."
-              actionLabel="Réinitialiser les filtres"
-              onAction={clearFilters}
+              title={q || category || situation ? "Aucune démarche trouvée" : "Démarches en cours d'intégration"}
+              message={
+                q || category || situation
+                  ? "Essayez une autre recherche ou ajustez les filtres."
+                  : "Notre catalogue de démarches est en cours de constitution. En attendant, utilisez notre assistant pour un accompagnement personnalisé."
+              }
+              actionLabel={q || category || situation ? "Réinitialiser les filtres" : undefined}
+              onAction={q || category || situation ? clearFilters : undefined}
               type="search"
             />
+            {!(q || category || situation) && (
+              <div className="mt-4 flex justify-center">
+                <Link to="/orientation">
+                  <Button variant="outline" className="gap-2">
+                    Utiliser l&apos;assistant d&apos;orientation
+                  </Button>
+                </Link>
+              </div>
+            )}
           </div>
         )}
 

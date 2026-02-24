@@ -22,7 +22,8 @@ function groupByType(items) {
 
 function LoadingSkeleton() {
     return (
-        <div className="space-y-6" aria-busy="true" aria-label="Chargement des recommandations">
+        <div className="space-y-6" aria-busy="true" aria-label="Chargement des recommandations" data-testid="wizard-loading">
+            <p className="text-sm font-medium text-slate-600 animate-pulse">Analyse en cours…</p>
             {[1, 2, 3].map((i) => (
                 <div key={i} className="space-y-3">
                     <Skeleton className="h-5 w-40" />

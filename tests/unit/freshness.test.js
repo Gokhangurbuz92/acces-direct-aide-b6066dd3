@@ -6,7 +6,7 @@ describe('freshness helpers', () => {
 
   it('returns to review label when verification date is missing', () => {
     expect(getFreshnessState(null, now)).toBe('not_verified');
-    expect(getFreshnessBadge(null, now).label).toBe('À vérifier');
+    expect(getFreshnessBadge(null, now).label).toBe('Non vérifié');
   });
 
   it('returns up to date when verification is <= 90 days', () => {
@@ -16,7 +16,7 @@ describe('freshness helpers', () => {
 
   it('returns to review when verification is between 91 and 180 days', () => {
     expect(getFreshnessState('2025-10-10T00:00:00.000Z', now)).toBe('to_review');
-    expect(getFreshnessBadge('2025-10-10T00:00:00.000Z', now).label).toBe('À vérifier');
+    expect(getFreshnessBadge('2025-10-10T00:00:00.000Z', now).label).toBe('À actualiser');
   });
 
   it('returns at risk when verification is older than 180 days', () => {

@@ -439,10 +439,19 @@ async function seedActualites() {
 }
 
 async function main() {
-  console.log('Seeding...');
+  const isProduction = process.env.NODE_ENV === 'production' && !process.env.ALLOW_TEST_SEEDS;
+  console.log(`Seeding... (env: ${process.env.NODE_ENV || 'development'}, prod guard: ${isProduction ? 'ON' : 'OFF'})`);
 
+  // Taxonomy is always seeded — these are real categories, not test data
   const { categoryMap, situationMap } = await seedTaxonomy();
   console.log(`Taxonomy seeded (${categoryMap.size} categories, ${situationMap.size} situations).`);
+
+  if (isProduction) {
+    console.log('⚠️  Production mode — skipping test data (golden aids, test structures, test actualités).');
+    console.log('    Set ALLOW_TEST_SEEDS=true to override this guard.');
+    console.log('Seeding finished (taxonomy only).');
+    return;
+  }
 
   await seedGoldenAids(categoryMap, situationMap);
   console.log(`Golden aids seeded (${GOLDEN_AIDS.length}).`);

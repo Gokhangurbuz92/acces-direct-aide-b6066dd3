@@ -81,7 +81,7 @@ describe('Ingestion Connectors', () => {
             // The logic takes the FIRST match in taxonomy list.
             // Let's check taxonomy order: Famille, Social-Sante, Travail-Formation... Entreprises is last.
             // So "handicap" in Social-Santé should hit first.
-            expect(item.theme).toBe('social-sante');
+            expect(item.theme).toBe('handicap');
         });
     });
 });

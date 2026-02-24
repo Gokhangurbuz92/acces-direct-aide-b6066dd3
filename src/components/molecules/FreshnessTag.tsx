@@ -17,7 +17,7 @@ export function FreshnessTag({
     now = new Date(),
     sourceLabel,
     sourceUrl,
-    unknownBehavior = "label",
+    unknownBehavior = "hide",
     className
 }: FreshnessTagProps) {
     const status = getFreshnessStatus(verifiedAt, now);
@@ -44,13 +44,13 @@ export function FreshnessTag({
 
             {status === "stale" && (
                 <Badge variant="warning" className="shrink-0 pointer-events-none">
-                    À vérifier (vérifié le {formattedDate})
+                    À actualiser (vérifié le {formattedDate})
                 </Badge>
             )}
 
             {status === "unknown" && unknownBehavior === "label" && (
                 <span className="text-muted-foreground text-sm italic">
-                    Date inconnue
+                    Non vérifié
                 </span>
             )}
 

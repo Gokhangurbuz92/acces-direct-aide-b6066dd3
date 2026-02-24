@@ -4,6 +4,7 @@ import { useQuery } from '@tanstack/react-query';
 import { Search, SlidersHorizontal, Calendar, ExternalLink, AlertTriangle, Info, RefreshCw, Star, ArrowRight } from 'lucide-react';
 import SEO from '@/components/SEO';
 import { client } from '@/api/client';
+import CategoryChip from '@/components/ui/CategoryChip';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent } from '@/components/ui/card';
@@ -36,21 +37,7 @@ import { htmlToPlainText } from '@/lib/htmlText';
  * @property {{ verifiedAt?: string|null, fetchedAt?: string|null, sourceUrl?: string|null, sourceHost?: string|null }=} provenance
  */
 
-const CATEGORIES = {
-  'papiers-citoyennete': 'Papiers - Citoyenneté',
-  'famille': 'Famille',
-  'social-sante': 'Social - Santé',
-  'personnes-agees': 'Personnes âgées',
-  'handicap': 'Handicap',
-  'travail-formation': 'Travail - Formation',
-  'logement': 'Logement',
-  'transports': 'Transports',
-  'argent': 'Argent - Impôts',
-  'justice': 'Justice',
-  'etranger': 'Étranger',
-  'loisirs': 'Loisirs - Sport - Culture',
-  'lgbtqi-plus': 'LGBTQI+',
-};
+// Categories are loaded dynamically from /api/taxonomy
 
 const TYPE_ICONS = {
   nouveaute: Star,
@@ -113,6 +100,14 @@ export default function Actualites() {
   useEffect(() => {
     setQueryInput(q);
   }, [q]);
+
+  // Dynamic taxonomy
+  const { data: taxonomy } = useQuery({
+    queryKey: ['taxonomy'],
+    queryFn: () => client.taxonomy.get(),
+    staleTime: 5 * 60 * 1000,
+  });
+  const taxonomyCategories = taxonomy?.categories || [];
 
   const {
     data,
@@ -306,15 +301,15 @@ export default function Actualites() {
                       >
                         Toutes
                       </Button>
-                      {Object.entries(CATEGORIES).map(([key, label]) => (
+                      {taxonomyCategories.map((cat) => (
                         <Button
                           type="button"
-                          key={key}
-                          variant={categorie === key ? 'default' : 'outline'}
+                          key={cat.slug}
+                          variant={categorie === cat.slug ? 'default' : 'outline'}
                           size="sm"
-                          onClick={() => handleParamChange('categorie', key)}
+                          onClick={() => handleParamChange('categorie', cat.slug)}
                         >
-                          {label}
+                          {cat.label}
                         </Button>
                       ))}
                     </div>
@@ -382,9 +377,7 @@ export default function Actualites() {
                                 : 'Information'}
                         </Badge>
                         {actu.categorie && (
-                          <Badge variant="outline">
-                            {CATEGORIES[actu.categorie] || actu.categorie}
-                          </Badge>
+                          <CategoryChip slug={actu.categorie} />
                         )}
                         {actu.est_important && (
                           <Badge className="bg-amber-100 text-amber-800">

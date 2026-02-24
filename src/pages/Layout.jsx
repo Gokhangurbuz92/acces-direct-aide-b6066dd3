@@ -417,7 +417,7 @@ export default function Layout({ children, currentPageName }) {
       {/* Footer */}
       <footer className="bg-brand-primary text-white" role="contentinfo">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 py-12">
-          <div className="grid md:grid-cols-4 gap-8">
+          <div className="grid grid-cols-1 gap-8 sm:grid-cols-2 md:grid-cols-4">
             {/* Logo et description */}
             <div className="md:col-span-2">
               <div className="mb-6 flex items-center gap-3">

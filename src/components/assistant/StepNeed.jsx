@@ -19,7 +19,7 @@ export default function StepNeed({ onNext }) {
                         key={key}
                         type="button"
                         onClick={() => onNext({ need: key })}
-                        className={`flex items-center gap-3 rounded-xl border px-4 py-3 text-left text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600 focus-visible:ring-offset-2 ${color}`}
+                        className={`flex items-center gap-3 rounded-xl border px-4 py-3 min-h-[2.75rem] text-left text-base sm:text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600 focus-visible:ring-offset-2 ${color}`}
                     >
                         <Icon className="h-5 w-5 shrink-0" aria-hidden="true" />
                         {label}

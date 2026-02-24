@@ -54,7 +54,7 @@ export default function StyleguideBranding() {
               Styleguide Branding
             </h1>
             <p className="text-lg text-muted max-w-3xl">
-              Preview des 3 familles de logos (A/B/C) pour AccesDirectAide. 
+              Preview des 3 familles de logos (A/B/C) pour AccesDirectAide.
               Testez les variantes sur différents fonds et tailles pour choisir la meilleure option.
             </p>
           </div>
@@ -72,11 +72,10 @@ export default function StyleguideBranding() {
                     <button
                       key={family.id}
                       onClick={() => setSelectedFamily(family.id)}
-                      className={`w-full text-left px-4 py-3 rounded-lg border-2 transition-all ${
-                        selectedFamily === family.id
+                      className={`w-full text-left px-4 py-3 rounded-lg border-2 transition-all ${selectedFamily === family.id
                           ? 'border-primary bg-primary/5 shadow-sm'
                           : 'border-slate-200 hover:border-primary/50'
-                      }`}
+                        }`}
                     >
                       <div className="font-semibold text-body">{family.name}</div>
                       <div className="text-sm text-muted mt-1">{family.description}</div>
@@ -95,14 +94,13 @@ export default function StyleguideBranding() {
                     <button
                       key={bg.id}
                       onClick={() => setSelectedBackground(bg.id)}
-                      className={`px-4 py-3 rounded-lg border-2 transition-all ${
-                        selectedBackground === bg.id
+                      className={`px-4 py-3 rounded-lg border-2 transition-all ${selectedBackground === bg.id
                           ? 'border-primary shadow-sm'
                           : 'border-slate-200 hover:border-primary/50'
-                      }`}
+                        }`}
                     >
                       <div className="flex items-center gap-2">
-                        <div 
+                        <div
                           className="w-6 h-6 rounded border border-slate-300"
                           style={{ backgroundColor: bg.color }}
                         />
@@ -122,8 +120,8 @@ export default function StyleguideBranding() {
                 <div className="bg-slate-100 px-6 py-3 border-b border-slate-200">
                   <h3 className="font-semibold text-body">{variant.name}</h3>
                 </div>
-                
-                <div 
+
+                <div
                   className="p-8"
                   style={{ backgroundColor: currentBg.color }}
                 >
@@ -138,11 +136,10 @@ export default function StyleguideBranding() {
                             className="object-contain"
                           />
                         </div>
-                        <div className={`text-xs font-medium ${
-                          selectedBackground === 'dark' || selectedBackground === 'accent' 
-                            ? 'text-white' 
+                        <div className={`text-xs font-medium ${selectedBackground === 'dark' || selectedBackground === 'accent'
+                            ? 'text-white'
                             : 'text-muted'
-                        }`}>
+                          }`}>
                           {size.name}
                         </div>
                       </div>
@@ -166,10 +163,10 @@ export default function StyleguideBranding() {
                   style={{ height: '40px', width: 'auto' }}
                   className="object-contain"
                 />
-                <nav className="flex gap-6">
-                  <a href="#" className="text-sm font-medium text-primary hover:underline">Aides</a>
-                  <a href="#" className="text-sm font-medium text-primary hover:underline">Démarches</a>
-                  <a href="#" className="text-sm font-medium text-primary hover:underline">Annuaire</a>
+                <nav className="flex gap-6" aria-label="Navigation mock">
+                  <span className="text-sm font-medium text-primary">Aides</span>
+                  <span className="text-sm font-medium text-primary">Démarches</span>
+                  <span className="text-sm font-medium text-primary">Annuaire</span>
                 </nav>
               </div>
             </div>

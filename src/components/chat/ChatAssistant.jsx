@@ -20,6 +20,8 @@ export default function ChatAssistant({ embedded = false }) {
   ]);
   const endOfMessagesRef = useRef(null);
   const inputRef = useRef(null);
+  const fabRef = useRef(null);
+  const dialogRef = useRef(null);
   /** @type {import('react').MutableRefObject<AbortController | null>} */
   const abortRef = useRef(null);
 
@@ -96,6 +98,52 @@ export default function ChatAssistant({ embedded = false }) {
     inputRef.current?.focus();
   }, []);
 
+  // Auto-focus input when chat opens + restore focus to FAB on close
+  useEffect(() => {
+    if (!embedded) {
+      if (isOpen) {
+        // Delay to let DOM mount
+        requestAnimationFrame(() => inputRef.current?.focus());
+      } else {
+        fabRef.current?.focus();
+      }
+    }
+  }, [isOpen, embedded]);
+
+  // Focus trap + Esc handler for floating widget
+  useEffect(() => {
+    if (!isOpen || embedded) return;
+    const dialog = dialogRef.current;
+    if (!dialog) return;
+
+    /** @param {KeyboardEvent} e */
+    function handleKeyDown(e) {
+      if (e.key === 'Escape') {
+        e.preventDefault();
+        setIsOpen(false);
+        return;
+      }
+      if (e.key === 'Tab') {
+        const focusable = dialog.querySelectorAll(
+          'button:not([disabled]), input:not([disabled]), a[href], textarea:not([disabled]), [tabindex]:not([tabindex="-1"])'
+        );
+        if (focusable.length === 0) return;
+        const first = focusable[0];
+        const last = focusable[focusable.length - 1];
+        if (e.shiftKey && document.activeElement === first) {
+          e.preventDefault();
+          last.focus();
+        } else if (!e.shiftKey && document.activeElement === last) {
+          e.preventDefault();
+          first.focus();
+        }
+      }
+    }
+
+    dialog.addEventListener('keydown', handleKeyDown);
+    return () => dialog.removeEventListener('keydown', handleKeyDown);
+  }, [isOpen, embedded]);
+
   // --- Embedded mode: render inline, no FAB ---
   if (embedded) {
     return (
@@ -126,6 +174,7 @@ export default function ChatAssistant({ embedded = false }) {
   return (
     <>
       <button
+        ref={fabRef}
         type="button"
         onClick={() => setIsOpen((v) => !v)}
         className="fixed bottom-6 right-6 z-50 flex h-14 w-14 items-center justify-center rounded-full bg-blue-600 text-white shadow-lg transition-colors hover:bg-blue-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600 focus-visible:ring-offset-2"
@@ -136,8 +185,11 @@ export default function ChatAssistant({ embedded = false }) {
 
       {isOpen && (
         <section
+          ref={dialogRef}
+          role="dialog"
+          aria-modal="true"
+          aria-label="Fenêtre de discussion avec l'assistant"
           className="fixed bottom-24 right-0 z-50 flex h-[500px] w-full max-h-[calc(100dvh-7rem)] flex-col overflow-hidden border border-slate-200 bg-white shadow-2xl sm:right-6 sm:w-[380px] sm:rounded-2xl safe-area-bottom"
-          aria-label="Fenetre de discussion avec l'assistant"
         >
           <ChatHeader onClose={() => setIsOpen(false)} />
           <ChatMessages

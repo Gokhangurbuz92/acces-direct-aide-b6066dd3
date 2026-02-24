@@ -67,6 +67,9 @@ import reports from './_handlers/reports.js';
 import feedback from './_handlers/feedback.js';
 import rdv from './_handlers/rdv.js';
 
+// --- Diagnostic (OpenFisca) ---
+import diagnostic from './_handlers/diagnostic.js';
+
 // --- Assistant (AI) ---
 import assistantChat from './_handlers/assistant/chat.js';
 import assistantRecommendations from './_handlers/assistant/recommendations.js';
@@ -166,6 +169,9 @@ export const routes = [
     // --- Assistant (AI) ---
     { path: 'assistant/chat', match: 'exact', handler: assistantChat },
     { path: 'assistant/recommendations', match: 'exact', handler: assistantRecommendations },
+
+    // --- Diagnostic (OpenFisca) ---
+    { path: 'diagnostic', match: 'prefix', handler: diagnostic },
 
     // --- Cron ---
     { path: 'cron/pipeline', match: 'exact', handler: cronPipeline },

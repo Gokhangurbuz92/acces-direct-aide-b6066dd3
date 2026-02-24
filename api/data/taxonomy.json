@@ -255,5 +255,33 @@
       "numérique"
     ],
     "sub_themes": []
+  },
+  {
+    "slug": "lgbtqi-plus",
+    "label": "LGBTQI+",
+    "color": "bg-fuchsia-100 text-fuchsia-800",
+    "keywords": [
+      "lgbt",
+      "lgbtqi",
+      "lgbtqi+",
+      "lgbtqia",
+      "queer",
+      "trans",
+      "homophobie",
+      "discriminations",
+      "coming out",
+      "identité de genre",
+      "santé sexuelle"
+    ],
+    "sub_themes": [
+      {
+        "slug": "discriminations-lgbtqi",
+        "label": "Discriminations et droits"
+      },
+      {
+        "slug": "sante-sexuelle",
+        "label": "Santé sexuelle"
+      }
+    ]
   }
 ]

@@ -2,7 +2,7 @@ import { Badge } from "@/components/ui/badge";
 
 /**
  * Unified taxonomy — source of truth for categories.
- * Imported from api/data/taxonomy.json structure.
+ * Mirrors api/data/taxonomy.json structure.
  * This is the ONLY place category colors/labels are defined for the UI.
  */
 const TAXONOMY = {
@@ -18,6 +18,7 @@ const TAXONOMY = {
     'justice': { label: 'Justice', color: 'bg-red-100 text-red-800' },
     'etranger': { label: 'Étranger', color: 'bg-teal-100 text-teal-800' },
     'loisirs': { label: 'Loisirs - Sport - Culture', color: 'bg-indigo-100 text-indigo-800' },
+    'lgbtqi-plus': { label: 'LGBTQI+', color: 'bg-fuchsia-100 text-fuchsia-800' },
 };
 
 // Legacy slug aliases → canonical slug
@@ -32,7 +33,10 @@ const SLUG_ALIASES = {
     'etrangers': 'etranger',
     'vieillissement': 'personnes-agees',
     'isolement': 'social-sante',
-    'lgbtqia': 'social-sante',
+    'lgbtqia': 'lgbtqi-plus',
+    'lgbtqi': 'lgbtqi-plus',
+    'lgbt': 'lgbtqi-plus',
+    'queer': 'lgbtqi-plus',
     'insertion': 'travail-formation',
     'droits': 'justice',
     'administratif': 'papiers-citoyennete',
@@ -78,8 +82,9 @@ export default function CategoryChip({ slug, label, className = '' }) {
     const displayLabel = resolved?.label || label;
     const displayColor = resolved?.color || 'bg-slate-100 text-slate-800';
 
-    // Never display "Autre" / "autre"
-    if (!displayLabel || /^autre$/i.test(displayLabel)) return null;
+    // Never display "Autre" / "autre" / "À vérifier" / "Non vérifié"
+    if (!displayLabel) return null;
+    if (/^(autre|à vérifier|non vérifié|date inconnue)$/i.test(displayLabel)) return null;
 
     return (
         <Badge className={`${displayColor} ${className}`}>

@@ -28,26 +28,13 @@ import ProvenanceFreshness from '@/components/ProvenanceFreshness';
 import FalcSummary from '@/components/FalcSummary';
 import FeedbackButton from '@/components/FeedbackButton';
 import { getProvenance } from '@/lib/provenance';
+import CategoryChip, { resolveCategory } from '@/components/ui/CategoryChip';
 
 /** @typedef {Error & { status?: number, payload?: unknown }} ApiError */
 /** @typedef {{ numero?: number, titre?: string, title?: string, nom?: string, description?: string, contenu?: string, text?: string, conseils?: string }} DemarcheStep */
 /** @typedef {{ url?: string, nom?: string }} DemarcheSource */
 
-/** @type {Record<string, string>} */
-const CATEGORIE_LABELS = {
-  logement: 'Logement',
-  sante: 'Santé',
-  handicap: 'Handicap',
-  emploi: 'Emploi',
-  famille: 'Famille',
-  budget: 'Budget',
-  mobilite: 'Mobilité',
-  justice: 'Justice',
-  numerique: 'Numérique',
-  etrangers: 'Nouveaux arrivants',
-  vieillissement: 'Autonomie',
-  autre: 'Autre',
-};
+
 
 /**
  * @param {string} slug
@@ -157,11 +144,8 @@ export default function DemarcheDetail() {
     return /^[A-Z_]+$/.test(value) ? value.toLowerCase() : value;
   })();
 
-  const categoryLabel =
-    (categorySlug && CATEGORIE_LABELS[categorySlug]) ||
-    demarche?.category?.label ||
-    categorySlug ||
-    'Autre';
+  const resolved = resolveCategory(categorySlug) || (demarche?.category?.label ? { label: demarche.category.label } : null);
+  const categoryLabel = resolved?.label || null;
   const provenance = getProvenance(demarche);
   const pdfDownloadUrl = (demarche?.slug || demarche?.id)
     ? `/api/pdf/demarches/${encodeURIComponent(demarche.slug || demarche.id)}`
@@ -227,9 +211,7 @@ export default function DemarcheDetail() {
         {/* En-tête */}
         <Card className="mb-6">
           <CardContent className="p-6 md:p-8">
-            <Badge className="bg-blue-100 text-blue-800 mb-4">
-              {categoryLabel}
-            </Badge>
+            {categoryLabel && <CategoryChip slug={categorySlug} label={categoryLabel} className="mb-4" />}
 
             <h1 className="text-2xl md:text-3xl font-bold text-slate-900 mb-4">
               {demarche.titre}

@@ -1,17 +1,26 @@
 import prisma from '../_utils/prisma.js';
 import { checkRateLimit, getClientIp } from '../_utils/rateLimit.js';
-import { logger } from '../lib/logger.js'; // Ensure logger is imported
+import { logger } from '../lib/logger.js';
+import { createRequire } from 'module';
+
+const require = createRequire(import.meta.url);
+const taxonomyJson = require('../data/taxonomy.json');
+
+// Build color lookup from taxonomy.json
+const colorBySlug = {};
+for (const cat of taxonomyJson) {
+    colorBySlug[cat.slug] = cat.color || null;
+}
+
 /**
  * @param {import('../_utils/http-types').ApiRequest} req
  * @param {import('../_utils/http-types').ApiResponse} res
  */
-
 export default async function handler(req, res) {
     if (req.method !== 'GET') {
         return res.status(405).json({ error: 'Method not allowed' });
     }
 
-    // Rate Limit
     const ip = getClientIp(req);
     const rateLimit = await checkRateLimit('TAXONOMY', ip);
     if (!rateLimit.allowed) {
@@ -43,8 +52,6 @@ export default async function handler(req, res) {
             }
         });
 
-        // P2: situations (Aides V2) stored in `Situation` table and linked via `AidSituation`.
-        // We keep legacy `lifeSituation` in `situations` for Demarches compatibility.
         const aidSituations = await prisma.situation.findMany({
             orderBy: { label: 'asc' },
             include: {
@@ -57,10 +64,13 @@ export default async function handler(req, res) {
         });
 
         return res.status(200).json({
+            // Enriched taxonomy from JSON (12 standard categories with colors)
+            taxonomy: taxonomyJson,
             categories: categories.map(c => ({
                 id: c.id,
                 slug: c.slug,
                 label: c.label,
+                color: colorBySlug[c.slug] || null,
                 count: c._count.aides + c._count.demarches,
                 aidesCount: c._count.aides,
                 demarchesCount: c._count.demarches
@@ -76,13 +86,14 @@ export default async function handler(req, res) {
             aidSituations: aidSituations.map(s => ({
                 id: s.id,
                 code: s.code,
-                slug: s.code, // convenience alias
+                slug: s.code,
                 label: s.label,
                 count: s._count.aidRelations
             }))
         });
     } catch (error) {
-        logger.error('Taxonomy API Error:', error); // Use logger
+        logger.error('Taxonomy API Error:', error);
         return res.status(500).json({ error: 'Internal Server Error' });
     }
 }
+

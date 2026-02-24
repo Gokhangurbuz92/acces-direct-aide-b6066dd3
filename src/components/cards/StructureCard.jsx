@@ -72,12 +72,12 @@ export default function StructureCard({ structure, compact = false }) {
                   Open data local
                 </Badge>
               )}
-            {structure.coverage === 'SUGGESTED_NEEDS_REVIEW' && (
-              <Badge variant="outline" className="text-orange-700 border-orange-300">
-                À vérifier
-              </Badge>
-            )}
-          </div>
+              {structure.coverage === 'SUGGESTED_NEEDS_REVIEW' && (
+                <Badge variant="outline" className="text-orange-700 border-orange-300">
+                  Contribution
+                </Badge>
+              )}
+            </div>
             {isPmrAccessible && (
               <Badge variant="outline" className="text-blue-700 border-blue-300 flex items-center gap-1">
                 <Accessibility className="h-3 w-3" />
@@ -99,7 +99,7 @@ export default function StructureCard({ structure, compact = false }) {
           )}
 
           {/* Infos de contact */}
-	          <div className="space-y-2 text-sm text-slate-600 relative z-20">
+          <div className="space-y-2 text-sm text-slate-600 relative z-20">
             {/* Note: Links inside here like telephone/email must be z-20 to be clickable. */}
             {structure.adresse && (
               <div className="flex items-start gap-2">
@@ -128,25 +128,25 @@ export default function StructureCard({ structure, compact = false }) {
                 <span>{structure.horaires}</span>
               </div>
             )}
-	          </div>
-            {(verifiedAt || sourceHost) && (
-              <div className="mt-1 flex flex-wrap gap-4 text-xs text-slate-500">
-                {verifiedAt && (
-                  <span className="flex items-center gap-1.5">
-                    <Calendar className="h-3.5 w-3.5" />
-                    Vérifié: {verifiedAt}
-                  </span>
-                )}
-                {sourceHost && (
-                  <span className="flex items-center gap-1.5">
-                    <Globe className="h-3.5 w-3.5" />
-                    Source: {sourceHost}
-                  </span>
-                )}
-              </div>
-            )}
+          </div>
+          {(verifiedAt || sourceHost) && (
+            <div className="mt-1 flex flex-wrap gap-4 text-xs text-slate-500">
+              {verifiedAt && (
+                <span className="flex items-center gap-1.5">
+                  <Calendar className="h-3.5 w-3.5" />
+                  Vérifié: {verifiedAt}
+                </span>
+              )}
+              {sourceHost && (
+                <span className="flex items-center gap-1.5">
+                  <Globe className="h-3.5 w-3.5" />
+                  Source: {sourceHost}
+                </span>
+              )}
+            </div>
+          )}
 
-	          {/* Actions */}
+          {/* Actions */}
           <div className="flex flex-wrap gap-2 mt-2">
             {structure.site_web && (
               <Button

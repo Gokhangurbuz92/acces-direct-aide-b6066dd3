@@ -153,3 +153,109 @@ export async function sendMessage(
 
     return data as unknown as AssistantResponse;
 }
+
+// ---------------------------------------------------------------------------
+// Recommendations
+// ---------------------------------------------------------------------------
+
+export interface RecommendationItem {
+    type: 'aide' | 'demarche' | 'structure';
+    slug: string | null;
+    title: string | null;
+    excerpt: string | null;
+    url: string | null;
+    sourceLabel?: string | null;
+    sourceUrl?: string | null;
+    verifiedAt?: string | null;
+}
+
+export interface RecommendationsRequest {
+    need: string;
+    territory?: string;
+    limit?: number;
+    types?: Array<'aide' | 'demarche' | 'structure'>;
+}
+
+export interface RecommendationsResponse {
+    items: RecommendationItem[];
+    meta: {
+        from: string;
+        method: string;
+        requestId: string;
+    };
+}
+
+const RECOS_ENDPOINT = '/api/assistant/recommendations';
+
+/**
+ * Fetch recommendations from the ADA search API.
+ *
+ * @throws {AssistantError} on HTTP error, timeout, or network failure
+ */
+export async function postRecommendations(
+    params: RecommendationsRequest,
+    options?: { signal?: AbortSignal },
+): Promise<RecommendationsResponse> {
+    const url = `${getApiBaseUrl()}${RECOS_ENDPOINT}`;
+
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), ASSISTANT_TIMEOUT_MS);
+
+    if (options?.signal) {
+        options.signal.addEventListener('abort', () => controller.abort(), {
+            once: true,
+        });
+    }
+
+    let response: Response;
+    try {
+        response = await fetch(url, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                Accept: 'application/json',
+            },
+            body: JSON.stringify(params),
+            signal: controller.signal,
+        });
+    } catch (error: unknown) {
+        clearTimeout(timeoutId);
+        if (error instanceof DOMException && error.name === 'AbortError') {
+            throw new AssistantError(
+                0,
+                'timeout',
+                'La recherche prend trop de temps. Veuillez réessayer.',
+            );
+        }
+        throw new AssistantError(
+            0,
+            'network_error',
+            'Impossible de contacter le serveur. Vérifiez votre connexion.',
+        );
+    } finally {
+        clearTimeout(timeoutId);
+    }
+
+    let data: Record<string, unknown>;
+    try {
+        data = (await response.json()) as Record<string, unknown>;
+    } catch {
+        throw new AssistantError(
+            response.status,
+            'invalid_response',
+            'Réponse invalide du serveur.',
+        );
+    }
+
+    if (!response.ok) {
+        const code = (typeof data.error === 'string' ? data.error : 'unknown') as string;
+        const msg = (typeof data.message === 'string' ? data.message : undefined) as string | undefined;
+        throw new AssistantError(
+            response.status,
+            code,
+            msg || 'Une erreur est survenue. Veuillez réessayer.',
+        );
+    }
+
+    return data as unknown as RecommendationsResponse;
+}

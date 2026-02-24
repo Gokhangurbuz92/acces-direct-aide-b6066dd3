@@ -3,6 +3,7 @@ import globals from 'globals'
 import react from 'eslint-plugin-react'
 import reactHooks from 'eslint-plugin-react-hooks'
 import reactRefresh from 'eslint-plugin-react-refresh'
+import jsxA11y from 'eslint-plugin-jsx-a11y'
 import tseslint from 'typescript-eslint'
 
 export default [
@@ -30,6 +31,7 @@ export default [
       react,
       'react-hooks': reactHooks,
       'react-refresh': reactRefresh,
+      'jsx-a11y': jsxA11y,
       '@typescript-eslint': tseslint.plugin,
     },
     languageOptions: {
@@ -49,8 +51,9 @@ export default [
       ...react.configs.recommended.rules,
       ...react.configs['jsx-runtime'].rules,
       ...reactHooks.configs.recommended.rules,
+      ...jsxA11y.configs.recommended.rules,
 
-      // ✅ Très souvent inutile (et source d’erreurs) sur projets modernes
+      // ✅ Très souvent inutile (et source d'erreurs) sur projets modernes
       'react/prop-types': 'off',
       'no-unused-vars': 'off', // Too many false positives in existing codebase
       'react/no-unescaped-entities': 'off', // Too many legacy issues
@@ -59,6 +62,17 @@ export default [
 
       'react/jsx-no-target-blank': 'off',
       'react-refresh/only-export-components': ['warn', { allowConstantExport: true }],
+
+      // A11y: configure for our component patterns
+      // label-has-associated-control: warn — shadcn Label uses forwardRef + htmlFor
+      // which the linter can't resolve statically through custom components.
+      'jsx-a11y/label-has-associated-control': ['warn', {
+        labelComponents: ['Label'],
+        controlComponents: ['Input', 'Select', 'Textarea', 'Switch', 'Checkbox'],
+        assert: 'either',
+        depth: 3,
+      }],
+      'jsx-a11y/no-autofocus': ['warn'], // Allow controlled autoFocus (e.g. chat input)
     },
   },
 
@@ -97,12 +111,16 @@ export default [
   },
 
   // --------------------------------------
-  // ✅ UI Components (Shadcn/Radix): constants exports
+  // ✅ UI Components (Shadcn/Radix): relax rules for primitives
+  // Content/labels are passed via {...props} spread — linter can't verify statically
   // --------------------------------------
   {
     files: ['src/components/ui/**/*.{js,jsx,ts,tsx}'],
     rules: {
       'react-refresh/only-export-components': 'off',
+      'jsx-a11y/heading-has-content': 'off',
+      'jsx-a11y/anchor-has-content': 'off',
+      'jsx-a11y/anchor-is-valid': 'off',
     },
   },
 

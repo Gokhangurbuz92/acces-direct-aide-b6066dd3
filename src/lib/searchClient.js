@@ -5,18 +5,19 @@ const MAX_LIMIT = 30;
 const MIN_QUERY_LENGTH = 2;
 
 export const SEARCH_CATEGORY_OPTIONS = [
-  { value: 'LOGEMENT', label: 'Logement' },
-  { value: 'SANTE', label: 'Santé' },
-  { value: 'HANDICAP', label: 'Handicap' },
-  { value: 'EMPLOI', label: 'Emploi' },
-  { value: 'FAMILLE', label: 'Famille' },
-  { value: 'ETUDES', label: 'Études' },
-  { value: 'MOBILITE', label: 'Mobilité' },
-  { value: 'ENERGIE', label: 'Énergie' },
-  { value: 'ALIMENTATION', label: 'Alimentation' },
-  { value: 'JUSTICE', label: 'Justice' },
-  { value: 'NUMERIQUE', label: 'Numérique' },
-  { value: 'AUTRE', label: 'Autre' },
+  { value: 'papiers-citoyennete', label: 'Papiers - Citoyenneté' },
+  { value: 'famille', label: 'Famille' },
+  { value: 'social-sante', label: 'Social - Santé' },
+  { value: 'personnes-agees', label: 'Personnes âgées' },
+  { value: 'handicap', label: 'Handicap' },
+  { value: 'travail-formation', label: 'Travail - Formation' },
+  { value: 'logement', label: 'Logement' },
+  { value: 'transports', label: 'Transports' },
+  { value: 'argent', label: 'Argent - Impôts' },
+  { value: 'justice', label: 'Justice' },
+  { value: 'etranger', label: 'Étranger' },
+  { value: 'loisirs', label: 'Loisirs - Sport - Culture' },
+  { value: 'lgbtqi-plus', label: 'LGBTQI+' },
 ];
 
 const SEARCH_CATEGORY_LOOKUP = Object.fromEntries(
@@ -25,18 +26,31 @@ const SEARCH_CATEGORY_LOOKUP = Object.fromEntries(
 
 /** @type {Record<string, string>} */
 const LEGACY_CATEGORY_MAP = {
-  logement: 'LOGEMENT',
-  sante: 'SANTE',
-  handicap: 'HANDICAP',
-  emploi: 'EMPLOI',
-  famille: 'FAMILLE',
-  etudes: 'ETUDES',
-  mobilite: 'MOBILITE',
-  energie: 'ENERGIE',
-  alimentation: 'ALIMENTATION',
-  justice: 'JUSTICE',
-  numerique: 'NUMERIQUE',
-  autre: 'AUTRE',
+  logement: 'logement',
+  sante: 'social-sante',
+  handicap: 'handicap',
+  emploi: 'travail-formation',
+  famille: 'famille',
+  etudes: 'travail-formation',
+  mobilite: 'transports',
+  energie: 'logement',
+  alimentation: 'social-sante',
+  justice: 'justice',
+  numerique: 'travail-formation',
+  autre: '',
+  // Legacy uppercase
+  LOGEMENT: 'logement',
+  SANTE: 'social-sante',
+  HANDICAP: 'handicap',
+  EMPLOI: 'travail-formation',
+  FAMILLE: 'famille',
+  ETUDES: 'travail-formation',
+  MOBILITE: 'transports',
+  ENERGIE: 'logement',
+  ALIMENTATION: 'social-sante',
+  JUSTICE: 'justice',
+  NUMERIQUE: 'travail-formation',
+  AUTRE: '',
 };
 
 const activeControllers = new Map();
@@ -133,13 +147,13 @@ function normalizeResponse(payload) {
 /** @param {AbortSignal | undefined} externalSignal @param {AbortController} controller */
 function linkAbortSignal(externalSignal, controller) {
   if (!externalSignal) {
-    return () => {};
+    return () => { };
   }
 
   const abortActiveController = () => controller.abort(externalSignal.reason);
   if (externalSignal.aborted) {
     abortActiveController();
-    return () => {};
+    return () => { };
   }
 
   externalSignal.addEventListener('abort', abortActiveController, { once: true });
@@ -152,17 +166,26 @@ export function normalizeSearchCategory(value) {
   const rawValue = String(value).trim();
   if (!rawValue) return '';
 
-  const legacyMappedValue = LEGACY_CATEGORY_MAP[rawValue.toLowerCase()];
-  if (legacyMappedValue) return legacyMappedValue;
+  // Direct match in canonical lookup (slug-based)
+  if (SEARCH_CATEGORY_LOOKUP[rawValue]) return rawValue;
 
-  const upperValue = rawValue.toUpperCase();
-  return SEARCH_CATEGORY_LOOKUP[upperValue] ? upperValue : '';
+  // Legacy mapping (e.g. 'LOGEMENT' → 'logement', 'sante' → 'social-sante')
+  const legacyMappedValue = LEGACY_CATEGORY_MAP[rawValue];
+  if (legacyMappedValue !== undefined) return legacyMappedValue;
+
+  // Try lowercase
+  const lower = rawValue.toLowerCase();
+  if (SEARCH_CATEGORY_LOOKUP[lower]) return lower;
+  const legacyLower = LEGACY_CATEGORY_MAP[lower];
+  if (legacyLower !== undefined) return legacyLower;
+
+  return '';
 }
 
 /** @param {unknown} categoryCode */
 export function getSearchCategoryLabel(categoryCode) {
   const normalizedCategory = normalizeSearchCategory(categoryCode);
-  return normalizedCategory ? SEARCH_CATEGORY_LOOKUP[normalizedCategory] : 'Non classée';
+  return normalizedCategory ? (SEARCH_CATEGORY_LOOKUP[normalizedCategory] || 'Non classée') : 'Non classée';
 }
 
 /** @param {unknown} error */

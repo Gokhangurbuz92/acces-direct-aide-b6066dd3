@@ -105,9 +105,9 @@ export default function StepDiagnostic({ onNext, onBack }) {
                 <legend className="px-2 text-sm font-medium text-slate-700">Logement</legend>
 
                 <div className="mb-3">
-                    <label className="mb-1 block text-xs text-slate-600">
+                    <span className="mb-1 block text-xs text-slate-600" id="housing-status-label">
                         Statut d&apos;occupation <span className="text-red-500">*</span>
-                    </label>
+                    </span>
                     <div className="flex flex-wrap gap-2" role="radiogroup" aria-label="Statut d'occupation">
                         {HOUSING_OPTIONS.map(({ key, label }) => (
                             <button
@@ -117,8 +117,8 @@ export default function StepDiagnostic({ onNext, onBack }) {
                                 aria-checked={housingStatus === key}
                                 onClick={() => setHousingStatus(key)}
                                 className={`rounded-lg border px-3 py-2 min-h-[2.75rem] text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600 focus-visible:ring-offset-2 ${housingStatus === key
-                                        ? 'border-blue-600 bg-blue-50 text-blue-700'
-                                        : 'border-slate-200 bg-white text-slate-700 hover:bg-slate-50'
+                                    ? 'border-blue-600 bg-blue-50 text-blue-700'
+                                    : 'border-slate-200 bg-white text-slate-700 hover:bg-slate-50'
                                     }`}
                             >
                                 {label}

@@ -77,13 +77,15 @@ export default function DiagnosticTraceModal({ answers, onClose }) {
         <div
             className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
             onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
-            role="dialog"
-            aria-modal="true"
-            aria-label="Détail du calcul OpenFisca"
+            onKeyDown={(e) => { if (e.key === 'Escape') onClose(); }}
+            role="presentation"
         >
             <div
                 ref={modalRef}
                 className="max-h-[80vh] w-full max-w-2xl overflow-auto rounded-2xl bg-white p-6 shadow-xl"
+                role="dialog"
+                aria-modal="true"
+                aria-label="Détail du calcul OpenFisca"
             >
                 <div className="mb-4 flex items-center justify-between">
                     <h3 className="text-lg font-semibold text-slate-900">

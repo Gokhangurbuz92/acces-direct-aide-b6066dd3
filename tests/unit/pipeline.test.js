@@ -60,8 +60,8 @@ describe('Ingestion Pipeline', () => {
 
         // 3. Mock Agefiph Listing
         fetch.mockResolvedValueOnce({
-             ok: true,
-             text: async () => `<html><a href="/aides-handicap/test">Aide Agefiph</a></html>`
+            ok: true,
+            text: async () => `<html><a href="/aides-handicap/test">Aide Agefiph</a></html>`
         });
 
         // 4. Mock Agefiph Detail
@@ -70,10 +70,25 @@ describe('Ingestion Pipeline', () => {
             text: async () => `<html><h1>Titre Agefiph</h1><p>Contenu</p></html>`
         });
 
+        // 5. Mock Aides Territoires API (paginated JSON)
+        fetch.mockResolvedValueOnce({
+            ok: true,
+            json: async () => ({
+                results: [
+                    { slug: 'aide-at-1', name: 'Aide AT 1', description: 'Desc 1', url: 'https://at.fr/1' },
+                    { slug: 'aide-at-2', name: 'Aide AT 2', description: 'Desc 2', url: 'https://at.fr/2' },
+                ],
+                next: null, // Single page
+            }),
+        });
+
+        // DREES connector does not call global.fetch — it uses static data (5 items).
+        // Total expected creates: 1 (GrandEst) + 1 (Agefiph) + 2 (AT) + 5 (DREES) = 9
+
         const stats = await runIngestAids({ limit: 10, runId: 'test', wipe: true });
 
         expect(prisma.aide.deleteMany).toHaveBeenCalled(); // Wipe called
-        expect(prisma.aide.create).toHaveBeenCalledTimes(2); // 2 items created
-        expect(stats.created).toBe(2);
+        expect(prisma.aide.create).toHaveBeenCalledTimes(9); // 9 items created
+        expect(stats.created).toBe(9);
     });
 });

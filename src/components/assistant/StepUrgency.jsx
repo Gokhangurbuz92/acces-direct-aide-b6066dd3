@@ -38,9 +38,9 @@ export default function StepUrgency({ onNext, onBack }) {
                             role="radio"
                             aria-checked={urgency === key}
                             onClick={() => setUrgency(key)}
-                            className={`rounded-lg border px-3 py-2 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600 focus-visible:ring-offset-2 ${urgency === key
-                                    ? 'border-blue-600 bg-blue-50 text-blue-700'
-                                    : 'border-slate-200 bg-white text-slate-700 hover:bg-slate-50'
+                            className={`rounded-lg border px-3 py-2 min-h-[2.75rem] text-base sm:text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600 focus-visible:ring-offset-2 ${urgency === key
+                                ? 'border-blue-600 bg-blue-50 text-blue-700'
+                                : 'border-slate-200 bg-white text-slate-700 hover:bg-slate-50'
                                 }`}
                         >
                             {label}

@@ -132,7 +132,7 @@ export default function ChatAssistant({ embedded = false }) {
 
       {isOpen && (
         <section
-          className="fixed bottom-24 right-6 z-50 flex h-[500px] w-[380px] max-h-[calc(100vh-7rem)] max-w-[calc(100vw-1.5rem)] flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xl"
+          className="fixed bottom-24 right-0 z-50 flex h-[500px] w-full max-h-[calc(100dvh-7rem)] flex-col overflow-hidden border border-slate-200 bg-white shadow-2xl sm:right-6 sm:w-[380px] sm:rounded-2xl safe-area-bottom"
           aria-label="Fenetre de discussion avec l'assistant"
         >
           <ChatHeader onClose={() => setIsOpen(false)} />
@@ -191,8 +191,8 @@ function ChatMessages({ messages, isLoading, error, onRetry, endOfMessagesRef })
         >
           <div
             className={`max-w-[85%] rounded-2xl px-3 py-2 text-sm ${message.role === 'user'
-                ? 'bg-blue-600 text-white'
-                : 'border border-slate-200 bg-white text-slate-700'
+              ? 'bg-blue-600 text-white'
+              : 'border border-slate-200 bg-white text-slate-700'
               }`}
           >
             {message.content}

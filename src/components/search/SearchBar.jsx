@@ -101,12 +101,12 @@ export default function SearchBar({ onSearch, showFilters = true, compact = fals
         {/* Filtres rapides */}
         {showFilters && (
           <>
-            <div className="flex flex-wrap gap-2 items-center">
+            <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center">
               <Select
                 value={filters.departement}
                 onValueChange={(value) => setFilters(prev => ({ ...prev, departement: value }))}
               >
-                <SelectTrigger className="w-auto min-w-[160px] bg-white">
+                <SelectTrigger className="w-full sm:w-auto sm:min-w-[160px] bg-white">
                   <MapPin className="h-4 w-4 mr-2 text-slate-400" />
                   <SelectValue placeholder="Département" />
                 </SelectTrigger>
@@ -123,7 +123,7 @@ export default function SearchBar({ onSearch, showFilters = true, compact = fals
                 value={filters.categorie}
                 onValueChange={(value) => setFilters(prev => ({ ...prev, categorie: value }))}
               >
-                <SelectTrigger className="w-auto min-w-[160px] bg-white">
+                <SelectTrigger className="w-full sm:w-auto sm:min-w-[160px] bg-white">
                   <SelectValue placeholder="Catégorie" />
                 </SelectTrigger>
                 <SelectContent>

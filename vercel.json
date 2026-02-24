@@ -5,8 +5,16 @@
       "schedule": "0 */6 * * *"
     },
     {
+      "path": "/api/cron/ingest-aids",
+      "schedule": "0 3 * * *"
+    },
+    {
       "path": "/api/cron/ingest-structures",
       "schedule": "0 2 * * 0"
+    },
+    {
+      "path": "/api/cron/ingest-demarches",
+      "schedule": "0 4 * * 1"
     },
     {
       "path": "/api/cron/review-queue/scan",

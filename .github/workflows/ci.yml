@@ -10,13 +10,28 @@ jobs:
   quality:
     name: Quality & Build
     runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: pgvector/pgvector:pg16
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: ${{ secrets.CI_DB_PASSWORD }}
+          POSTGRES_DB: acces_direct_aide_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd="pg_isready -U postgres"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=5
+
     env:
-      DATABASE_URL: "postgresql://postgres:postgres@localhost:5432/acces_direct_aide"
-      DIRECT_URL: "postgresql://postgres:postgres@localhost:5432/acces_direct_aide"
-      # Skip DB setup during tests if supported by scripts
-      SKIP_DB_SETUP: "true"
-      # Build flags
-      VITE_API_URL: "http://localhost:3000"
+      DATABASE_URL: postgresql://postgres:${{ secrets.CI_DB_PASSWORD }}@localhost:5432/acces_direct_aide_test
+      DIRECT_URL: postgresql://postgres:${{ secrets.CI_DB_PASSWORD }}@localhost:5432/acces_direct_aide_test
+      DATABASE_URL_TEST: postgresql://postgres:${{ secrets.CI_DB_PASSWORD }}@localhost:5432/acces_direct_aide_test
+      VITE_API_URL: http://localhost:3000
+      LOG_LEVEL: warn
 
     steps:
       - uses: actions/checkout@v4
@@ -29,6 +44,9 @@ jobs:
 
       - name: Install dependencies
         run: npm ci
+
+      - name: Generate Prisma Client
+        run: npx prisma generate
 
       - name: Lint
         run: npm run lint
@@ -36,24 +54,26 @@ jobs:
       - name: Typecheck
         run: npm run typecheck
 
+      - name: Unit Tests
+        run: npm test
+
       - name: Build
         run: npm run build
         env:
-          # Mock env vars needed for build
-          VITE_PUBLIC_API_URL: "http://localhost:3000"
+          VITE_PUBLIC_API_URL: http://localhost:3000
 
   e2e:
     name: E2E Tests
     runs-on: ubuntu-latest
     needs: quality
-    timeout-minutes: 20
+    timeout-minutes: 30
     container:
-      image: mcr.microsoft.com/playwright:v1.49.1-jammy
+      image: mcr.microsoft.com/playwright:v1.58.0-jammy
     env:
-      DATABASE_URL: "postgresql://postgres:postgres@localhost:5432/acces_direct_aide"
-      DIRECT_URL: "postgresql://postgres:postgres@localhost:5432/acces_direct_aide"
-      VITE_API_URL: "http://localhost:3000"
+      VITE_API_URL: http://localhost:3000
       CI: true
+      LOG_LEVEL: warn
+      HOME: /root
 
     steps:
       - uses: actions/checkout@v4
@@ -67,13 +87,9 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Install Playwright Browsers
-        run: npx playwright install --with-deps chromium
-
-      - name: Run E2E Tests (Public Core)
-        run: npx playwright test e2e/public-core.spec.js
+      - name: Run E2E Tests
+        run: npx playwright test --timeout 60000
         env:
-          # Ensure mocks are used if implemented via env var or test logic
           USE_MOCKS: "true"
 
       - name: Upload Report

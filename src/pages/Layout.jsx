@@ -208,7 +208,7 @@ export default function Layout({ children, currentPageName }) {
               <Link
                 to={createPageUrl('Home')}
                 className="sm:hidden inline-flex items-center gap-2 rounded-full px-2.5 py-1.5 transition-colors hover:bg-slate-50/80 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-600 focus-visible:ring-offset-2"
-                aria-label="AccesDirectAide - Accueil"
+                aria-label="Aller à l’accueil"
               >
                 <Logo variant="icon" size={40} />
               </Link>
@@ -216,7 +216,7 @@ export default function Layout({ children, currentPageName }) {
               <Link
                 to={createPageUrl('Home')}
                 className="hidden sm:inline-flex items-center gap-2 rounded-full px-2.5 py-1.5 transition-colors hover:bg-slate-50/80 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-600 focus-visible:ring-offset-2"
-                aria-label="AccesDirectAide - Accueil"
+                aria-label="Aller à l’accueil"
               >
                 <Logo variant="full" size={40} />
               </Link>

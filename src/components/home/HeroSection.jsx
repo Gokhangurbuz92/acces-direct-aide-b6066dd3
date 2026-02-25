@@ -23,9 +23,9 @@ export default function HeroSection() {
 
       <div className="relative z-10 mx-auto max-w-6xl px-4 sm:px-6">
         <div className="max-w-3xl">
-          <div className="relative overflow-hidden rounded-[2rem] border border-white/40 bg-white/72 p-5 shadow-[0_24px_70px_-28px_rgba(15,23,42,0.70)] backdrop-blur-md sm:p-8 lg:p-10">
+          <div className="relative overflow-hidden rounded-[2rem] border border-white/40 bg-white/90 p-5 shadow-[0_24px_70px_-28px_rgba(15,23,42,0.70)] backdrop-blur-md sm:p-8 lg:p-10">
             <div
-              className="pointer-events-none absolute inset-0 -z-10 bg-[radial-gradient(ellipse_at_center,rgba(255,255,255,0.88)_0%,rgba(255,255,255,0.66)_56%,rgba(255,255,255,0.48)_100%)]"
+              className="pointer-events-none absolute inset-0 -z-10 bg-[radial-gradient(ellipse_at_center,rgba(255,255,255,0.95)_0%,rgba(255,255,255,0.82)_56%,rgba(255,255,255,0.72)_100%)]"
               aria-hidden="true"
             />
 

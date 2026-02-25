@@ -4,7 +4,7 @@
  */
 
 import * as Sentry from '@sentry/node';
-import { calculate, trace as traceCall } from '../lib/openfiscaClient.js';
+import { calculate, trace as traceCall, isAvailable } from '../lib/openfiscaClient.js';
 import { buildTestCase, parseResults, getCurrentPeriod } from '../lib/openfiscaMapping.js';
 import { checkRateLimit } from '../_utils/rateLimit.js';
 
@@ -68,10 +68,21 @@ async function handleDiagnostic(req, res) {
         // Rate limiting
         const ip = req.headers['x-forwarded-for']?.split(',')[0]?.trim() || req.socket?.remoteAddress || 'unknown';
         const rateLimitResult = await checkRateLimit('DIAGNOSTIC', ip);
-        if (rateLimitResult && !rateLimitResult.success) {
+        if (rateLimitResult && !rateLimitResult.allowed) {
             return res.status(429).json({
                 error: 'rate_limit_exceeded',
                 message: 'Trop de requêtes. Veuillez patienter avant de réessayer.',
+                requestId,
+            });
+        }
+
+        // Pre-flight: check OpenFisca availability (cached 60s)
+        const engineUp = await isAvailable();
+        if (!engineUp) {
+            console.warn('[Diagnostic] OpenFisca unavailable (cached health probe)', { requestId });
+            return res.status(503).json({
+                code: 'OPENFISCA_UNAVAILABLE',
+                message: 'Service de calcul temporairement indisponible. Veuillez réessayer dans quelques instants.',
                 requestId,
             });
         }
@@ -148,7 +159,7 @@ async function handleDiagnostic(req, res) {
             });
         }
 
-        return res.status(500).json({
+        return res.status(503).json({
             error: 'DIAGNOSTIC_ERROR',
             message: 'Une erreur est survenue lors du calcul. Veuillez réessayer.',
             requestId,

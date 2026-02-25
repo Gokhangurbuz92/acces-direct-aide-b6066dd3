@@ -4,27 +4,19 @@
  * These constants are consumed by:
  *   - normalize.ts (data sanitization)
  *   - mappers.ts  (view-model construction)
- *   - UI components read verifiedAt: if null → they display "Date inconnue" or hide
+ *   - UI components read verifiedAt: if null → they hide the element
  *
  * Rule: the data layer NEVER fabricates "Non renseigné".
  * Rule: the data layer returns null when data is missing or invalid.
- * The UI decides how to display null values (e.g. "Date inconnue" or hide entirely).
+ * The UI hides nulls entirely (no placeholder labels).
  */
 
 export const TRUST_POLICY = {
     /**
      * How to handle a missing verifiedAt date in the UI layer.
-     * - "label": display a neutral label (e.g. "Date inconnue")
-     * - "hide": hide the element entirely
+     * - "hide": hide the element entirely (default — no placeholder)
      */
-    missingDateBehavior: "label" as const,
-
-    /**
-     * Label displayed by the UI when verifiedAt is null.
-     * This is NOT output by the data layer — it exists here as a constant
-     * for shared reference. Components like FreshnessTag use this value.
-     */
-    unknownDateLabel: "Date inconnue",
+    missingDateBehavior: "hide" as const,
 
     /**
      * Maximum allowed future skew in days.

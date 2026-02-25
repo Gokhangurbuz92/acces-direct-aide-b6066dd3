@@ -34,7 +34,7 @@ export const StaleComplete: Story = {
     },
 };
 
-/** Unknown — both dates null, policy=label → "Date inconnue" */
+/** Unknown — both dates null, policy=label → date lines hidden (policy default is now "hide") */
 export const UnknownDates: Story = {
     args: {
         verifiedAt: null,

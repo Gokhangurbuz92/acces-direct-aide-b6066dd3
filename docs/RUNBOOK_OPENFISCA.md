@@ -127,9 +127,9 @@ npm test -- --testPathPattern=openfisca
 curl -s "https://api.fr.openfisca.org/latest/variable/ppa" | jq '{id, entity, definitionPeriod, valueType}'
 
 # Test trace endpoint (requires ADMIN_TOKEN)
-curl -X POST http://localhost:3000/api/diagnostic/trace \
+ADMIN_TOKEN="<your-admin-token>" curl -X POST http://localhost:3000/api/diagnostic/trace \
   -H "Content-Type: application/json" \
-  -H "Authorization: Bearer YOUR_ADMIN_TOKEN" \
+  -H "Authorization: Bearer $ADMIN_TOKEN" \
   -d '{"answers":{"birthDate":"1992-06-15","housing":{"status":"tenant"}}}'
 ```
 

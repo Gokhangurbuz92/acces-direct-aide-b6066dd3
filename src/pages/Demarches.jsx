@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { useSearchParams } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { Search, RotateCcw, SlidersHorizontal } from 'lucide-react';
 import SEO from '@/components/SEO';
@@ -160,7 +160,7 @@ export default function Demarches() {
   }, []);
 
   return (
-    <div className="min-h-screen bg-slate-50">
+    <div className="min-h-screen overflow-x-hidden bg-slate-50">
       <SEO
         title={getTitle()}
         description={getDescription()}
@@ -173,8 +173,8 @@ export default function Demarches() {
       </p>
 
       {/* Header */}
-      <div className="bg-white border-b border-slate-200 py-6 sticky top-0 z-10 shadow-sm">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 flex flex-col gap-4">
+      <div className="bg-white border-b border-slate-200 py-6 sticky top-16 z-10 shadow-sm">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col gap-4">
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
             <div>
               <h1 className="text-2xl font-bold text-slate-900">Démarches</h1>
@@ -223,7 +223,7 @@ export default function Demarches() {
                     </label>
                     <select
                       id="demarches-category"
-                      className="w-full h-10 rounded-md border border-slate-200 bg-white px-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      className="w-full h-10 rounded-md border border-slate-200 bg-white px-3 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
                       value={category}
                       onChange={(e) => handleParamChange('category', e.target.value)}
                     >
@@ -242,7 +242,7 @@ export default function Demarches() {
                     </label>
                     <select
                       id="demarches-situation"
-                      className="w-full h-10 rounded-md border border-slate-200 bg-white px-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      className="w-full h-10 rounded-md border border-slate-200 bg-white px-3 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
                       value={situation}
                       onChange={(e) => handleParamChange('situation', e.target.value)}
                     >
@@ -256,12 +256,30 @@ export default function Demarches() {
                   </div>
 
                   <div>
+                    <label htmlFor="demarches-source" className="block text-sm font-semibold text-slate-900 mb-1">
+                      Source
+                    </label>
+                    <select
+                      id="demarches-source"
+                      className="w-full h-10 rounded-md border border-slate-200 bg-white px-3 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                      value={searchParams.get('source') || ''}
+                      onChange={(e) => handleParamChange('source', e.target.value)}
+                    >
+                      <option value="">Toutes les sources</option>
+                      <option value="aides-territoires">Aides Territoires</option>
+                      <option value="drees">DREES</option>
+                      <option value="grand-est">Grand Est</option>
+                      <option value="agefiph">Agefiph</option>
+                    </select>
+                  </div>
+
+                  <div>
                     <label htmlFor="demarches-sort" className="block text-sm font-semibold text-slate-900 mb-1">
                       Trier
                     </label>
                     <select
                       id="demarches-sort"
-                      className="w-full h-10 rounded-md border border-slate-200 bg-white px-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      className="w-full h-10 rounded-md border border-slate-200 bg-white px-3 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
                       value={sort}
                       onChange={(e) => handleParamChange('sort', e.target.value)}
                     >
@@ -279,7 +297,7 @@ export default function Demarches() {
                     </label>
                     <select
                       id="demarches-limit"
-                      className="w-full h-10 rounded-md border border-slate-200 bg-white px-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      className="w-full h-10 rounded-md border border-slate-200 bg-white px-3 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
                       value={String(limit)}
                       onChange={(e) => handleParamChange('limit', e.target.value)}
                     >
@@ -307,22 +325,21 @@ export default function Demarches() {
       </div>
 
       {/* Results */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
         {error && (
-          <div
-            className="rounded-2xl border border-red-200 bg-red-50 p-6 text-red-900"
+          <EmptyState
+            title="Impossible de charger les démarches"
+            description="Vérifiez votre connexion puis réessayez."
+            icon={<RotateCcw className="h-6 w-6" />}
+            actions={
+              <Button type="button" variant="outline" onClick={() => refetch()}>
+                <RotateCcw className="mr-2 h-4 w-4" />
+                Réessayer
+              </Button>
+            }
             role="alert"
             data-testid="demarches-error-state"
-          >
-            <h2 className="text-lg font-semibold">Impossible de charger les démarches</h2>
-            <p className="mt-2 text-sm">
-              Une erreur est survenue. Vous pouvez réessayer.
-            </p>
-            <Button type="button" variant="outline" className="mt-4" onClick={() => refetch()}>
-              <RotateCcw className="mr-2 h-4 w-4" />
-              Réessayer
-            </Button>
-          </div>
+          />
         )}
 
         {(isLoading || isFetching) && !error && (
@@ -341,12 +358,25 @@ export default function Demarches() {
         {!error && !isLoading && !isFetching && items.length === 0 && (
           <div data-testid="demarches-empty-state">
             <EmptyState
-              title="Aucune démarche trouvée"
-              message="Essayez une autre recherche ou ajustez les filtres."
-              actionLabel="Réinitialiser les filtres"
-              onAction={clearFilters}
+              title={q || category || situation ? "Aucune démarche trouvée" : "Démarches en cours d'intégration"}
+              message={
+                q || category || situation
+                  ? "Essayez une autre recherche ou ajustez les filtres."
+                  : "Notre catalogue de démarches est en cours de constitution. En attendant, utilisez notre assistant pour un accompagnement personnalisé."
+              }
+              actionLabel={q || category || situation ? "Réinitialiser les filtres" : undefined}
+              onAction={q || category || situation ? clearFilters : undefined}
               type="search"
             />
+            {!(q || category || situation) && (
+              <div className="mt-4 flex justify-center">
+                <Link to="/orientation">
+                  <Button variant="outline" className="gap-2">
+                    Utiliser l&apos;assistant d&apos;orientation
+                  </Button>
+                </Link>
+              </div>
+            )}
           </div>
         )}
 

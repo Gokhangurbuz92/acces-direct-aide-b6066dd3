@@ -20,8 +20,9 @@ import {
   AlertCircle,
   CheckCircle2,
   ChevronRight,
-  Loader2
+  RotateCcw
 } from 'lucide-react';
+import { Skeleton } from '@/components/ui/skeleton';
 import { buildAideDetailSchemas, truncateDescription } from '@/lib/seo';
 import ProvenanceFreshness from '@/components/ProvenanceFreshness';
 import FalcSummary from '@/components/FalcSummary';
@@ -29,73 +30,32 @@ import FalcToggle from '@/components/FalcToggle';
 import FalcContent from '@/components/FalcContent';
 import FeedbackButton from '@/components/FeedbackButton';
 import { formatProvenanceDate, getProvenance } from '@/lib/provenance';
+import { useAideDetail } from '@/lib/hooks/useAideDetail';
+import CategoryChip, { resolveCategory } from '@/components/ui/CategoryChip';
 
-/** @typedef {Error & { status?: number, payload?: unknown }} ApiError */
 
-const CATEGORIE_LABELS = {
-  logement: 'Logement',
-  sante: 'Santé',
-  handicap: 'Handicap',
-  emploi: 'Emploi',
-  famille: 'Famille',
-  budget: 'Budget',
-  mobilite: 'Mobilité',
-  justice: 'Justice',
-  numerique: 'Numérique',
-  etrangers: 'Nouveaux arrivants',
-  isolement: 'Isolement',
-  lgbtqia: 'LGBTQIA+',
-  vieillissement: 'Autonomie',
-  autre: 'Autre',
-};
 
 export default function AideDetail() {
   const { slug } = useParams();
   const navigate = useNavigate();
-  const urlParams = new URLSearchParams(window.location.search);
-  const aideId = urlParams.get('id');
 
-  const { data: queryData, isLoading, error } = useQuery({
-    queryKey: ['aide', slug || aideId],
-    queryFn: async ({ signal }) => {
-      if (slug) {
-        const res = await fetch(`/api/aides/${encodeURIComponent(slug)}`, { signal });
-        const contentType = res.headers.get('content-type') || '';
-        const payload = contentType.includes('application/json')
-          ? await res.json().catch(() => null)
-          : await res.text().catch(() => null);
-
-        if (!res.ok) {
-          /** @type {ApiError} */
-          const apiError = new Error(`API Error: ${res.status}`);
-          apiError.status = res.status;
-          apiError.payload = payload;
-          throw apiError;
-        }
-
-        return payload;
-      }
-
-      return client.entities.Aide.filter({ id: aideId });
-    },
-    enabled: !!slug || !!aideId
-  });
-
-  const aide = Array.isArray(queryData)
-    ? queryData[0]
-    : (queryData?.items ? queryData?.items[0] : queryData);
+  // ------------------------------------------------------------------
+  // V2-03: Use useAideDetail hook instead of react-query + direct fetch
+  // ------------------------------------------------------------------
+  const { status, data, raw: aide, errorMessage, refetch } = useAideDetail(slug);
 
   // FALC mode state
   const [isFalcMode, setIsFalcMode] = useState(false);
   const hasFalcContent = !!(aide?.summary_falc || aide?.conditions_falc || aide?.montant_falc);
 
-  // Canonical Redirect: If accessed via ID but slug exists, redirect to slug URL
+  // Canonical Redirect: If accessed via query ?id= but slug exists, redirect
   useEffect(() => {
     if (aide && !slug && aide.slug) {
       navigate(`/aides/${aide.slug}`, { replace: true });
     }
   }, [aide, slug, navigate]);
 
+  // Structures sidebar (keep react-query — it's not aide data)
   const { data: structuresData } = useQuery({
     queryKey: ['structures-aide', aide?.categorie],
     queryFn: () => client.entities.Structure.filter({
@@ -112,8 +72,9 @@ export default function AideDetail() {
     s.categories_aidees?.includes(aide?.categorie)
   ).slice(0, 3);
 
+  // SEO
   const canonicalPath = aide?.slug ? `/aides/${aide.slug}` : (slug ? `/aides/${slug}` : '/aides');
-  const seoTitle = aide?.titre || 'Aide';
+  const seoTitle = aide?.titre || data?.title || 'Aide';
   const seoDescription = truncateDescription(
     aide?.summary_falc || aide?.cest_quoi || "Consultez le détail d'une aide sociale."
   ) || "Consultez le détail d'une aide sociale.";
@@ -122,7 +83,10 @@ export default function AideDetail() {
     [aide, canonicalPath]
   );
 
-  if (isLoading) {
+  // ------------------------------------------------------------------
+  // Loading state
+  // ------------------------------------------------------------------
+  if (status === 'loading') {
     return (
       <>
         <SEO
@@ -132,37 +96,99 @@ export default function AideDetail() {
           ogType="article"
           schema={schema}
         />
-        <div className="min-h-screen bg-slate-50 flex items-center justify-center">
-          <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
+        <div className="min-h-screen bg-slate-50">
+          <div className="bg-white border-b border-slate-200">
+            <div className="max-w-4xl mx-auto px-4 sm:px-6 py-4">
+              <Skeleton className="h-4 w-48" />
+            </div>
+          </div>
+          <div className="max-w-4xl mx-auto px-4 sm:px-6 py-8">
+            <Skeleton className="h-4 w-32 mb-6" />
+            <div className="bg-white rounded-2xl p-6 md:p-8 border border-slate-200 mb-6">
+              <Skeleton className="h-6 w-20 mb-4" />
+              <Skeleton className="h-8 w-3/4 mb-4" />
+              <Skeleton className="h-4 w-48" />
+            </div>
+            <div className="grid lg:grid-cols-3 gap-6">
+              <div className="lg:col-span-2 space-y-6">
+                {[1, 2, 3].map((v) => (
+                  <div key={v} className="bg-white rounded-xl border border-slate-200 p-6">
+                    <Skeleton className="h-5 w-32 mb-3" />
+                    <Skeleton className="h-4 w-full mb-2" />
+                    <Skeleton className="h-4 w-2/3" />
+                  </div>
+                ))}
+              </div>
+              <div className="space-y-6">
+                <div className="bg-white rounded-xl border border-slate-200 p-6">
+                  <Skeleton className="h-4 w-24 mb-3" />
+                  <Skeleton className="h-4 w-32" />
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
       </>
     );
   }
 
-  if (error) {
-    /** @type {ApiError} */
-    const apiError = error;
-    if (apiError?.status === 410) return <Gone />;
-    if (apiError?.status === 404) return <NotFound />;
+  // ------------------------------------------------------------------
+  // Error state
+  // ------------------------------------------------------------------
+  if (status === 'error') {
+    return (
+      <>
+        <SEO
+          title="Erreur — Aide"
+          description="Une erreur est survenue."
+          path={canonicalPath}
+        />
+        <div className="min-h-screen bg-slate-50 flex items-center justify-center px-4">
+          <div
+            className="rounded-2xl border border-destructive/30 bg-destructive/5 p-8 text-destructive max-w-md text-center"
+            role="alert"
+            data-testid="aide-detail-error"
+          >
+            <AlertCircle className="h-10 w-10 mx-auto mb-4 opacity-60" />
+            <h1 className="text-xl font-semibold mb-2">Impossible de charger cette aide</h1>
+            <p className="text-sm mb-6">
+              {errorMessage || 'Vérifiez votre connexion et réessayez.'}
+            </p>
+            <div className="flex flex-col sm:flex-row gap-3 justify-center">
+              <Button type="button" variant="outline" onClick={() => refetch()}>
+                <RotateCcw className="mr-2 h-4 w-4" />
+                Réessayer
+              </Button>
+              <Button variant="ghost" asChild>
+                <Link to="/aides">Retour aux aides</Link>
+              </Button>
+            </div>
+          </div>
+        </div>
+      </>
+    );
   }
 
-  if (!aide) {
+  // ------------------------------------------------------------------
+  // Not found state
+  // ------------------------------------------------------------------
+  if (status === 'not_found' || !aide) {
     return <NotFound />;
   }
 
+  // ------------------------------------------------------------------
+  // Success — render full detail
+  // ------------------------------------------------------------------
   const categorySlug = (() => {
-    const raw = aide?.categorie || aide?.theme || aide?.category?.slug || aide?.category_code;
+    const raw = aide?.categorie || aide?.theme || aide?.category?.slug;
     if (!raw) return null;
     const value = String(raw).trim();
     if (!value) return null;
     return /^[A-Z_]+$/.test(value) ? value.toLowerCase() : value;
   })();
 
-  const categoryLabel =
-    (categorySlug && CATEGORIE_LABELS[categorySlug]) ||
-    aide?.category?.label ||
-    categorySlug ||
-    'Autre';
+  const resolved = resolveCategory(categorySlug) || (aide?.category?.label ? { label: aide.category.label } : null);
+  const categoryLabel = resolved?.label || null;
   const provenance = getProvenance(aide);
   const fetchedAtLabel = formatProvenanceDate(provenance.fetchedAt);
   const pdfDownloadUrl = (aide?.slug || aide?.id)
@@ -170,7 +196,7 @@ export default function AideDetail() {
     : null;
 
   const getTerritoireLabel = () => {
-    if (!aide.territoires?.length) return 'Non précisé';
+    if (!aide.territoires?.length) return null;
     if (aide.territoires.includes('national')) return 'France entière';
     return aide.territoires.map(t => {
       if (t === '67') return 'Bas-Rhin (67)';
@@ -178,6 +204,8 @@ export default function AideDetail() {
       return t;
     }).join(', ');
   };
+
+  const territoireLabel = getTerritoireLabel();
 
   return (
     <div className="min-h-screen bg-slate-50">
@@ -214,19 +242,11 @@ export default function AideDetail() {
         {/* En-tête */}
         <div className="bg-white rounded-2xl p-6 md:p-8 border border-slate-200 mb-6">
           <div className="flex flex-wrap gap-2 mb-4">
-            <Badge className="bg-blue-100 text-blue-800">
-              {categoryLabel}
-            </Badge>
+            {categoryLabel && <CategoryChip slug={categorySlug} label={categoryLabel} />}
             {aide.est_urgent && (
               <Badge className="bg-red-100 text-red-800">
                 <AlertCircle className="h-3 w-3 mr-1" />
                 Urgence
-              </Badge>
-            )}
-            {aide.sources?.some(s => s.type === 'officielle') && (
-              <Badge variant="outline" className="text-green-700 border-green-300">
-                <CheckCircle2 className="h-3 w-3 mr-1" />
-                Source officielle
               </Badge>
             )}
           </div>
@@ -236,15 +256,17 @@ export default function AideDetail() {
           </h1>
 
           <div className="flex flex-wrap gap-4 text-sm text-slate-600">
-            <span className="flex items-center gap-1">
-              <MapPin className="h-4 w-4" />
-              {getTerritoireLabel()}
-            </span>
+            {territoireLabel && (
+              <span className="flex items-center gap-1">
+                <MapPin className="h-4 w-4" />
+                {territoireLabel}
+              </span>
+            )}
             {fetchedAtLabel && (
-               <span className="flex items-center gap-1" title="Date de dernière mise à jour de la source">
-                  <Calendar className="h-4 w-4" />
-                  Mise à jour : {fetchedAtLabel}
-               </span>
+              <span className="flex items-center gap-1" title="Date de dernière mise à jour de la source">
+                <Calendar className="h-4 w-4" />
+                Mise à jour : {fetchedAtLabel}
+              </span>
             )}
             {aide.delai_indicatif && (
               <span className="flex items-center gap-1">
@@ -257,7 +279,7 @@ export default function AideDetail() {
 
         {/* FALC Toggle */}
         <div className="mb-6">
-          <FalcToggle 
+          <FalcToggle
             hasFalcContent={hasFalcContent}
             onChange={setIsFalcMode}
           />
@@ -277,129 +299,117 @@ export default function AideDetail() {
               /* Normal Mode Content */
               <>
                 {/* C'est quoi ? */}
-                <Card>
-                  <CardContent className="p-6">
-                    <h2 className="text-lg font-bold text-slate-900 mb-3">C'est quoi ?</h2>
-                    <p className="text-slate-700 leading-relaxed">{aide.cest_quoi}</p>
-                  </CardContent>
-                </Card>
+                {aide.cest_quoi && (
+                  <Card>
+                    <CardContent className="p-6">
+                      <h2 className="text-lg font-bold text-slate-900 mb-3">C&apos;est quoi ?</h2>
+                      <p className="text-slate-700 leading-relaxed">{aide.cest_quoi}</p>
+                    </CardContent>
+                  </Card>
+                )}
 
                 {/* FALC Summary */}
                 <FalcSummary text={aide?.summary_falc} />
 
-            {/* Pour qui ? */}
-            <Card>
-              <CardContent className="p-6">
-                <h2 className="text-lg font-bold text-slate-900 mb-3">Pour qui ?</h2>
-                <p className="text-slate-700 leading-relaxed">{aide.pour_qui}</p>
-              </CardContent>
-            </Card>
+                {/* Pour qui ? */}
+                {aide.pour_qui && (
+                  <Card>
+                    <CardContent className="p-6">
+                      <h2 className="text-lg font-bold text-slate-900 mb-3">Pour qui ?</h2>
+                      <p className="text-slate-700 leading-relaxed">{aide.pour_qui}</p>
+                    </CardContent>
+                  </Card>
+                )}
 
-            {/* Ce que ça aide */}
-            {aide.ce_que_ca_aide && (
-              <Card>
-                <CardContent className="p-6">
-                  <h2 className="text-lg font-bold text-slate-900 mb-3">Ce que ça peut aider</h2>
-                  <p className="text-slate-700 leading-relaxed">{aide.ce_que_ca_aide}</p>
-                </CardContent>
-              </Card>
-            )}
+                {/* Ce que ça aide */}
+                {aide.ce_que_ca_aide && (
+                  <Card>
+                    <CardContent className="p-6">
+                      <h2 className="text-lg font-bold text-slate-900 mb-3">Ce que ça peut aider</h2>
+                      <p className="text-slate-700 leading-relaxed">{aide.ce_que_ca_aide}</p>
+                    </CardContent>
+                  </Card>
+                )}
 
-            {/* Documents nécessaires */}
-            {aide.documents_necessaires?.length > 0 && (
-              <Card>
-                <CardContent className="p-6">
-                  <h2 className="text-lg font-bold text-slate-900 mb-3">
-                    <FileText className="inline h-5 w-5 mr-2" />
-                    Documents à préparer
-                  </h2>
-                  <ul className="space-y-2">
-                    {aide.documents_necessaires.map((doc, idx) => (
-                      <li key={idx} className="flex items-start gap-2 text-slate-700">
-                        <CheckCircle2 className="h-5 w-5 text-green-500 mt-0.5 flex-shrink-0" />
-                        {doc}
-                      </li>
-                    ))}
-                  </ul>
-                </CardContent>
-              </Card>
-            )}
+                {/* Documents nécessaires */}
+                {aide.documents_necessaires?.length > 0 && (
+                  <Card>
+                    <CardContent className="p-6">
+                      <h2 className="text-lg font-bold text-slate-900 mb-3">
+                        <FileText className="inline h-5 w-5 mr-2" />
+                        Documents à préparer
+                      </h2>
+                      <ul className="space-y-2">
+                        {aide.documents_necessaires.map((doc, idx) => (
+                          <li key={idx} className="flex items-start gap-2 text-slate-700">
+                            <CheckCircle2 className="h-5 w-5 text-green-500 mt-0.5 flex-shrink-0" />
+                            {doc}
+                          </li>
+                        ))}
+                      </ul>
+                    </CardContent>
+                  </Card>
+                )}
 
-            {/* Étapes */}
-            {aide.etapes?.length > 0 && (
-              <Card>
-                <CardContent className="p-6">
-                  <h2 className="text-lg font-bold text-slate-900 mb-4">Étapes de la demande</h2>
-                  <div className="space-y-4">
-                    {aide.etapes.map((etape, idx) => (
-                      <div key={idx} className="flex gap-4">
-                        <div className="w-8 h-8 rounded-full bg-blue-100 text-blue-700 flex items-center justify-center font-bold flex-shrink-0">
-                          {etape.numero || idx + 1}
-                        </div>
-                        <div>
-                          <h3 className="font-semibold text-slate-900">{etape.titre}</h3>
-                          <p className="text-slate-600 text-sm mt-1">{etape.description}</p>
-                        </div>
+                {/* Étapes */}
+                {aide.etapes?.length > 0 && (
+                  <Card>
+                    <CardContent className="p-6">
+                      <h2 className="text-lg font-bold text-slate-900 mb-4">Étapes de la demande</h2>
+                      <div className="space-y-4">
+                        {aide.etapes.map((etape, idx) => (
+                          <div key={idx} className="flex gap-4">
+                            <div className="w-8 h-8 rounded-full bg-blue-100 text-blue-700 flex items-center justify-center font-bold flex-shrink-0">
+                              {etape.numero || idx + 1}
+                            </div>
+                            <div>
+                              <h3 className="font-semibold text-slate-900">{etape.titre}</h3>
+                              <p className="text-slate-600 text-sm mt-1">{etape.description}</p>
+                            </div>
+                          </div>
+                        ))}
                       </div>
-                    ))}
-                  </div>
-                </CardContent>
-              </Card>
-            )}
+                    </CardContent>
+                  </Card>
+                )}
 
-            {/* Où faire la demande */}
-            {(aide.ou_demander || aide.apply_url || aide.lien_demande) && (
-              <Card>
-                <CardContent className="p-6">
-                  <h2 className="text-lg font-bold text-slate-900 mb-3">Où faire la demande ?</h2>
-                  {aide.ou_demander && <p className="text-slate-700 mb-4">{aide.ou_demander}</p>}
-                  {(aide.apply_url || aide.lien_demande) && (
-                    <Button asChild>
-                      <a href={aide.apply_url || aide.lien_demande} target="_blank" rel="noopener noreferrer">
-                        Faire ma demande
-                        <ExternalLink className="ml-2 h-4 w-4" />
-                      </a>
-                    </Button>
-                  )}
-                </CardContent>
-              </Card>
-            )}
+                {/* Où faire la demande */}
+                {(aide.ou_demander || aide.lien_demande) && (
+                  <Card>
+                    <CardContent className="p-6">
+                      <h2 className="text-lg font-bold text-slate-900 mb-3">Où faire la demande ?</h2>
+                      {aide.ou_demander && <p className="text-slate-700 mb-4">{aide.ou_demander}</p>}
+                      {aide.lien_demande && (
+                        <Button asChild>
+                          <a href={aide.lien_demande} target="_blank" rel="noopener noreferrer">
+                            Faire ma demande
+                            <ExternalLink className="ml-2 h-4 w-4" />
+                          </a>
+                        </Button>
+                      )}
+                    </CardContent>
+                  </Card>
+                )}
 
-            {/* Sources */}
-            {(aide.source_url || aide.sources?.length > 0) && (
-              <Card className="bg-slate-50">
-                <CardContent className="p-6">
-                  <h2 className="text-lg font-bold text-slate-900 mb-3">Sources</h2>
-                  <ul className="space-y-2">
-                    {aide.source_url && (
+                {/* Sources — "Consulter la source officielle" */}
+                {aide.source_url && (
+                  <Card className="bg-slate-50">
+                    <CardContent className="p-6">
+                      <h2 className="text-lg font-bold text-slate-900 mb-3">Sources</h2>
+                      <ul className="space-y-2">
                         <li>
-                            <a href={aide.source_url} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline flex items-center gap-1">
-                                {aide.source_name || 'Source Officielle'}
-                                <ExternalLink className="h-3 w-3" />
-                            </a>
-                            <span className="text-xs text-slate-500 ml-2">(Lien direct)</span>
+                          <a href={aide.source_url} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline flex items-center gap-1">
+                            Consulter la source officielle
+                            <ExternalLink className="h-3 w-3" />
+                          </a>
+                          {aide.source_name && (
+                            <span className="text-xs text-slate-500 ml-2">({aide.source_name})</span>
+                          )}
                         </li>
-                    )}
-                    {aide.sources?.map((source, idx) => (
-                      <li key={idx}>
-                        <a
-                          href={source.url}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="text-blue-600 hover:underline flex items-center gap-1"
-                        >
-                          {source.nom}
-                          <ExternalLink className="h-3 w-3" />
-                        </a>
-                        <span className="text-xs text-slate-500 ml-2">
-                          ({source.type === 'officielle' ? 'Source officielle' : 'Explication'})
-                        </span>
-                      </li>
-                    ))}
-                  </ul>
-                </CardContent>
-              </Card>
-            )}
+                      </ul>
+                    </CardContent>
+                  </Card>
+                )}
               </>
             )}
           </div>
@@ -411,9 +421,9 @@ export default function AideDetail() {
             {/* Actions */}
             <Card>
               <CardContent className="p-6 space-y-3">
-                {(aide.apply_url || aide.lien_demande) && (
+                {aide.lien_demande && (
                   <Button className="w-full" asChild>
-                    <a href={aide.apply_url || aide.lien_demande} target="_blank" rel="noopener noreferrer">
+                    <a href={aide.lien_demande} target="_blank" rel="noopener noreferrer">
                       Faire ma demande
                       <ExternalLink className="ml-2 h-4 w-4" />
                     </a>

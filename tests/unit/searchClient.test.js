@@ -22,7 +22,7 @@ describe('searchClient', () => {
               slug: 'apl-etudiant-strasbourg',
               title: 'APL étudiant à Strasbourg',
               description: 'Aide au logement.',
-              category: 'LOGEMENT',
+              category: 'logement',
               score: 0.42,
             },
           ],
@@ -49,7 +49,7 @@ describe('searchClient', () => {
     expect(options.method).toBe('POST');
     expect(JSON.parse(options.body)).toEqual({
       query: 'loyer étudiant Strasbourg',
-      category: 'LOGEMENT',
+      category: 'logement',
       limit: 5,
     });
     expect(response.meta.total).toBe(1);
@@ -58,7 +58,7 @@ describe('searchClient', () => {
         id: 'aid-1',
         slug: 'apl-etudiant-strasbourg',
         title: 'APL étudiant à Strasbourg',
-        category: 'LOGEMENT',
+        category: 'logement',
       })
     );
   });

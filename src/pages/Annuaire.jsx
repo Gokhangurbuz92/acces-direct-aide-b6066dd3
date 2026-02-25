@@ -25,6 +25,12 @@ const TYPE_STRUCTURES = [
   { value: 'mdph', label: 'MDPH' },
   { value: 'france_travail', label: 'France Travail' },
   { value: 'cpam', label: 'CPAM' },
+  { value: 'ccas', label: 'CCAS' },
+  { value: 'ehpad', label: 'EHPAD' },
+  { value: 'france_services', label: 'France Services' },
+  { value: 'carsat', label: 'CARSAT' },
+  { value: 'mission_locale', label: 'Mission Locale' },
+  { value: 'pmi', label: 'PMI' },
 ];
 
 /** @param {unknown} value */
@@ -141,7 +147,7 @@ export default function Annuaire() {
   const totalPages = pagination.totalPages || 1;
 
   return (
-    <div className="min-h-screen bg-slate-50">
+    <div className="min-h-screen overflow-x-hidden bg-slate-50">
       <SEO
         title="Annuaire"
         description="Trouvez des structures (associations, services publics) et leurs coordonnées."
@@ -155,7 +161,7 @@ export default function Annuaire() {
 
       {/* Header */}
       <div className="bg-white border-b border-slate-200 py-6 sticky top-16 z-20 shadow-sm">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 flex flex-col gap-4">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col gap-4">
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
             <div>
               <h1 className="text-2xl font-bold text-slate-900">Annuaire</h1>
@@ -204,7 +210,7 @@ export default function Annuaire() {
                     </label>
                     <select
                       id="structures-type"
-                      className="w-full h-10 rounded-md border border-slate-200 bg-white px-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      className="w-full h-10 rounded-md border border-slate-200 bg-white px-3 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
                       value={type}
                       onChange={(e) => handleParamChange('type', e.target.value)}
                     >
@@ -248,7 +254,7 @@ export default function Annuaire() {
                     </label>
                     <select
                       id="structures-sort"
-                      className="w-full h-10 rounded-md border border-slate-200 bg-white px-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      className="w-full h-10 rounded-md border border-slate-200 bg-white px-3 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
                       value={sort}
                       onChange={(e) => handleParamChange('sort', e.target.value)}
                     >
@@ -267,7 +273,7 @@ export default function Annuaire() {
                     </label>
                     <select
                       id="structures-limit"
-                      className="w-full h-10 rounded-md border border-slate-200 bg-white px-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      className="w-full h-10 rounded-md border border-slate-200 bg-white px-3 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
                       value={String(limit)}
                       onChange={(e) => handleParamChange('limit', e.target.value)}
                     >
@@ -284,7 +290,7 @@ export default function Annuaire() {
                   <label className="flex items-center gap-2 text-sm text-slate-700">
                     <input
                       type="checkbox"
-                      className="h-4 w-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500"
+                      className="h-4 w-4 rounded border-input text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
                       checked={pmrEnabled}
                       onChange={(e) => handleParamChange('pmr', e.target.checked ? '1' : '')}
                     />
@@ -307,7 +313,7 @@ export default function Annuaire() {
       </div>
 
       {/* Content */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
         {isLoading ? (
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6" aria-label="Chargement des résultats">
             {Array.from({ length: Math.min(limit, 12) }).map((_, idx) => (
@@ -322,17 +328,16 @@ export default function Annuaire() {
             ))}
           </div>
         ) : error ? (
-          <Card className="border-slate-200">
-            <CardContent className="p-6">
-              <p className="text-slate-700 font-medium">Une erreur est survenue lors du chargement de l'annuaire.</p>
-              <p className="text-slate-600 text-sm mt-2">Vérifiez votre connexion puis réessayez.</p>
-              <div className="mt-4">
-                <Button type="button" onClick={() => refetch()}>
-                  Réessayer
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
+          <EmptyState
+            title="Impossible de charger l'annuaire"
+            description="Vérifiez votre connexion puis réessayez."
+            actions={
+              <Button type="button" onClick={() => refetch()}>
+                Réessayer
+              </Button>
+            }
+            role="alert"
+          />
         ) : structures.length > 0 ? (
           <>
             <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6" data-testid="structures-results-list">
@@ -341,7 +346,7 @@ export default function Annuaire() {
               ))}
             </div>
 
-            <div className="flex justify-center mt-10 gap-2">
+            <div className="flex flex-col sm:flex-row items-center justify-center mt-10 gap-3">
               <Button
                 variant="outline"
                 disabled={page <= 1}

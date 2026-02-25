@@ -1,6 +1,47 @@
-import { Suspense, lazy } from "react";
-import { BrowserRouter as Router, Route, Routes, useLocation, Navigate, useParams } from 'react-router-dom';
+import { Suspense, lazy, Component } from "react";
+import { BrowserRouter, MemoryRouter, Route, Routes, useLocation, Navigate, useParams } from 'react-router-dom';
 import { frontendEnv } from "@/config/env";
+
+/**
+ * ErrorBoundary — catches chunk-load or mount errors in lazy-loaded routes.
+ * Displays a clear fallback instead of a blank page.
+ */
+class RouteErrorBoundary extends Component {
+    constructor(props) {
+        super(props);
+        this.state = { hasError: false, errorMessage: '' };
+    }
+    static getDerivedStateFromError(error) {
+        return {
+            hasError: true,
+            errorMessage: error?.message || 'Erreur inconnue',
+        };
+    }
+    render() {
+        if (this.state.hasError) {
+            return (
+                <div className="flex min-h-[50vh] items-center justify-center p-4">
+                    <div className="w-full max-w-md rounded-lg border border-red-200 bg-red-50 p-6 text-center">
+                        <h1 className="mb-2 text-xl font-bold text-red-800">
+                            Impossible de charger cette page
+                        </h1>
+                        <p className="mb-4 text-sm text-red-700">
+                            Une erreur est survenue lors du chargement. Veuillez rafraîchir la page.
+                        </p>
+                        <button
+                            type="button"
+                            onClick={() => window.location.reload()}
+                            className="inline-flex items-center rounded-md bg-red-600 px-4 py-2 text-sm font-medium text-white hover:bg-red-700"
+                        >
+                            Rafraîchir
+                        </button>
+                    </div>
+                </div>
+            );
+        }
+        return this.props.children;
+    }
+}
 
 // [LAZY LOADED PAGES]
 // Public
@@ -41,7 +82,7 @@ const SubventionDossier = lazy(() => import("./SubventionDossier.jsx"));
 const Status = lazy(() => import("./Status.jsx"));
 const StructureDetail = lazy(() => import("./StructureDetail.jsx"));
 const NotFound = lazy(() => import("./NotFound.jsx"));
-const LoginPro = lazy(() => import("./LoginPro.jsx"));
+
 const BeneficiaryMessages = lazy(() => import("./BeneficiaryMessages.jsx"));
 const AppointmentRequest = lazy(() => import("./AppointmentRequest.jsx"));
 const AppointmentCancel = lazy(() => import("./AppointmentCancel.jsx"));
@@ -110,7 +151,7 @@ const PAGES = {
     AdminAideEdit, AdminAides, AdminGuideSync, AdminMessages,
     AdminRecentSyncs, AdminSources, AdminSync, AdminTestSync,
     AideDetail, Aides, Annuaire, Confidentialite, Contact, Cookies,
-    DemarcheDetail, DispositifDetail, Login, LoginPro, Demarches, Home, Orientation,
+    DemarcheDetail, DispositifDetail, Login, Demarches, Home, Orientation,
     MentionsLegales, SourcesMethode, SentryTest, StructureDetail,
     AdminInbox, AdminRuns, AdminObservability, AdminReviewQueue, AppointmentRequest, AppointmentCancel, AppointmentReschedule, AdminStructures,
     AdminDemarches, AdminDemarcheEdit, AdminAppointments, AdminReview, Status, PublicRdvEntry, AuthRdvAccess, AuthVerifyEmail, AuthForgotPassword, AuthResetPassword,
@@ -142,8 +183,6 @@ function _getCurrentPage(url) {
     }
 
     const pageName = Object.keys(PAGES).find(page => {
-        // Handle special case for nested path like /login/pro
-        if (page === 'LoginPro' && url.endsWith('/login/pro')) return true;
         return page.toLowerCase() === urlLastPart.toLowerCase()
     });
     return pageName || 'Home';
@@ -208,8 +247,8 @@ function PagesContent() {
                 <Routes>
                     <Route path="/" element={<Home />} />
                     <Route path="/login" element={<Login />} />
-                    <Route path="/auth/login" element={<AuthRdvAccess mode="login" />} />
-                    <Route path="/auth/signup" element={<AuthRdvAccess mode="signup" />} />
+                    <Route path="/auth/login" element={<RouteErrorBoundary><AuthRdvAccess mode="login" /></RouteErrorBoundary>} />
+                    <Route path="/auth/signup" element={<RouteErrorBoundary><AuthRdvAccess mode="signup" /></RouteErrorBoundary>} />
                     <Route path="/auth/verify-email" element={<AuthVerifyEmail />} />
                     <Route path="/auth/forgot" element={<AuthForgotPassword />} />
                     <Route path="/auth/reset" element={<AuthResetPassword />} />
@@ -276,10 +315,8 @@ function PagesContent() {
                     <Route path="/demarches/view" element={<DemarcheDetail />} />
                     <Route path="/demarches/:slug" element={<DemarcheDetail />} />
 
-                    {/* Conditional Route */}
-                    {frontendEnv.flags.devLoginEnabled && (
-                        <Route path="/login/pro" element={<LoginPro />} />
-                    )}
+                    {/* Legacy alias — canonical route is /pro/login */}
+                    <Route path="/login/pro" element={<Navigate to="/pro/login" replace />} />
 
                     <Route path="/orientation" element={<Orientation />} />
                     <Route path="/demarches" element={<Demarches />} />
@@ -321,6 +358,9 @@ function PagesContent() {
                     <Route path="/Annuaire" element={<Navigate to="/annuaire" replace />} />
                     <Route path="/Aides" element={<Navigate to="/aides" replace />} />
 
+                    {/* Phase 1: /assistant redirect → /orientation */}
+                    <Route path="/assistant" element={<Navigate to="/orientation" replace />} />
+
                     <Route path="*" element={<NotFound />} />
                 </Routes>
             </Layout>
@@ -328,10 +368,18 @@ function PagesContent() {
     );
 }
 
-export default function Pages() {
+export default function Pages({ url }) {
+    const isServer = typeof window === 'undefined' || url !== undefined;
+    if (isServer) {
+        return (
+            <MemoryRouter initialEntries={[url || '/']}>
+                <PagesContent />
+            </MemoryRouter>
+        );
+    }
     return (
-        <Router>
+        <BrowserRouter>
             <PagesContent />
-        </Router>
+        </BrowserRouter>
     );
 }

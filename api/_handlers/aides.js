@@ -111,15 +111,15 @@ async function handler(req, res) {
             const aide = await prisma.aide.findFirst({
                 where: effectiveParams.id ? { id: effectiveParams.id } : { slug: effectiveParams.slug },
                 include: {
-                  category: true,
-                  situations: true,
-                  aidSituations: { include: { situation: true } },
-                  sourceDocument: {
-                    select: {
-                      fetched_at: true,
-                      source_url: true,
+                    category: true,
+                    situations: true,
+                    aidSituations: { include: { situation: true } },
+                    sourceDocument: {
+                        select: {
+                            fetched_at: true,
+                            source_url: true,
+                        },
                     },
-                  },
                 }
             });
 
@@ -129,12 +129,12 @@ async function handler(req, res) {
 
             const { sourceDocument, ...safeAide } = aide;
             const payload = {
-              ...safeAide,
-              provenance: buildProvenance({
-                verifiedAt: safeAide.date_verification,
-                fetchedAt: sourceDocument?.fetched_at || safeAide.fetched_at,
-                sourceUrl: sourceDocument?.source_url || safeAide.source_url,
-              }),
+                ...safeAide,
+                provenance: buildProvenance({
+                    verifiedAt: safeAide.date_verification,
+                    fetchedAt: sourceDocument?.fetched_at || safeAide.fetched_at,
+                    sourceUrl: sourceDocument?.source_url || safeAide.source_url,
+                }),
             };
 
             logger.info('SEARCH_AIDES_SINGLE_SUCCESS', { requestId, duration_ms: Date.now() - start });
@@ -180,11 +180,62 @@ async function handler(req, res) {
             }
         });
     } catch (error) {
-        logger.error('SEARCH_AIDES_ERROR', { requestId, duration_ms: Date.now() - start, error });
-        Sentry.captureException(error, {
-            extra: { requestId, query: req.query }
-        });
-        return res.status(500).json({ error: 'Internal server error' });
+        // Attempt fallback: simple Prisma findMany (no raw SQL, no search_vector, no unaccent)
+        logger.error('SEARCH_AIDES_ERROR', { requestId, duration_ms: Date.now() - start, error: error.message || error });
+
+        try {
+            const fallbackPage = Number(req.query?.page) || 1;
+            const fallbackLimit = Math.min(50, Math.max(1, Number(req.query?.limit) || 20));
+            const fallbackSkip = (fallbackPage - 1) * fallbackLimit;
+
+            const fallbackWhere = { statut: 'publie' };
+            if (req.query?.q) {
+                fallbackWhere.OR = [
+                    { titre: { contains: String(req.query.q), mode: 'insensitive' } },
+                ];
+            }
+
+            const [fallbackItems, fallbackTotal] = await Promise.all([
+                prisma.aide.findMany({
+                    where: fallbackWhere,
+                    skip: fallbackSkip,
+                    take: fallbackLimit,
+                    orderBy: { updatedAt: 'desc' },
+                    select: {
+                        id: true,
+                        slug: true,
+                        titre: true,
+                        updatedAt: true,
+                        statut: true,
+                    },
+                }),
+                prisma.aide.count({ where: fallbackWhere }),
+            ]);
+
+            logger.info('SEARCH_AIDES_FALLBACK_SUCCESS', { requestId, total: fallbackTotal });
+            return res.status(200).json({
+                items: fallbackItems,
+                pagination: {
+                    total: fallbackTotal,
+                    page: fallbackPage,
+                    limit: fallbackLimit,
+                    pageSize: fallbackLimit,
+                    totalPages: Math.ceil(fallbackTotal / fallbackLimit),
+                    hasNext: fallbackPage * fallbackLimit < fallbackTotal,
+                },
+                _fallback: true,
+            });
+        } catch (fallbackError) {
+            logger.error('SEARCH_AIDES_FALLBACK_ERROR', { requestId, error: fallbackError.message || fallbackError });
+            Sentry.captureException(fallbackError, { extra: { requestId, phase: 'fallback' } });
+
+            // Last resort: return empty but valid JSON
+            return res.status(200).json({
+                items: [],
+                pagination: { total: 0, page: 1, limit: 20, pageSize: 20, totalPages: 0, hasNext: false },
+                _error: 'database_unavailable',
+            });
+        }
     }
 }
 

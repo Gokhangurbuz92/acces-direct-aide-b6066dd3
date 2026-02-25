@@ -54,6 +54,7 @@ import rdvMessages from './_handlers/messages.js';
 
 // --- Core Data ---
 import aides from './_handlers/aides.js';
+import drees from './_handlers/drees.js';
 import search from './_handlers/search.js';
 import structures from './_handlers/structures.js';
 import demarches from './_handlers/demarches.js';
@@ -65,6 +66,13 @@ import ressources from './_handlers/ressources.js';
 import reports from './_handlers/reports.js';
 import feedback from './_handlers/feedback.js';
 import rdv from './_handlers/rdv.js';
+
+// --- Diagnostic (OpenFisca) ---
+import diagnostic from './_handlers/diagnostic.js';
+
+// --- Assistant (AI) ---
+import assistantChat from './_handlers/assistant/chat.js';
+import assistantRecommendations from './_handlers/assistant/recommendations.js';
 
 // --- Cron ---
 import cronPipeline from './_handlers/cron/pipeline.js';
@@ -144,6 +152,8 @@ export const routes = [
 
     // --- Core Data ---
     { path: 'aides', match: 'prefix', handler: aides },
+    { path: 'aids', match: 'prefix', handler: aides },
+    { path: 'drees', match: 'prefix', handler: drees },
     { path: 'search', match: 'exact', handler: search },
     { path: 'structures', match: 'prefix', handler: structures },
     { path: 'demarches', match: 'prefix', handler: demarches },
@@ -155,6 +165,13 @@ export const routes = [
     { path: 'reports', match: 'prefix', handler: reports },
     { path: 'feedback', match: 'exact', handler: feedback },
     { path: 'rdv', match: 'prefix', handler: rdv },
+
+    // --- Assistant (AI) ---
+    { path: 'assistant/chat', match: 'exact', handler: assistantChat },
+    { path: 'assistant/recommendations', match: 'exact', handler: assistantRecommendations },
+
+    // --- Diagnostic (OpenFisca) ---
+    { path: 'diagnostic', match: 'prefix', handler: diagnostic },
 
     // --- Cron ---
     { path: 'cron/pipeline', match: 'exact', handler: cronPipeline },

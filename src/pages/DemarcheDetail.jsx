@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { Link, useParams, useSearchParams, useNavigate } from 'react-router-dom';
 import SEO from '@/components/SEO';
 import NotFound from "./NotFound";
@@ -8,6 +8,7 @@ import { client } from '@/api/client';
 import { useQuery } from '@tanstack/react-query';
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import EmptyState from '@/components/ui/EmptyState';
 import { Card, CardContent } from "@/components/ui/card";
 import {
   ArrowLeft,
@@ -25,28 +26,17 @@ import {
 import { generateBreadcrumbSchema, generateDemarcheSchema } from '@/utils/schema';
 import ProvenanceFreshness from '@/components/ProvenanceFreshness';
 import FalcSummary from '@/components/FalcSummary';
+import FalcToggle from '@/components/FalcToggle';
+import FalcContent from '@/components/FalcContent';
 import FeedbackButton from '@/components/FeedbackButton';
 import { getProvenance } from '@/lib/provenance';
+import CategoryChip, { resolveCategory } from '@/components/ui/CategoryChip';
 
 /** @typedef {Error & { status?: number, payload?: unknown }} ApiError */
 /** @typedef {{ numero?: number, titre?: string, title?: string, nom?: string, description?: string, contenu?: string, text?: string, conseils?: string }} DemarcheStep */
 /** @typedef {{ url?: string, nom?: string }} DemarcheSource */
 
-/** @type {Record<string, string>} */
-const CATEGORIE_LABELS = {
-  logement: 'Logement',
-  sante: 'Santé',
-  handicap: 'Handicap',
-  emploi: 'Emploi',
-  famille: 'Famille',
-  budget: 'Budget',
-  mobilite: 'Mobilité',
-  justice: 'Justice',
-  numerique: 'Numérique',
-  etrangers: 'Nouveaux arrivants',
-  vieillissement: 'Autonomie',
-  autre: 'Autre',
-};
+
 
 /**
  * @param {string} slug
@@ -77,6 +67,9 @@ export default function DemarcheDetail() {
   const navigate = useNavigate();
   const id = searchParams.get('id');
   const identifier = slug || id;
+
+  // FALC mode state
+  const [isFalcMode, setIsFalcMode] = useState(false);
 
   const {
     data: queryData,
@@ -122,20 +115,24 @@ export default function DemarcheDetail() {
 
     return (
       <div className="min-h-screen bg-slate-50 flex items-center justify-center px-4 sm:px-6 py-12">
-        <div className="w-full max-w-md rounded-2xl border border-red-200 bg-red-50 p-6 text-red-900" role="alert">
-          <h1 className="text-lg font-semibold">Impossible de charger la démarche</h1>
-          <p className="mt-2 text-sm">Une erreur est survenue. Vous pouvez réessayer.</p>
-          <div className="mt-4 flex flex-wrap gap-3">
-            <Button type="button" variant="outline" onClick={() => refetch()}>
-              Réessayer
-            </Button>
-            <Link to={createPageUrl('Demarches')}>
-              <Button type="button" variant="ghost">
-                Retour aux démarches
+        <EmptyState
+          title="Impossible de charger la démarche"
+          description="Vérifiez votre connexion puis réessayez."
+          icon={<Loader2 className="h-6 w-6" />}
+          actions={
+            <div className="flex flex-wrap gap-3">
+              <Button type="button" variant="outline" onClick={() => refetch()}>
+                Réessayer
               </Button>
-            </Link>
-          </div>
-        </div>
+              <Link to={createPageUrl('Demarches')}>
+                <Button type="button" variant="ghost">
+                  Retour aux démarches
+                </Button>
+              </Link>
+            </div>
+          }
+          role="alert"
+        />
       </div>
     );
   }
@@ -152,11 +149,8 @@ export default function DemarcheDetail() {
     return /^[A-Z_]+$/.test(value) ? value.toLowerCase() : value;
   })();
 
-  const categoryLabel =
-    (categorySlug && CATEGORIE_LABELS[categorySlug]) ||
-    demarche?.category?.label ||
-    categorySlug ||
-    'Autre';
+  const resolved = resolveCategory(categorySlug) || (demarche?.category?.label ? { label: demarche.category.label } : null);
+  const categoryLabel = resolved?.label || null;
   const provenance = getProvenance(demarche);
   const pdfDownloadUrl = (demarche?.slug || demarche?.id)
     ? `/api/pdf/demarches/${encodeURIComponent(demarche.slug || demarche.id)}`
@@ -222,9 +216,7 @@ export default function DemarcheDetail() {
         {/* En-tête */}
         <Card className="mb-6">
           <CardContent className="p-6 md:p-8">
-            <Badge className="bg-blue-100 text-blue-800 mb-4">
-              {categoryLabel}
-            </Badge>
+            {categoryLabel && <CategoryChip slug={categorySlug} label={categoryLabel} className="mb-4" />}
 
             <h1 className="text-2xl md:text-3xl font-bold text-slate-900 mb-4">
               {demarche.titre}
@@ -257,123 +249,143 @@ export default function DemarcheDetail() {
           </CardContent>
         </Card>
 
+        {/* FALC Toggle */}
+        <div className="mb-6">
+          <FalcToggle
+            hasFalcContent={!!(demarche?.summary_falc || demarche?.description_falc || demarche?.resume_falc)}
+            onChange={setIsFalcMode}
+          />
+        </div>
+
         <div className="grid lg:grid-cols-3 gap-6">
           {/* Contenu principal */}
           <div className="lg:col-span-2 space-y-6">
-            {/* FALC Summary */}
-            <FalcSummary text={demarche?.summary_falc || demarche?.description_falc || demarche?.resume_falc} />
-
-            {/* Pour qui */}
-            {demarche.pour_qui && (
+            {isFalcMode ? (
+              /* FALC Mode Content */
               <Card>
                 <CardContent className="p-6">
-                  <h2 className="text-lg font-bold text-slate-900 mb-3">Pour qui ?</h2>
-                  <p className="text-slate-700">{demarche.pour_qui}</p>
+                  <FalcContent falcData={demarche} entityType="demarche" />
                 </CardContent>
               </Card>
-            )}
+            ) : (
+              /* Normal Mode Content */
+              <>
+                {/* FALC Summary */}
+                <FalcSummary text={demarche?.summary_falc || demarche?.description_falc || demarche?.resume_falc} />
 
-            {/* Documents nécessaires */}
-            {documentsNecessaires.length > 0 && (
-              <Card>
-                <CardContent className="p-6">
-                  <h2 className="text-lg font-bold text-slate-900 mb-4 flex items-center gap-2">
-                    <FileText className="h-5 w-5 text-blue-600" />
-                    Documents à préparer
-                  </h2>
-                  <ul className="space-y-3">
-                    {documentsNecessaires.map((doc, idx) => (
-                      <li key={idx} className="flex items-start gap-3">
-                        <div className="w-6 h-6 rounded-full bg-blue-100 flex items-center justify-center flex-shrink-0 mt-0.5">
-                          <CheckCircle2 className="h-4 w-4 text-blue-600" />
-                        </div>
-                        <span className="text-slate-700">{doc}</span>
-                      </li>
-                    ))}
-                  </ul>
-                </CardContent>
-              </Card>
-            )}
+                {/* Pour qui */}
+                {demarche.pour_qui && (
+                  <Card>
+                    <CardContent className="p-6">
+                      <h2 className="text-lg font-bold text-slate-900 mb-3">Pour qui ?</h2>
+                      <p className="text-slate-700">{demarche.pour_qui}</p>
+                    </CardContent>
+                  </Card>
+                )}
 
-            {/* Étapes */}
-            {steps.length > 0 && (
-              <Card>
-                <CardContent className="p-6">
-                  <h2 className="text-lg font-bold text-slate-900 mb-6">
-                    Les étapes à suivre
-                  </h2>
-                  <div className="space-y-6">
-                    {steps.map((etape, idx) => (
-                      <div key={idx} className="relative">
-                        {idx < steps.length - 1 && (
-                          <div className="absolute left-4 top-10 bottom-0 w-0.5 bg-slate-200" />
-                        )}
-                        <div className="flex gap-4">
-                          <div className="w-8 h-8 rounded-full bg-blue-600 text-white flex items-center justify-center font-bold flex-shrink-0 z-10">
-                            {etape.numero || idx + 1}
-                          </div>
-                          <div className="flex-1 pb-6">
-                            <h3 className="font-semibold text-slate-900 text-lg mb-2">
-                              {etape.titre}
-                            </h3>
-                            <p className="text-slate-600 mb-3">
-                              {etape.description}
-                            </p>
-                            {etape.conseils && (
-                              <div className="bg-amber-50 border border-amber-200 rounded-lg p-3 flex items-start gap-2">
-                                <Lightbulb className="h-5 w-5 text-amber-600 flex-shrink-0 mt-0.5" />
-                                <p className="text-sm text-amber-800">{etape.conseils}</p>
-                              </div>
+                {/* Documents nécessaires */}
+                {documentsNecessaires.length > 0 && (
+                  <Card>
+                    <CardContent className="p-6">
+                      <h2 className="text-lg font-bold text-slate-900 mb-4 flex items-center gap-2">
+                        <FileText className="h-5 w-5 text-blue-600" />
+                        Documents à préparer
+                      </h2>
+                      <ul className="space-y-3">
+                        {documentsNecessaires.map((doc, idx) => (
+                          <li key={idx} className="flex items-start gap-3">
+                            <div className="w-6 h-6 rounded-full bg-blue-100 flex items-center justify-center flex-shrink-0 mt-0.5">
+                              <CheckCircle2 className="h-4 w-4 text-blue-600" />
+                            </div>
+                            <span className="text-slate-700">{doc}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    </CardContent>
+                  </Card>
+                )}
+
+                {/* Étapes */}
+                {steps.length > 0 && (
+                  <Card>
+                    <CardContent className="p-6">
+                      <h2 className="text-lg font-bold text-slate-900 mb-6">
+                        Les étapes à suivre
+                      </h2>
+                      <div className="space-y-6">
+                        {steps.map((etape, idx) => (
+                          <div key={idx} className="relative">
+                            {idx < steps.length - 1 && (
+                              <div className="absolute left-4 top-10 bottom-0 w-0.5 bg-slate-200" />
                             )}
+                            <div className="flex gap-4">
+                              <div className="w-8 h-8 rounded-full bg-blue-600 text-white flex items-center justify-center font-bold flex-shrink-0 z-10">
+                                {etape.numero || idx + 1}
+                              </div>
+                              <div className="flex-1 pb-6">
+                                <h3 className="font-semibold text-slate-900 text-lg mb-2">
+                                  {etape.titre}
+                                </h3>
+                                <p className="text-slate-600 mb-3">
+                                  {etape.description}
+                                </p>
+                                {etape.conseils && (
+                                  <div className="bg-amber-50 border border-amber-200 rounded-lg p-3 flex items-start gap-2">
+                                    <Lightbulb className="h-5 w-5 text-amber-600 flex-shrink-0 mt-0.5" />
+                                    <p className="text-sm text-amber-800">{etape.conseils}</p>
+                                  </div>
+                                )}
+                              </div>
+                            </div>
                           </div>
-                        </div>
+                        ))}
                       </div>
-                    ))}
-                  </div>
-                </CardContent>
-              </Card>
-            )}
+                    </CardContent>
+                  </Card>
+                )}
 
-            {/* Où faire */}
-            {demarche.ou_faire && (
-              <Card>
-                <CardContent className="p-6">
-                  <h2 className="text-lg font-bold text-slate-900 mb-3">Où faire cette démarche ?</h2>
-                  <p className="text-slate-700 mb-4">{demarche.ou_faire}</p>
-                  {demarche.lien_officiel && (
-                    <Button asChild>
-                      <a href={demarche.lien_officiel} target="_blank" rel="noopener noreferrer">
-                        Accéder au service en ligne
-                        <ExternalLink className="ml-2 h-4 w-4" />
-                      </a>
-                    </Button>
-                  )}
-                </CardContent>
-              </Card>
-            )}
+                {/* Où faire */}
+                {demarche.ou_faire && (
+                  <Card>
+                    <CardContent className="p-6">
+                      <h2 className="text-lg font-bold text-slate-900 mb-3">Où faire cette démarche ?</h2>
+                      <p className="text-slate-700 mb-4">{demarche.ou_faire}</p>
+                      {demarche.lien_officiel && (
+                        <Button asChild>
+                          <a href={demarche.lien_officiel} target="_blank" rel="noopener noreferrer">
+                            Accéder au service en ligne
+                            <ExternalLink className="ml-2 h-4 w-4" />
+                          </a>
+                        </Button>
+                      )}
+                    </CardContent>
+                  </Card>
+                )}
 
-            {/* Sources */}
-            {sources.length > 0 && (
-              <Card className="bg-slate-50">
-                <CardContent className="p-6">
-                  <h2 className="text-lg font-bold text-slate-900 mb-3">Sources</h2>
-                  <ul className="space-y-2">
-                    {sources.map((source, idx) => (
-                      <li key={idx}>
-                        <a
-                          href={source.url}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="text-blue-600 hover:underline flex items-center gap-1"
-                        >
-                          {source.nom}
-                          <ExternalLink className="h-3 w-3" />
-                        </a>
-                      </li>
-                    ))}
-                  </ul>
-                </CardContent>
-              </Card>
+                {/* Sources */}
+                {sources.length > 0 && (
+                  <Card className="bg-slate-50">
+                    <CardContent className="p-6">
+                      <h2 className="text-lg font-bold text-slate-900 mb-3">Sources</h2>
+                      <ul className="space-y-2">
+                        {sources.map((source, idx) => (
+                          <li key={idx}>
+                            <a
+                              href={source.url}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="text-blue-600 hover:underline flex items-center gap-1"
+                            >
+                              {source.nom}
+                              <ExternalLink className="h-3 w-3" />
+                            </a>
+                          </li>
+                        ))}
+                      </ul>
+                    </CardContent>
+                  </Card>
+                )}
+              </>
             )}
           </div>
 

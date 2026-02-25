@@ -53,7 +53,7 @@ export default function AidesSearchForm(props) {
           </label>
           <select
             id="aides-search-category"
-            className="h-11 w-full rounded-md border border-slate-300 bg-white px-3 text-sm text-slate-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600 focus-visible:ring-offset-2"
+            className="h-11 w-full rounded-md border border-slate-300 bg-white px-3 text-sm text-slate-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
             value={category}
             onChange={(event) => onCategoryChange(event.target.value)}
           >
@@ -72,7 +72,7 @@ export default function AidesSearchForm(props) {
           </label>
           <select
             id="aides-search-limit"
-            className="h-11 w-full rounded-md border border-slate-300 bg-white px-3 text-sm text-slate-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600 focus-visible:ring-offset-2"
+            className="h-11 w-full rounded-md border border-slate-300 bg-white px-3 text-sm text-slate-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
             value={String(limit)}
             onChange={(event) => onLimitChange(Number(event.target.value))}
           >

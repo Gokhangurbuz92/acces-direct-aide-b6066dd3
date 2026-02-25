@@ -1,27 +1,23 @@
 import prisma from '../api/_utils/prisma.js';
 
-
-
+/**
+ * Canonical categories matching api/data/taxonomy.json.
+ * This script seeds the AidCategory table with the 13 standard categories.
+ */
 const categories = [
-  { slug: 'logement', label: 'Logement' },
-  { slug: 'sante', label: 'Santé' },
+  { slug: 'papiers-citoyennete', label: 'Papiers - Citoyenneté' },
   { slug: 'famille', label: 'Famille' },
+  { slug: 'social-sante', label: 'Social - Santé' },
+  { slug: 'personnes-agees', label: 'Personnes âgées' },
   { slug: 'handicap', label: 'Handicap' },
-  { slug: 'emploi', label: 'Emploi' },
-  { slug: 'finances', label: 'Finances' },
-  { slug: 'budget-dettes', label: 'Budget/Dettes' },
+  { slug: 'travail-formation', label: 'Travail - Formation' },
+  { slug: 'logement', label: 'Logement' },
+  { slug: 'transports', label: 'Transports' },
+  { slug: 'argent', label: 'Argent - Impôts' },
   { slug: 'justice', label: 'Justice' },
-  { slug: 'mobilite', label: 'Mobilité' },
-  { slug: 'etrangers', label: 'Étrangers' },
-  { slug: 'identite', label: 'Identité' },
-  { slug: 'citoyennete', label: 'Citoyenneté' },
-  { slug: 'social', label: 'Social' },
-  { slug: 'transport', label: 'Transport' },
-  { slug: 'energie', label: 'Énergie' },
-  { slug: 'travail', label: 'Travail' },
-  { slug: 'droit', label: 'Droit' },
-  { slug: 'etudes', label: 'Études' },
-  { slug: 'scolarite', label: 'Scolarité' },
+  { slug: 'etranger', label: 'Étranger' },
+  { slug: 'loisirs', label: 'Loisirs - Sport - Culture' },
+  { slug: 'lgbtqi-plus', label: 'LGBTQI+' },
 ];
 
 const situations = [
@@ -40,10 +36,11 @@ const situations = [
   { slug: 'aidant', label: 'Aidant familial' },
   { slug: 'refugie', label: 'Réfugié' },
   { slug: 'sdf', label: 'Sans domicile fixe' },
+  { slug: 'lgbtqi', label: 'LGBTQI+' },
 ];
 
 async function main() {
-  console.log('🌱 Seeding taxonomy...');
+  console.log('🌱 Seeding taxonomy (canonical slugs)...');
 
   // Seed categories
   console.log('📦 Creating categories...');

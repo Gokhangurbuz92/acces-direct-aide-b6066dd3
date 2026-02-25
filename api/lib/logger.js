@@ -1,8 +1,27 @@
 
 /**
- * GDPR Compliant Logger
+ * GDPR Compliant Logger with LOG_LEVEL support
  * Ensures PII is masked before being written to stdout/logs.
+ *
+ * LOG_LEVEL env var controls verbosity:
+ *   error > warn > info > debug
+ * Default: 'info' in production, 'debug' in development
  */
+
+const LOG_LEVELS = { error: 0, warn: 1, info: 2, debug: 3 };
+
+function getConfiguredLevel() {
+    const env = (process.env.LOG_LEVEL || '').toLowerCase().trim();
+    if (env && LOG_LEVELS[env] !== undefined) return LOG_LEVELS[env];
+    // Default: info in prod, debug in dev
+    return process.env.NODE_ENV === 'production' ? LOG_LEVELS.info : LOG_LEVELS.debug;
+}
+
+const CURRENT_LEVEL = getConfiguredLevel();
+
+function shouldLog(level) {
+    return (LOG_LEVELS[level] ?? LOG_LEVELS.info) <= CURRENT_LEVEL;
+}
 
 // Simple regex for emails
 const EMAIL_REGEX = /([a-zA-Z0-9._-]+@[a-zA-Z0-9._-]+\.[a-zA-Z0-9_-]+)/gi;
@@ -70,25 +89,50 @@ export function mask(input) {
 }
 
 /**
+ * Truncate large data payloads to prevent Vercel log truncation (>4MB).
+ * @param {unknown} data
+ * @param {number} maxLen
+ * @returns {string}
+ */
+function safeStringify(data, maxLen = 8000) {
+    try {
+        const str = JSON.stringify(mask(data), null, 2);
+        if (str.length > maxLen) {
+            return str.substring(0, maxLen) + '\n... [TRUNCATED]';
+        }
+        return str;
+    } catch {
+        return '[UNSERIALIZABLE]';
+    }
+}
+
+/**
  * Logs a message with masked data.
  * @param {string} message
  * @param {any} data
  */
 export function maskedLog(message, data = null) {
     if (data) {
-        console.log(message, JSON.stringify(mask(data), null, 2));
+        console.log(message, safeStringify(data));
     } else {
         console.log(message);
     }
 }
 
 export const logger = {
-    info: (msg, data) => maskedLog(`[INFO] ${msg}`, data),
-    error: (msg, err) => {
-        // Errors are special, we want the stack, but mask the message if PII
-        const maskedErr = err instanceof Error ? { message: mask(err.message), stack: err.stack } : mask(err);
-        console.error(`[ERROR] ${msg}`, JSON.stringify(maskedErr, null, 2));
+    info: (msg, data) => {
+        if (shouldLog('info')) maskedLog(`[INFO] ${msg}`, data);
     },
-    warn: (msg, data) => maskedLog(`[WARN] ${msg}`, data),
+    error: (msg, err) => {
+        if (!shouldLog('error')) return;
+        const maskedErr = err instanceof Error ? { message: mask(err.message), stack: err.stack } : mask(err);
+        console.error(`[ERROR] ${msg}`, safeStringify(maskedErr));
+    },
+    warn: (msg, data) => {
+        if (shouldLog('warn')) maskedLog(`[WARN] ${msg}`, data);
+    },
+    debug: (msg, data) => {
+        if (shouldLog('debug')) maskedLog(`[DEBUG] ${msg}`, data);
+    },
     mask
 };

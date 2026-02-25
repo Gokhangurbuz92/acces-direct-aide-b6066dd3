@@ -1,48 +1,88 @@
 # Contrat d'Interface API
 
-Ce document décrit le format standard des réponses et erreurs de l'API AccesDirectAide.
+Ce document définit le format standard des échanges avec l'API REST `AccesDirectAide`.
 
-## 1. Format de Réponse Standard (JSON)
-Toutes les réponses API réussies (200-299) suivent ce format, sauf exception (ex: binaire).
+## 1. Format de Réponse (JSON)
+
+Toutes les réponses de l'API suivent une structure JSON unifiée.
+
+### Succès (2xx)
 
 ```json
 {
-  "data": { ... },       // Objet ou Tableau de données
-  "meta": {              // Métadonnées optionnelles
-    "pagination": {
-      "total": 100,
-      "page": 1,
-      "pageSize": 20
-    },
-    "requestId": "req_123..."
+  "data": { ... },       // L'objet ou le tableau de résultats
+  "meta": {              // (Optionnel) Métadonnées
+    "total": 100,        // Nombre total d'éléments (pagination)
+    "page": 1,           // Page courante
+    "requestId": "req_123" // Identifiant de traçabilité
   }
 }
 ```
 
-## 2. Gestion des Erreurs
-Les erreurs renvoient un code HTTP approprié (4xx, 5xx) et un corps JSON standard.
+### Erreur (4xx, 5xx)
 
 ```json
 {
   "error": {
-    "code": "RESOURCE_NOT_FOUND",
-    "message": "La ressource demandée n'existe pas.",
-    "details": { ... } // Optionnel
+    "code": "VALIDATION_ERROR",  // Code machine stable
+    "message": "Le champ email est invalide.", // Message lisible (pour dev ou user)
+    "details": [ ... ]           // (Optionnel) Détails des champs en erreur
   }
 }
 ```
 
-### Codes HTTP Courants
-- `200 OK` : Succès.
-- `400 Bad Request` : Erreur de validation (paramètres manquants ou invalides).
-- `401 Unauthorized` : Token manquant ou invalide.
-- `403 Forbidden` : Token valide mais permissions insuffisantes (ex: Pro accédant à Admin).
-- `404 Not Found` : Ressource introuvable.
-- `409 Conflict` : Conflit de données (ex: double réservation).
-- `429 Too Many Requests` : Rate limit dépassé.
-- `500 Internal Server Error` : Erreur serveur inattendue.
+## 2. Codes HTTP Standards
 
-## 3. Headers
-- `Authorization`: `Bearer <token>` (JWT pour Pro, Token statique pour Admin).
-- `Content-Type`: `application/json` (Requis pour POST/PUT).
-- `X-Request-ID`: Identifiant unique de requête (utile pour le debugging).
+| Code | Signification | Usage |
+| :--- | :--- | :--- |
+| `200` | OK | Succès (lecture, modification). |
+| `201` | Created | Création réussie (avec `Location` header si possible). |
+| `204` | No Content | Suppression réussie ou action sans retour. |
+| `400` | Bad Request | Erreur de validation, paramètres manquants. |
+| `401` | Unauthorized | Token manquant ou invalide. |
+| `403` | Forbidden | Token valide mais droits insuffisants. |
+| `404` | Not Found | Ressource introuvable. |
+| `409` | Conflict | Doublon (ex: créneau déjà pris, email déjà utilisé). |
+| `429` | Too Many Requests | Rate limit dépassé. |
+| `500` | Internal Server Error | Bug serveur non géré. |
+
+## 3. Pagination
+
+Pour les listes (ex: `/api/aides`, `/api/structures`), la pagination se fait via query params :
+
+- `?page=1` (défaut)
+- `?limit=20` (défaut, max 100)
+
+La réponse inclut `meta.total` pour calculer le nombre de pages.
+
+## 4. Authentification
+
+L'API utilise le header `Authorization` :
+
+- **Public** : Pas de header.
+- **Pro** : `Bearer <JWT>` (Token obtenu via `/api/pro/auth/login`).
+- **Admin** : `Bearer <ADMIN_TOKEN>` (Token statique défini côté serveur).
+
+## 5. Headers Spécifiques
+
+- `X-Request-Id` : Identifiant unique de la requête (retourné dans la réponse).
+- `X-App-Version` : Version de l'application (optionnel).
+
+## 6. Provenance et Dates
+
+Chaque aide expose des champs de **provenance** qui tracent la fraîcheur et la source :
+
+| Champ | Type | Description |
+| :--- | :--- | :--- |
+| `provenance.verifiedAt` | `string` (ISO 8601) | Date de dernière vérification de la source |
+| `provenance.fetchedAt` | `string` (ISO 8601) | Date de collecte par le pipeline |
+| `provenance.sourceHost` | `string` | Nom de domaine de la source (ex: `service-public.fr`) |
+| `provenance.sourceUrl` | `string` | URL complète de la source officielle |
+| `date_verification` | `string` (ISO 8601) | Fallback : date de vérification (champ racine) |
+
+### Règles côté front-end (trust policy)
+
+- **Dates futures** : rejetées si > `now + 2 jours` (→ `null`). Couvre les erreurs d'import et le décalage horaire.
+- **URL invalide** : si `sourceUrl` n'est pas `http(s)://…` → `null`.
+- **Label vide** : si `sourceHost` est vide ou whitespace → `null`.
+- **Aucun fallback textuel** : la data layer ne fabrique jamais `"Non renseigné"`. Les composants UI affichent `"Date inconnue"` ou masquent l'élément.

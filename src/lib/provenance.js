@@ -64,8 +64,8 @@ export function getFreshnessState(verifiedAt, now = new Date()) {
 export function getFreshnessBadge(verifiedAt, now = new Date()) {
   const state = getFreshnessState(verifiedAt, now);
   if (state === 'up_to_date') return { state, label: 'À jour' };
-  if (state === 'to_review') return { state, label: 'À vérifier' };
-  if (state === 'not_verified') return { state, label: 'À vérifier' };
+  if (state === 'to_review') return { state, label: 'À actualiser' };
+  if (state === 'not_verified') return { state, label: null };
   return { state, label: 'À risque' };
 }
 

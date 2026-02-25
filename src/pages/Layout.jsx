@@ -1,7 +1,7 @@
 
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
-import Logo from '@/components/Brand/Logo';
+import ADALogo from '@/components/Brand/ADALogo';
 import { createPageUrl } from '@/utils';
 import {
   Menu,
@@ -15,9 +15,11 @@ import {
   ListChecks,
   Info,
   Calendar,
-  ChevronDown
+  ChevronDown,
+  LogIn,
+  UserPlus
 } from 'lucide-react';
-import { Button } from "@/components/ui/button";
+import { Button, buttonVariants } from "@/components/ui/button";
 import AccessibilityToolbar from '@/components/ui/AccessibilityToolbar';
 import ChatAssistant from '@/components/chat/ChatAssistant';
 import { adminClient as client } from '@/api/client';
@@ -91,6 +93,23 @@ export default function Layout({ children, currentPageName }) {
     <div className="min-h-screen flex flex-col bg-slate-50">
       {/* Styles d'accessibilité */}
       <style>{`
+        /* ADA brand text gradient — P1 optional premium effect */
+        .ada-brand-text {
+          background: linear-gradient(135deg, #1F3A5F 0%, #2E5A8E 50%, #4A7AB5 100%);
+          -webkit-background-clip: text;
+          background-clip: text;
+          -webkit-text-fill-color: transparent;
+        }
+        @media (prefers-reduced-motion: reduce) {
+          .ada-brand-text {
+            background: none;
+            -webkit-background-clip: unset;
+            background-clip: unset;
+            -webkit-text-fill-color: unset;
+            color: #1F3A5F;
+          }
+        }
+
         :root {
           --primary-color: #2563eb;
           --text-color: #1e293b;
@@ -277,6 +296,26 @@ export default function Layout({ children, currentPageName }) {
               ))}
             </nav>
 
+            {/* Auth links — desktop */}
+            <div className="hidden items-center gap-2 lg:flex">
+              <Link
+                to="/login"
+                className={buttonVariants({ variant: 'ghost', size: 'sm' })}
+                aria-label="Se connecter"
+              >
+                <LogIn className="mr-1.5 h-4 w-4" aria-hidden="true" />
+                Se connecter
+              </Link>
+              <Link
+                to="/pro/register"
+                className={buttonVariants({ variant: 'solid', size: 'sm' })}
+                aria-label="Créer un compte professionnel"
+              >
+                <UserPlus className="mr-1.5 h-4 w-4" aria-hidden="true" />
+                Créer un compte (Pro)
+              </Link>
+            </div>
+
             {/* Actions */}
             <div className="flex items-center gap-2">
               <AccessibilityToolbar />
@@ -344,6 +383,35 @@ export default function Layout({ children, currentPageName }) {
                   )}
                 </div>
               ))}
+
+              {/* Auth links — mobile */}
+              <hr className="my-2 border-border" />
+              <Link
+                to="/login"
+                className={buttonVariants({ variant: 'ghost' })}
+                onClick={() => setMobileMenuOpen(false)}
+                aria-label="Se connecter"
+              >
+                <LogIn className="mr-1.5 h-4 w-4" aria-hidden="true" />
+                Se connecter
+              </Link>
+              <Link
+                to="/pro/register"
+                className={buttonVariants({ variant: 'solid' })}
+                onClick={() => setMobileMenuOpen(false)}
+                aria-label="Créer un compte professionnel"
+              >
+                <UserPlus className="mr-1.5 h-4 w-4" aria-hidden="true" />
+                Créer un compte (Pro)
+              </Link>
+              <Link
+                to="/pro/login"
+                className="flex items-center gap-3 px-4 py-3 rounded-lg text-text-body hover:bg-brand-highlight/10 hover:text-brand-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-primary focus-visible:ring-inset"
+                onClick={() => setMobileMenuOpen(false)}
+                aria-label="Accéder à l'espace professionnel"
+              >
+                Espace Pro
+              </Link>
             </nav>
           </div>
         )}
@@ -357,17 +425,18 @@ export default function Layout({ children, currentPageName }) {
       {/* Footer */}
       <footer className="bg-brand-primary text-white" role="contentinfo">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 py-12">
-          <div className="grid md:grid-cols-4 gap-8">
+          <div className="grid grid-cols-1 gap-8 sm:grid-cols-2 md:grid-cols-4">
             {/* Logo et description */}
             <div className="md:col-span-2">
-              <div className="mb-6">
-                <Logo variant="full" tone="white" size={48} />
+              <div className="mb-6 flex items-center gap-3">
+                <ADALogo size={40} className="text-white shrink-0" />
+                <span className="text-xl font-semibold text-white">AccesDirectAide</span>
               </div>
-              <p className="text-white/80 text-sm mb-4">
+              <p className="text-white text-sm mb-4">
                 Un site non lucratif pour vous aider à trouver les aides,
                 les démarches et les structures d&apos;accompagnement près de chez vous.
               </p>
-              <p className="text-white/80 text-sm">
+              <p className="text-white text-sm">
                 Toutes les informations sont vérifiées et sourcées.
                 Zéro fake news, zéro approximation.
               </p>
@@ -381,7 +450,7 @@ export default function Layout({ children, currentPageName }) {
                   <li key={link.label + idx}>
                     <Link
                       to={link.href || createPageUrl(link.page)}
-                      className="text-white/70 hover:text-white text-sm transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-highlight focus-visible:ring-offset-2 focus-visible:ring-offset-brand-primary rounded"
+                      className="text-white hover:text-slate-200 text-sm transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-highlight focus-visible:ring-offset-2 focus-visible:ring-offset-brand-primary rounded"
                     >
                       {link.label}
                     </Link>
@@ -398,7 +467,7 @@ export default function Layout({ children, currentPageName }) {
                   <li key={link.label + idx}>
                     <Link
                       to={link.href || createPageUrl(link.page)}
-                      className="text-white/70 hover:text-white text-sm transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-highlight focus-visible:ring-offset-2 focus-visible:ring-offset-brand-primary rounded"
+                      className="text-white hover:text-slate-200 text-sm transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-highlight focus-visible:ring-offset-2 focus-visible:ring-offset-brand-primary rounded"
                     >
                       {link.label}
                     </Link>
@@ -408,7 +477,7 @@ export default function Layout({ children, currentPageName }) {
             </div>
           </div>
 
-          <div className="border-t border-white/20 mt-8 pt-8 text-center text-sm text-white/60">
+          <div className="border-t border-white/20 mt-8 pt-8 text-center text-sm text-white">
             <p>© {new Date().getFullYear()} AccesDirectAide. Site non lucratif.</p>
             <p className="mt-2">
               Territoire couvert : Alsace (Bas-Rhin, Haut-Rhin) et aides nationales.

@@ -23,7 +23,7 @@ L'application React (SPA).
 | `src/pages/` | Composants Page et routeur (`index.jsx`) | React Router | Front | Lazy loading cassé, routes orphelines |
 | `src/components/` | Composants UI réutilisables | UI Lib (Radix/Shadcn) | Front | Régression visuelle globale |
 | `src/api/` | Client API front (`client.js`) | Fetch | Front | Désynchronisation avec l'API Backend |
-| `src/lib/` | Utilitaires purement front | N/A | Front | Duplication de logique avec l'API |
+| `src/lib/` | Utilitaires purement front (et types .ts incrémentaux) | N/A | Front | Duplication de logique avec l'API |
 | `src/assets/` | Images, styles globaux | N/A | Front | Poids du bundle |
 
 ## 3. API (`api/`)
@@ -74,3 +74,11 @@ Outils de maintenance, vérification et CI.
 | :--- | :--- | :--- | :--- | :--- |
 | `e2e/` | Tests bout-en-bout (Playwright) | Playwright | QA | Tests flaky, temps d'exécution long |
 | `tests/` | Tests unitaires/intégration | Vitest | Dev | Couverture insuffisante |
+
+## 9. Décisions Techniques Structurantes
+
+| Décision | Contexte | Statut |
+| :--- | :--- | :--- |
+| **JS vs TS** | Le projet est majoritairement JS. Pas de migration globale. TS autorisé incrémentalement si strict et isolé (fichiers `.ts` dans `src/lib/` ou types `.d.ts`). | **Stable** (JS dominant, TS incrémental) |
+| **API Client** | `src/api/client.js` est l'unique client API pour le front. Pas de version `.jsx`. | **Appliqué** |
+| **FALC Logic** | `api/lib/falc-summarizer.js` est la source de vérité pour le résumé FALC (côté serveur). `src/lib/falc.ts` gère l'affichage/types côté client. | **Appliqué** |

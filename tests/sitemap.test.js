@@ -1,13 +1,17 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 
-const { mockAideFindMany } = vi.hoisted(() => ({
+const { mockAideFindMany, mockDemarcheFindMany, mockStructureFindMany } = vi.hoisted(() => ({
   mockAideFindMany: vi.fn(),
+  mockDemarcheFindMany: vi.fn(),
+  mockStructureFindMany: vi.fn(),
 }));
 
 vi.mock('@prisma/client', () => ({
   PrismaClient: vi.fn().mockImplementation(function PrismaClient() {
     return {
       aide: { findMany: mockAideFindMany },
+      demarche: { findMany: mockDemarcheFindMany },
+      structure: { findMany: mockStructureFindMany },
     };
   }),
 }));
@@ -40,6 +44,8 @@ describe('Sitemap handler (P7-A)', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mockAideFindMany.mockResolvedValue([]);
+    mockDemarcheFindMany.mockResolvedValue([]);
+    mockStructureFindMany.mockResolvedValue([]);
   });
 
   it('returns XML with static and dynamic URLs', async () => {

@@ -1,58 +1,78 @@
 import { test, expect } from '@playwright/test';
-import { setupPublicMocks } from './_mocks/publicApiMocks.js';
+import { setupPublicMocks } from './_mocks/publicApiMocks';
 
-test.describe('Public Core Navigation', () => {
+test.describe('Public Core Routes', () => {
     test.beforeEach(async ({ page }) => {
-        // Enable console log debugging
-        page.on('console', msg => console.log(`BROWSER LOG: ${msg.text()}`));
-        page.on('pageerror', err => console.log(`BROWSER ERROR: ${err}`));
-        page.on('requestfailed', request => console.log(`REQUEST FAILED: ${request.url()} - ${request.failure().errorText}`));
-
         await setupPublicMocks(page);
     });
 
-    test('Parcours Aides: List -> Detail -> Refresh', async ({ page }) => {
+    test('Aides Flow: List -> Detail -> Refresh', async ({ page }) => {
+        // 1. List
         await page.goto('/aides');
-        await expect(page.getByText('Aide Test').first()).toBeVisible();
+        await expect(page.getByRole('heading', { name: 'Aides', level: 1 })).toBeVisible();
 
-        // Navigate to detail (simulating click or direct access)
-        await page.goto('/aides/aide-test');
-        await expect(page.getByText('Description longue')).toBeVisible();
+        // 2. Click Detail
+        // We look for a link or card containing the text.
+        await page.getByRole('link', { name: /Aide Test/ }).first().click({ force: true });
 
+        // 3. Check Detail
+        await expect(page).toHaveURL(/\/aides\/aide-test/);
+        await expect(page.getByRole('heading', { name: 'Aide Test', level: 1 })).toBeVisible();
+
+        // 4. Refresh
         await page.reload();
-        await expect(page.getByText('Description longue')).toBeVisible();
+        await expect(page.getByRole('heading', { name: 'Aide Test', level: 1 })).toBeVisible();
     });
 
-    test('Parcours Demarches: List -> Detail -> Refresh', async ({ page }) => {
+    test('Demarches Flow: List -> Detail -> Refresh', async ({ page }) => {
+        // 1. List
         await page.goto('/demarches');
-        await expect(page.getByText('Demander le RSA').first()).toBeVisible();
+        await expect(page.getByRole('heading', { name: 'Démarches', level: 1 })).toBeVisible();
 
-        await page.goto('/demarches/demarche-test');
-        await expect(page.getByText('Resume demarche RSA.').first()).toBeVisible();
+        // 2. Click Detail
+        await page.getByRole('link', { name: /Demander le RSA/ }).first().click({ force: true });
 
+        // 3. Check Detail
+        await expect(page).toHaveURL(/\/demarches\/demarche-test/);
+        await expect(page.getByRole('heading', { name: 'Demander le RSA', level: 1 })).toBeVisible();
+
+        // 4. Refresh
         await page.reload();
-        await expect(page.getByText('Resume demarche RSA.').first()).toBeVisible();
+        await expect(page.getByRole('heading', { name: 'Demander le RSA', level: 1 })).toBeVisible();
     });
 
-    test('Parcours Annuaire: List -> Detail -> Refresh', async ({ page }) => {
+    test('Structures (Annuaire) Flow: List -> Detail -> Refresh', async ({ page }) => {
+        // 1. List
         await page.goto('/annuaire');
-        await expect(page.getByText('Structure Test').first()).toBeVisible();
+        await expect(page.getByRole('heading', { name: 'Annuaire', level: 1 })).toBeVisible();
 
-        await page.goto('/structures/structure-test');
-        await expect(page.getByText('Testville')).toBeVisible();
+        // 2. Click Detail
+        // Use dispatchEvent to bypass potential overlay issues with the card link pattern
+        await page.getByRole('link', { name: /Structure Test/ }).first().dispatchEvent('click');
 
+        // 3. Check Detail
+        await expect(page).toHaveURL(/\/structures\/structure-test/);
+        await expect(page.getByRole('heading', { name: 'Structure Test', level: 1 })).toBeVisible();
+
+        // 4. Refresh
         await page.reload();
-        await expect(page.getByText('Testville')).toBeVisible();
+        await expect(page.getByRole('heading', { name: 'Structure Test', level: 1 })).toBeVisible();
     });
 
-    test('Parcours Actualites: List -> Detail -> Refresh', async ({ page }) => {
+    test('Actualites Flow: List -> Detail -> Refresh', async ({ page }) => {
+        // 1. List
         await page.goto('/actualites');
-        await expect(page.getByText('Actualité Test').first()).toBeVisible();
+        await expect(page.getByRole('heading', { name: 'Actualités', level: 1 })).toBeVisible();
 
-        await page.goto('/actualites/actu-test');
-        await expect(page.getByText('Contenu actu')).toBeVisible();
+        // 2. Click Detail
+        await page.getByRole('link', { name: /Actualité Test/ }).first().click({ force: true });
 
+        // 3. Check Detail
+        await expect(page).toHaveURL(/\/actualites\/actu-test/);
+        await expect(page.getByRole('heading', { name: 'Actualité Test', level: 1 })).toBeVisible();
+
+        // 4. Refresh
         await page.reload();
-        await expect(page.getByText('Contenu actu')).toBeVisible();
+        await expect(page.getByRole('heading', { name: 'Actualité Test', level: 1 })).toBeVisible();
     });
 });

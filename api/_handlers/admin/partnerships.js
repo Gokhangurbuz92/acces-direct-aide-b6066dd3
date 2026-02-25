@@ -1,33 +1,14 @@
 
 import prisma from '../../_utils/prisma.js';
-import jwt from 'jsonwebtoken';
-import { env } from '../../_utils/env.js';
+import { verifyAdmin } from '../../_utils/auth.js';
 
-const ALLOWED_ADMIN_ROLES = ['admin', 'superadmin'];
-
-function isAdmin(req) {
-    if (env.flags.devLoginEnabled) return true;
-
-    const jwtSecret = env.secrets.jwtSecret;
-    if (!jwtSecret) return false;
-
-    const authHeader = req.headers.authorization;
-    if (!authHeader || !authHeader.startsWith('Bearer ')) return false;
-    try {
-        const token = authHeader.split(' ')[1];
-        const decoded = jwt.verify(token, jwtSecret);
-        return decoded && ALLOWED_ADMIN_ROLES.includes(decoded.role);
-    } catch {
-        return false;
-    }
-}
 /**
  * @param {import('../../_utils/http-types').ApiRequest} req
  * @param {import('../../_utils/http-types').ApiResponse} res
  */
 
 export default async function handler(req, res) {
-    if (!isAdmin(req)) {
+    if (!verifyAdmin(req)) {
         return res.status(401).json({ error: "Unauthorized" });
     }
 

@@ -1,82 +1,62 @@
-# Documentation API Routes
+# Routes API
 
-Ce fichier est généré automatiquement à partir de `api/routes.js`.
-Il liste les routes définies et leurs gestionnaires.
+Ce document liste toutes les routes définies dans `api/routes.js` et leur contrat.
 
-| Path | Match | Handler File | Auth (Estimé) | Description |
-|---|---|---|---|---|
-| `/api/upload` | `exact` | `./_handlers/upload.js` | Public | - |
-| `/api/download` | `exact` | `./_handlers/download.js` | Public | - |
-| `/api/health` | `exact` | `./_handlers/health.js` | Public | - |
-| `/api/health/deep` | `exact` | `./_handlers/health-deep.js` | Public | - |
-| `/api/monitor/cron/actualites` | `exact` | `./_handlers/monitor/cron-actualites.js` | Public | - |
-| `/api/monitor/core` | `exact` | `./_handlers/monitor/core.js` | Public | - |
-| `/api/monitor/data-quality` | `exact` | `./_handlers/monitor/data-quality.js` | Public | - |
-| `/api/monitor/ingestion-freshness` | `exact` | `./_handlers/monitor/ingestion-freshness.js` | Public | - |
-| `/api/monitor/pro-rdv` | `exact` | `./_handlers/monitor/pro-rdv.js` | Public | - |
-| `/api/healthz` | `exact` | `./_handlers/health.js` | Public | - |
-| `/api/robots.txt` | `exact` | `./_handlers/robots.js` | Public | - |
-| `/api/robots` | `exact` | `./_handlers/robots.js` | Public | - |
-| `/api/sitemap.xml` | `exact` | `./_handlers/sitemap.js` | Public | - |
-| `/api/sitemap` | `exact` | `./_handlers/sitemap.js` | Public | - |
-| `/api/login-pro-guard` | `exact` | `./_handlers/login-pro-guard.js` | Public | - |
-| `/api/taxonomy` | `exact` | `./_handlers/taxonomy.js` | Public | - |
-| `/api/pdf` | `prefix` | `./_handlers/pdf.js` | Public | Export PDF stable des fiches publiques (`/api/pdf/aides/:slug`, `/api/pdf/demarches/:slug`) |
-| `/api/auth/login` | `exact` | `./_handlers/auth/login.js` | Public/Auth | - |
-| `/api/auth/signup` | `exact` | `./_handlers/auth/signup.js` | Public/Auth | Creation compte Particulier (reponse neutre + envoi verification email). |
-| `/api/auth/logout` | `exact` | `./_handlers/auth/logout.js` | Public/Auth | Suppression session Particulier (cookie HttpOnly). |
-| `/api/auth/me` | `exact` | `./_handlers/auth/me.js` | Public/Auth | - |
-| `/api/auth/verify-email` | `exact` | `./_handlers/auth/verify-email.js` | Public/Auth | Verification email (token hash/usage unique), redirection vers `/auth/verify-email`. |
-| `/api/auth/resend-verification` | `exact` | `./_handlers/auth/resend-verification.js` | Public/Auth | Renvoi verification email (message neutre, rate-limit). |
-| `/api/auth/forgot-password` | `exact` | `./_handlers/auth/forgot-password.js` | Public/Auth | Initialisation reset password (message neutre, rate-limit). |
-| `/api/auth/reset-password` | `exact` | `./_handlers/auth/reset-password.js` | Public/Auth | Reset password via token a usage unique. |
-| `/api/pro/auth/login` | `exact` | `./_handlers/pro/auth/login.js` | Pro | - |
-| `/api/pro/auth/register` | `exact` | `./_handlers/pro/auth/register.js` | Pro | - |
-| `/api/pro/auth/forgot-password` | `exact` | `./_handlers/pro/auth/forgot-password.js` | Pro | - |
-| `/api/pro/auth/reset-password` | `exact` | `./_handlers/pro/auth/reset-password.js` | Pro | - |
-| `/api/pro/me` | `exact` | `./_handlers/pro/me.js` | Pro | - |
-| `/api/pro/services` | `exact` | `./_handlers/pro/services.js` | Pro | - |
-| `/api/pro/slots` | `exact` | `./_handlers/pro/slots.js` | Pro | - |
-| `/api/pro/messages` | `exact` | `./_handlers/pro/messages.js` | Pro | - |
-| `/api/pro/messages/conversations` | `prefix` | `./_handlers/pro/messages-conversations.js` | Pro | Messagerie RDV structure (liste, detail, envoi), tenant-scope strict. |
-| `/api/pro/appointments` | `exact` | `./_handlers/pro/appointments/index.js` | Pro | - |
-| `/api/pro/appointments/cancel` | `exact` | `./_handlers/pro/appointments/cancel.js` | Pro | - |
-| `/api/pro/availability` | `exact` | `./_handlers/pro/availability.js` | Pro | - |
-| `/api/pro/timeoff` | `exact` | `./_handlers/pro/timeoff.js` | Pro | - |
-| `/api/pro/rdv/settings` | `exact` | `./_handlers/pro/rdv-settings.js` | Pro | Parametres publication RDV structure (GET/PUT, gate readiness avant publish). |
-| `/api/public/messages` | `exact` | `./_handlers/public/messages.js` | Public | - |
-| `/api/messages` | `prefix` | `./_handlers/messages.js` | Public/Auth (USER cookie) | Messagerie RDV usager (liste, detail, envoi, get-or-create depuis appointment). |
-| `/api/public/suggest-structure` | `exact` | `./_handlers/public/suggest-structure.js` | Public | - |
-| `/api/public/stats` | `exact` | `./_handlers/public/stats.js` | Public | - |
-| `/api/public/availability` | `exact` | `./_handlers/public/availability.js` | Public | - |
-| `/api/rdv` | `prefix` | `./_handlers/rdv.js` | Public/Auth (USER cookie) | Booking public: services publies, slots, creation idempotente, consultation/annulation owner-only. |
-| `/api/appointments` | `exact` | `./_handlers/public/appointments/create.js` | Public | - |
-| `/api/appointments/cancel` | `exact` | `./_handlers/public/appointments/cancel.js` | Public | - |
-| `/api/aides` | `prefix` | `./_handlers/aides.js` | Public | - |
-| `/api/search` | `exact` | `./_handlers/search.js` | Public | - |
-| `/api/structures` | `prefix` | `./_handlers/structures.js` | Public | - |
-| `/api/demarches` | `prefix` | `./_handlers/demarches.js` | Public | Filtre les titres de test sur la surface publique |
-| `/api/actualites` | `prefix` | `./_handlers/actualites.js` | Public | - |
-| `/api/guides` | `prefix` | `./_handlers/guides.js` | Public | - |
-| `/api/tools` | `prefix` | `./_handlers/tools.js` | Public | - |
-| `/api/dispositifs` | `prefix` | `./_handlers/dispositifs/index.js` | Public | - |
-| `/api/ressources` | `prefix` | `./_handlers/ressources.js` | Public | - |
-| `/api/reports` | `prefix` | `./_handlers/reports.js` | Public | - |
-| `/api/feedback` | `exact` | `./_handlers/feedback.js` | Public | Signalement public minimal (type, id/slug, message, email optionnel), rate-limité |
-| `/api/cron/pipeline` | `exact` | `./_handlers/cron/pipeline.js` | Public | - |
-| `/api/cron/actualites` | `exact` | `./_handlers/cron/actualites.js` | Public | - |
-| `/api/cron/review-queue/scan` | `exact` | `./_handlers/cron/review-queue-scan.js` | Public | - |
-| `/api/cron/ingest-structures` | `exact` | `./_handlers/cron/ingest-structures.js` | Public | - |
-| `/api/cron/ingest-aids` | `exact` | `./_handlers/cron/ingest-aids.js` | Public | - |
-| `/api/cron/purge` | `exact` | `./_handlers/cron/purge.js` | Public | - |
-| `/api/cron/link-check` | `exact` | `./_handlers/cron/link-check.js` | Public | - |
-| `/api/admin/privacy/export` | `exact` | `./_handlers/admin/privacy/export.js` | Admin | - |
-| `/api/admin/privacy/delete` | `exact` | `./_handlers/admin/privacy/delete.js` | Admin | - |
-| `/api/admin/inbox` | `exact` | `./_handlers/admin/inbox.js` | Admin | - |
-| `/api/admin/actions` | `exact` | `./_handlers/admin/actions.js` | Admin | - |
-| `/api/admin/runs` | `exact` | `./_handlers/admin/runs.js` | Admin | - |
-| `/api/admin/cron-runs` | `prefix` | `./_handlers/admin/cron-runs.js` | Admin | - |
-| `/api/admin/partnerships` | `exact` | `./_handlers/admin/partnerships.js` | Admin | - |
-| `/api/admin/link-checks` | `exact` | `./_handlers/admin/link-checks.js` | Admin | - |
-| `/api/admin/validate-publication` | `exact` | `./_handlers/admin/validate-publication.js` | Admin | - |
-| `/api/admin/review-queue` | `prefix` | `./_handlers/admin/review-queue.js` | Admin | - |
+## Public Endpoints
+
+| Method | Path | Handler | Auth | Response | Errors |
+| :--- | :--- | :--- | :--- | :--- | :--- |
+| `GET` | `/api/health` | `_handlers/health.js` | None | `{ status: "ok", env: "..." }` | - |
+| `GET` | `/api/taxonomy` | `_handlers/taxonomy.js` | None | `{ categories: [], situations: [] }` | - |
+| `GET` | `/api/aides` | `_handlers/aides.js` | None | `{ data: [], meta: {} }` | 400 |
+| `GET` | `/api/aides/:slug` | `_handlers/aides.js` | None | `{ data: {} }` | 404 |
+| `GET` | `/api/demarches` | `_handlers/demarches.js` | None | `{ data: [], meta: {} }` | 400 |
+| `GET` | `/api/demarches/:slug` | `_handlers/demarches.js` | None | `{ data: {} }` | 404 |
+| `GET` | `/api/structures` | `_handlers/structures.js` | None | `{ data: [], meta: {} }` | 400 |
+| `GET` | `/api/structures/:slug` | `_handlers/structures.js` | None | `{ data: {} }` | 404 |
+| `GET` | `/api/actualites` | `_handlers/actualites.js` | None | `{ data: [], meta: {} }` | 400 |
+| `GET` | `/api/actualites/:slug` | `_handlers/actualites.js` | None | `{ data: {} }` | 404 |
+| `GET` | `/api/search` | `_handlers/search.js` | None | `{ data: [], meta: {} }` | 400 |
+| `POST` | `/api/public/messages` | `_handlers/public/messages.js` | None | `{ success: true }` | 400 |
+| `POST` | `/api/public/suggest-structure` | `_handlers/public/suggest-structure.js` | None | `{ success: true }` | 400 |
+| `POST` | `/api/appointments` | `_handlers/public/appointments/create.js` | None | `{ appointmentId: "..." }` | 400, 409 |
+| `GET` | `/api/public/availability` | `_handlers/public/availability.js` | None | `{ slots: [] }` | 400 |
+| `POST` | `/api/appointments/cancel` | `_handlers/public/appointments/cancel.js` | Token | `{ success: true }` | 400, 404 |
+
+## Pro Endpoints (`/api/pro`)
+
+| Method | Path | Handler | Auth | Response | Errors |
+| :--- | :--- | :--- | :--- | :--- | :--- |
+| `POST` | `/api/pro/auth/login` | `_handlers/pro/auth/login.js` | None | `{ token: "..." }` | 401 |
+| `GET` | `/api/pro/me` | `_handlers/pro/me.js` | JWT (Pro) | `{ user: {}, structure: {} }` | 401 |
+| `GET` | `/api/pro/appointments` | `_handlers/pro/appointments/index.js` | JWT (Pro) | `{ data: [] }` | 401 |
+| `POST` | `/api/pro/availability` | `_handlers/pro/availability.js` | JWT (Pro) | `{ success: true }` | 400 |
+| `GET` | `/api/pro/messages` | `_handlers/pro/messages.js` | JWT (Pro) | `{ data: [] }` | 401 |
+
+## Admin Endpoints (`/api/admin`)
+
+| Method | Path | Handler | Auth | Response | Errors |
+| :--- | :--- | :--- | :--- | :--- | :--- |
+| `POST` | `/api/auth/login` | `_handlers/auth/login.js` | None | `{ token: "..." }` | 401 |
+| `GET` | `/api/auth/me` | `_handlers/auth/me.js` | Bearer (Admin) | `{ user: "admin" }` | 401 |
+| `GET` | `/api/admin/inbox` | `_handlers/admin/inbox.js` | Bearer (Admin) | `{ messages: [] }` | 401 |
+| `POST` | `/api/admin/actions` | `_handlers/admin/actions.js` | Bearer (Admin) | `{ success: true }` | 401 |
+| `GET` | `/api/admin/runs` | `_handlers/admin/runs.js` | Bearer (Admin) | `{ runs: [] }` | 401 |
+
+## Cron Endpoints (`/api/cron`)
+
+Ces endpoints sont protégés par `CRON_SECRET` dans les headers.
+
+| Method | Path | Handler | Auth | Description |
+| :--- | :--- | :--- | :--- | :--- |
+| `GET` | `/api/cron/pipeline` | `_handlers/cron/pipeline.js` | Cron Secret | Pipeline global d'ingestion |
+| `GET` | `/api/cron/ingest-structures` | `_handlers/cron/ingest-structures.js` | Cron Secret | Ingestion structures |
+| `GET` | `/api/cron/ingest-aids` | `_handlers/cron/ingest-aids.js` | Cron Secret | Ingestion aides |
+| `GET` | `/api/cron/link-check` | `_handlers/cron/link-check.js` | Cron Secret | Vérification liens morts |
+
+## Monitoring Endpoints
+
+| Method | Path | Handler | Auth | Description |
+| :--- | :--- | :--- | :--- | :--- |
+| `GET` | `/api/monitor/core` | `_handlers/monitor/core.js` | None | Métriques de base |
+| `GET` | `/api/monitor/pro-rdv` | `_handlers/monitor/pro-rdv.js` | None | Métriques RDV Pro |

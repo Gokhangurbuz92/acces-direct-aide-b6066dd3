@@ -1,4 +1,4 @@
-import { test, expect } from '@playwright/test';
+import { test, expect } from './fixtures.js';
 
 const LIST_ITEM = {
   id: 'aide-seo-1',

@@ -1,4 +1,4 @@
-import { test, expect } from '@playwright/test';
+import { test, expect } from './fixtures.js';
 
 test.describe('Admin Smoke Test', () => {
     test('Full Content Lifecycle: Create -> Publish -> Verify', async ({ page }) => {

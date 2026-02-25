@@ -1,5 +1,5 @@
 
-import { test, expect } from '@playwright/test';
+import { test, expect } from './fixtures.js';
 
 test.describe('Accessibility and Keyboard Navigation', () => {
   test.beforeEach(async ({ page }) => {

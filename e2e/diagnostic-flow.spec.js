@@ -1,4 +1,4 @@
-import { test, expect } from '@playwright/test';
+import { test, expect } from './fixtures.js';
 
 /**
  * E2E tests for the diagnostic flow (OpenFisca integration).
@@ -279,7 +279,7 @@ test.describe('Diagnostic Flow — OpenFisca Integration', () => {
                     body: JSON.stringify(MOCK_RESPONSE_CELIBATAIRE),
                 });
             } else {
-                await route.continue();
+                await route.fulfill({ json: {} });
             }
         });
 
@@ -345,7 +345,7 @@ test.describe('Diagnostic Flow — OpenFisca Integration', () => {
                     body: JSON.stringify(MOCK_RESPONSE_SALARIE),
                 });
             } else {
-                await route.continue();
+                await route.fulfill({ json: {} });
             }
         });
 
@@ -393,7 +393,7 @@ test.describe('Diagnostic Flow — OpenFisca Integration', () => {
                     body: JSON.stringify(MOCK_RESPONSE_COUPLE),
                 });
             } else {
-                await route.continue();
+                await route.fulfill({ json: {} });
             }
         });
 
@@ -447,7 +447,7 @@ test.describe('Diagnostic Flow — OpenFisca Integration', () => {
                     }),
                 });
             } else {
-                await route.continue();
+                await route.fulfill({ json: {} });
             }
         });
 

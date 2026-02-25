@@ -1,4 +1,4 @@
-import { test, expect } from '@playwright/test';
+import { test, expect } from './fixtures.js';
 
 test.describe('Ressources Module Navigation', () => {
     test.beforeEach(async ({ page }) => {

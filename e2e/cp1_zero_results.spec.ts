@@ -1,5 +1,5 @@
 
-import { test, expect } from '@playwright/test';
+import { test, expect } from './fixtures.js';
 
 test('CP1bis: Zero Results & Tracking', async ({ page }) => {
     // Mock API to return empty list

@@ -1,5 +1,5 @@
 
-import { test, expect } from '@playwright/test';
+import { test, expect } from './fixtures.js';
 
 test('CP1ter: Header Semantics Audit', async ({ page }) => {
     // Go to home

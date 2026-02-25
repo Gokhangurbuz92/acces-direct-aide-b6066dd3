@@ -1,4 +1,4 @@
-import { test, expect } from '@playwright/test';
+import { test, expect } from './fixtures.js';
 
 async function mockStatusEndpoints(page, options = {}) {
   const dataQualityStatus = options.dataQualityStatus ?? 200;

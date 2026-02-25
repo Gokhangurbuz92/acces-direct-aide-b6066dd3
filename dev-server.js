@@ -1,6 +1,5 @@
 
 import http from 'http';
-import url from 'url';
 import dotenv from 'dotenv';
 import { routes } from './api/routes.js';
 
@@ -24,8 +23,8 @@ const server = http.createServer(async (req, res) => {
         return;
     }
 
-    const parsedUrl = url.parse(req.url, true);
-    req.query = parsedUrl.query;
+    const parsedUrl = new URL(req.url, `http://localhost:${PORT}`);
+    req.query = Object.fromEntries(parsedUrl.searchParams);
 
     console.log(`[DevServer] ${req.method} ${parsedUrl.pathname}`);
 

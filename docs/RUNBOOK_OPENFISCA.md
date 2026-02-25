@@ -14,7 +14,17 @@ The diagnostic system uses [OpenFisca France](https://fr.openfisca.org/) to comp
 
 > ⚠️ **IMPORTANT**: The correct public API URL is `https://api.fr.openfisca.org/latest`.
 > The URL `https://fr.openfisca.org/api/v21` is **invalid** (DNS does not resolve).
-> For production stability, consider deploying a pinned OpenFisca Docker instance.
+>
+> **Production value** (Vercel): `OPENFISCA_BASE_URL=https://api.fr.openfisca.org/latest`
+>
+> ⚠️ The public OpenFisca API has **no SLA**. For production traffic with guaranteed availability,
+> deploy a self-hosted OpenFisca Docker instance (`openfisca/openfisca-france:latest`).
+
+### Resilience
+
+- **URL normalization**: Trailing slashes are stripped automatically to prevent `//calculate` paths.
+- **Health probe cache**: `isAvailable()` caches the result for 60 seconds. If the engine is down, `/api/diagnostic` returns `503 OPENFISCA_UNAVAILABLE` immediately without attempting calculation.
+- **Error contract**: The diagnostic endpoint never returns HTTP 500. Only `200` (success), `400` (validation error), `429` (rate limit), or `503` (engine unavailable).
 
 ## API Endpoints
 
@@ -147,7 +157,7 @@ Wizard (frontend)
 
 ## Rate Limiting
 
-`DIAGNOSTIC` action: 10 requests/minute per IP.
+`DIAGNOSTIC` action: 30 requests/minute per IP.
 
 ## FALC Explanations
 

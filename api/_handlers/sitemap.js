@@ -6,7 +6,17 @@ import { getCanonicalOrigin } from '../_utils/site-origin.js';
 const CACHE_CONTROL = 'public, max-age=0, s-maxage=3600, stale-while-revalidate=86400';
 const MAX_DYNAMIC_URLS = 10000;
 
-const STATIC_PUBLIC_PATHS = ['/', '/aides', '/demarches', '/annuaire', '/actualites'];
+const STATIC_PUBLIC_PATHS = [
+  '/',
+  '/aides',
+  '/demarches',
+  '/annuaire',
+  '/actualites',
+  '/orientation',
+  '/mentions-legales',
+  '/accessibilite',
+  '/contact',
+];
 
 /**
  * @param {unknown} value
@@ -49,19 +59,35 @@ function buildUrlNode(baseUrl, path, updatedAt) {
 /**
  * @param {string} baseUrl
  * @param {Array<{slug: string | null, updatedAt: Date}>} aides
+ * @param {Array<{slug: string | null, updatedAt: Date}>} demarches
+ * @param {Array<{slug: string | null, updatedAt: Date}>} structures
  * @returns {string}
  */
-function buildSitemapXml(baseUrl, aides) {
+function buildSitemapXml(baseUrl, aides, demarches, structures) {
   /** @type {string[]} */
   const nodes = [];
 
+  // Static pages
   for (const path of STATIC_PUBLIC_PATHS) {
     nodes.push(buildUrlNode(baseUrl, path, null));
   }
 
+  // Dynamic: aides
   for (const aide of aides) {
     if (!aide?.slug) continue;
     nodes.push(buildUrlNode(baseUrl, `/aides/${aide.slug}`, aide.updatedAt));
+  }
+
+  // Dynamic: démarches
+  for (const demarche of demarches) {
+    if (!demarche?.slug) continue;
+    nodes.push(buildUrlNode(baseUrl, `/demarches/${demarche.slug}`, demarche.updatedAt));
+  }
+
+  // Dynamic: structures (annuaire)
+  for (const structure of structures) {
+    if (!structure?.slug) continue;
+    nodes.push(buildUrlNode(baseUrl, `/annuaire/${structure.slug}`, structure.updatedAt));
   }
 
   return `<?xml version="1.0" encoding="UTF-8"?>
@@ -83,14 +109,29 @@ export default async function handler(req, res) {
   const baseUrl = getCanonicalOrigin(req);
 
   try {
-    const aides = await prisma.aide.findMany({
-      where: { statut: 'publie', slug: { not: null } },
-      select: { slug: true, updatedAt: true },
-      take: MAX_DYNAMIC_URLS,
-      orderBy: { updatedAt: 'desc' },
-    });
+    // Parallel queries for all dynamic content types
+    const [aides, demarches, structures] = await Promise.all([
+      prisma.aide.findMany({
+        where: { statut: 'publie', slug: { not: null } },
+        select: { slug: true, updatedAt: true },
+        take: MAX_DYNAMIC_URLS,
+        orderBy: { updatedAt: 'desc' },
+      }),
+      prisma.demarche.findMany({
+        where: { statut: 'publie', slug: { not: null } },
+        select: { slug: true, updatedAt: true },
+        take: MAX_DYNAMIC_URLS,
+        orderBy: { updatedAt: 'desc' },
+      }),
+      prisma.structure.findMany({
+        where: { statut: 'publie', slug: { not: null } },
+        select: { slug: true, updatedAt: true },
+        take: MAX_DYNAMIC_URLS,
+        orderBy: { updatedAt: 'desc' },
+      }),
+    ]);
 
-    const xml = buildSitemapXml(baseUrl, aides);
+    const xml = buildSitemapXml(baseUrl, aides, demarches, structures);
 
     res.setHeader('x-request-id', requestId);
     res.writeHead(200, {

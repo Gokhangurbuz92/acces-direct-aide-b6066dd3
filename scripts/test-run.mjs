@@ -46,15 +46,22 @@ function buildTestEnv() {
   dotenvConfig({ path: '.env.test.local', override: false, quiet: true });
   dotenvConfig({ path: '.env.test', override: false, quiet: true });
 
-  const databaseUrlTest = process.env.DATABASE_URL_TEST;
+  let databaseUrlTest = process.env.DATABASE_URL_TEST;
   if (!databaseUrlTest) {
-    safeExit(
-      [
-        '[test-run] Missing DATABASE_URL_TEST.',
-        'Set it in your shell or in .env.test.local (gitignored).',
-        'Example: DATABASE_URL_TEST="postgresql://USER@localhost:5432/acces_direct_aide_test?schema=public"',
-      ].join('\n'),
-    );
+    // When SKIP_DB_SETUP is set, the DB is never actually used.
+    // Provide a safe dummy URL to avoid blocking CI/unit-only test runs.
+    if (process.env.SKIP_DB_SETUP) {
+      databaseUrlTest = 'postgresql://ci@localhost:5432/acces_direct_aide_test?schema=public';
+      console.log('[test-run] No DATABASE_URL_TEST but SKIP_DB_SETUP is set — using dummy URL.');
+    } else {
+      safeExit(
+        [
+          '[test-run] Missing DATABASE_URL_TEST.',
+          'Set it in your shell or in .env.test.local (gitignored).',
+          'Example: DATABASE_URL_TEST="postgresql://USER@localhost:5432/acces_direct_aide_test?schema=public"',
+        ].join('\n'),
+      );
+    }
   }
 
   validateTestDatabaseUrl(databaseUrlTest);
@@ -122,7 +129,7 @@ async function ensureRequiredPgExtensions(env) {
       ].join('\n'),
     );
   } finally {
-    await client.end().catch(() => {});
+    await client.end().catch(() => { });
   }
 }
 

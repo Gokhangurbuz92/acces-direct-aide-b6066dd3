@@ -5,6 +5,7 @@ import { logger } from '../../lib/logger.js';
 import * as Sentry from '@sentry/node';
 import { computeContentHash } from '../../_utils/contentHash.js';
 import { ensureSlugOrNull } from '../../_utils/slug.js';
+import { ServicePublicDemarchesConnector } from '../../lib/ingestion/ServicePublicDemarchesConnector.js';
 
 /**
  * @param {unknown} error
@@ -17,9 +18,8 @@ function getErrorMessage(error) {
 }
 
 /**
- * Service-Public.fr démarches source.
- * Uses the Aides Territoires API endpoint for démarches/fiches pratiques.
- * Falls back to a curated list of key démarches if API is unavailable.
+ * Curated démarches as fallback when the Service-Public dataset is unavailable.
+ * These are always upserted to ensure a baseline of high-value content.
  */
 const CURATED_DEMARCHES = [
     {
@@ -121,8 +121,89 @@ const CURATED_DEMARCHES = [
 ];
 
 /**
+ * Upsert a single démarche item into the database.
+ * @param {{ titre: string, description_courte: string, pour_qui?: string, lien_officiel: string, categorie: string, audiences?: string[], source_url?: string, external_id?: string, source_api?: string }} item
+ * @param {string} runId
+ * @param {{ created: number, updated: number, skippedExisting: number, errors: string[] }} stats
+ */
+async function upsertDemarche(item, runId, stats) {
+    const baseSlug = ensureSlugOrNull(`demarche-${item.titre}`);
+    const contentHash = computeContentHash({
+        titre: item.titre,
+        description_courte: item.description_courte,
+        lien_officiel: item.lien_officiel || item.source_url,
+        source: item.source_api || 'service-public',
+    });
+
+    // Stable key: external_id+source_api OR source_url_exact OR slug
+    const orConditions = [];
+    if (item.external_id && item.source_api) {
+        orConditions.push({ external_id: item.external_id, source_api: item.source_api });
+    }
+    if (item.lien_officiel) {
+        orConditions.push({ lien_officiel: item.lien_officiel });
+    }
+    if (item.source_url) {
+        orConditions.push({ source_url: item.source_url });
+    }
+    if (baseSlug) {
+        orConditions.push({ slug: baseSlug });
+    }
+
+    if (orConditions.length === 0) {
+        stats.errors.push(`${item.titre}: no stable key for upsert`);
+        return;
+    }
+
+    const existing = await prisma.demarche.findFirst({
+        where: { OR: orConditions },
+    });
+
+    const data = {
+        titre: item.titre,
+        description_courte: item.description_courte || null,
+        pour_qui: item.pour_qui || null,
+        lien_officiel: item.lien_officiel || null,
+        categorie: item.categorie || 'administratif',
+        audiences: item.audiences || [],
+        statut: 'publie',
+        published_at: new Date(),
+        content_hash: contentHash,
+        source_url: item.source_url || item.lien_officiel || null,
+        territory_scope: item.territory_scope || 'NATIONAL',
+        retrieved_at: new Date(),
+        last_checked_at: new Date(),
+        date_verification: new Date(),
+    };
+
+    if (existing) {
+        if (existing.content_hash !== contentHash) {
+            await prisma.demarche.update({
+                where: { id: existing.id },
+                data,
+            });
+            stats.updated++;
+        } else {
+            stats.skippedExisting++;
+        }
+    } else {
+        let finalSlug = baseSlug;
+        if (finalSlug && (await prisma.demarche.count({ where: { slug: finalSlug } })) > 0) {
+            finalSlug = ensureSlugOrNull(`${finalSlug}-${contentHash.slice(0, 6)}`);
+        }
+        await prisma.demarche.create({
+            data: {
+                ...data,
+                slug: finalSlug || null,
+            },
+        });
+        stats.created++;
+    }
+}
+
+/**
  * @param {{ limit?: number, runId?: string }} params
- * @returns {Promise<{ fetched: number, processed: number, created: number, updated: number, skippedExisting: number, errors: string[] }>}
+ * @returns {Promise<{ fetched: number, processed: number, created: number, updated: number, skippedExisting: number, errors: string[], source: string }>}
  */
 export async function runIngestDemarches({ limit, runId } = {}) {
     if (!runId) runId = crypto.randomUUID();
@@ -136,71 +217,72 @@ export async function runIngestDemarches({ limit, runId } = {}) {
         updated: 0,
         skippedExisting: 0,
         errors: [],
+        source: 'curated',
     };
 
     const startTotal = Date.now();
-    const items = limit ? CURATED_DEMARCHES.slice(0, limit) : CURATED_DEMARCHES;
-    stats.fetched = items.length;
 
-    for (const item of items) {
-        stats.processed++;
-        try {
-            const baseSlug = ensureSlugOrNull(`demarche-${item.titre}`);
-            const contentHash = computeContentHash({
-                titre: item.titre,
-                description_courte: item.description_courte,
-                lien_officiel: item.lien_officiel,
-                source: 'service-public',
-            });
+    // -----------------------------------------------------------------------
+    // Phase 1: Try Service-Public dataset connector
+    // -----------------------------------------------------------------------
+    let connectorItems = [];
+    try {
+        const connector = new ServicePublicDemarchesConnector();
+        const urls = await connector.getDetailUrls();
+        stats.source = 'service-public-dataset';
+        logger.info('INGEST_DEMARCHES_CONNECTOR_OK', { runId, count: urls.length });
 
-            const existing = await prisma.demarche.findFirst({
-                where: {
-                    OR: [
-                        ...(baseSlug ? [{ slug: baseSlug }] : []),
-                        ...(item.lien_officiel ? [{ lien_officiel: item.lien_officiel }] : []),
-                    ],
-                },
-            });
+        const urlsToProcess = limit && limit > 0 ? urls.slice(0, limit) : urls;
+        stats.fetched = urlsToProcess.length;
 
-            const data = {
-                titre: item.titre,
-                description_courte: item.description_courte,
-                pour_qui: item.pour_qui,
-                lien_officiel: item.lien_officiel,
-                categorie: item.categorie,
-                audiences: item.audiences || [],
-                statut: 'publie',
-                published_at: new Date(),
-                content_hash: contentHash,
-                source_url: item.lien_officiel,
-                territory_scope: 'NATIONAL',
-                retrieved_at: new Date(),
-                last_checked_at: new Date(),
-            };
-
-            if (existing) {
-                if (existing.content_hash !== contentHash) {
-                    await prisma.demarche.update({
-                        where: { id: existing.id },
-                        data,
-                    });
-                    stats.updated++;
-                } else {
-                    stats.skippedExisting++;
-                }
-            } else {
-                let finalSlug = baseSlug;
-                if (finalSlug && (await prisma.demarche.count({ where: { slug: finalSlug } })) > 0) {
-                    finalSlug = ensureSlugOrNull(`${finalSlug}-${contentHash.slice(0, 6)}`);
-                }
-                await prisma.demarche.create({
-                    data: {
-                        ...data,
-                        slug: finalSlug || null,
-                    },
-                });
-                stats.created++;
+        for (const url of urlsToProcess) {
+            stats.processed++;
+            try {
+                const json = await connector.fetch(url);
+                const parsed = await connector.parse(json, url);
+                connectorItems.push(parsed);
+            } catch (parseErr) {
+                stats.errors.push(`parse: ${url}: ${getErrorMessage(parseErr)}`);
             }
+        }
+    } catch (connectorErr) {
+        logger.warn('INGEST_DEMARCHES_CONNECTOR_FAIL', { runId, error: getErrorMessage(connectorErr) });
+        Sentry.captureException(connectorErr, {
+            tags: { runId, stage: 'connector_fetch' },
+            extra: { connector: 'service-public' },
+        });
+        stats.errors.push(`Service-Public connector failed: ${getErrorMessage(connectorErr)}`);
+        stats.source = 'curated-fallback';
+    }
+
+    // -----------------------------------------------------------------------
+    // Phase 2: Always upsert curated baseline (ensures high-value content)
+    // -----------------------------------------------------------------------
+    const allItems = [...connectorItems];
+    const curatedToAdd = limit ? CURATED_DEMARCHES.slice(0, limit) : CURATED_DEMARCHES;
+
+    // Add curated items that aren't already in connector results (by lien_officiel)
+    const connectorUrls = new Set(connectorItems.map(i => i.lien_officiel || i.source_url));
+    for (const curated of curatedToAdd) {
+        if (!connectorUrls.has(curated.lien_officiel)) {
+            allItems.push({
+                ...curated,
+                source_url: curated.lien_officiel,
+                source_api: 'curated',
+                external_id: null,
+            });
+        }
+    }
+
+    if (!stats.fetched) stats.fetched = allItems.length;
+
+    // -----------------------------------------------------------------------
+    // Phase 3: Upsert all items
+    // -----------------------------------------------------------------------
+    for (const item of allItems) {
+        if (!stats.processed) stats.processed = 0;
+        try {
+            await upsertDemarche(item, runId, stats);
         } catch (itemErr) {
             logger.error('DEMARCHE_PROCESS_ERROR', { runId, titre: item.titre, error: itemErr });
             stats.errors.push(`${item.titre}: ${getErrorMessage(itemErr)}`);
@@ -212,6 +294,12 @@ export async function runIngestDemarches({ limit, runId } = {}) {
     }
 
     const durationTotal = Date.now() - startTotal;
+
+    // Silent failure detection
+    if (stats.created === 0 && stats.updated === 0 && stats.skippedExisting === 0 && stats.errors.length === 0) {
+        logger.warn('INGEST_DEMARCHES_SILENT_FAIL', { runId, stats });
+        stats.errors.push('Silent failure: no items processed');
+    }
 
     logger.info('INGEST_DEMARCHES_END', { runId, stats, duration_ms: durationTotal });
 
@@ -225,9 +313,9 @@ export async function runIngestDemarches({ limit, runId } = {}) {
                 items_new: stats.created,
                 items_updated: stats.updated,
                 items_skipped: stats.skippedExisting,
-                items_total: stats.processed,
+                items_total: stats.processed + allItems.length,
                 error_count: stats.errors.length,
-                logs: stats.errors.length ? JSON.stringify(stats.errors) : null,
+                logs: stats.errors.length ? JSON.stringify(stats.errors.slice(0, 50)) : null,
                 duration_ms: durationTotal,
             },
         });

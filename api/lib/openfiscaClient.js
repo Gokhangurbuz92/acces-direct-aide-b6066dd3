@@ -1,11 +1,19 @@
 /**
  * OpenFisca France API client.
  * Encapsulates /calculate and /trace calls with timeout, error handling, and PII protection.
+ *
+ * Health probe: cached 60s to avoid hammering /spec on every request.
+ * URL: normalised (trailing slash stripped) to prevent //calculate paths.
  */
 
-const OPENFISCA_BASE_URL = process.env.OPENFISCA_BASE_URL || 'https://api.fr.openfisca.org/latest';
+const RAW_URL = process.env.OPENFISCA_BASE_URL || 'https://api.fr.openfisca.org/latest';
+const OPENFISCA_BASE_URL = RAW_URL.replace(/\/+$/, ''); // normalise: strip trailing slash(es)
 const OPENFISCA_TIMEOUT_MS = parseInt(process.env.OPENFISCA_TIMEOUT_MS || '4000', 10);
 const OPENFISCA_ENABLE_TRACE = process.env.OPENFISCA_ENABLE_TRACE === 'true';
+
+/* ── Health probe cache (60 s TTL) ─────────────────────────── */
+const HEALTH_CACHE_TTL_MS = 60_000;
+let _healthCache = { available: null, checkedAt: 0 };
 
 /**
  * Make a POST request to OpenFisca with timeout.
@@ -30,6 +38,7 @@ async function post(endpoint, payload) {
             const text = await res.text().catch(() => '');
             const err = new Error(`OpenFisca ${endpoint} returned ${res.status}`);
             err.status = res.status;
+            err.code = 'OPENFISCA_HTTP_ERROR';
             err.detail = text.slice(0, 200); // limit logged detail
             throw err;
         }
@@ -41,7 +50,7 @@ async function post(endpoint, payload) {
             timeoutErr.code = 'OPENFISCA_TIMEOUT';
             throw timeoutErr;
         }
-        if (!err.status) {
+        if (!err.code) {
             err.code = 'OPENFISCA_NETWORK_ERROR';
         }
         throw err;
@@ -76,7 +85,9 @@ export async function calculate(situation) {
  */
 export async function trace(situation) {
     if (!OPENFISCA_ENABLE_TRACE) {
-        throw new Error('OpenFisca trace is disabled in this environment');
+        const err = new Error('OpenFisca trace is disabled in this environment');
+        err.code = 'OPENFISCA_TRACE_DISABLED';
+        throw err;
     }
 
     console.log('[OpenFisca] trace request');
@@ -88,9 +99,15 @@ export async function trace(situation) {
 
 /**
  * Check if OpenFisca is reachable (health check).
+ * Uses a 60-second TTL cache to avoid hammering the upstream on every request.
  * @returns {Promise<boolean>}
  */
 export async function isAvailable() {
+    const now = Date.now();
+    if (_healthCache.available !== null && (now - _healthCache.checkedAt) < HEALTH_CACHE_TTL_MS) {
+        return _healthCache.available;
+    }
+
     try {
         const controller = new AbortController();
         const timer = setTimeout(() => controller.abort(), 2000);
@@ -98,8 +115,10 @@ export async function isAvailable() {
             signal: controller.signal,
         });
         clearTimeout(timer);
+        _healthCache = { available: res.ok, checkedAt: now };
         return res.ok;
     } catch {
+        _healthCache = { available: false, checkedAt: now };
         return false;
     }
 }

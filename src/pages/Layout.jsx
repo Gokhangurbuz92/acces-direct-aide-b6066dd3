@@ -1,7 +1,7 @@
 
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
-import ADALogo from '@/components/Brand/ADALogo';
+import Logo from '@/components/Brand/Logo';
 import { createPageUrl } from '@/utils';
 import {
   Menu,
@@ -428,9 +428,8 @@ export default function Layout({ children, currentPageName }) {
           <div className="grid grid-cols-1 gap-8 sm:grid-cols-2 md:grid-cols-4">
             {/* Logo et description */}
             <div className="md:col-span-2">
-              <div className="mb-6 flex items-center gap-3">
-                <ADALogo size={40} className="text-white shrink-0" />
-                <span className="text-xl font-semibold text-white">AccesDirectAide</span>
+              <div className="mb-6">
+                <Logo variant="full" tone="white" size={48} />
               </div>
               <p className="text-white text-sm mb-4">
                 Un site non lucratif pour vous aider à trouver les aides,

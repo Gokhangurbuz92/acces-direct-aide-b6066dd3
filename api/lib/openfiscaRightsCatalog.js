@@ -23,12 +23,37 @@ export const RIGHTS_CATALOG = [
             'Vos revenus actuels dépassent le plafond du RSA, ou votre situation ' +
             'ne correspond pas aux critères (âge, résidence, etc.).',
         explainFalcEligible:
-            'Vous pouvez peut-être recevoir le RSA. ' +
-            "C'est de l'argent versé chaque mois pour vous aider à vivre. " +
-            'Vous devez faire une demande à la CAF.',
+            '📋 Résumé\n' +
+            "Le RSA, c'est de l'argent versé chaque mois pour vous aider à vivre.\n\n" +
+            '👤 Pour qui ?\n' +
+            '• Vous avez plus de 25 ans (ou plus de 18 ans avec un enfant).\n' +
+            '• Vous habitez en France.\n' +
+            "• Vous n'avez pas ou peu de revenus.\n\n" +
+            '💶 Ce que ça apporte\n' +
+            "Un montant d'argent versé chaque mois sur votre compte.\n" +
+            'Le montant dépend de votre situation familiale.\n\n' +
+            '📝 Comment faire ?\n' +
+            '1. Allez sur le site de la CAF (caf.fr) ou rendez-vous dans votre CAF.\n' +
+            '2. Remplissez le formulaire de demande de RSA.\n' +
+            "3. Envoyez les documents demandés (pièce d'identité, justificatif de domicile, relevés bancaires).\n" +
+            '4. La CAF étudie votre dossier et vous répond.\n\n' +
+            '📎 Documents nécessaires\n' +
+            "• Pièce d'identité\n" +
+            '• Justificatif de domicile\n' +
+            '• Relevés bancaires des 3 derniers mois\n' +
+            "• Justificatifs de revenus (si vous en avez)\n\n" +
+            '🔗 Liens officiels\n' +
+            '• https://www.service-public.fr/particuliers/vosdroits/N19775\n' +
+            '• https://www.caf.fr',
         explainFalcNotEligible:
-            'Vous ne pouvez probablement pas recevoir le RSA. ' +
-            'Vous gagnez trop ou vous ne remplissez pas les conditions.',
+            '📋 Résumé\n' +
+            "D'après vos informations, vous ne pouvez probablement pas recevoir le RSA.\n\n" +
+            '❓ Pourquoi ?\n' +
+            '• Vos revenus sont trop élevés.\n' +
+            "• Ou votre situation ne remplit pas les conditions (âge, résidence…).\n\n" +
+            '💡 Que faire ?\n' +
+            "• Si votre situation change, vous pouvez refaire le calcul.\n" +
+            '• Vous pouvez aussi aller à la CAF pour vérifier avec un conseiller.',
         nextSteps: [
             { type: 'aide', slug: 'rsa' },
             { type: 'demarche', slug: 'demande-rsa' },
@@ -47,12 +72,39 @@ export const RIGHTS_CATALOG = [
             "Vos revenus sont en dehors de la fourchette d'éligibilité à la Prime d'activité, " +
             'ou votre statut ne correspond pas (ex. étudiant sans activité suffisante).',
         explainFalcEligible:
-            "Vous pouvez peut-être recevoir la Prime d'activité. " +
-            "C'est de l'argent en plus pour les personnes qui travaillent " +
-            'mais qui ne gagnent pas beaucoup. Demandez à la CAF.',
+            '📋 Résumé\n' +
+            "La Prime d'activité, c'est de l'argent en plus chaque mois " +
+            'pour les personnes qui travaillent mais ne gagnent pas beaucoup.\n\n' +
+            '👤 Pour qui ?\n' +
+            '• Vous avez plus de 18 ans.\n' +
+            '• Vous travaillez (salarié, indépendant, apprenti…).\n' +
+            "• Vos revenus ne dépassent pas un certain montant.\n\n" +
+            '💶 Ce que ça apporte\n' +
+            'Un complément de revenus versé chaque mois par la CAF.\n' +
+            'Le montant dépend de vos revenus et de votre famille.\n\n' +
+            '📝 Comment faire ?\n' +
+            '1. Allez sur le site de la CAF (caf.fr).\n' +
+            "2. Faites d'abord une simulation pour savoir si vous y avez droit.\n" +
+            '3. Si oui, remplissez la demande en ligne.\n' +
+            "4. Envoyez vos justificatifs de revenus.\n" +
+            '5. La CAF vous répond sous quelques semaines.\n\n' +
+            '📎 Documents nécessaires\n' +
+            "• Pièce d'identité\n" +
+            '• Bulletins de salaire des 3 derniers mois\n' +
+            "• Déclaration trimestrielle de ressources\n\n" +
+            '🔗 Liens officiels\n' +
+            '• https://www.service-public.fr/particuliers/vosdroits/F2882\n' +
+            '• https://www.caf.fr',
         explainFalcNotEligible:
-            "Vous ne pouvez probablement pas recevoir la Prime d'activité. " +
-            "Vos revenus sont trop hauts ou trop bas, ou vous n'avez pas d'activité.",
+            '📋 Résumé\n' +
+            "D'après vos informations, vous ne pouvez probablement pas recevoir " +
+            "la Prime d'activité.\n\n" +
+            '❓ Pourquoi ?\n' +
+            '• Vos revenus sont trop élevés ou trop bas.\n' +
+            "• Ou vous n'avez pas d'activité professionnelle.\n\n" +
+            '💡 Que faire ?\n' +
+            '• Si vous commencez à travailler, refaites le calcul.\n' +
+            '• Vous pouvez aussi faire une simulation sur caf.fr.',
         nextSteps: [
             { type: 'aide', slug: 'prime-activite' },
             { type: 'demarche', slug: 'demande-prime-activite' },
@@ -70,12 +122,40 @@ export const RIGHTS_CATALOG = [
             "L'APL ne semble pas applicable à votre situation. " +
             'Cela peut dépendre du type de logement, de vos revenus ou de votre statut.',
         explainFalcEligible:
-            "Vous pouvez peut-être recevoir l'APL. " +
-            "C'est une aide pour payer moins cher votre loyer. " +
-            'Demandez à la CAF.',
+            '📋 Résumé\n' +
+            "L'APL, c'est une aide pour payer moins cher votre loyer.\n" +
+            'La CAF vous verse cette aide chaque mois.\n\n' +
+            '👤 Pour qui ?\n' +
+            '• Vous êtes locataire.\n' +
+            '• Votre logement est conventionné (surtout les HLM).\n' +
+            "• Vos revenus ne dépassent pas un certain montant.\n\n" +
+            '💶 Ce que ça apporte\n' +
+            'Une partie de votre loyer est payée par la CAF.\n' +
+            "L'aide peut être versée directement au propriétaire ou sur votre compte.\n\n" +
+            '📝 Comment faire ?\n' +
+            '1. Allez sur le site de la CAF (caf.fr).\n' +
+            "2. Faites une simulation pour savoir combien vous pouvez recevoir.\n" +
+            '3. Remplissez la demande en ligne sur votre espace personnel CAF.\n' +
+            '4. Donnez votre bail (contrat de location) et vos revenus.\n' +
+            '5. La CAF vous répond et commence à verser si vous y avez droit.\n\n' +
+            '📎 Documents nécessaires\n' +
+            "• Pièce d'identité\n" +
+            '• Contrat de location (bail)\n' +
+            '• Attestation de loyer (remplie par le propriétaire)\n' +
+            "• Justificatifs de revenus\n\n" +
+            '🔗 Liens officiels\n' +
+            '• https://www.service-public.fr/particuliers/vosdroits/F12006\n' +
+            '• https://www.caf.fr',
         explainFalcNotEligible:
-            "Vous ne pouvez probablement pas recevoir l'APL. " +
-            'Votre logement ou vos revenus ne correspondent pas.',
+            '📋 Résumé\n' +
+            "D'après vos informations, vous ne pouvez probablement pas recevoir l'APL.\n\n" +
+            '❓ Pourquoi ?\n' +
+            "• Votre logement n'est peut-être pas conventionné.\n" +
+            '• Ou vos revenus sont trop élevés.\n\n' +
+            '💡 Que faire ?\n' +
+            "• Vérifiez si votre logement est conventionné auprès de votre propriétaire.\n" +
+            "• Vous avez peut-être droit à une autre aide au logement (ALS ou ALF).\n" +
+            '• Faites une simulation sur caf.fr.',
         nextSteps: [
             { type: 'aide', slug: 'apl' },
             { type: 'demarche', slug: 'demande-aide-logement' },
@@ -92,10 +172,39 @@ export const RIGHTS_CATALOG = [
         explainNotEligible:
             "Aucune aide au logement ne semble applicable à votre situation actuelle.",
         explainFalcEligible:
-            "Vous pouvez peut-être recevoir une aide pour votre logement. " +
-            "Cela peut payer une partie de votre loyer. Demandez à la CAF.",
+            '📋 Résumé\n' +
+            "Vous pouvez peut-être recevoir une aide pour payer votre logement.\n" +
+            "Il existe 3 types d'aides : APL, ALS, ALF. La CAF choisit celle qui vous convient.\n\n" +
+            '👤 Pour qui ?\n' +
+            '• Vous êtes locataire ou vous remboursez un prêt pour votre logement.\n' +
+            '• Vous habitez en France.\n' +
+            "• Vos revenus ne dépassent pas un certain montant.\n\n" +
+            '💶 Ce que ça apporte\n' +
+            'La CAF paie une partie de votre loyer ou de votre prêt chaque mois.\n\n' +
+            '📝 Comment faire ?\n' +
+            '1. Allez sur le site de la CAF (caf.fr).\n' +
+            '2. Faites une simulation pour connaître votre aide.\n' +
+            '3. Créez votre espace personnel si vous ne l\'avez pas encore.\n' +
+            '4. Remplissez la demande en ligne.\n' +
+            "5. Envoyez votre bail et vos justificatifs.\n\n" +
+            '📎 Documents nécessaires\n' +
+            "• Pièce d'identité\n" +
+            '• Contrat de location (bail) ou offre de prêt\n' +
+            '• Attestation de loyer\n' +
+            "• Justificatifs de revenus\n\n" +
+            '🔗 Liens officiels\n' +
+            '• https://www.service-public.fr/particuliers/vosdroits/N20360\n' +
+            '• https://www.caf.fr',
         explainFalcNotEligible:
-            "Vous ne pouvez probablement pas recevoir d'aide pour votre logement.",
+            '📋 Résumé\n' +
+            "D'après vos informations, vous ne pouvez probablement pas " +
+            "recevoir d'aide au logement.\n\n" +
+            '❓ Pourquoi ?\n' +
+            '• Vos revenus sont peut-être trop élevés.\n' +
+            "• Ou votre situation de logement ne correspond pas aux critères.\n\n" +
+            '💡 Que faire ?\n' +
+            '• Si votre situation change, refaites le calcul.\n' +
+            '• Vous pouvez aussi demander conseil à la CAF.',
         nextSteps: [
             { type: 'aide', slug: 'aide-logement' },
         ],

@@ -12,7 +12,9 @@ The diagnostic system uses [OpenFisca France](https://fr.openfisca.org/) to comp
 | `OPENFISCA_TIMEOUT_MS` | `4000` | Request timeout in milliseconds |
 | `OPENFISCA_ENABLE_TRACE` | `false` | Enable `/trace` endpoint (pro/admin only) |
 
-> **Production**: For stability, deploy a pinned OpenFisca Docker instance and set `OPENFISCA_BASE_URL` accordingly.
+> ⚠️ **IMPORTANT**: The correct public API URL is `https://api.fr.openfisca.org/latest`.
+> The URL `https://fr.openfisca.org/api/v21` is **invalid** (DNS does not resolve).
+> For production stability, consider deploying a pinned OpenFisca Docker instance.
 
 ## API Endpoints
 
@@ -62,25 +64,27 @@ Requires `Authorization: Bearer {ADMIN_TOKEN}` or active pro session.
 
 ## OpenFisca Variables Reference
 
+All variables verified against `GET https://api.fr.openfisca.org/latest/variable/{name}` on 2026-02-25.
+
 ### Input Variables
-| Variable | Entity | Period | Type | Wizard Field |
-|----------|--------|--------|------|-------------|
-| `date_naissance` | individu | ETERNITY | Date | birthDate |
-| `activite` | individu | MONTH | Enum | statut (emploi→actif, chomage→chomeur, etc.) |
-| `salaire_net` | individu | MONTH | Float | income.salary |
-| `chomage_net` | individu | MONTH | Float | income.unemployment |
-| `loyer` | menage | MONTH | Float | housing.rent |
-| `charges_locatives` | menage | MONTH | Float | housing.charges |
-| `statut_occupation_logement` | menage | MONTH | Enum | housing.status |
-| `depcom` | menage | MONTH | String | territory (code INSEE) |
+| Variable | Entity | Period | Type | Wizard Field | Description (OpenFisca) |
+|----------|--------|--------|------|-------------|------------------------|
+| `date_naissance` | individu | ETERNITY | Date | birthDate | Date de naissance |
+| `activite` | individu | MONTH | String (enum) | statut | Activité (actif, chomeur, etudiant, retraite, inactif) |
+| `salaire_net` | individu | MONTH | Float | income.salary | Salaires nets d'après définition INSEE |
+| `chomage_net` | individu | MONTH | Float | income.unemployment | Allocations chômage nettes |
+| `loyer` | menage | MONTH | Float | housing.rent | Loyer ou mensualité d'emprunt |
+| `charges_locatives` | menage | MONTH | Float | housing.charges | Charges locatives |
+| `statut_occupation_logement` | menage | MONTH | String (enum) | housing.status | Statut d'occupation du logement |
+| `depcom` | menage | MONTH | String | territory | Code INSEE commune |
 
 ### Output Variables
-| Variable | Entity | Label | Code in response |
-|----------|--------|-------|-----------------|
-| `rsa` | famille | RSA | `rsa` |
-| `ppa` | famille | Prime d'activité | `prime_activite` |
-| `apl` | famille | APL | `apl` |
-| `aide_logement` | famille | Aide au logement | `aide_logement` |
+| Variable | Entity | Type | Code in response | Description (OpenFisca) |
+|----------|--------|------|-----------------|------------------------|
+| `rsa` | famille | Float | `rsa` | Revenu de solidarité active |
+| `ppa` | famille | Float | `prime_activite` | Prime Pour l'Activité |
+| `apl` | famille | Float | `apl` | Aide personnalisée au logement |
+| `aide_logement` | famille | Float | `aide_logement` | Aide au logement (tout type) = APL + ALS + ALF |
 
 > ⚠️ **`ppa` NOT `prime_activite`** — OpenFisca uses `ppa` internally for Prime d'activité.
 
@@ -93,17 +97,20 @@ Requires `Authorization: Bearer {ADMIN_TOKEN}` or active pro session.
 | `chomage` | `chomeur` | Chômeur |
 | `etudiant` | `etudiant` | Étudiant |
 | `retraite` | `retraite` | Retraité |
-| `hebergement` | `inactif` | Inactif |
+| `hebergement` | `inactif` | Autre, inactif |
 
 ### `statut_occupation_logement` (OpenFisca)
-| Wizard value | OpenFisca value |
-|-------------|-----------------|
-| `tenant` | `locataire_vide` |
-| `tenant_hlm` | `locataire_hlm` |
-| `tenant_furnished` | `locataire_meuble` |
-| `owner` | `proprietaire` |
-| `free` | `loge_gratuitement` |
-| `homeless` | `sans_domicile` |
+| Wizard value | OpenFisca value | OpenFisca Label |
+|-------------|-----------------|-----------------|
+| `tenant` | `locataire_vide` | Locataire ou sous-locataire d'un logement loué vide non-HLM |
+| `tenant_hlm` | `locataire_hlm` | Locataire d'un logement HLM |
+| `tenant_furnished` | `locataire_meuble` | Locataire d'un logement loué meublé |
+| `owner` | `proprietaire` | Propriétaire (non accédant) du logement |
+| `free` | `loge_gratuitement` | Logé gratuitement |
+| `homeless` | `sans_domicile` | Sans domicile stable |
+| _(other)_ | `non_renseigne` | Non renseigné |
+
+> **Additional OpenFisca values** not mapped by the wizard: `locataire_foyer`, `primo_accedant`.
 
 ## Local Testing
 
@@ -118,6 +125,12 @@ npm test -- --testPathPattern=openfisca
 
 # Verify a specific variable exists in OpenFisca
 curl -s "https://api.fr.openfisca.org/latest/variable/ppa" | jq '{id, entity, definitionPeriod, valueType}'
+
+# Test trace endpoint (requires ADMIN_TOKEN)
+curl -X POST http://localhost:3000/api/diagnostic/trace \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer YOUR_ADMIN_TOKEN" \
+  -d '{"answers":{"birthDate":"1992-06-15","housing":{"status":"tenant"}}}'
 ```
 
 ## Architecture
@@ -135,3 +148,15 @@ Wizard (frontend)
 ## Rate Limiting
 
 `DIAGNOSTIC` action: 10 requests/minute per IP.
+
+## FALC Explanations
+
+Each right includes structured FALC (Facile à Lire et à Comprendre) text with:
+- **📋 Résumé** — one simple sentence
+- **👤 Pour qui ?** — eligibility conditions in simple terms
+- **💶 Ce que ça apporte** — what the benefit provides
+- **📝 Comment faire ?** — numbered action steps (3–5 steps)
+- **📎 Documents nécessaires** — required documents list
+- **🔗 Liens officiels** — official service-public.fr and CAF links
+
+Toggle between standard and FALC explanations via the 📖 button on each result card.

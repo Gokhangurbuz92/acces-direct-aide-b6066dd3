@@ -8,6 +8,7 @@ import {
 } from 'lucide-react';
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
+import CategoryChip from "@/components/ui/CategoryChip";
 import { formatProvenanceDate, getFreshnessBadge, getProvenance } from '@/lib/provenance';
 
 const FRESHNESS_BADGE_CLASS = {
@@ -22,8 +23,10 @@ export default function DemarcheCard({ demarche }) {
   const verifiedAt = formatProvenanceDate(provenance.verifiedAt);
   const sourceHost = provenance.sourceHost;
   const freshness = getFreshnessBadge(provenance.verifiedAt);
-  const verificationLabel = verifiedAt ? `Vérifié le ${verifiedAt}` : 'À vérifier';
-  const sourceLabel = sourceHost ? `Source: ${sourceHost}` : 'Source: non renseignée';
+  // No "À vérifier" — show source or verified date only
+  const verificationLabel = verifiedAt
+    ? `Vérifié le ${verifiedAt}`
+    : (sourceHost ? `Source : ${sourceHost}` : null);
   const targetUrl = demarche.slug ? `/demarches/${demarche.slug}` : `/demarches/view?id=${demarche.id}`;
 
   return (
@@ -39,9 +42,7 @@ export default function DemarcheCard({ demarche }) {
       <CardContent className="p-0">
         <div className="p-6">
           <div className="flex justify-between items-start mb-4">
-            <Badge variant="outline" className="bg-slate-50">
-              {demarche.category?.label || demarche.categorie}
-            </Badge>
+            <CategoryChip slug={demarche.categorie} label={demarche.category?.label} />
             <div className="flex flex-col items-end gap-2">
               <Badge
                 variant="outline"
@@ -61,27 +62,25 @@ export default function DemarcheCard({ demarche }) {
           <p className="text-slate-600 text-sm line-clamp-2 mb-6">
             {demarche.summary_falc || demarche.description_courte}
           </p>
-	          <div className="flex flex-wrap gap-4 text-xs text-slate-500">
+          <div className="flex flex-wrap gap-4 text-xs text-slate-500">
             {demarche.delai && (
               <span className="flex items-center gap-1.5">
                 <Clock className="h-3.5 w-3.5" /> {demarche.delai}
               </span>
             )}
-	            <span className="flex items-center gap-1.5">
-	              <CheckCircle2 className="h-3.5 w-3.5 text-green-500" /> Guide pas à pas
-	            </span>
-	          </div>
+            <span className="flex items-center gap-1.5">
+              <CheckCircle2 className="h-3.5 w-3.5 text-green-500" /> Guide pas à pas
+            </span>
+          </div>
+          {verificationLabel && (
             <div className="mt-3 flex flex-wrap gap-4 text-xs text-slate-500">
               <span className="flex items-center gap-1.5">
                 <Calendar className="h-3.5 w-3.5" />
                 {verificationLabel}
               </span>
-              <span className="flex items-center gap-1.5">
-                <CheckCircle2 className="h-3.5 w-3.5 text-blue-600" />
-                {sourceLabel}
-              </span>
             </div>
-	        </div>
+          )}
+        </div>
         <div className="bg-slate-50 px-6 py-3 border-t border-slate-100">
           <div
             className="inline-flex items-center gap-2 text-blue-600 font-bold text-sm group-hover:text-blue-800 transition-colors"

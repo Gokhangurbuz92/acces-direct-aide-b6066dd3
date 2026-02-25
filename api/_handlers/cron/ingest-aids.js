@@ -5,6 +5,8 @@ import { logger } from '../../lib/logger.js';
 import * as Sentry from '@sentry/node';
 import { GrandEstConnector } from '../../lib/ingestion/GrandEstConnector.js';
 import { AgefiphConnector } from '../../lib/ingestion/AgefiphConnector.js';
+import { AidesTerritoiresConnector } from '../../lib/ingestion/AidesTerritoiresConnector.js';
+import { DreesConnector } from '../../lib/ingestion/DreesConnector.js';
 import { computeContentHash } from '../../_utils/contentHash.js';
 import { ensureSlugOrNull } from '../../_utils/slug.js';
 import { upsertSourceDocument } from '../../_utils/sourceDocument.js';
@@ -68,7 +70,9 @@ export async function runIngestAids({ limit, runId, wipe = false }) {
 
     const connectors = [
         new GrandEstConnector(),
-        new AgefiphConnector()
+        new AgefiphConnector(),
+        new AidesTerritoiresConnector(),
+        new DreesConnector(),
     ];
 
     for (const connector of connectors) {
@@ -83,7 +87,7 @@ export async function runIngestAids({ limit, runId, wipe = false }) {
             } catch (e) {
                 logger.error(`CONNECTOR_CRAWL_ERROR`, { runId, connector: connector.name, error: e });
                 stats.errors.push(`${connector.name} crawl error: ${getErrorMessage(e)}`);
-                
+
                 // Enhanced Sentry context for connector crawl errors
                 Sentry.captureException(e, {
                     tags: {
@@ -191,7 +195,7 @@ export async function runIngestAids({ limit, runId, wipe = false }) {
 
                     if (existing) {
                         if (existing.content_hash !== contentHash || (existing.source_document_id || null) !== sourceDocumentId) {
-                             await prisma.aide.update({
+                            await prisma.aide.update({
                                 where: { id: existing.id },
                                 data
                             });
@@ -218,7 +222,7 @@ export async function runIngestAids({ limit, runId, wipe = false }) {
                 } catch (itemErr) {
                     logger.error(`ITEM_PROCESS_ERROR`, { runId, url, error: itemErr });
                     stats.errors.push(`${url}: ${getErrorMessage(itemErr)}`);
-                    
+
                     // Enhanced Sentry context for item-level errors
                     Sentry.captureException(itemErr, {
                         tags: {
@@ -235,28 +239,28 @@ export async function runIngestAids({ limit, runId, wipe = false }) {
             stats.durationByStage.processingMs += (Date.now() - startProcess);
 
         } catch (connErr) {
-             logger.error(`CONNECTOR_ERROR`, { runId, connector: connector.name, error: connErr });
-             stats.errors.push(`${connector.name} fatal: ${getErrorMessage(connErr)}`);
-             
-             // Enhanced Sentry context for fatal connector errors
-             Sentry.captureException(connErr, {
-                 tags: {
-                     connector: connector.name,
-                     runId: runId,
-                     stage: 'connector_fatal'
-                 },
-                 extra: {
-                     connectorName: connector.name,
-                     stats: stats
-                 }
-             });
+            logger.error(`CONNECTOR_ERROR`, { runId, connector: connector.name, error: connErr });
+            stats.errors.push(`${connector.name} fatal: ${getErrorMessage(connErr)}`);
+
+            // Enhanced Sentry context for fatal connector errors
+            Sentry.captureException(connErr, {
+                tags: {
+                    connector: connector.name,
+                    runId: runId,
+                    stage: 'connector_fatal'
+                },
+                extra: {
+                    connectorName: connector.name,
+                    stats: stats
+                }
+            });
         }
 
         logger.info(`CONNECTOR_END`, { runId, connector: connector.name });
     }
 
     const durationTotal = Date.now() - startTotal;
-    
+
     // Detect silent failures: no items processed and no errors
     if (stats.processed === 0 && stats.errors.length === 0) {
         const silentFailureError = new Error('Silent failure: No items processed and no errors reported');
@@ -267,7 +271,7 @@ export async function runIngestAids({ limit, runId, wipe = false }) {
         });
         stats.errors.push('Silent failure detected: No items processed');
     }
-    
+
     logger.info('INGEST_AIDS_END', { runId, stats, duration_ms: durationTotal });
 
     // Log the Run with enhanced traceability
@@ -286,7 +290,7 @@ export async function runIngestAids({ limit, runId, wipe = false }) {
                 duration_ms: durationTotal
             }
         });
-    } catch (e) { 
+    } catch (e) {
         logger.error('IMPORT_LOG_ERROR', { runId, error: e });
     }
 

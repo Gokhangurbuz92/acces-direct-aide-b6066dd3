@@ -4,6 +4,7 @@ import { useQuery } from '@tanstack/react-query';
 import { Search, SlidersHorizontal, Calendar, ExternalLink, AlertTriangle, Info, RefreshCw, Star, ArrowRight } from 'lucide-react';
 import SEO from '@/components/SEO';
 import { client } from '@/api/client';
+import CategoryChip from '@/components/ui/CategoryChip';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent } from '@/components/ui/card';
@@ -36,19 +37,7 @@ import { htmlToPlainText } from '@/lib/htmlText';
  * @property {{ verifiedAt?: string|null, fetchedAt?: string|null, sourceUrl?: string|null, sourceHost?: string|null }=} provenance
  */
 
-const CATEGORIES = {
-  logement: 'Logement',
-  sante: 'Santé',
-  handicap: 'Handicap',
-  emploi: 'Emploi',
-  famille: 'Famille',
-  budget: 'Budget',
-  mobilite: 'Mobilité',
-  justice: 'Justice',
-  numerique: 'Numérique',
-  etrangers: 'Nouveaux arrivants',
-  general: 'Général',
-};
+// Categories are loaded dynamically from /api/taxonomy
 
 const TYPE_ICONS = {
   nouveaute: Star,
@@ -111,6 +100,14 @@ export default function Actualites() {
   useEffect(() => {
     setQueryInput(q);
   }, [q]);
+
+  // Dynamic taxonomy
+  const { data: taxonomy } = useQuery({
+    queryKey: ['taxonomy'],
+    queryFn: () => client.taxonomy.get(),
+    staleTime: 5 * 60 * 1000,
+  });
+  const taxonomyCategories = taxonomy?.categories || [];
 
   const {
     data,
@@ -201,7 +198,7 @@ export default function Actualites() {
   const totalPages = pagination.totalPages || 1;
 
   return (
-    <div className="min-h-screen bg-slate-50">
+    <div className="min-h-screen overflow-x-hidden bg-slate-50">
       <SEO
         title="Actualités"
         description="Les dernières informations officielles sur les aides et les droits."
@@ -214,8 +211,8 @@ export default function Actualites() {
       </p>
 
       {/* Header */}
-      <div className="bg-white border-b border-slate-200 py-6 sticky top-0 z-10 shadow-sm">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 flex flex-col gap-4">
+      <div className="bg-white border-b border-slate-200 py-6 sticky top-16 z-10 shadow-sm">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col gap-4">
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
             <div>
               <h1 className="text-2xl font-bold text-slate-900">Actualités</h1>
@@ -263,7 +260,7 @@ export default function Actualites() {
                     </label>
                     <select
                       id="actualites-source"
-                      className="w-full h-10 rounded-md border border-slate-200 bg-white px-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      className="w-full h-10 rounded-md border border-slate-200 bg-white px-3 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
                       value={source}
                       onChange={(e) => handleParamChange('source', e.target.value)}
                     >
@@ -281,7 +278,7 @@ export default function Actualites() {
                     </label>
                     <select
                       id="actualites-limit"
-                      className="w-full h-10 rounded-md border border-slate-200 bg-white px-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      className="w-full h-10 rounded-md border border-slate-200 bg-white px-3 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
                       value={String(limit)}
                       onChange={(e) => handleParamChange('limit', e.target.value)}
                     >
@@ -304,15 +301,15 @@ export default function Actualites() {
                       >
                         Toutes
                       </Button>
-                      {Object.entries(CATEGORIES).map(([key, label]) => (
+                      {taxonomyCategories.map((cat) => (
                         <Button
                           type="button"
-                          key={key}
-                          variant={categorie === key ? 'default' : 'outline'}
+                          key={cat.slug}
+                          variant={categorie === cat.slug ? 'default' : 'outline'}
                           size="sm"
-                          onClick={() => handleParamChange('categorie', key)}
+                          onClick={() => handleParamChange('categorie', cat.slug)}
                         >
-                          {label}
+                          {cat.label}
                         </Button>
                       ))}
                     </div>
@@ -330,7 +327,7 @@ export default function Actualites() {
         </div>
       </div>
 
-      <div className="max-w-4xl mx-auto px-4 sm:px-6 py-8">
+      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
         {isLoading ? (
           <ListSkeleton layout="list" count={5} message="Chargement des actualités..." />
         ) : error ? (
@@ -342,18 +339,18 @@ export default function Actualites() {
             onAction={() => refetch()}
           />
         ) : actualites.length > 0 ? (
-	          <>
-	            <div className="space-y-6" data-testid="actualites-results-list">
-		              {actualites.map((actu) => {
-		                const typeKey = actu.type_actu || 'info';
-		                const TypeIcon = TYPE_ICONS[typeKey] || Info;
+          <>
+            <div className="space-y-6" data-testid="actualites-results-list">
+              {actualites.map((actu) => {
+                const typeKey = actu.type_actu || 'info';
+                const TypeIcon = TYPE_ICONS[typeKey] || Info;
                 const linkUrl = actu.slug ? `/actualites/${actu.slug}` : `/actualites/view?id=${actu.id}`;
-		                const sourceName = getSourceName(actu);
-		                const sourceUrl = getSourceUrl(actu);
-                    const provenance = getProvenance(actu);
-                    const verifiedAt = formatProvenanceDate(provenance.verifiedAt);
-                    const sourceHost = provenance.sourceHost;
-                    const excerpt = htmlToPlainText(actu.summary_falc || actu.resume || '', { maxLength: 220 });
+                const sourceName = getSourceName(actu);
+                const sourceUrl = getSourceUrl(actu);
+                const provenance = getProvenance(actu);
+                const verifiedAt = formatProvenanceDate(provenance.verifiedAt);
+                const sourceHost = provenance.sourceHost;
+                const excerpt = htmlToPlainText(actu.summary_falc || actu.resume || '', { maxLength: 220 });
 
                 return (
                   <Card
@@ -364,25 +361,23 @@ export default function Actualites() {
                     {/* Overlay Link */}
                     <Link
                       to={linkUrl}
-                      className="absolute inset-0 z-10 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 rounded-xl"
+                      className="absolute inset-0 z-10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 rounded-xl"
                       aria-label={`Lire l'actualité ${actu.titre}`}
                     >
                       <span className="sr-only">Lire l'actualité {actu.titre}</span>
                     </Link>
 
-	                    <CardContent className="p-6">
-	                      <div className="flex flex-wrap gap-2 mb-3">
-	                        <Badge className={TYPE_COLORS[typeKey] || 'bg-slate-100 text-slate-800'}>
-	                          <TypeIcon className="h-3 w-3 mr-1" />
-	                          {typeKey === 'nouveaute' ? 'Nouveauté'
-	                            : typeKey === 'modification' ? 'Modification'
-	                              : typeKey === 'alerte' ? 'Alerte'
-	                                : 'Information'}
-	                        </Badge>
+                    <CardContent className="p-6">
+                      <div className="flex flex-wrap gap-2 mb-3">
+                        <Badge className={TYPE_COLORS[typeKey] || 'bg-slate-100 text-slate-800'}>
+                          <TypeIcon className="h-3 w-3 mr-1" />
+                          {typeKey === 'nouveaute' ? 'Nouveauté'
+                            : typeKey === 'modification' ? 'Modification'
+                              : typeKey === 'alerte' ? 'Alerte'
+                                : 'Information'}
+                        </Badge>
                         {actu.categorie && (
-                          <Badge variant="outline">
-                            {CATEGORIES[actu.categorie] || actu.categorie}
-                          </Badge>
+                          <CategoryChip slug={actu.categorie} />
                         )}
                         {actu.est_important && (
                           <Badge className="bg-amber-100 text-amber-800">
@@ -446,7 +441,7 @@ export default function Actualites() {
             </div>
 
             {totalPages > 1 && (
-              <div className="flex justify-center mt-12 gap-2">
+              <div className="flex flex-col sm:flex-row items-center justify-center mt-10 gap-3">
                 <Button
                   variant="outline"
                   disabled={page <= 1}

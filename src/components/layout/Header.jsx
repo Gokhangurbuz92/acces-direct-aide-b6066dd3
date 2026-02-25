@@ -1,6 +1,8 @@
 import { useState } from "react";
 import { NavLink } from "react-router-dom";
-import { Menu, X } from "lucide-react";
+import { Menu, X, LogIn, UserPlus } from "lucide-react";
+import { buttonVariants } from "@/components/ui/button";
+import ADALogo from "@/components/Brand/ADALogo";
 
 const NAV_ITEMS = [
   { label: "Accueil", to: "/" },
@@ -11,11 +13,10 @@ const NAV_ITEMS = [
 ];
 
 function navClassName(isActive) {
-  return `rounded-lg px-3 py-2 text-sm font-medium transition-colors ${
-    isActive
-      ? "bg-slate-100 text-slate-900"
-      : "text-slate-600 hover:bg-slate-50 hover:text-slate-900"
-  }`;
+  return `rounded-lg px-3 py-2 text-sm font-medium transition-colors ${isActive
+    ? "bg-slate-100 text-slate-900"
+    : "text-slate-600 hover:bg-slate-50 hover:text-slate-900"
+    }`;
 }
 
 export function Header() {
@@ -59,6 +60,26 @@ export function Header() {
               ))}
             </nav>
 
+            {/* Auth action links — desktop */}
+            <div className="hidden items-center gap-2 lg:flex">
+              <NavLink
+                to="/login"
+                className={buttonVariants({ variant: "ghost", size: "sm" })}
+                aria-label="Se connecter"
+              >
+                <LogIn className="mr-1.5 h-4 w-4" aria-hidden="true" />
+                Se connecter
+              </NavLink>
+              <NavLink
+                to="/pro/register"
+                className={buttonVariants({ variant: "solid", size: "sm" })}
+                aria-label="Créer un compte professionnel"
+              >
+                <UserPlus className="mr-1.5 h-4 w-4" aria-hidden="true" />
+                Créer un compte
+              </NavLink>
+            </div>
+
             <button
               type="button"
               className="rounded-lg p-2 text-slate-700 transition hover:bg-slate-100 lg:hidden"
@@ -85,6 +106,35 @@ export function Header() {
                   {item.label}
                 </NavLink>
               ))}
+
+              {/* Auth section — mobile */}
+              <hr className="my-2 border-slate-200" />
+              <NavLink
+                to="/login"
+                className={buttonVariants({ variant: "ghost" })}
+                onClick={() => setMobileOpen(false)}
+                aria-label="Se connecter"
+              >
+                <LogIn className="mr-1.5 h-4 w-4" aria-hidden="true" />
+                Se connecter
+              </NavLink>
+              <NavLink
+                to="/pro/register"
+                className={buttonVariants({ variant: "solid" })}
+                onClick={() => setMobileOpen(false)}
+                aria-label="Créer un compte professionnel"
+              >
+                <UserPlus className="mr-1.5 h-4 w-4" aria-hidden="true" />
+                Créer un compte (Pro)
+              </NavLink>
+              <NavLink
+                to="/pro/login"
+                className={({ isActive }) => navClassName(isActive)}
+                onClick={() => setMobileOpen(false)}
+                aria-label="Accéder à l'espace professionnel"
+              >
+                Espace Pro
+              </NavLink>
             </nav>
           </div>
         )}

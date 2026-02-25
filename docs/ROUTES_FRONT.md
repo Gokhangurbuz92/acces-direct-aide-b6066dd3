@@ -1,138 +1,104 @@
-# Documentation des Routes Frontend
+# Routes Frontend
 
-Ce document liste toutes les routes définies dans l'application React (`src/pages/index.jsx`).
-Il sert de référence pour le développement et les tests E2E.
+Ce document liste toutes les routes définies dans `src/pages/index.jsx`.
 
-## 1. Routes Publiques
+## Publiques (Site vitrine & Accès direct)
 
-Accessibles à tous les utilisateurs.
+| Route | Page Component | API Calls Attendus | Notes |
+| :--- | :--- | :--- | :--- |
+| `/` | `Home` | `public/stats.js` | Accueil |
+| `/aides` | `Aides` | `aides.js`, `taxonomy.js` | Liste des aides |
+| `/aides/:slug` | `AideDetail` | `aides.js` | Détail aide |
+| `/demarches` | `Demarches` | `demarches.js` | Liste démarches |
+| `/demarches/:slug` | `DemarcheDetail` | `demarches.js` | Détail démarche |
+| `/annuaire` | `Annuaire` | `structures.js` | Liste structures |
+| `/structures/:slug` | `StructureDetail` | `structures.js` | Détail structure |
+| `/actualites` | `Actualites` | `actualites.js` | Liste actualités |
+| `/actualites/:slug` | `ActualiteDetail` | `actualites.js` | Détail actualité |
+| `/bonnes-pratiques` | `Guides` | `guides.js` | Liste guides |
+| `/bonnes-pratiques/:slug` | `GuideDetail` | `guides.js` | Détail guide |
+| `/outils` | `Tools` | `tools.js` | Liste outils |
+| `/outils/:slug` | `ToolDetail` | `tools.js` | Détail outil |
+| `/dispositifs` | `Dispositifs` | `dispositifs/index.js` | Liste dispositifs |
+| `/dispositifs/:slug` | `DispositifDetail` | `dispositifs/index.js` | Détail dispositif |
+| `/ressources` | `Ressources` | `ressources.js` | Liste ressources |
+| `/ressources/:slug` | `RessourceDetail` | `ressources.js` | Détail ressource |
+| `/recherche` | `Recherche` | `search.js` | Recherche globale |
+| `/orientation` | `Orientation` | - | Page d'orientation |
+| `/impact` | `Impact` | - | Page statique |
+| `/notre-mission` | `Mission` | - | Page statique |
+| `/notre-methode` | `Method` | - | Page statique |
+| `/sources` | `Sources` | - | Page statique |
+| `/sourcesmethode` | `SourcesMethode` | - | Page statique |
+| `/securite-et-rgpd` | `Security` | - | Page statique |
+| `/partenaires` | `Partners` | - | Page statique |
+| `/proposer-une-structure` | `SuggestStructure` | `public/suggest-structure.js` | Formulaire |
+| `/dossier-subventions` | `SubventionDossier` | - | Page statique |
+| `/status` | `Status` | `health.js` | Status page |
+| `/a-propos` | `APropos` | - | Page statique |
+| `/accessibilite` | `Accessibilite` | - | Page statique |
+| `/mentions-legales` | `MentionsLegales` | - | Page statique |
+| `/politique-confidentialite` | `Confidentialite` | - | Page statique |
+| `/cookies` | `Cookies` | - | Page statique |
+| `/contact` | `Contact` | `public/messages.js` | Formulaire contact |
+| `/styleguide/branding` | `StyleguideBranding` | - | Interne dev |
+| `/sentry-test` | `SentryTest` | `sentry-test.js` | Debug |
 
-| Route | Page / Composant | API Calls Principaux | Notes |
-|---|---|---|---|
-| `/` | `Home` | `/api/public/stats` | Page d'accueil |
-| `/login` | `Login` | - | Entrée de connexion unifiée (admin/pro, noindex) |
-| `/aides` | `Aides` | `/api/aides`, `/api/taxonomy` | Recherche aides |
-| `/aides/:slug` | `AideDetail` | `/api/aides/:slug`, `/api/pdf/aides/:slug`, `/api/feedback` | Détail aide + bloc provenance/fraicheur + export PDF stable + CTA “Signaler une info” |
-| `/status` | `Status` | `/api/monitor/data-quality`, `/api/monitor/ingestion-freshness` | Statut public (noindex) |
-| `/demarches` | `Demarches` | `/api/demarches` | Liste démarches |
-| `/demarches/:slug` | `DemarcheDetail` | `/api/demarches/:slug`, `/api/pdf/demarches/:slug`, `/api/feedback` | Détail démarche + bloc provenance/fraicheur + export PDF stable + CTA “Signaler une info” |
-| `/annuaire` | `Annuaire` | `/api/structures` | Liste structures |
-| `/structures/:slug` | `StructureDetail` | `/api/structures/:slug` | Détail structure |
-| `/rdv/:structureSlug` | `PublicRdvEntry` | `/api/structures/:slug`, `/api/auth/me` | Entrée publique RDV (redirige vers auth si non connecté, bloque si RDV non publiés). |
-| `/rdv/:structureSlug/services` | `PublicRdvEntry` | `/api/structures/:slug`, `/api/auth/me`, `/api/rdv/structures/:slug/services` | Étape choix service (USER authentifié, visible uniquement si `rdv.isPublished=true`). |
-| `/rdv/:structureSlug/creneaux` | `PublicRdvEntry` | `/api/structures/:slug`, `/api/auth/me`, `/api/rdv/structures/:slug/slots`, `/api/rdv/appointments`, `/api/rdv/appointments/:id`, `/api/rdv/appointments/:id/cancel`, `/api/messages/from-appointment/:id` | Étape créneaux + confirmation/annulation owner-only + accès conversation RDV. |
-| `/compte/messages` | `CompteMessages` | `/api/auth/me`, `/api/messages/conversations` | Liste des conversations RDV usager (noindex). |
-| `/compte/messages/:conversationId` | `CompteMessageThread` | `/api/auth/me`, `/api/messages/conversations/:id` | Thread usager RDV + envoi message (noindex). |
-| `/auth/login` | `AuthRdvAccess` | `/api/auth/login`, `/api/auth/resend-verification` | Connexion Particulier (support `next=`, noindex). |
-| `/auth/signup` | `AuthRdvAccess` | `/api/auth/signup` | Inscription Particulier (support `next=`, noindex). |
-| `/auth/verify-email` | `AuthVerifyEmail` | `/api/auth/resend-verification` | Ecran verification email (pending/success/error, noindex). |
-| `/auth/forgot` | `AuthForgotPassword` | `/api/auth/forgot-password` | Demande de reinitialisation mot de passe (noindex). |
-| `/auth/reset` | `AuthResetPassword` | `/api/auth/reset-password` | Reset mot de passe via token (noindex). |
-| `/actualites` | `Actualites` | `/api/actualites` | Liste actualités |
-| `/actualites/:slug` | `ActualiteDetail` | `/api/actualites/:slug` | Détail actualité |
-| `/bonnes-pratiques` | `Guides` | `/api/guides` | Liste guides |
-| `/bonnes-pratiques/:slug` | `GuideDetail` | `/api/guides/:slug` | Détail guide |
-| `/outils` | `Tools` | `/api/tools` | Liste outils |
-| `/outils/:slug` | `ToolDetail` | `/api/tools/:slug` | Détail outil |
-| `/dispositifs` | `Dispositifs` | `/api/dispositifs` | Liste dispositifs |
-| `/dispositifs/:slug` | `DispositifDetail` | `/api/dispositifs/:slug` | Détail dispositif |
-| `/ressources` | `Ressources` | `/api/ressources` | Liste ressources |
-| `/ressources/:slug` | `RessourceDetail` | `/api/ressources/:slug` | Détail ressource |
-| `/orientation` | `Orientation` | - | Assistant bientot disponible (noindex) |
-| `/recherche` | `Recherche` | `/api/search` | Recherche globale |
-| `/a-propos` | `APropos` | - | Statique |
-| `/accessibilite` | `Accessibilite` | - | Statique |
-| `/mentions-legales` | `MentionsLegales` | - | Statique |
-| `/politique-confidentialite` | `Confidentialite` | - | Statique |
-| `/cookies` | `Cookies` | - | Gestion cookies |
-| `/contact` | `Contact` | `/api/public/messages` | Formulaire contact |
-| `/impact` | `Impact` | - | Statique |
-| `/notre-mission` | `Mission` | - | Statique |
-| `/notre-methode` | `Method` | - | Statique |
-| `/sources` | `Sources` | - | Statique |
-| `/sourcesmethode` | `SourcesMethode` | - | Statique |
-| `/securite-et-rgpd` | `Security` | - | Statique |
-| `/partenaires` | `Partners` | - | Statique |
-| `/proposer-une-structure` | `SuggestStructure` | `/api/public/suggest-structure` | Formulaire |
-| `/dossier-subventions` | `SubventionDossier` | - | Statique |
-| `/appointments/request` | `AppointmentRequest` | `/api/public/appointments` | Legacy prise RDV |
-| `/appointments/cancel/:token` | `AppointmentCancel` | `/api/public/appointments/cancel` | Annulation RDV |
-| `/appointments/reschedule/:token` | `AppointmentReschedule` | - | Replanification RDV |
-| `/r/:token/messages` | `BeneficiaryMessages` | `/api/public/messages` | Messagerie bénéficiaire |
-| `/styleguide/branding` | `StyleguideBranding` | - | Guide de style |
+## RDV Public (Appointment System)
 
-## 2. Espace Pro (`/pro`)
+| Route | Page Component | API Calls Attendus | Notes |
+| :--- | :--- | :--- | :--- |
+| `/appointments/request` | `AppointmentRequest` | `booking/create.js` | Prise de RDV |
+| `/appointments/cancel/:token` | `AppointmentCancel` | `booking/cancel.js` | Annulation |
+| `/appointments/reschedule/:token` | `AppointmentReschedule` | `booking/reschedule.js` | Report |
+| `/rdv/:structureSlug` | `PublicRdvEntry` | `public/availability.js` | Landing RDV structure |
 
-Nécessite une authentification professionnelle (JWT Pro uniquement).
-`ProGuard` redirige vers `/login?mode=pro` si la session Pro est absente/invalide.
-Routes imbriquées sous le layout `ProLayout`.
+## Auth & Compte (Bénéficiaire)
 
-| Route | Page / Composant | API Calls Principaux | Notes |
-|---|---|---|---|
-| `/pro/login` | `ProLogin` | `/api/pro/auth/login` | Connexion |
-| `/pro/register` | `ProRegister` | `/api/pro/auth/register` | Inscription |
-| `/pro/forgot-password` | `ProForgotPassword` | `/api/pro/auth/forgot-password` | Mot de passe oublié |
-| `/pro/reset-password` | `ProResetPassword` | `/api/pro/auth/reset-password` | Reset mot de passe |
-| `/pro/dashboard` | `ProDashboard` | `/api/pro/me` | Tableau de bord (Protégé par `ProGuard`) |
-| `/pro/rdv` | `ProRdvLayout` | `/api/monitor/pro-rdv` | Shell RDV Pro + banner readiness (Protégé par `ProGuard`) |
-| `/pro/rdv/services` | `ProServices` | `/api/pro/services`, `/api/pro/rdv/settings` | Gestion services RDV + publication publique (Protégé par `ProGuard`) |
-| `/pro/rdv/disponibilites` | `ProAvailability` | `/api/pro/availability` | Gestion disponibilites (Protégé par `ProGuard`) |
-| `/pro/rdv/agenda` | `ProAppointments` | `/api/pro/appointments` | Agenda RDV (Protégé par `ProGuard`) |
-| `/pro/rdv/new` | `ProRdvNew` | `/api/pro/slots`, `/api/pro/appointments` | Creation RDV (Protégé par `ProGuard`) |
-| `/pro/rdv/absences` | `ProRdvAbsences` | `/api/pro/timeoff` | Gestion absences (Protégé par `ProGuard`) |
-| `/pro/messages` | `ProMessages` | `/api/pro/messages/conversations` | Liste conversations RDV structure (Protégé par `ProGuard`) |
-| `/pro/messages/:conversationId` | `ProMessageThread` | `/api/pro/messages/conversations/:id` | Thread structure RDV + réponse (Protégé par `ProGuard`) |
-| `/pro/services` | `Navigate` -> `/pro/rdv/services` | `/api/pro/services` | Alias legacy |
-| `/pro/team` | `ProTeam` | `/api/pro/team` | Gestion équipe (Protégé par `ProGuard`) |
-| `/pro/structure` | `ProStructure` | `/api/pro/structure` | Gestion structure (Protégé par `ProGuard`) |
-| `/pro/appointments` | `Navigate` -> `/pro/rdv/agenda` | `/api/pro/appointments` | Alias legacy |
-| `/pro/appointments/:id` | `ProAppointmentDetail` | `/api/pro/appointments/:id` | Détail RDV (Protégé par `ProGuard`) |
-| `/pro/availability` | `Navigate` -> `/pro/rdv/disponibilites` | `/api/pro/availability` | Alias legacy |
-| `/login/pro` | `LoginPro` | - | Legacy / Dev only |
+| Route | Page Component | Guard | Notes |
+| :--- | :--- | :--- | :--- |
+| `/login` | `Login` | - | Login générique |
+| `/auth/login` | `AuthRdvAccess` | - | Login RDV |
+| `/auth/signup` | `AuthRdvAccess` | - | Inscription |
+| `/auth/verify-email` | `AuthVerifyEmail` | - | Vérification email |
+| `/auth/forgot` | `AuthForgotPassword` | - | Mot de passe oublié |
+| `/auth/reset` | `AuthResetPassword` | - | Reset mot de passe |
+| `/compte/messages` | `CompteMessages` | Auth | Messagerie |
+| `/compte/messages/:conversationId` | `CompteMessageThread` | Auth | Conversation |
+| `/r/:token/messages` | `BeneficiaryMessages` | Token | Accès messages par lien magique |
 
-## 3. Administration (`/admin`)
+## Espace Pro
 
-Protégé par `AdminGuard` (token statique admin ou session admin JWT).
-Les credentials Pro ne donnent pas acces aux routes `/admin`.
+| Route | Page Component | Guard | Notes |
+| :--- | :--- | :--- | :--- |
+| `/pro` | `ProDashboard` | ProGuard | Dashboard |
+| `/pro/login` | `ProLogin` | - | Login Pro |
+| `/pro/register` | `ProRegister` | - | Inscription Pro |
+| `/pro/forgot-password` | `ProForgotPassword` | - | MDP oublié Pro |
+| `/pro/reset-password` | `ProResetPassword` | - | Reset MDP Pro |
+| `/pro/rdv/agenda` | `ProAppointments` | ProGuard | Agenda RDV |
+| `/pro/rdv/disponibilites` | `ProAvailability` | ProGuard | Gestion dispos |
+| `/pro/rdv/services` | `ProServices` | ProGuard | Gestion services |
+| `/pro/rdv/new` | `ProRdvNew` | ProGuard | Création RDV manuel |
+| `/pro/messages` | `ProMessages` | ProGuard | Messagerie Pro |
+| `/pro/team` | `ProTeam` | ProGuard | Gestion équipe |
+| `/pro/structure` | `ProStructure` | ProGuard | Profil structure |
 
-| Route | Page / Composant | API Calls Principaux | Notes |
-|---|---|---|---|
-| `/admin/login` | `AdminLogin` | `/api/auth/login` | Connexion Admin |
-| `/admin/aides` | `AdminAides` | `/api/aides` | CRUD Aides |
-| `/admin/aides/:id` | `AdminAideEdit` | `/api/aides/:id` | Édition Aide |
-| `/admin/demarches` | `AdminDemarches` | `/api/demarches` | CRUD Démarches |
-| `/admin/demarches/:id` | `AdminDemarcheEdit` | `/api/demarches/:id` | Édition Démarche |
-| `/admin/structures` | `AdminStructures` | `/api/structures` | CRUD Structures |
-| `/admin/appointments` | `AdminAppointments` | `/api/admin/appointments` | Gestion RDV Admin |
-| `/admin/messages` | `AdminMessages` | `/api/admin/messages` | Modération messages |
-| `/admin/review` | `AdminReview` | `/api/admin/validate-publication` | Revue contenu |
-| `/admin/sources` | `AdminSources` | - | Gestion sources |
-| `/admin/sync` | `AdminSync` | `/api/cron/pipeline` | État synchro |
-| `/admin/sync/recent` | `AdminRecentSyncs` | `/api/admin/cron-runs` | Logs synchro |
-| `/admin/sync/test` | `AdminTestSync` | `/api/admin/actions` | Test synchro |
-| `/admin/guides/sync` | `AdminGuideSync` | `/api/guides` | Sync guides |
-| `/admin/inbox` | `AdminInbox` | `/api/admin/inbox` | Boîte réception |
-| `/admin/health` | `AdminHealth` | `/api/health` | État santé |
-| `/admin/observability` | `AdminObservability` | - | Métriques |
-| `/admin/runs` | `AdminRuns` | `/api/admin/runs` | Historique runs |
-| `/admin/review-queue` | `AdminReviewQueue` | `/api/admin/review-queue`, `/api/admin/review-queue/scan`, `/api/admin/review-queue/bulk` | Revue data quality + triage de masse |
+## Admin (Back-office)
 
-## 4. Legacy & Redirects
-
-Routes maintenues pour la compatibilité (SEO, anciens liens).
-
-| Route | Cible | Notes |
-|---|---|---|
-| `/aide/:slug` | `/aides/:slug` | |
-| `/structures` | `/annuaire` | |
-| `/adminaides` | `/admin/aides` | |
-| `/adminstructures` | `/admin/structures` | |
-| `/adminappointments` | `/admin/appointments` | |
-| `/admindemarches` | `/admin/demarches` | |
-| `/AideDetail` | `/aides/:slug` | Via `/aidedetail` |
-| `/StructureDetail` | `/annuaire` | |
-| `/DemarcheDetail` | `/demarches` | |
-| `/confidentialite` | `/politique-confidentialite` | Alias legacy confidentialité |
-
----
-*Généré automatiquement à partir de `src/pages/index.jsx`.*
+| Route | Page Component | Guard | Notes |
+| :--- | :--- | :--- | :--- |
+| `/admin/login` | `AdminLogin` | - | Login Admin |
+| `/admin/aides` | `AdminAides` | AdminGuard | CRUD Aides |
+| `/admin/aides/:id` | `AdminAideEdit` | AdminGuard | Edit Aide |
+| `/admin/demarches` | `AdminDemarches` | AdminGuard | CRUD Démarches |
+| `/admin/demarches/:id` | `AdminDemarcheEdit` | AdminGuard | Edit Démarche |
+| `/admin/structures` | `AdminStructures` | AdminGuard | CRUD Structures |
+| `/admin/appointments` | `AdminAppointments` | AdminGuard | Admin RDV |
+| `/admin/messages` | `AdminMessages` | AdminGuard | Admin Messages |
+| `/admin/sources` | `AdminSources` | AdminGuard | Gestion sources RSS |
+| `/admin/sync` | `AdminSync` | AdminGuard | Pilotage sync |
+| `/admin/runs` | `AdminRuns` | AdminGuard | Historique jobs |
+| `/admin/health` | `AdminHealth` | AdminGuard | Santé système |
+| `/admin/observability` | `AdminObservability` | AdminGuard | Métriques |
+| `/admin/review-queue` | `AdminReviewQueue` | AdminGuard | Modération |

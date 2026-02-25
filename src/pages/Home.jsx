@@ -1,6 +1,6 @@
 
 import SEO from '@/components/SEO';
-import HeroSection from '@/components/home/HeroSection';
+import HeroSearch from '@/components/organisms/HeroSearch';
 import QuickAccessSection from '@/components/home/QuickAccessSection';
 import CategoriesSection from '@/components/home/CategoriesSection';
 import AssistantFeatureSection from '@/components/home/AssistantFeatureSection';
@@ -19,7 +19,7 @@ export default function Home() {
         schema={schema}
       />
 
-      <HeroSection />
+      <HeroSearch />
       <QuickAccessSection />
       <CategoriesSection />
       <AssistantFeatureSection />

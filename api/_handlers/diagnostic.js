@@ -77,7 +77,15 @@ async function handleDiagnostic(req, res) {
         }
 
         // Pre-flight: check OpenFisca availability (cached 60s)
-        const engineUp = await isAvailable();
+        let engineUp = false;
+        try {
+            engineUp = await isAvailable();
+        } catch (healthCheckErr) {
+            console.warn('[Diagnostic] isAvailable() threw', { requestId, error: healthCheckErr.message });
+            Sentry.captureException(healthCheckErr, {
+                extra: { requestId, phase: 'health-check' },
+            });
+        }
         if (!engineUp) {
             console.warn('[Diagnostic] OpenFisca unavailable (cached health probe)', { requestId });
             return res.status(503).json({

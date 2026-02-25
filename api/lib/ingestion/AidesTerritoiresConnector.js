@@ -35,28 +35,54 @@ export class AidesTerritoiresConnector extends SourceConnector {
 
         while (nextUrl && page < MAX_PAGES) {
             page++;
-            const response = await fetch(nextUrl, {
-                headers: { Accept: 'application/json' },
-                signal: AbortSignal.timeout(30_000),
-            });
+            let response;
+            let retries = 0;
+            const maxRetries = 1;
 
-            if (!response.ok) {
-                throw new Error(`Aides Territoires API ${response.status}: ${response.statusText}`);
+            while (retries <= maxRetries) {
+                try {
+                    response = await fetch(nextUrl, {
+                        headers: { Accept: 'application/json' },
+                        signal: AbortSignal.timeout(30_000),
+                    });
+                    if (response.ok) break;
+                    // Retry on 5xx
+                    if (response.status >= 500 && retries < maxRetries) {
+                        retries++;
+                        console.warn(`[AidesTerritoires] Retry ${retries}/${maxRetries} after ${response.status} on page ${page}`);
+                        await new Promise(r => setTimeout(r, 2000));
+                        continue;
+                    }
+                    throw new Error(`Aides Territoires API ${response.status}: ${response.statusText}`);
+                } catch (err) {
+                    if (retries < maxRetries && err.name !== 'AbortError') {
+                        retries++;
+                        console.warn(`[AidesTerritoires] Retry ${retries}/${maxRetries} after error on page ${page}: ${err.message}`);
+                        await new Promise(r => setTimeout(r, 2000));
+                        continue;
+                    }
+                    throw err;
+                }
             }
 
             const data = await response.json();
             const results = data.results || [];
 
             for (const item of results) {
-                // Use the aide slug or id as a stable key
                 const key = item.slug || item.id || crypto.randomUUID();
                 const virtualUrl = `${this.baseUrl}/aides/${key}/`;
                 this._cache.set(virtualUrl, item);
             }
 
             nextUrl = data.next || null;
+
+            // Log progress every 10 pages
+            if (page % 10 === 0) {
+                console.log(`[AidesTerritoires] Fetched page ${page}, cache size: ${this._cache.size}`);
+            }
         }
 
+        console.log(`[AidesTerritoires] Total fetched: ${this._cache.size} aides across ${page} pages`);
         return Array.from(this._cache.keys());
     }
 

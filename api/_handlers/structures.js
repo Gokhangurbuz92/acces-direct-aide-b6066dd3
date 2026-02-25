@@ -10,137 +10,199 @@ import { buildProvenance } from '../_utils/provenance.js';
  * @returns {string | null}
  */
 function extractSlugFromPath(url, host = 'localhost') {
-    if (!url) return null;
-    try {
-        const urlObj = new URL(url, `https://${host}`);
-        const pathname = urlObj.pathname || '';
-        // Support both `/api/structures/:slug` and `/structures/:slug` (depending on runtime rewrites).
-        const match = pathname.match(/^\/(?:api\/)?structures\/([^/?#]+)/);
-        if (!match) return null;
-        const slug = decodeURIComponent(match[1] || '').trim();
-        return slug || null;
-    } catch {
-        return null;
-    }
+  if (!url) return null;
+  try {
+    const urlObj = new URL(url, `https://${host}`);
+    const pathname = urlObj.pathname || '';
+    // Support both `/api/structures/:slug` and `/structures/:slug` (depending on runtime rewrites).
+    const match = pathname.match(/^\/(?:api\/)?structures\/([^/?#]+)/);
+    if (!match) return null;
+    const slug = decodeURIComponent(match[1] || '').trim();
+    return slug || null;
+  } catch {
+    return null;
+  }
 }
 /**
  * @param {import('../_utils/http-types').ApiRequest} req
  * @param {import('../_utils/http-types').ApiResponse} res
  */
 
+/**
+ * Generate a description_courte for a structure if missing or too short (<20 chars).
+ * Uses only existing source fields — never invents information.
+ * Templates are deliberately prudent and non-assertive.
+ * @param {object} s - Structure record
+ * @returns {object} - Structure with enriched description_courte + description_generated flag
+ */
+function enrichDescription(s) {
+  if (s.description_courte && String(s.description_courte).trim().length >= 20) {
+    return { ...s, description_generated: false };
+  }
+
+  const parts = [];
+  const type = s.type_structure ? String(s.type_structure).trim() : '';
+  const ville = s.ville ? String(s.ville).trim() : '';
+  const cp = s.code_postal ? String(s.code_postal).trim() : '';
+  const services = Array.isArray(s.services) ? s.services.filter(Boolean) : [];
+  const publics = Array.isArray(s.publics_accueillis) ? s.publics_accueillis.filter(Boolean) : [];
+  const categories = Array.isArray(s.categories_aidees) ? s.categories_aidees.filter(Boolean) : [];
+  const pmr = s.accessibilite_pmr;
+
+  // Template priority order (most specific first)
+  if (services.length > 0 || categories.length > 0) {
+    const tags = [...new Set([...services, ...categories])].slice(0, 5).join(', ');
+    parts.push(`Cette structure est référencée pour des besoins liés à : ${tags}.`);
+    parts.push('Pour savoir si vous êtes éligible et comment être accompagné, contactez-la (horaires et modalités à confirmer).');
+  } else if (publics.length > 0) {
+    const publicsList = publics.slice(0, 4).join(', ');
+    parts.push(`Structure référencée pour accompagner : ${publicsList}.`);
+    parts.push('Pour vérifier l\'accueil et les démarches possibles, contactez-la (sur place, par téléphone ou via le site si disponible).');
+  } else if (type && ville) {
+    parts.push(`Structure de type « ${type} » située à ${ville}${cp ? ` (${cp})` : ''}, référencée dans l'annuaire ADA.`);
+    parts.push('Contactez-la pour connaître les services proposés, les horaires et les conditions d\'accès.');
+  } else if (type) {
+    parts.push(`Structure de type « ${type} » référencée dans l'annuaire ADA.`);
+    parts.push('Elle peut vous orienter ou vous informer selon votre situation. Contactez-la pour vérifier l\'accueil, les horaires et les modalités.');
+  } else if (ville) {
+    parts.push(`Structure située à ${ville}${cp ? ` (${cp})` : ''}, référencée dans l'annuaire ADA.`);
+    parts.push('Contactez-la pour connaître les services proposés, les horaires et les conditions d\'accès.');
+  } else {
+    parts.push('Structure locale référencée dans l\'annuaire ADA.');
+    parts.push('Contactez-la pour connaître les services proposés, les conditions d\'accès et les horaires.');
+  }
+
+  // Bonus: PMR accessibility if available
+  if (typeof pmr === 'boolean') {
+    parts.push(`Accessibilité PMR : ${pmr ? 'oui' : 'non renseignée'}.`);
+  }
+
+  // Disclaimer suffix
+  parts.push('Informations à confirmer.');
+
+  return {
+    ...s,
+    description_courte: parts.join(' '),
+    description_generated: true,
+  };
+}
+
 async function handler(req, res) {
-    try {
-        if (req.method !== 'GET' && req.method !== 'HEAD') {
-            return res.status(405).json({ error: 'Method not allowed' });
-        }
-
-        const ip = getClientIp(req);
-        const rateLimit = await checkRateLimit('SEARCH_STRUCTURES', ip);
-        if (!rateLimit.allowed) {
-            return res.status(429).json(rateLimit.error);
-        }
-
-        // Validate Input
-        const rawQuery = req.query || {};
-        const slugFromPath = extractSlugFromPath(req.url, req.headers?.host);
-        const queryWithPath = { ...rawQuery };
-        if (slugFromPath && !queryWithPath.slug && !queryWithPath.id) {
-            queryWithPath.slug = slugFromPath;
-        }
-
-        const validation = searchStructuresSchema.safeParse(queryWithPath);
-        if (!validation.success) {
-            return res.status(400).json({ error: 'Invalid parameters', details: validation.error.format() });
-        }
-        const params = validation.data;
-        const effectiveParams = { ...params };
-
-        // Query param aliases
-        if (effectiveParams.limit != null) {
-            effectiveParams.pageSize = effectiveParams.limit;
-        }
-        if (!effectiveParams.departement && effectiveParams.territory) {
-            effectiveParams.departement = effectiveParams.territory;
-        }
-        if (!effectiveParams.departement && effectiveParams.geo) {
-            effectiveParams.departement = effectiveParams.geo;
-        }
-
-        // Default sort:
-        // - With q: relevance
-        // - Without q: quality first (then recent)
-        if (!effectiveParams.sort) {
-            effectiveParams.sort = effectiveParams.q ? 'relevance' : 'quality';
-        }
-
-        // 1. Single Item (ID or Slug)
-        if (effectiveParams.id || effectiveParams.slug) {
-            const structure = await prisma.structure.findFirst({
-                where: effectiveParams.id ? { id: effectiveParams.id } : { slug: effectiveParams.slug },
-                include: {
-                  proServices: true,
-                  rdvSettings: {
-                    select: {
-                      isPublished: true,
-                      bookingMode: true,
-                    },
-                  },
-                  sourceDocument: {
-                    select: {
-                      fetched_at: true,
-                      source_url: true,
-                    },
-                  },
-                }
-            });
-
-            if (!structure || structure.statut !== 'actif') {
-                return res.status(404).json({ error: "Structure non trouvée" });
-            }
-            const { sourceDocument, rdvSettings, ...safeStructure } = structure;
-            const isRdvPublished =
-              rdvSettings && typeof rdvSettings.isPublished === 'boolean'
-                ? rdvSettings.isPublished
-                : Boolean(safeStructure.is_pro_enabled);
-            const bookingMode =
-              rdvSettings && typeof rdvSettings.bookingMode === 'string'
-                ? rdvSettings.bookingMode
-                : 'IN_PERSON';
-
-            return res.status(200).json({
-              ...safeStructure,
-              is_pro_enabled: isRdvPublished,
-              proServices: isRdvPublished ? safeStructure.proServices : [],
-              rdv: {
-                isPublished: isRdvPublished,
-                bookingMode,
-              },
-              provenance: buildProvenance({
-                verifiedAt: safeStructure.date_verification,
-                fetchedAt: sourceDocument?.fetched_at,
-                sourceUrl: sourceDocument?.source_url || safeStructure.source_url || safeStructure.source_url_exact,
-              }),
-            });
-        }
-
-        // 2. Search / List
-        const { items, total } = await searchStructures(prisma, effectiveParams);
-
-        return res.status(200).json({
-            items,
-            pagination: {
-                total,
-                page: effectiveParams.page,
-                limit: effectiveParams.pageSize,
-                pageSize: effectiveParams.pageSize,
-                totalPages: Math.ceil(total / effectiveParams.pageSize),
-                hasNext: effectiveParams.page * effectiveParams.pageSize < total
-            }
-        });
-    } catch (error) {
-        console.error('Structures handler error:', error);
-        return res.status(500).json({ error: 'Internal server error' });
+  try {
+    if (req.method !== 'GET' && req.method !== 'HEAD') {
+      return res.status(405).json({ error: 'Method not allowed' });
     }
+
+    const ip = getClientIp(req);
+    const rateLimit = await checkRateLimit('SEARCH_STRUCTURES', ip);
+    if (!rateLimit.allowed) {
+      return res.status(429).json(rateLimit.error);
+    }
+
+    // Validate Input
+    const rawQuery = req.query || {};
+    const slugFromPath = extractSlugFromPath(req.url, req.headers?.host);
+    const queryWithPath = { ...rawQuery };
+    if (slugFromPath && !queryWithPath.slug && !queryWithPath.id) {
+      queryWithPath.slug = slugFromPath;
+    }
+
+    const validation = searchStructuresSchema.safeParse(queryWithPath);
+    if (!validation.success) {
+      return res.status(400).json({ error: 'Invalid parameters', details: validation.error.format() });
+    }
+    const params = validation.data;
+    const effectiveParams = { ...params };
+
+    // Query param aliases
+    if (effectiveParams.limit != null) {
+      effectiveParams.pageSize = effectiveParams.limit;
+    }
+    if (!effectiveParams.departement && effectiveParams.territory) {
+      effectiveParams.departement = effectiveParams.territory;
+    }
+    if (!effectiveParams.departement && effectiveParams.geo) {
+      effectiveParams.departement = effectiveParams.geo;
+    }
+
+    // Default sort:
+    // - With q: relevance
+    // - Without q: quality first (then recent)
+    if (!effectiveParams.sort) {
+      effectiveParams.sort = effectiveParams.q ? 'relevance' : 'quality';
+    }
+
+    // 1. Single Item (ID or Slug)
+    if (effectiveParams.id || effectiveParams.slug) {
+      const structure = await prisma.structure.findFirst({
+        where: effectiveParams.id ? { id: effectiveParams.id } : { slug: effectiveParams.slug },
+        include: {
+          proServices: true,
+          rdvSettings: {
+            select: {
+              isPublished: true,
+              bookingMode: true,
+            },
+          },
+          sourceDocument: {
+            select: {
+              fetched_at: true,
+              source_url: true,
+            },
+          },
+        }
+      });
+
+      if (!structure || structure.statut !== 'actif') {
+        return res.status(404).json({ error: "Structure non trouvée" });
+      }
+      const { sourceDocument, rdvSettings, ...safeStructure } = structure;
+      const isRdvPublished =
+        rdvSettings && typeof rdvSettings.isPublished === 'boolean'
+          ? rdvSettings.isPublished
+          : Boolean(safeStructure.is_pro_enabled);
+      const bookingMode =
+        rdvSettings && typeof rdvSettings.bookingMode === 'string'
+          ? rdvSettings.bookingMode
+          : 'IN_PERSON';
+
+      return res.status(200).json({
+        ...safeStructure,
+        is_pro_enabled: isRdvPublished,
+        proServices: isRdvPublished ? safeStructure.proServices : [],
+        rdv: {
+          isPublished: isRdvPublished,
+          bookingMode,
+        },
+        provenance: buildProvenance({
+          verifiedAt: safeStructure.date_verification,
+          fetchedAt: sourceDocument?.fetched_at,
+          sourceUrl: sourceDocument?.source_url || safeStructure.source_url || safeStructure.source_url_exact,
+        }),
+      });
+    }
+
+    // 2. Search / List
+    const { items, total } = await searchStructures(prisma, effectiveParams);
+
+    // Enrich items with description_courte if missing
+    const enrichedItems = items.map(enrichDescription);
+
+    return res.status(200).json({
+      items: enrichedItems,
+      pagination: {
+        total,
+        page: effectiveParams.page,
+        limit: effectiveParams.pageSize,
+        pageSize: effectiveParams.pageSize,
+        totalPages: Math.ceil(total / effectiveParams.pageSize),
+        hasNext: effectiveParams.page * effectiveParams.pageSize < total
+      }
+    });
+  } catch (error) {
+    console.error('Structures handler error:', error);
+    return res.status(500).json({ error: 'Internal server error' });
+  }
 }
 
 export default handler;

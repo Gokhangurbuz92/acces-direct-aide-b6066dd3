@@ -1,4 +1,4 @@
-import { test, expect } from '@playwright/test';
+import { test, expect } from './fixtures.js';
 
 function buildAideDetail(slug, verifiedAt) {
   return {

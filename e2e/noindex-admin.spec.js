@@ -1,4 +1,4 @@
-import { test, expect } from '@playwright/test';
+import { test, expect } from './fixtures.js';
 
 test.describe('P7-D Indexability', () => {
   test('/admin/login exposes robots noindex', async ({ page }) => {

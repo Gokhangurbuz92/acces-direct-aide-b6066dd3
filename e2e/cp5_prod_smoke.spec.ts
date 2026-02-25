@@ -1,4 +1,4 @@
-import { test, expect, request } from '@playwright/test';
+import { test, expect, request } from './fixtures.js';
 import fs from 'fs';
 import path from 'path';
 

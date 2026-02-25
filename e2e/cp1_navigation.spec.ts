@@ -1,4 +1,4 @@
-import { test, expect } from '@playwright/test';
+import { test, expect } from './fixtures.js';
 
 test('navigate from demarches listing to detail', async ({ page }) => {
     // Mock listing API

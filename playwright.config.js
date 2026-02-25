@@ -15,7 +15,7 @@ export default defineConfig({
   testDir: process.env.TEST_A11Y ? './tests/a11y' : './e2e',
   fullyParallel: true,
   forbidOnly: !!process.env.CI,
-  retries: 0,
+  retries: process.env.CI ? 2 : 0,
   workers: process.env.CI ? 2 : undefined,
   reporter: 'html',
 

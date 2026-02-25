@@ -1,4 +1,4 @@
-import { test, expect } from '@playwright/test';
+import { test, expect } from './fixtures.js';
 
 /**
  * LOT HOTFIX: SPA Routing Smoke Test
@@ -18,11 +18,11 @@ test.describe('SPA Routing - Public Routes', () => {
       }
     });
 
-    await page.goto(`${BASE_URL}/`);
+    await page.goto(`/`);
     await expect(page.locator('header').first()).toBeVisible({ timeout: 10000 });
-    
-    expect(errors.filter(e => 
-      e.includes('useLayoutEffect') || 
+
+    expect(errors.filter(e =>
+      e.includes('useLayoutEffect') ||
       e.includes('undefined') ||
       e.includes('Cannot read')
     )).toHaveLength(0);
@@ -37,11 +37,11 @@ test.describe('SPA Routing - Public Routes', () => {
       }
     });
 
-    await page.goto(`${BASE_URL}/home`);
+    await page.goto(`/home`);
     await expect(page.locator('header').first()).toBeVisible({ timeout: 10000 });
-    
-    expect(errors.filter(e => 
-      e.includes('useLayoutEffect') || 
+
+    expect(errors.filter(e =>
+      e.includes('useLayoutEffect') ||
       e.includes('undefined') ||
       e.includes('Cannot read')
     )).toHaveLength(0);
@@ -56,11 +56,11 @@ test.describe('SPA Routing - Public Routes', () => {
       }
     });
 
-    await page.goto(`${BASE_URL}/actualites`);
+    await page.goto(`/actualites`);
     await expect(page.locator('header').first()).toBeVisible({ timeout: 10000 });
-    
-    expect(errors.filter(e => 
-      e.includes('useLayoutEffect') || 
+
+    expect(errors.filter(e =>
+      e.includes('useLayoutEffect') ||
       e.includes('undefined') ||
       e.includes('Cannot read')
     )).toHaveLength(0);
@@ -70,11 +70,11 @@ test.describe('SPA Routing - Public Routes', () => {
     const errors = [];
     page.on('pageerror', err => errors.push(err.message));
 
-    await page.goto(`${BASE_URL}/aides`);
+    await page.goto(`/aides`);
     await expect(page.locator('header').first()).toBeVisible({ timeout: 10000 });
-    
-    expect(errors.filter(e => 
-      e.includes('useLayoutEffect') || 
+
+    expect(errors.filter(e =>
+      e.includes('useLayoutEffect') ||
       e.includes('undefined')
     )).toHaveLength(0);
   });
@@ -83,11 +83,11 @@ test.describe('SPA Routing - Public Routes', () => {
     const errors = [];
     page.on('pageerror', err => errors.push(err.message));
 
-    await page.goto(`${BASE_URL}/structures`);
+    await page.goto(`/structures`);
     await expect(page.locator('header').first()).toBeVisible({ timeout: 10000 });
-    
-    expect(errors.filter(e => 
-      e.includes('useLayoutEffect') || 
+
+    expect(errors.filter(e =>
+      e.includes('useLayoutEffect') ||
       e.includes('undefined')
     )).toHaveLength(0);
   });
@@ -96,11 +96,11 @@ test.describe('SPA Routing - Public Routes', () => {
     const errors = [];
     page.on('pageerror', err => errors.push(err.message));
 
-    await page.goto(`${BASE_URL}/demarches`);
+    await page.goto(`/demarches`);
     await expect(page.locator('header').first()).toBeVisible({ timeout: 10000 });
-    
-    expect(errors.filter(e => 
-      e.includes('useLayoutEffect') || 
+
+    expect(errors.filter(e =>
+      e.includes('useLayoutEffect') ||
       e.includes('undefined')
     )).toHaveLength(0);
   });
@@ -108,37 +108,37 @@ test.describe('SPA Routing - Public Routes', () => {
 
 test.describe('SPA Routing - Navigation & Filters', () => {
   test('should navigate between routes without errors', async ({ page }) => {
-    await page.goto(`${BASE_URL}/`);
+    await page.goto(`/`);
     await expect(page.locator('header')).toBeVisible();
 
     // Navigate to actualites
-    await page.goto(`${BASE_URL}/actualites`);
+    await page.goto(`/actualites`);
     await expect(page.locator('header')).toBeVisible();
 
     // Navigate to aides
-    await page.goto(`${BASE_URL}/aides`);
+    await page.goto(`/aides`);
     await expect(page.locator('header')).toBeVisible();
 
     // Navigate back to home
-    await page.goto(`${BASE_URL}/`);
+    await page.goto(`/`);
     await expect(page.locator('header')).toBeVisible();
   });
 
   test('should handle direct access to /home (refresh scenario)', async ({ page }) => {
     // Simulate direct access / refresh
-    await page.goto(`${BASE_URL}/home`);
+    await page.goto(`/home`);
     await page.reload();
-    
+
     await expect(page.locator('header').first()).toBeVisible({ timeout: 10000 });
-    
+
     // Verify page is not blank
     const bodyText = await page.locator('body').textContent();
     expect(bodyText.length).toBeGreaterThan(100);
   });
 
   test('should handle 404 routes gracefully', async ({ page }) => {
-    await page.goto(`${BASE_URL}/route-qui-nexiste-pas-du-tout`);
-    
+    await page.goto(`/route-qui-nexiste-pas-du-tout`);
+
     // Should show 404 page, not white screen
     await expect(page.locator('body')).toBeVisible();
     const bodyText = await page.locator('body').textContent();
@@ -149,34 +149,34 @@ test.describe('SPA Routing - Navigation & Filters', () => {
 test.describe('SPA Routing - Assets & Resources', () => {
   test('should load all critical assets on /home', async ({ page }) => {
     const failedResources = [];
-    
+
     page.on('response', response => {
       if (response.status() >= 400 && response.url().includes('/assets/')) {
         failedResources.push({ url: response.url(), status: response.status() });
       }
     });
 
-    await page.goto(`${BASE_URL}/home`);
+    await page.goto(`/home`);
     await page.waitForLoadState('networkidle');
-    
+
     expect(failedResources).toHaveLength(0);
   });
 
   test('should load JavaScript bundles correctly', async ({ page }) => {
     const jsErrors = [];
-    
+
     page.on('pageerror', err => jsErrors.push(err.message));
-    
-    await page.goto(`${BASE_URL}/`);
+
+    await page.goto(`/`);
     await page.waitForLoadState('networkidle');
-    
+
     // No critical JS errors (React undefined, useLayoutEffect, etc.)
-    const criticalErrors = jsErrors.filter(e => 
-      e.includes('useLayoutEffect') || 
+    const criticalErrors = jsErrors.filter(e =>
+      e.includes('useLayoutEffect') ||
       e.includes('Cannot read properties of undefined') ||
       e.includes('React') && e.includes('undefined')
     );
-    
+
     expect(criticalErrors).toHaveLength(0);
   });
 });

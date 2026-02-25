@@ -1,4 +1,4 @@
-import { test, expect } from '@playwright/test';
+import { test, expect } from './fixtures.js';
 
 test('CP1: Navigation Listing -> Detail', async ({ page }) => {
     // 1. Go to listing page

@@ -1,4 +1,4 @@
-import { test, expect } from '@playwright/test';
+import { test, expect } from './fixtures.js';
 
 test.describe('P7-F SEO errors', () => {
   test('unknown route renders noindex metadata with canonical', async ({ page }) => {

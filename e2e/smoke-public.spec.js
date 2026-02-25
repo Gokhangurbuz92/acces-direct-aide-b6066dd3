@@ -1,4 +1,4 @@
-import { test, expect } from '@playwright/test';
+import { test, expect } from './fixtures.js';
 import { setupPublicMocks } from './_mocks/publicApiMocks';
 
 // Timeout global augmenté

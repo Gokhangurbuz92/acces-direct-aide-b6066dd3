@@ -1,5 +1,5 @@
 
-import { test, expect } from '@playwright/test';
+import { test, expect } from './fixtures.js';
 
 test('CP1 Debug: Mocked Data Navigation', async ({ page }) => {
     // Mock the API response

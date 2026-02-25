@@ -160,20 +160,32 @@ export default function Layout({ children, currentPageName }) {
           outline-offset: 2px !important;
         }
         
-        /* Skip link */
+        /* Skip link — sr-only pattern within viewport for tab-order compatibility */
         .skip-link {
           position: absolute;
-          top: -40px;
+          top: 0;
           left: 0;
+          width: 1px;
+          height: 1px;
+          overflow: hidden;
           background: #2563eb;
           color: white;
-          padding: 8px 16px;
-          z-index: 100;
-          transition: top 0.3s;
+          padding: 0;
+          z-index: 9999;
+          font-weight: 600;
+          text-decoration: none;
+          white-space: nowrap;
         }
         
         .skip-link:focus {
-          top: 0;
+          position: fixed;
+          top: 4px;
+          left: 4px;
+          width: auto;
+          height: auto;
+          overflow: visible;
+          padding: 8px 16px;
+          border-radius: 6px;
         }
         
         /* Print styles pour PDF */
@@ -402,7 +414,7 @@ export default function Layout({ children, currentPageName }) {
       </header>
 
       {/* Main content */}
-      <main id="main-content" className="flex-grow">
+      <main id="main-content" className="flex-grow" tabIndex={-1}>
         {children}
       </main>
 

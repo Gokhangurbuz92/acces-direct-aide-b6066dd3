@@ -93,22 +93,6 @@ export default function Layout({ children, currentPageName }) {
     <div className="min-h-screen flex flex-col bg-slate-50">
       {/* Styles d'accessibilité */}
       <style>{`
-        /* ADA brand text gradient — P1 optional premium effect */
-        .ada-brand-text {
-          background: linear-gradient(135deg, #1F3A5F 0%, #2E5A8E 50%, #4A7AB5 100%);
-          -webkit-background-clip: text;
-          background-clip: text;
-          -webkit-text-fill-color: transparent;
-        }
-        @media (prefers-reduced-motion: reduce) {
-          .ada-brand-text {
-            background: none;
-            -webkit-background-clip: unset;
-            background-clip: unset;
-            -webkit-text-fill-color: unset;
-            color: #1F3A5F;
-          }
-        }
 
         :root {
           --primary-color: #2563eb;
@@ -242,7 +226,7 @@ export default function Layout({ children, currentPageName }) {
             </div>
 
             {/* Navigation desktop */}
-            <nav className="hidden lg:flex items-center gap-1" role="navigation" aria-label="Navigation principale">
+            <nav className="hidden lg:flex items-center gap-1" aria-label="Navigation principale">
               {filteredNavItems.map((item) => (
                 <div key={item.page} className="relative group">
                   {item.submenu ? (
@@ -338,7 +322,7 @@ export default function Layout({ children, currentPageName }) {
         {/* Menu mobile */}
         {mobileMenuOpen && (
           <div className="lg:hidden border-t border-border bg-surface">
-            <nav className="max-w-7xl mx-auto px-4 py-4 space-y-1" role="navigation" aria-label="Navigation mobile">
+            <nav className="max-w-7xl mx-auto px-4 py-4 space-y-1" aria-label="Navigation mobile">
               {filteredNavItems.map((item) => (
                 <div key={item.page}>
                   {item.submenu ? (
@@ -418,12 +402,12 @@ export default function Layout({ children, currentPageName }) {
       </header>
 
       {/* Main content */}
-      <main id="main-content" className="flex-grow" role="main">
+      <main id="main-content" className="flex-grow">
         {children}
       </main>
 
       {/* Footer */}
-      <footer className="bg-brand-primary text-white" role="contentinfo">
+      <footer className="bg-brand-primary text-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 py-12">
           <div className="grid grid-cols-1 gap-8 sm:grid-cols-2 md:grid-cols-4">
             {/* Logo et description */}

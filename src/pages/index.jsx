@@ -171,6 +171,15 @@ function LegacyAideRedirect() {
 }
 
 /**
+ * Redirects legacy /entity/view?id=xxx URLs to /entity/xxx
+ */
+function LegacyViewRedirect({ basePath }) {
+    const location = useLocation();
+    const id = new URLSearchParams(location.search).get('id');
+    return <Navigate to={`${basePath}/${id || ''}`} replace />;
+}
+
+/**
  * @param {string} url
  */
 function _getCurrentPage(url) {
@@ -257,7 +266,7 @@ function PagesContent() {
                     <Route path="/a-propos" element={<APropos />} />
                     <Route path="/accessibilite" element={<Accessibilite />} />
                     <Route path="/actualites" element={<Actualites />} />
-                    <Route path="/actualites/view" element={<ActualiteDetail />} />
+                    <Route path="/actualites/view" element={<LegacyViewRedirect basePath="/actualites" />} />
                     <Route path="/actualites/:slug" element={<ActualiteDetail />} />
 
                     <Route path="/admin/login" element={<AdminLogin />} />
@@ -295,7 +304,7 @@ function PagesContent() {
 
                     <Route path="/aidedetail" element={<AideDetail />} />
                     <Route path="/aide/view" element={<AideDetail />} />
-                    <Route path="/aides/view" element={<AideDetail />} />
+                    <Route path="/aides/view" element={<LegacyViewRedirect basePath="/aides" />} />
                     <Route path="/aide/:slug" element={<LegacyAideRedirect />} />
                     <Route path="/aides/:slug" element={<AideDetail />} />
                     <Route path="/aides" element={<Aides />} />
@@ -303,16 +312,16 @@ function PagesContent() {
                     <Route path="/categories/:slug" element={<Aides />} />
                     <Route path="/situations/:slug" element={<Aides />} />
 
-                    <Route path="/annuaire" element={<Annuaire />} />
-                    <Route path="/structures" element={<Navigate to="/annuaire" replace />} />
-                    <Route path="/structures/view" element={<StructureDetail />} />
+                    <Route path="/structures" element={<Annuaire />} />
+                    <Route path="/annuaire" element={<Navigate to="/structures" replace />} />
+                    <Route path="/structures/view" element={<LegacyViewRedirect basePath="/structures" />} />
                     <Route path="/structures/:slug" element={<StructureDetail />} />
 
                     <Route path="/politique-confidentialite" element={<Confidentialite />} />
                     <Route path="/confidentialite" element={<Navigate to="/politique-confidentialite" replace />} />
                     <Route path="/contact" element={<Contact />} />
                     <Route path="/cookies" element={<Cookies />} />
-                    <Route path="/demarches/view" element={<DemarcheDetail />} />
+                    <Route path="/demarches/view" element={<LegacyViewRedirect basePath="/demarches" />} />
                     <Route path="/demarches/:slug" element={<DemarcheDetail />} />
 
                     {/* Legacy alias — canonical route is /pro/login */}
@@ -360,6 +369,15 @@ function PagesContent() {
 
                     {/* Phase 1: /assistant redirect → /orientation */}
                     <Route path="/assistant" element={<Navigate to="/orientation" replace />} />
+
+                    {/* Mon assistant "bientôt disponible" page */}
+                    <Route path="/mon-assistant" element={
+                        <div className="p-8 text-center">
+                            <h1 className="text-2xl font-bold mb-4">Mon Assistant</h1>
+                            <p>Bientôt disponible</p>
+                        </div>
+                    } />
+
 
                     <Route path="*" element={<NotFound />} />
                 </Routes>

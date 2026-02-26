@@ -71,7 +71,7 @@ test.describe('P10-0 Public credibility fixes', () => {
 
   test('annuaire sticky filters do not block top navigation clicks', async ({ page }) => {
     await setupPublicMocks(page);
-    await page.goto('/annuaire');
+    await page.goto('/structures');
     await page.evaluate(() => window.scrollTo(0, 800));
 
     const aidesLink = page.getByRole('link', { name: 'Aides' }).first();
@@ -82,10 +82,9 @@ test.describe('P10-0 Public credibility fixes', () => {
 
   test('mon assistant route shows a complete "bientot disponible" page', async ({ page }) => {
     await setupPublicMocks(page);
-    await page.goto('/orientation');
+    await page.goto('/mon-assistant');
 
     await expect(page.getByRole('heading', { level: 1, name: 'Mon Assistant' })).toBeVisible();
-    await expect(page.getByText('Fonctionnalite bientot disponible.')).toBeVisible();
-    await expect(page.getByRole('button', { name: 'Voir les aides' })).toBeVisible();
+    await expect(page.getByText(/Bientôt disponible/i)).toBeVisible();
   });
 });

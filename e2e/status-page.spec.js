@@ -79,10 +79,9 @@ test.describe('P8-G status page', () => {
   test('renders KO state when monitor endpoints are degraded', async ({ page }) => {
     await mockStatusEndpoints(page, { dataQualityStatus: 503, ingestionStatus: 503 });
     await page.goto('/status');
-    await page.waitForResponse((response) => response.url().includes('/api/monitor/data-quality'));
-    await page.waitForResponse((response) => response.url().includes('/api/monitor/ingestion-freshness'));
 
-    await expect(page.locator('[data-testid="status-data-quality-card"]')).toContainText('KO');
-    await expect(page.locator('[data-testid="status-ingestion-card"]')).toContainText('KO');
+    // Wait for KO content to render instead of waitForResponse
+    await expect(page.locator('[data-testid="status-data-quality-card"]')).toContainText('KO', { timeout: 10000 });
+    await expect(page.locator('[data-testid="status-ingestion-card"]')).toContainText('KO', { timeout: 10000 });
   });
 });

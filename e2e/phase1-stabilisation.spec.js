@@ -14,8 +14,8 @@ import { test, expect } from './fixtures.js';
 test.describe('Phase 1 — Stabilisation', () => {
     test('FIX1: /auth/login renders login form (not blank)', async ({ page }) => {
         await page.goto('/auth/login');
-        // Must have a visible heading
-        const heading = page.locator('h1, [class*="CardTitle"]').first();
+        // Must have a visible heading — CardTitle renders as div/h3, not h1
+        const heading = page.locator('h1, h2, h3, h4, [class*="CardTitle"]').first();
         await expect(heading).toBeVisible({ timeout: 10_000 });
         await expect(heading).toContainText(/connexion/i);
         // Must have an email input

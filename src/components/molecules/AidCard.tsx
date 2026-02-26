@@ -1,4 +1,5 @@
 import * as React from "react";
+import { Link } from "react-router-dom";
 import { Card, CardHeader, CardContent, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { FreshnessTag } from "./FreshnessTag";
@@ -28,16 +29,17 @@ export function AidCard({
     className,
 }: AidCardProps) {
     return (
-        <Card className={cn("flex flex-col h-full bg-card text-card-foreground border-border", className)}>
+        <Card className={cn("flex flex-col h-full bg-card text-card-foreground border-border", className)} data-testid="aide-card">
             <CardHeader className="gap-3 pb-3">
                 <div className="flex items-start justify-between gap-2">
                     <CardTitle className="text-lg font-semibold leading-tight text-foreground">
-                        <a
-                            href={href}
+                        <Link
+                            to={href}
+                            data-testid="aide-card-link"
                             className="hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background rounded-sm"
                         >
-                            {title}
-                        </a>
+                            <span data-testid="aide-title">{title}</span>
+                        </Link>
                     </CardTitle>
                     {isUrgent && (
                         <Badge variant="destructive" className="shrink-0 pointer-events-none">

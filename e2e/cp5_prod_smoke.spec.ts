@@ -155,18 +155,23 @@ test.describe('CP5: Production Smoke Tests + No-500 Gate', () => {
         await expect(h1).toContainText(/Annuaire|Structures/i);
         await page.screenshot({ path: path.join(PROOF_DIR, '04-structures-list.png') });
 
-        const cards = page.locator('a[href^="/structures/"]');
+        const cards = page.locator('[data-testid="structure-card"]');
         const count = await cards.count();
 
         if (count > 0) {
-            log(`Structures: Found ${count} detail links. Clicking first.`);
-            await cards.first().click();
+            log(`Structures: Found ${count} structure cards. Clicking first.`);
+            // Use evaluate to programmatically click the overlay link
+            await page.evaluate(() => {
+                const card = document.querySelector('[data-testid="structure-card"]');
+                const link = card?.querySelector('a');
+                if (link) link.click();
+            });
             await expect(page).toHaveURL(/\/structures\/.+/);
             await expect(page.locator('h1')).toBeVisible();
             await page.screenshot({ path: path.join(PROOF_DIR, '04-structures-detail.png') });
             log('Structures Detail: OK');
         } else {
-            log('Structures: No detail links found.');
+            log('Structures: No structure cards found.');
         }
     });
 

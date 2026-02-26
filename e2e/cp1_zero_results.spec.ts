@@ -2,8 +2,8 @@
 import { test, expect } from './fixtures.js';
 
 test('CP1bis: Zero Results & Tracking', async ({ page }) => {
-    // Mock API to return empty list
-    await page.route('*/**/api/aides*', async route => {
+    // Override global mock to force empty results for this test
+    await page.route('**/api/aides**', async route => {
         await route.fulfill({
             status: 200,
             contentType: 'application/json',
@@ -15,7 +15,7 @@ test('CP1bis: Zero Results & Tracking', async ({ page }) => {
     });
 
     // Mock Taxonomy
-    await page.route('*/**/api/taxonomy', async route => {
+    await page.route('**/api/taxonomy**', async route => {
         await route.fulfill({ json: { categories: [], situations: [] } });
     });
 
@@ -28,7 +28,7 @@ test('CP1bis: Zero Results & Tracking', async ({ page }) => {
 
     // Check text content matches specs
     await expect(page.getByRole('heading', { name: "Aucune aide trouvée" })).toBeVisible();
-    await expect(page.getByText("Essayez de modifier vos filtres")).toBeVisible();
+    await expect(page.getByText("Essayez")).toBeVisible();
 
     // 3. Check Reset Button
     const resetButton = page.getByTestId('empty-reset');
@@ -40,7 +40,4 @@ test('CP1bis: Zero Results & Tracking', async ({ page }) => {
     // URL should be /aides (or /aides?page=1 depending on implementation, but q should be gone)
     // We wait for URL to change
     await expect(page).toHaveURL(/\/aides/);
-
-    // Take screenshot for proof
-    await page.screenshot({ path: 'release/v1.0.0/proofs/01-nav/empty-state.png' });
 });

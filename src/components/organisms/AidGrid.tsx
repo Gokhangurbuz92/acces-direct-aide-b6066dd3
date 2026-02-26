@@ -23,7 +23,7 @@ export default function AidGrid({
                 icon={<Search className="h-6 w-6" />}
                 actions={
                     onReset ? (
-                        <Button type="button" variant="outline" onClick={onReset}>
+                        <Button type="button" variant="outline" onClick={onReset} data-testid="empty-reset">
                             Réinitialiser les filtres
                         </Button>
                     ) : undefined

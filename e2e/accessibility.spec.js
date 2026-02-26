@@ -11,8 +11,11 @@ import AxeBuilder from '@axe-core/playwright';
 
 const PAGES = [
     { name: 'Accueil', path: '/' },
+    { name: 'Aides', path: '/aides' },
+    { name: 'Aide détail', path: '/aides/aide-test' },
     { name: 'Démarches', path: '/demarches' },
     { name: 'Annuaire', path: '/annuaire' },
+    { name: 'Recherche', path: '/recherche' },
     { name: 'Orientation', path: '/orientation' },
     { name: 'Connexion', path: '/auth/login' },
 ];

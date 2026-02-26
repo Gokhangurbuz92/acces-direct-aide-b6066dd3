@@ -33,46 +33,46 @@ const Logo = ({
         lg: 64
     };
     const heightPx = typeof size === 'string' ? sizeMap[size] : size;
-    
-    // Chemins des assets
+
+    // Source of truth en prod: /public/logo.svg
+    const isCurrentFamily = family === 'current';
     const basePath = '/assets/branding';
-    
-    // Déterminer le suffixe de famille (a/b/c ou vide pour current)
-    const familySuffix = family === 'current' ? '' : `-${family}`;
-    
-    // Sélection du fichier selon family, variant et tone
-    let logoSrc;
-    let fallbackSrc;
-    
-    if (tone === 'white') {
-        // Version blanche (toutes familles)
-        logoSrc = `${basePath}/logo${familySuffix}-white.svg`;
-        fallbackSrc = '/brand/logo-horizontal-transparent.png';
-    } else if (variant === 'icon') {
-        logoSrc = `${basePath}/logo${familySuffix}-icon.svg`;
-        fallbackSrc = '/brand/logo-mark.png';
-    } else if (variant === 'tagline') {
-        logoSrc = `${basePath}/logo${familySuffix}-tagline.svg`;
-        fallbackSrc = '/brand/logo-horizontal.png';
-    } else {
-        // variant === 'full'
-        logoSrc = `${basePath}/logo${familySuffix}-full.svg`;
-        fallbackSrc = '/brand/logo-horizontal.png';
+    const familySuffix = isCurrentFamily ? '' : `-${family}`;
+
+    let logoSrc = '/logo.svg';
+    let fallbackSrc = '/logo.svg';
+
+    if (!isCurrentFamily) {
+        if (tone === 'white') {
+            logoSrc = `${basePath}/logo${familySuffix}-white.svg`;
+            fallbackSrc = '/brand/logo-horizontal-transparent.png';
+        } else if (variant === 'icon') {
+            logoSrc = `${basePath}/logo${familySuffix}-icon.svg`;
+            fallbackSrc = '/brand/logo-mark.png';
+        } else if (variant === 'tagline') {
+            logoSrc = `${basePath}/logo${familySuffix}-tagline.svg`;
+            fallbackSrc = '/brand/logo-horizontal.png';
+        } else {
+            logoSrc = `${basePath}/logo${familySuffix}-full.svg`;
+            fallbackSrc = '/brand/logo-horizontal.png';
+        }
     }
-    
+
     // Texte alternatif
-    const altText = alt || "AccesDirectAide — La lumière sur vos démarches";
+    const altText = alt || 'Logo AccesDirectAide';
+    const whiteToneClass = tone === 'white' && isCurrentFamily ? 'brightness-0 invert' : '';
     
     // Composant image
     const logoImage = (
         <img
             src={logoSrc}
             alt={altText}
-            className={cn("object-contain", className)}
-            style={{ height: `${heightPx}px`, width: 'auto' }}
+            className={cn('object-contain', whiteToneClass, className)}
+            style={{ height: `${heightPx}px`, width: variant === 'icon' ? `${heightPx}px` : 'auto' }}
             onError={(e) => {
-                // Fallback vers PNG si SVG non disponible
-                e.currentTarget.src = fallbackSrc;
+                if (e.currentTarget.src !== fallbackSrc) {
+                    e.currentTarget.src = fallbackSrc;
+                }
             }}
             {...props}
         />
@@ -84,7 +84,7 @@ const Logo = ({
             <Link 
                 to="/" 
                 className="inline-flex items-center focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-primary focus-visible:ring-offset-2 rounded"
-                aria-label="Accueil - AccesDirectAide"
+                aria-label="Aller à l’accueil"
             >
                 {logoImage}
             </Link>

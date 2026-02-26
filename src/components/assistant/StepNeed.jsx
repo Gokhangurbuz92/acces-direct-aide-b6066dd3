@@ -1,11 +1,11 @@
 import { Home, Heart, Briefcase, FileText, AlertTriangle } from 'lucide-react';
 
 const NEEDS = [
-    { key: 'logement', label: 'Logement', icon: Home, color: 'bg-blue-50 text-blue-600 border-blue-200 hover:bg-blue-100' },
-    { key: 'sante', label: 'Santé', icon: Heart, color: 'bg-rose-50 text-rose-600 border-rose-200 hover:bg-rose-100' },
-    { key: 'travail', label: 'Travail / Emploi', icon: Briefcase, color: 'bg-amber-50 text-amber-600 border-amber-200 hover:bg-amber-100' },
-    { key: 'papiers', label: 'Papiers / Droits', icon: FileText, color: 'bg-emerald-50 text-emerald-600 border-emerald-200 hover:bg-emerald-100' },
-    { key: 'urgence', label: 'Urgence', icon: AlertTriangle, color: 'bg-red-50 text-red-600 border-red-200 hover:bg-red-100' },
+    { key: 'logement', label: 'Logement', icon: Home, color: 'bg-blue-50 text-blue-800 border-blue-200 hover:bg-blue-100' },
+    { key: 'sante', label: 'Santé', icon: Heart, color: 'bg-rose-50 text-rose-800 border-rose-200 hover:bg-rose-100' },
+    { key: 'travail', label: 'Travail / Emploi', icon: Briefcase, color: 'bg-amber-50 text-amber-800 border-amber-200 hover:bg-amber-100' },
+    { key: 'papiers', label: 'Papiers / Droits', icon: FileText, color: 'bg-emerald-50 text-emerald-800 border-emerald-200 hover:bg-emerald-100' },
+    { key: 'urgence', label: 'Urgence', icon: AlertTriangle, color: 'bg-red-50 text-red-800 border-red-200 hover:bg-red-100' },
 ];
 
 export default function StepNeed({ onNext }) {

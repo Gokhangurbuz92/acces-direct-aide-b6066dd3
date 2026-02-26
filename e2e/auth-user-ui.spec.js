@@ -1,4 +1,4 @@
-import { expect, test } from '@playwright/test';
+import { expect, test } from './fixtures.js';
 import { setupPublicMocks } from './_mocks/publicApiMocks.js';
 
 test.describe('P10-B user auth UI + next flow', () => {

@@ -1,4 +1,4 @@
-import { test, expect } from '@playwright/test';
+import { test, expect } from './fixtures.js';
 
 test.describe('Aides Search MVP', () => {
   test.beforeEach(async ({ page }) => {
@@ -43,11 +43,11 @@ test.describe('Aides Search MVP', () => {
     await page.goto('/recherche');
 
     await page.getByLabel('Recherche').fill('loyer étudiant Strasbourg');
-    await page.getByLabel('Catégorie').selectOption('LOGEMENT');
+    await page.locator('#aides-search-category').selectOption('logement');
     await page.getByRole('button', { name: 'Rechercher' }).click();
 
     await expect(page).toHaveURL(/q=loyer/);
-    await expect(page).toHaveURL(/cat=LOGEMENT/);
+    await expect(page).toHaveURL(/cat=logement/);
 
     await expect.poll(
       async () => {

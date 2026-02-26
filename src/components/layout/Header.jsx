@@ -38,8 +38,9 @@ export function Header() {
               to="/"
               className="flex items-center gap-3 rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-400"
               onClick={() => setMobileOpen(false)}
+              aria-label="Aller à l’accueil"
             >
-              <ADALogo size={36} className="text-[#1F3A5F] shrink-0" />
+              <img src="/logo.svg" alt="Logo AccesDirectAide" className="h-9 w-9" />
               <div className="hidden sm:block">
                 <p className="text-base font-semibold text-slate-900">AccesDirectAide</p>
                 <p className="text-xs text-slate-500">L'information sociale claire</p>

@@ -1,4 +1,4 @@
-import { test, expect } from '@playwright/test';
+import { test, expect } from './fixtures.js';
 
 test.describe('P7-F SEO errors', () => {
   test('unknown route renders noindex metadata with canonical', async ({ page }) => {
@@ -20,17 +20,12 @@ test.describe('P7-F SEO errors', () => {
   });
 
   test('/aides/:slug missing renders not found with noindex', async ({ page }) => {
-    await page.route('**/api/aides*', async (route) => {
-      const url = route.request().url();
-      if (url.includes('/api/aides/slug-inexistant-123') || url.includes('slug=slug-inexistant-123')) {
-        await route.fulfill({
-          status: 404,
-          contentType: 'application/json',
-          body: JSON.stringify({ error: 'Aide non trouvée' }),
-        });
-        return;
-      }
-      await route.continue();
+    await page.route('**/api/aides/slug-inexistant-123', async (route) => {
+      await route.fulfill({
+        status: 404,
+        contentType: 'application/json',
+        body: JSON.stringify({ error: 'Aide non trouvée' }),
+      });
     });
 
     await page.goto('/aides/slug-inexistant-123');

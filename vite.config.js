@@ -151,22 +151,30 @@ export default defineConfig({
             return 'react-router-vendor';
           }
 
+          // Pro-only ecosystem (lazy-loaded, only needed on Pro/Admin pages)
+          if (id.includes('node_modules/react-day-picker') ||
+            id.includes('node_modules/react-markdown') ||
+            id.includes('node_modules/react-resizable-panels')) {
+            return 'pro-ecosystem';
+          }
+
           // React ecosystem (react-query, react-helmet, react-hook-form, etc.)
           if (id.includes('node_modules/@tanstack/react-query') ||
             id.includes('node_modules/@tanstack/query-core') ||
             id.includes('node_modules/react-helmet-async') ||
             id.includes('node_modules/react-hook-form') ||
-            id.includes('node_modules/@hookform') ||
-            id.includes('node_modules/react-day-picker') ||
-            id.includes('node_modules/react-markdown') ||
-            id.includes('node_modules/react-resizable-panels')) {
+            id.includes('node_modules/@hookform')) {
             return 'react-ecosystem';
           }
 
-          // UI libraries (radix-ui, lucide, framer-motion, etc.)
+          // Framer Motion (lazy-loaded, only used by ChatWidget)
+          if (id.includes('node_modules/framer-motion')) {
+            return 'framer-motion';
+          }
+
+          // UI libraries (radix-ui, lucide, etc.)
           if (id.includes('node_modules/@radix-ui') ||
             id.includes('node_modules/lucide-react') ||
-            id.includes('node_modules/framer-motion') ||
             id.includes('node_modules/cmdk') ||
             id.includes('node_modules/vaul') ||
             id.includes('node_modules/sonner') ||

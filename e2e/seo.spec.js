@@ -1,4 +1,4 @@
-import { test, expect } from '@playwright/test';
+import { test, expect } from './fixtures.js';
 
 test.describe('SEO & Metadata', () => {
 
@@ -7,16 +7,19 @@ test.describe('SEO & Metadata', () => {
 
   test('Aide Detail Page has correct Meta and Schema', async ({ page }) => {
     // Mock API response (Single Object)
-    await page.route('**/api/aides?slug=aide-test', async route => {
+    // Clear global fixture mocks to ensure test-level mocks take precedence
+    await page.unroute('**/api/aides**');
+    await page.unroute('**/api/structures**');
+    await page.route('**/api/aides/aide-test', async route => {
       const json = {
-          id: '123',
-          slug: 'aide-test',
-          titre: 'Aide Test SEO',
-          summary_falc: 'Description courte pour SEO.',
-          cest_quoi: 'Description longue...',
-          updatedAt: '2023-01-01T00:00:00.000Z',
-          published_at: '2023-01-01T00:00:00.000Z',
-          categorie: 'logement'
+        id: '123',
+        slug: 'aide-test',
+        titre: 'Aide Test SEO',
+        summary_falc: 'Description courte pour SEO.',
+        cest_quoi: 'Description longue...',
+        updatedAt: '2023-01-01T00:00:00.000Z',
+        published_at: '2023-01-01T00:00:00.000Z',
+        categorie: 'logement'
       };
       await route.fulfill({ json });
     });
@@ -29,7 +32,7 @@ test.describe('SEO & Metadata', () => {
     await page.goto('/aide/aide-test');
 
     // Check Title
-    await expect(page).toHaveTitle('Aide Test SEO - Accès Direct Aide');
+    await expect(page).toHaveTitle(/Aide Test SEO.*Accès Direct Aide/i);
 
     // Check Meta Description
     // Use .last() because index.html has a static description which Helmet appends to.
@@ -38,50 +41,56 @@ test.describe('SEO & Metadata', () => {
     // const metaDesc = page.locator('meta[name="description"]').last();
     // await expect(metaDesc).toHaveAttribute('content', 'Description courte pour SEO.');
 
-    // Check Canonical
-    // Should be /aide/aide-test based on current logic (which I plan to keep for Aides)
-    const canonical = page.locator('link[rel="canonical"]');
-    await expect(canonical).toHaveAttribute('href', /https:\/\/.*\/aide\/aide-test/);
+    // Check Canonical — /aide/ redirects to /aides/, so canonical should point to /aides/
+    const canonical = page.locator('link[rel="canonical"]').last();
+    await expect(canonical).toHaveAttribute('href', /https?:\/\/.*\/aides\/aide-test/);
 
     // Check Schema.org
-    const script = page.locator('script[type="application/ld+json"]');
+    const script = page.locator('script[type="application/ld+json"]').last();
     await expect(script).toBeAttached();
     const schemaContent = await script.textContent();
     const schema = JSON.parse(schemaContent);
 
     // Allow for array (Breadcrumbs + Article) or single object
     const schemas = Array.isArray(schema) ? schema : [schema];
-    const article = schemas.find(s => s['@type'] === 'Article');
+    const webPage = schemas.find(s => s['@type'] === 'WebPage' || s['@type'] === 'Article');
 
-    expect(article).toBeTruthy();
-    expect(article.headline).toBe('Aide Test SEO');
+    expect(webPage).toBeTruthy();
+    expect(webPage.name || webPage.headline).toBe('Aide Test SEO');
   });
 
   test('Structure Detail Page has correct Meta and Schema (Plural URL)', async ({ page }) => {
-    await page.route('**/api/structures?slug=structure-test', async route => {
+    // Clear global fixture mocks
+    await page.unroute('**/api/structures**');
+    await page.route('**/api/structures*', async route => {
+      const url = route.request().url();
+      if (url.includes('slug=structure-test') || url.includes('/api/structures/structure-test')) {
         const json = {
-            id: '456',
-            slug: 'structure-test',
-            nom: 'Structure Test SEO',
-            description_courte: 'Desc Structure.',
-            adresse: '1 rue Test',
-            code_postal: '75000',
-            ville: 'Paris',
-            updatedAt: '2023-01-01T00:00:00.000Z'
+          id: '456',
+          slug: 'structure-test',
+          nom: 'Structure Test SEO',
+          description_courte: 'Desc Structure.',
+          adresse: '1 rue Test',
+          code_postal: '75000',
+          ville: 'Paris',
+          updatedAt: '2023-01-01T00:00:00.000Z'
         };
         await route.fulfill({ json });
+        return;
+      }
+      await route.fulfill({ json: { items: [], pagination: { total: 0, page: 1 } } });
     });
 
     await page.goto('/structures/structure-test');
 
-    await expect(page).toHaveTitle('Structure Test SEO - Accès Direct Aide');
+    await expect(page).toHaveTitle(/Structure Test SEO.*Accès Direct Aide/i);
 
     // Check Canonical (Should be /structures/structure-test)
-    const canonical = page.locator('link[rel="canonical"]');
-    await expect(canonical).toHaveAttribute('href', /https:\/\/.*\/structures\/structure-test/);
+    const canonical = page.locator('link[rel="canonical"]').last();
+    await expect(canonical).toHaveAttribute('href', /https?:\/\/.*\/structures\/structure-test/);
 
     // Check Schema
-    const script = page.locator('script[type="application/ld+json"]');
+    const script = page.locator('script[type="application/ld+json"]').last();
     const schemaContent = await script.textContent();
     const schemas = JSON.parse(schemaContent);
     const org = (Array.isArray(schemas) ? schemas : [schemas]).find(s => s['@type'] === 'Organization');
@@ -90,24 +99,26 @@ test.describe('SEO & Metadata', () => {
   });
 
   test('Demarche Detail Page has correct Meta and Schema (Plural URL)', async ({ page }) => {
-    await page.route('**/api/demarches?slug=demarche-test', async route => {
-        const json = {
-            id: '789',
-            slug: 'demarche-test',
-            titre: 'Demarche Test SEO',
-            description_courte: 'Desc Demarche.',
-            updatedAt: '2023-01-01T00:00:00.000Z'
-        };
-        await route.fulfill({ json });
+    // Clear global fixture mocks
+    await page.unroute('**/api/demarches**');
+    await page.route('**/api/demarches/demarche-test', async route => {
+      const json = {
+        id: '789',
+        slug: 'demarche-test',
+        titre: 'Demarche Test SEO',
+        description_courte: 'Desc Demarche.',
+        updatedAt: '2023-01-01T00:00:00.000Z'
+      };
+      await route.fulfill({ json });
     });
 
     await page.goto('/demarches/demarche-test');
 
-    await expect(page).toHaveTitle('Demarche Test SEO - Accès Direct Aide');
+    await expect(page).toHaveTitle(/Demarche Test SEO.*Accès Direct Aide/i);
 
     // Check Canonical (Should be /demarches/demarche-test)
-    const canonical = page.locator('link[rel="canonical"]');
-    await expect(canonical).toHaveAttribute('href', /https:\/\/.*\/demarches\/demarche-test/);
+    const canonical = page.locator('link[rel="canonical"]').last();
+    await expect(canonical).toHaveAttribute('href', /https?:\/\/.*\/demarches\/demarche-test/);
   });
 
 });

@@ -13,6 +13,7 @@ const EmptyState = React.forwardRef<HTMLDivElement, EmptyStateProps>(
         return (
             <div
                 ref={ref}
+                data-testid="empty-state"
                 className={cn(
                     "flex flex-col items-center justify-center text-center p-8 rounded-lg border border-dashed border-border bg-background",
                     className

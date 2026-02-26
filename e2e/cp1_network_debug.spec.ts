@@ -1,5 +1,5 @@
 
-import { test, expect } from '@playwright/test';
+import { test, expect } from './fixtures.js';
 
 test('CP1 Debug Network: Check API Connectivity', async ({ page }) => {
     // Listen to network requests

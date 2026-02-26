@@ -1,18 +1,11 @@
 import type { Meta, StoryObj } from "@storybook/react";
-import { MemoryRouter } from "react-router-dom";
 import HeroSearch from "./HeroSearch";
 
 const meta = {
     title: "Organisms/HeroSearch",
     component: HeroSearch,
     tags: ["autodocs"],
-    decorators: [
-        (Story) => (
-            <MemoryRouter>
-                <Story />
-            </MemoryRouter>
-        ),
-    ],
+    // MemoryRouter is provided globally by .storybook/preview.ts — no need here
 } satisfies Meta<typeof HeroSearch>;
 
 export default meta;

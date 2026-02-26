@@ -6,8 +6,13 @@ import "../src/index.css";
 
 const preview: Preview = {
     decorators: [
-        // Provide React Router context to all stories — required by components using <Link>
-        (Story) => React.createElement(MemoryRouter, null, React.createElement(Story)),
+        // Global Router context — components using <Link> need this.
+        // Do NOT add MemoryRouter in individual story decorators (causes double-Router crash).
+        (Story) => (
+            <MemoryRouter>
+            <Story />
+            </MemoryRouter>
+        ),
     ],
     parameters: {
         controls: {

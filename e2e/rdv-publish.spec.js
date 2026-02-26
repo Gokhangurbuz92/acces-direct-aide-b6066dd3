@@ -1,4 +1,4 @@
-import { test, expect } from '@playwright/test';
+import { test, expect } from './fixtures.js';
 
 test.describe('P10-C RDV publish settings', () => {
   test('public flow shows unpublished state when structure RDV is not published', async ({ page }) => {

@@ -1,4 +1,4 @@
-import { test, expect } from '@playwright/test';
+import { test, expect } from './fixtures.js';
 
 const LIST_ITEM = {
   id: 'aide-seo-1',
@@ -42,10 +42,12 @@ async function setupAidesSeoMocks(page) {
 
   await page.route('**/api/aides**', async (route) => {
     const url = route.request().url();
-    if (url.includes('/api/aides/aide-seo-test') || url.includes('slug=aide-seo-test')) {
-      await route.fulfill({ json: { items: [DETAIL_ITEM] } });
+    // Detail request: /api/aides/aide-seo-test (path param, not query)
+    if (url.includes('/api/aides/aide-seo-test')) {
+      await route.fulfill({ json: DETAIL_ITEM });
       return;
     }
+    // List request: /api/aides or /api/aides?...
     await route.fulfill({
       json: {
         items: [LIST_ITEM],
@@ -68,7 +70,8 @@ test.describe('SEO Runtime - Aides', () => {
 
   test('/aides exposes runtime metadata and semantic links', async ({ page }) => {
     await page.goto('/aides');
-    await page.waitForResponse((response) => response.url().includes('/api/aides'));
+    // Wait for content to render instead of waitForResponse (mock already fulfilled)
+    await expect(page.locator('a[href="/aides/aide-seo-test"]')).toBeVisible({ timeout: 10000 });
 
     const origin = new URL(page.url()).origin;
     const expectedCanonical = `${origin}/aides`;
@@ -89,10 +92,8 @@ test.describe('SEO Runtime - Aides', () => {
 
   test('/aides/:slug updates metadata from loaded aide data', async ({ page }) => {
     await page.goto('/aides/aide-seo-test');
-    await page.waitForResponse((response) =>
-      response.url().includes('/api/aides/aide-seo-test') ||
-      response.url().includes('/api/aides?slug=aide-seo-test')
-    );
+    // Wait for content to render instead of waitForResponse
+    await expect(page.locator('h1')).toBeVisible({ timeout: 10000 });
 
     const origin = new URL(page.url()).origin;
     const expectedCanonical = `${origin}/aides/aide-seo-test`;

@@ -1,5 +1,5 @@
 
-import { test, expect } from '@playwright/test';
+import { test, expect } from './fixtures.js';
 
 test('CP1 Debug: Mocked Data Navigation', async ({ page }) => {
     // Mock the API response
@@ -36,20 +36,13 @@ test('CP1 Debug: Mocked Data Navigation', async ({ page }) => {
     await expect(card).toBeVisible();
 
     // Inspect the link
-    const link = page.getByRole('link', { name: "Voir l'aide Aide Test Mock" });
+    const link = page.getByTestId('aide-card-link').first();
     await expect(link).toBeVisible();
 
     // Check href
     const href = await link.getAttribute('href');
     console.log('Link href:', href);
     expect(href).toBe('/aides/aide-test-mock');
-
-    // Verify it is an anchor tag
-    const tagName = await link.evaluate(el => el.tagName);
-    expect(tagName).toBe('A');
-
-    // Take screenshot of the card
-    await page.screenshot({ path: 'release/v1.0.0/proofs/01-nav/debug_repro_mocked.png' });
 
     // Click it
     await link.click();

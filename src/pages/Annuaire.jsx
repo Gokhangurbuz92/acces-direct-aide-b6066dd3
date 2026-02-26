@@ -315,7 +315,7 @@ export default function Annuaire() {
       {/* Content */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
         {isLoading ? (
-          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6" aria-label="Chargement des résultats">
+          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6" role="status" aria-label="Chargement des résultats">
             {Array.from({ length: Math.min(limit, 12) }).map((_, idx) => (
               <Card key={idx} className="border-slate-200">
                 <CardContent className="p-6 space-y-3">

@@ -172,6 +172,10 @@ export default function AideDetail() {
   // ------------------------------------------------------------------
   // Not found state
   // ------------------------------------------------------------------
+  if (status === 'gone') {
+    return <Gone />;
+  }
+
   if (status === 'not_found' || !aide) {
     return <NotFound />;
   }

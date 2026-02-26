@@ -1,4 +1,4 @@
-import { test, expect } from '@playwright/test';
+import { test, expect } from './fixtures.js';
 
 test.describe('P10-E RDV messaging flow', () => {
   test('supports user and pro messaging on same conversation', async ({ page }) => {

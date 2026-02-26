@@ -1,5 +1,5 @@
 // @ts-check
-import { test, expect } from '@playwright/test';
+import { test, expect } from './fixtures.js';
 import AxeBuilder from '@axe-core/playwright';
 
 /**
@@ -11,8 +11,11 @@ import AxeBuilder from '@axe-core/playwright';
 
 const PAGES = [
     { name: 'Accueil', path: '/' },
+    { name: 'Aides', path: '/aides' },
+    { name: 'Aide détail', path: '/aides/aide-test' },
     { name: 'Démarches', path: '/demarches' },
     { name: 'Annuaire', path: '/annuaire' },
+    { name: 'Recherche', path: '/recherche' },
     { name: 'Orientation', path: '/orientation' },
     { name: 'Connexion', path: '/auth/login' },
 ];
@@ -48,18 +51,32 @@ test.describe('Accessibility — axe audit (critical + serious)', () => {
 test.describe('Accessibility — keyboard navigation', () => {
     test('Skip link is present and functional', async ({ page }) => {
         await page.goto('/');
+        await page.waitForLoadState('networkidle');
 
-        // Tab to the skip link (first focusable element)
+        // Reset focus context: blur any active element so Tab traverses from document start
+        await page.evaluate(() => {
+            if (document.activeElement && document.activeElement !== document.body) {
+                /** @type {HTMLElement} */ (document.activeElement).blur();
+            }
+        });
+
+        // Tab twice to reach the skip link (first Tab cycles to body in Chromium)
         await page.keyboard.press('Tab');
-        const skipLink = page.locator('.skip-link:focus');
+        await page.keyboard.press('Tab');
+
+        // Use accessibility-first locator
+        const skipLink = page.getByRole('link', { name: 'Aller au contenu principal' });
+
+        // Assert it received focus and became visible
+        await expect(skipLink).toBeFocused();
         await expect(skipLink).toBeVisible();
-        await expect(skipLink).toHaveText('Aller au contenu principal');
 
         // Activate skip link
         await page.keyboard.press('Enter');
-        // Focus should now be at or near #main-content
+
+        // Check FOCUS moved to main content (requires tabindex="-1" on #main-content)
         const mainContent = page.locator('#main-content');
-        await expect(mainContent).toBeVisible();
+        await expect(mainContent).toBeFocused();
     });
 
     test('Chat widget — focus trap and Esc close', async ({ page }) => {

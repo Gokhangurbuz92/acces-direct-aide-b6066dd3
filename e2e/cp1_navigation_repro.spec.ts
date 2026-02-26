@@ -1,14 +1,12 @@
-import { test, expect } from '@playwright/test';
+import { test, expect } from './fixtures.js';
 
 test('CP1: Navigation Listing -> Detail', async ({ page }) => {
     // 1. Go to listing page
     await page.goto('/aides');
     await expect(page.getByRole('heading', { level: 1, name: /Aides/i })).toBeVisible();
 
-    // 2. Click the first aide card
-    // Use specific selector for the card's main link
-    // The card has a link with aria-label starting with "Voir l'aide"
-    const cardLink = page.getByRole('link', { name: /^Voir l'aide/ }).first();
+    // 2. Click the first aide card link
+    const cardLink = page.getByTestId('aide-card-link').first();
     await expect(cardLink).toBeVisible();
 
     const href = await cardLink.getAttribute('href');

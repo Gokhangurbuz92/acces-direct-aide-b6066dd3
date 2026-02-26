@@ -18,7 +18,7 @@ import { clearCache } from "@/lib/api/cache";
 // Types
 // ---------------------------------------------------------------------------
 
-export type DetailStatus = "loading" | "success" | "error" | "not_found";
+export type DetailStatus = "loading" | "success" | "error" | "not_found" | "gone";
 
 export interface AideDetailResult {
     status: DetailStatus;
@@ -76,6 +76,12 @@ export function useAideDetail(slug: string | null | undefined): AideDetailResult
                 setData(undefined);
                 setRaw(undefined);
                 setStatus("not_found");
+                return;
+            }
+            if (apiErr?.status === 410) {
+                setData(undefined);
+                setRaw(undefined);
+                setStatus("gone");
                 return;
             }
 

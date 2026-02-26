@@ -189,41 +189,44 @@ const MOCK_RESPONSE_COUPLE = {
 // --- Helper: fill wizard steps 1–4 (need, territory, profile, urgency) ---
 
 async function fillWizardSteps1To4(page) {
-    // Step 1: Need — click "logement"
+    // Step 1: StepNeed — clicking a need button auto-advances (no Continue button)
     const needBtn = page.locator('button', { hasText: /logement/i }).first();
     await needBtn.waitFor({ state: 'visible', timeout: 10000 });
     await needBtn.click();
 
-    // Step 2: Territory — type postal code and continue
-    const territoryInput = page.locator('input[type="text"], input[type="search"]').first();
+    // Step 2: StepTerritory — fill postal code and submit the form
+    const territoryInput = page.locator('input[aria-label="Ville ou code postal"]');
     await territoryInput.waitFor({ state: 'visible', timeout: 5000 });
     await territoryInput.fill('67000');
-    // Click first suggestion if present, or continue button
-    const continueBtn2 = page.locator('button', { hasText: /continuer|suivant/i }).first();
-    await continueBtn2.waitFor({ state: 'visible', timeout: 3000 }).catch(() => { });
-    if (await continueBtn2.isVisible()) {
-        await continueBtn2.click();
-    }
+    // Submit the form (button is type="submit")
+    const submitBtn2 = page.locator('button[type="submit"]', { hasText: /continuer|passer/i });
+    await submitBtn2.click();
 
-    // Step 3: Profile — select a profile option and continue
-    const profileBtn = page.locator('button[role="radio"]').first();
-    await profileBtn.waitFor({ state: 'visible', timeout: 5000 });
-    await profileBtn.click();
-    const continueBtn3 = page.locator('button', { hasText: /continuer|suivant/i }).first();
-    await continueBtn3.waitFor({ state: 'visible', timeout: 3000 }).catch(() => { });
-    if (await continueBtn3.isVisible()) {
-        await continueBtn3.click();
-    }
+    // Step 3: StepProfile — must select BOTH situation AND statut
+    // Situation familiale radiogroup
+    const situationRadio = page.locator('[role="radiogroup"][aria-label="Situation familiale"] button[role="radio"]').first();
+    await situationRadio.waitFor({ state: 'visible', timeout: 5000 });
+    await situationRadio.click();
 
-    // Step 4: Urgency — select option and continue
-    const urgencyBtn = page.locator('button[role="radio"]').first();
-    await urgencyBtn.waitFor({ state: 'visible', timeout: 5000 });
-    await urgencyBtn.click();
-    const continueBtn4 = page.locator('button', { hasText: /continuer|suivant/i }).first();
-    await continueBtn4.waitFor({ state: 'visible', timeout: 3000 }).catch(() => { });
-    if (await continueBtn4.isVisible()) {
-        await continueBtn4.click();
-    }
+    // Statut actuel radiogroup
+    const statutRadio = page.locator('[role="radiogroup"][aria-label="Statut actuel"] button[role="radio"]').first();
+    await statutRadio.waitFor({ state: 'visible', timeout: 5000 });
+    await statutRadio.click();
+
+    // Now "Continuer" should be enabled
+    const continueBtn3 = page.locator('button', { hasText: /continuer/i });
+    await expect(continueBtn3).toBeEnabled({ timeout: 3000 });
+    await continueBtn3.click();
+
+    // Step 4: StepUrgency — select urgency level
+    const urgencyRadio = page.locator('[role="radiogroup"][aria-label*="urgence" i] button[role="radio"]').first();
+    await urgencyRadio.waitFor({ state: 'visible', timeout: 5000 });
+    await urgencyRadio.click();
+
+    // Button says "Voir mes recommandations" (not "Continuer")
+    const continueBtn4 = page.locator('button', { hasText: /voir mes recommandations/i });
+    await expect(continueBtn4).toBeEnabled({ timeout: 3000 });
+    await continueBtn4.click();
 }
 
 // --- Helper: fill Step 5 (diagnostic data) ---
@@ -254,8 +257,8 @@ async function fillDiagnosticStep(page, { birthDate, salary, unemployment, rent,
         await page.locator('#diag-charges').fill(String(charges));
     }
 
-    // Housing status
-    const housingBtn = page.locator(`button[role="radio"]`, { hasText: new RegExp(housingStatus, 'i') });
+    // Housing status — use exact matching to avoid 'Locataire' matching 'Locataire HLM'
+    const housingBtn = page.getByRole('radio', { name: housingStatus, exact: true });
     await housingBtn.click();
 
     // Submit
@@ -308,7 +311,7 @@ test.describe('Diagnostic Flow — OpenFisca Integration', () => {
         });
 
         // Verify results — eligible rights should appear
-        const rsaCard = page.locator('text=RSA');
+        const rsaCard = page.locator('text=RSA').first();
         await rsaCard.waitFor({ state: 'visible', timeout: 10000 });
 
         // Verify amount displayed
@@ -370,7 +373,7 @@ test.describe('Diagnostic Flow — OpenFisca Integration', () => {
         });
 
         // Prime d'activité should be eligible
-        const primeCard = page.locator("text=Prime d'activité");
+        const primeCard = page.locator("text=Prime d'activité").first();
         await primeCard.waitFor({ state: 'visible', timeout: 10000 });
 
         // Verify amount
@@ -422,7 +425,7 @@ test.describe('Diagnostic Flow — OpenFisca Integration', () => {
         await resultsHeader.waitFor({ state: 'visible', timeout: 10000 });
 
         // Should show eligible rights
-        await expect(page.locator('text=RSA')).toBeVisible();
+        await expect(page.locator('text=RSA').first()).toBeVisible();
         await expect(page.locator('text=450')).toBeVisible();
 
         // FALC toggle should work
@@ -472,7 +475,7 @@ test.describe('Diagnostic Flow — OpenFisca Integration', () => {
         });
 
         // Error message should appear
-        const errorMsg = page.locator('text=/indisponible|erreur/i');
+        const errorMsg = page.locator('text=/indisponible/i').first();
         await errorMsg.waitFor({ state: 'visible', timeout: 10000 });
 
         // Retry button should be visible

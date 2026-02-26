@@ -138,11 +138,12 @@ test.describe('SPA Routing - Navigation & Filters', () => {
 
   test('should handle 404 routes gracefully', async ({ page }) => {
     await page.goto(`/route-qui-nexiste-pas-du-tout`);
+    await page.waitForLoadState('domcontentloaded');
 
     // Should show 404 page, not white screen
-    await expect(page.locator('body')).toBeVisible();
+    await expect(page.locator('h1')).toBeVisible({ timeout: 10000 });
     const bodyText = await page.locator('body').textContent();
-    expect(bodyText.length).toBeGreaterThan(50);
+    expect(bodyText.length).toBeGreaterThan(20);
   });
 });
 

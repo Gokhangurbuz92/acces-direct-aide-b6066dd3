@@ -20,7 +20,7 @@ const MOCK_AIDES = {
             }
         }
     ],
-    pagination: { total: 1, page: 1, pageSize: 10, totalPages: 1 }
+    pagination: { total: 15, page: 1, pageSize: 10, totalPages: 2 }
 };
 
 const MOCK_AIDE_DETAIL = {
@@ -256,8 +256,22 @@ export async function setupPublicMocks(page) {
 
     // ── RDV / Appointments ────────────────────────────────────────
 
-    await page.route('**/api/public/availability*', async route => route.fulfill({ json: [] }));
+    await page.route('**/api/public/availability*', async route => {
+        const start = new Date();
+        start.setHours(start.getHours() + 24);
+        const end = new Date(start);
+        end.setHours(end.getHours() + 1);
+        return route.fulfill({ json: [{ id: 'slot-1', start: start.toISOString(), end: end.toISOString() }] });
+    });
+    await page.route('**/api/public/slots*', async route => {
+        const start = new Date();
+        start.setHours(start.getHours() + 24);
+        const end = new Date(start);
+        end.setHours(end.getHours() + 1);
+        return route.fulfill({ json: [{ id: 'slot-1', start: start.toISOString(), end: end.toISOString() }] });
+    });
     await page.route('**/api/appointments*', async route => route.fulfill({ json: { success: true } }));
+    await page.route('**/api/public/appointments*', async route => route.fulfill({ json: { success: true } }));
 
     // ── Health & utility ──────────────────────────────────────────
 
@@ -276,6 +290,15 @@ export async function setupPublicMocks(page) {
 
     await page.route('**/api/drees*', async route => route.fulfill({ json: { items: [] } }));
     await page.route('**/api/public/**', async route => route.fulfill({ json: {} }));
+
+    // ── Search API ────────────────────────────────────────────────
+
+    await page.route('**/api/search*', async route => {
+        if (route.request().method() === 'POST') {
+            return route.fulfill({ json: { items: [], total: 0, message: null } });
+        }
+        return route.fulfill({ json: {} });
+    });
 }
 
 export const PUBLIC_MOCKS_DATA = {

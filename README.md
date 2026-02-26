@@ -111,6 +111,16 @@ To enable the blocking visual regression CI:
 
 ## Contribuer / Guardrails
 
+### Tests E2E (Playwright)
+
+130+ tests ultra-rapides (<1 min) grâce aux mocks API synchrones :
+
+```bash
+USE_MOCKS=true npx playwright test
+```
+
+📖 Pour en savoir plus sur l'écriture et l'exécution des tests, consultez le [Guide des tests E2E](docs/E2E_TESTING.md).
+
 ### Préflight
 Avant de soumettre une Pull Request, exécutez la commande suivante qui regroupe toutes les vérifications :
 

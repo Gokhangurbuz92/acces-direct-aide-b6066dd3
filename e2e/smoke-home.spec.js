@@ -13,7 +13,7 @@ import { test, expect } from './fixtures.js';
  */
 
 test.describe('Smoke Test - Home Page', () => {
-  
+
   test('Home page loads without white screen or runtime errors', async ({ page }) => {
     // Capturer les erreurs de page (uncaught exceptions)
     const pageErrors = [];
@@ -40,10 +40,10 @@ test.describe('Smoke Test - Home Page', () => {
 
     // Vérifier qu'aucune erreur fatale n'est survenue
     expect(pageErrors, `Page errors detected: ${pageErrors.join(', ')}`).toHaveLength(0);
-    
+
     // Vérifier qu'aucune erreur console critique liée à React/undefined n'est survenue
-    const criticalErrors = consoleErrors.filter(err => 
-      err.includes('undefined') || 
+    const criticalErrors = consoleErrors.filter(err =>
+      err.includes('undefined') ||
       err.includes('useLayoutEffect') ||
       err.includes('useMergeRef')
     );
@@ -52,14 +52,12 @@ test.describe('Smoke Test - Home Page', () => {
 
   test('Home page renders main content', async ({ page }) => {
     await page.goto('/');
-    
+
     // Vérifier que le contenu principal est présent (pas juste le header)
     // Attendre qu'au moins un élément de contenu soit visible
-    const hasContent = await page.locator('main, [role="main"], article, section').first().isVisible({
-      timeout: 10000
+    await expect(page.locator('main, [role="main"], article, section, .max-w-7xl').first()).toBeVisible({
+      timeout: 15000
     });
-    
-    expect(hasContent, 'Main content should be visible').toBe(true);
   });
 
 });

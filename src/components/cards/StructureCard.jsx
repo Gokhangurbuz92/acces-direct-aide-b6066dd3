@@ -57,7 +57,7 @@ export default function StructureCard({ structure, compact = false }) {
       <CardContent className={compact ? 'p-4' : 'p-6'}>
         <div className="flex flex-col gap-3">
           {/* En-tête */}
-          <div className="flex flex-wrap gap-2 items-start justify-between relative z-0">
+          <div className="flex flex-wrap gap-2 items-start justify-between">
             <div className="flex flex-wrap gap-2">
               <Badge className={TYPE_COLORS[structure.type_structure] || 'bg-slate-100 text-slate-800'}>
                 {TYPE_LABELS[structure.type_structure] || structure.type_structure}

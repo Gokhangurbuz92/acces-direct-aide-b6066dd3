@@ -35,7 +35,7 @@ export function FreshnessTag({
     }
 
     return (
-        <div className={cn("flex flex-wrap items-center gap-2", className)}>
+        <div className={cn("flex flex-wrap items-center gap-2", className)} data-testid="aide-freshness-badge">
             {status === "fresh" && (
                 <Badge variant="verified" className="shrink-0 pointer-events-none">
                     Vérifié le {formattedDate}

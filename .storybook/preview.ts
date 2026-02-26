@@ -1,9 +1,14 @@
 import type { Preview } from "@storybook/react";
+import React from "react";
+import { MemoryRouter } from "react-router-dom";
 
 import "../src/index.css";
-// import "../src/styles/tokens.css"; // It exists but prompt priorities point to index.css if globals.css is absent. index.css might already import tokens.css. If tokens.css is required, I'll add it once I confirm. Let's just import index.css first to respect criteria B.
 
 const preview: Preview = {
+    decorators: [
+        // Provide React Router context to all stories — required by components using <Link>
+        (Story) => React.createElement(MemoryRouter, null, React.createElement(Story)),
+    ],
     parameters: {
         controls: {
             matchers: {

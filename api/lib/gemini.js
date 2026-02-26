@@ -3,6 +3,7 @@ import { readFileSync } from 'fs';
 import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
 import { env } from '../_utils/env.js';
+import prisma from '../_utils/prisma.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -50,9 +51,108 @@ function loadRulePack(id) {
 }
 
 /**
- * Chat with Gemini using RulePack injection
+ * RAG: Fetch similar Aides from the database using pgvector cosine distance.
+ * Returns empty array if embeddings aren't available yet or pgvector isn't enabled.
+ *
+ * @param {string} message - User message to embed and search for
+ * @param {number} [limit=5] - Max results
+ * @returns {Promise<Array<{titre: string, cest_quoi: string|null, pour_qui: string|null, ce_que_ca_aide: string|null, summary_falc: string|null, similarity: number}>>}
  */
+async function fetchRagContext(message, limit = 5) {
+    try {
+        const embedModel = getGenAI().getGenerativeModel({ model: 'gemini-embedding-001' });
+        const embedResult = await embedModel.embedContent(message);
+        const vector = embedResult.embedding.values;
+        const vectorStr = `[${vector.join(',')}]`;
+
+        const results = await prisma.$queryRawUnsafe(
+            `SELECT titre, cest_quoi, pour_qui, ce_que_ca_aide, summary_falc,
+                    1 - (embedding <=> $1::vector) AS similarity
+             FROM "Aide"
+             WHERE embedding IS NOT NULL
+             ORDER BY embedding <=> $1::vector ASC
+             LIMIT $2`,
+            vectorStr,
+            limit
+        );
+
+        return results || [];
+    } catch (err) {
+        // Graceful fallback: pgvector not enabled, no embeddings, or Gemini quota exceeded
+        console.warn('[RAG] Vector search unavailable, will try lexical fallback:', err.message);
+        return [];
+    }
+}
+
 /**
+ * Format RAG results into a text block for prompt injection
+ * @param {Awaited<ReturnType<typeof fetchRagContext>>} aides
+ */
+function formatRagContext(aides) {
+    if (!aides.length) return '';
+
+    const lines = aides.map((a, i) => {
+        const parts = [`[Aide ${i + 1}: ${a.titre}]`];
+        if (a.cest_quoi) parts.push(`C'est quoi : ${a.cest_quoi}`);
+        if (a.pour_qui) parts.push(`Pour qui : ${a.pour_qui}`);
+        if (a.ce_que_ca_aide) parts.push(`Ce que ça aide : ${a.ce_que_ca_aide}`);
+        if (a.summary_falc) parts.push(`Résumé : ${a.summary_falc}`);
+        return parts.join('\n');
+    });
+
+    return `\n\nAIDES PERTINENTES (base de données) :\n---\n${lines.join('\n---\n')}\n---`;
+}
+
+/**
+ * Lexical fallback: keyword search via Prisma when vector search is unavailable.
+ * Extracts meaningful words from the message and searches titre + cest_quoi fields.
+ *
+ * @param {string} message
+ * @param {number} [limit=5]
+ * @returns {Promise<Array<{titre: string, cest_quoi: string|null, pour_qui: string|null, ce_que_ca_aide: string|null, summary_falc: string|null}>>}
+ */
+async function fetchLexicalContext(message, limit = 5) {
+    try {
+        // Extract meaningful keywords (>3 chars, skip common French stop words)
+        const stopWords = new Set(['pour', 'dans', 'avec', 'sans', 'plus', 'elle', 'quel', 'quoi', 'comment', 'quelles', 'sont', 'être', 'avoir', 'faire', 'cette', 'tout', 'très']);
+        const keywords = message
+            .toLowerCase()
+            .split(/\s+/)
+            .filter(w => w.length > 3 && !stopWords.has(w));
+
+        if (!keywords.length) return [];
+
+        // Build OR conditions for each keyword against multiple fields
+        const conditions = keywords.flatMap(kw => [
+            { titre: { contains: kw, mode: 'insensitive' } },
+            { cest_quoi: { contains: kw, mode: 'insensitive' } },
+            { pour_qui: { contains: kw, mode: 'insensitive' } },
+            { summary_falc: { contains: kw, mode: 'insensitive' } },
+        ]);
+
+        const results = await prisma.aide.findMany({
+            where: { OR: conditions },
+            select: {
+                titre: true,
+                cest_quoi: true,
+                pour_qui: true,
+                ce_que_ca_aide: true,
+                summary_falc: true,
+            },
+            take: limit,
+        });
+
+        console.info(`[Lexical] Found ${results.length} aides for keywords: ${keywords.join(', ')}`);
+        return results;
+    } catch (err) {
+        console.error('[Lexical] Fallback search failed:', err.message);
+        return [];
+    }
+}
+
+/**
+ * Chat with Gemini using RulePack injection + RAG context from pgvector.
+ *
  * @typedef {{ role: string, content: string }} ChatMessage
  */
 
@@ -65,41 +165,71 @@ export async function chatWithRulePack(message, history = []) {
     const intent = detectIntent(message);
     const rulePack = intent ? loadRulePack(intent) : null;
 
-    const model = getGenAI().getGenerativeModel({ 
-        model: "gemini-1.5-flash",
-        generationConfig: {
-            temperature: 0.2, // Strict mode to avoid hallucinations
-            topP: 0.8,
-            topK: 40,
-        }
-    });
+    // ── 1. Fetch context: try RAG first, fall back to lexical search ──
+    let contextAides = await fetchRagContext(message);
+    let searchMode = 'rag';
 
-    let systemInstruction = `Tu es un assistant administratif expert pour AccesDirectAide.
-    RÈGLES CRITIQUES :
-    1. Utilise UNIQUEMENT les informations du RulePack fourni ci-dessous.
-    2. Si une information manque dans le RulePack, réponds : "Je n'ai pas cette information précise dans mes règles métier actuelles."
-    3. Pose UNE SEULE question à la fois pour vérifier l'éligibilité.
-    4. Ne conclus jamais positivement sans avoir vérifié TOUTES les conditions du RulePack.
-    5. Explique toujours le résultat en langage simple (FALC).
-    6. Cite toujours la source officielle mentionnée dans le RulePack.`;
-
-    if (rulePack) {
-        systemInstruction += `
-
-RULEPACK ACTIF : ${JSON.stringify(rulePack)}`;
+    if (!contextAides.length) {
+        contextAides = await fetchLexicalContext(message);
+        searchMode = 'lexical';
     }
 
-    const chat = model.startChat({
-        history: history.map(m => ({
-            role: m.role === 'user' ? 'user' : 'model',
-            parts: [{ text: m.content }],
-        })),
-        systemInstruction: {
-            parts: [{ text: systemInstruction }]
-        }
-    });
+    // ── 2. Try Gemini chat generation ──
+    try {
+        const model = getGenAI().getGenerativeModel({
+            model: "gemini-2.0-flash",
+            generationConfig: {
+                temperature: 0.2,
+                topP: 0.8,
+                topK: 40,
+            }
+        });
 
-    const result = await chat.sendMessage(message);
-    const response = await result.response;
-    return response.text();
+        let systemInstruction = `Tu es un assistant administratif expert pour AccesDirectAide.
+    RÈGLES CRITIQUES :
+    1. Utilise UNIQUEMENT les informations du RulePack et des Aides pertinentes fournis ci-dessous.
+    2. Si une information manque, réponds : "Je n'ai pas cette information précise dans mes données actuelles."
+    3. Pose UNE SEULE question à la fois pour vérifier l'éligibilité.
+    4. Ne conclus jamais positivement sans avoir vérifié TOUTES les conditions.
+    5. Explique toujours le résultat en langage simple (FALC).
+    6. Cite toujours le titre exact de l'aide entre guillemets.`;
+
+        if (rulePack) {
+            systemInstruction += `\n\nRULEPACK ACTIF : ${JSON.stringify(rulePack)}`;
+        }
+
+        const ragContext = formatRagContext(contextAides);
+        if (ragContext) {
+            systemInstruction += ragContext;
+        }
+
+        const chat = model.startChat({
+            history: history.map(m => ({
+                role: m.role === 'user' ? 'user' : 'model',
+                parts: [{ text: m.content }],
+            })),
+            systemInstruction: {
+                parts: [{ text: systemInstruction }]
+            }
+        });
+
+        const result = await chat.sendMessage(message);
+        const response = await result.response;
+        return response.text();
+    } catch (geminiError) {
+        // ── 3. Static fallback when Gemini is down (429, network, etc.) ──
+        console.warn('[Gemini] Chat generation failed, using static fallback:', geminiError.message);
+
+        if (contextAides.length > 0) {
+            const aidesList = contextAides
+                .map(a => `• "${a.titre}"${a.cest_quoi ? ` — ${a.cest_quoi.slice(0, 120)}` : ''}`)
+                .join('\n');
+            return `Je rencontre actuellement une forte affluence et ne peux pas générer une réponse personnalisée. ` +
+                `Cependant, voici les aides qui pourraient correspondre à votre recherche :\n\n${aidesList}\n\n` +
+                `Pour plus de détails, consultez la fiche de chaque aide sur notre plateforme ou contactez un travailleur social.`;
+        }
+
+        return `Je suis temporairement indisponible pour répondre de manière personnalisée. ` +
+            `En attendant, vous pouvez consulter notre annuaire des aides ou contacter un travailleur social pour obtenir de l'aide.`;
+    }
 }

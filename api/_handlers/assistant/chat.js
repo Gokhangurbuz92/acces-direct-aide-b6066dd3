@@ -158,7 +158,7 @@ export default async function handler(req, res) {
             answer,
             citations: [],
             meta: {
-                model: 'gemini-1.5-flash',
+                model: 'gemini-2.0-flash',
                 rulepack: 'apl_v1',
                 requestId,
             },

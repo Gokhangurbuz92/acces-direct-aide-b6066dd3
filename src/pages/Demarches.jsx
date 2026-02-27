@@ -79,7 +79,6 @@ export default function Demarches() {
       sort,
       page,
       limit,
-      statut: 'publie',
     }),
   });
 
@@ -266,10 +265,11 @@ export default function Demarches() {
                       onChange={(e) => handleParamChange('source', e.target.value)}
                     >
                       <option value="">Toutes les sources</option>
+                      <option value="service-public">Service-Public</option>
+                      <option value="demarches-simplifiees">Démarches Simplifiées</option>
+                      <option value="curated">Données vérifiées</option>
                       <option value="aides-territoires">Aides Territoires</option>
-                      <option value="drees">DREES</option>
                       <option value="grand-est">Grand Est</option>
-                      <option value="agefiph">Agefiph</option>
                     </select>
                   </div>
 

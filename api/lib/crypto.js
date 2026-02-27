@@ -76,7 +76,8 @@ export function decrypt(encryptedText) {
         const decipher = crypto.createDecipheriv(
             ALGORITHM,
             KEY,
-            Buffer.from(ivHex, 'hex')
+            Buffer.from(ivHex, 'hex'),
+            { authTagLength: AUTH_TAG_LENGTH }
         );
 
         decipher.setAuthTag(Buffer.from(authTagHex, 'hex'));
@@ -132,7 +133,7 @@ export function decryptBuffer(encryptedBuffer) {
     const text = encryptedBuffer.subarray(IV_LENGTH + AUTH_TAG_LENGTH);
 
     try {
-        const decipher = crypto.createDecipheriv(ALGORITHM, KEY, iv);
+        const decipher = crypto.createDecipheriv(ALGORITHM, KEY, iv, { authTagLength: AUTH_TAG_LENGTH });
         decipher.setAuthTag(tag);
 
         return Buffer.concat([decipher.update(text), decipher.final()]);

@@ -73,6 +73,17 @@
 </head>
 
 <body>
+  <!-- Phase 3.4 RGAA: Early accessibility init (before React hydration) -->
+  <script>
+    try {
+      var s = JSON.parse(localStorage.getItem('accessibilitySettings') || '{}');
+      if (s.fontSize && s.fontSize !== 100) document.documentElement.style.fontSize = s.fontSize + '%';
+      if (s.contrast === 'high') document.documentElement.classList.add('high-contrast');
+      if (s.contrast === 'dark') document.documentElement.classList.add('dark-mode');
+      if (s.lineHeight === 'large') document.documentElement.classList.add('large-line-height');
+      if (s.simplifiedMode) document.documentElement.classList.add('simplified-mode');
+    } catch(e) {}
+  </script>
   <div id="root"></div>
   <script type="module" src="/src/main.jsx"></script>
 </body>

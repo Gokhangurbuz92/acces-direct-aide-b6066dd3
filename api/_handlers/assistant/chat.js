@@ -4,6 +4,7 @@ import * as Sentry from '@sentry/node';
 import logger from '../../_utils/logger.js';
 import { checkRateLimit, getClientIp, getRateLimitStatus } from '../../_utils/rateLimit.js';
 import { chatWithRulePack } from '../../lib/gemini.js';
+import prisma from '../../_utils/prisma.js';
 
 // --- Sensitive Data Patterns ---
 // NIR (numéro de sécurité sociale) : 13 digits + 2-digit key
@@ -150,16 +151,35 @@ export default async function handler(req, res) {
 
     // --- Call Gemini via chatWithRulePack ---
     try {
-        const answer = await chatWithRulePack(trimmedMessage);
+        const { answer, meta } = await chatWithRulePack(trimmedMessage);
 
-        log.info({ msg: 'assistant.chat_success', requestId });
+        // --- Log the conversation (await to get logId for feedback) ---
+        let logId = null;
+        try {
+            const logEntry = await prisma.conversationLog.create({
+                data: {
+                    message: trimmedMessage.slice(0, 500), // Truncate for storage
+                    intent: meta.intent || null,
+                    searchMode: meta.searchMode,
+                    sourceCount: meta.sourceCount,
+                },
+            });
+            logId = logEntry.id;
+        } catch (logErr) {
+            log.warn({ msg: 'assistant.log_write_failed', error: logErr.message, requestId });
+        }
+
+        log.info({ msg: 'assistant.chat_success', searchMode: meta.searchMode, sourceCount: meta.sourceCount, requestId });
 
         return res.status(200).json({
             answer,
             citations: [],
+            logId,
             meta: {
-                model: 'gemini-1.5-flash',
-                rulepack: 'apl_v1',
+                model: 'gemini-2.0-flash',
+                rulepack: meta.intent || 'apl_v1',
+                searchMode: meta.searchMode,
+                sourceCount: meta.sourceCount,
                 requestId,
             },
         });

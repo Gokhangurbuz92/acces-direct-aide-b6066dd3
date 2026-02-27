@@ -43,8 +43,8 @@ export default function ChatWindow({ messages, onSendMessage, onUploadFile, load
                 {error && <div className="text-red-600 font-bold mt-2 bg-red-100 p-2 rounded">{error}</div>}
             </div>
 
-            {/* Messages List */}
-            <div className="flex-1 overflow-y-auto p-4 space-y-4">
+            {/* Messages List — RGAA: aria-live for screen reader announcements */}
+            <div className="flex-1 overflow-y-auto p-4 space-y-4" aria-live="polite" role="log" aria-label="Messages de la conversation">
                 {loading && <p className="text-gray-500 italic">Chargement des messages...</p>}
                 {!loading && messages.length === 0 && (
                     <p className="text-gray-500 text-center mt-10">Aucun message pour le moment.</p>
@@ -60,7 +60,7 @@ export default function ChatWindow({ messages, onSendMessage, onUploadFile, load
                                     <div className="mt-2 border-t border-white/20 pt-2">
                                         {msg.attachments.map(att => (
                                             <div key={att.id} className="flex items-center space-x-2 bg-black/10 p-1 rounded mb-1">
-                                                <span>📎 Fichier reçu</span>
+                                                <span aria-hidden="true">📎</span> <span>Fichier reçu</span>
                                                 <a
                                                     href={`/api/download?id=${att.id}&token=${msg.accessToken || ''}`}
                                                     // Note: Token injection depends on context. 
@@ -103,8 +103,8 @@ export default function ChatWindow({ messages, onSendMessage, onUploadFile, load
 
                     <div className="flex items-end space-x-3">
                         {/* File Button */}
-                        <label className="cursor-pointer p-3 text-gray-500 hover:bg-gray-100 rounded-full border border-gray-300" aria-label="Joindre un fichier">
-                            📎
+                        <label className="cursor-pointer p-3 text-gray-500 hover:bg-gray-100 rounded-full border border-gray-300 focus-within:ring-2 focus-within:ring-blue-500 focus-within:ring-offset-2" aria-label="Joindre un fichier">
+                            <span aria-hidden="true">📎</span>
                             <input type="file" className="hidden" onChange={handleFileChange} accept=".pdf,.jpg,.jpeg,.png" />
                         </label>
 
@@ -115,6 +115,7 @@ export default function ChatWindow({ messages, onSendMessage, onUploadFile, load
                             placeholder="Écrivez votre message ici..."
                             className="flex-1 p-3 border border-gray-300 rounded-lg text-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
                             rows="2"
+                            aria-label="Écrivez votre message"
                             onKeyDown={(e) => {
                                 if (e.key === 'Enter' && !e.shiftKey) {
                                     e.preventDefault();
@@ -127,8 +128,9 @@ export default function ChatWindow({ messages, onSendMessage, onUploadFile, load
                         <button
                             onClick={handleSend}
                             disabled={!newMessage.trim() && !file}
-                            className={`p-3 rounded-lg font-bold text-white transition-colors ${(!newMessage.trim() && !file) ? 'bg-gray-300 cursor-not-allowed' : 'bg-blue-600 hover:bg-blue-700'
+                            className={`p-3 rounded-lg font-bold text-white transition-colors focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 ${(!newMessage.trim() && !file) ? 'bg-gray-300 cursor-not-allowed' : 'bg-blue-600 hover:bg-blue-700'
                                 }`}
+                            aria-label="Envoyer le message"
                         >
                             Envoyer
                         </button>

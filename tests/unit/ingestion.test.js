@@ -35,16 +35,23 @@ describe('Ingestion Connectors', () => {
         });
 
         it('should extract relative URLs from listing', async () => {
-            const mockListing = `<html><a href="/vos-aides-regionales/relative">Relative</a><a href="https://www.grandest.fr/appel-a-projet/absolute">Absolute</a></html>`;
-            // Mock fetch for getDetailUrls
-            const originalFetch = connector.fetch;
-            connector.fetch = async () => mockListing;
+            const mockListing = `<html><a href="/vos-aides-regionales/relative" class="card aide">Relative</a><a href="https://www.grandest.fr/appel-a-projet/absolute" class="card aide">Absolute</a></html>`;
 
-            const urls = await connector.getDetailUrls();
-            expect(urls).toContain('https://www.grandest.fr/vos-aides-regionales/relative');
-            expect(urls).toContain('https://www.grandest.fr/appel-a-projet/absolute');
+            // Mock global fetch so the module-level fetchHtml returns our HTML
+            const originalFetch = globalThis.fetch;
+            globalThis.fetch = async () => ({
+                ok: true,
+                status: 200,
+                text: async () => mockListing,
+            });
 
-            connector.fetch = originalFetch;
+            try {
+                const urls = await connector.getDetailUrls();
+                expect(urls).toContain('https://www.grandest.fr/vos-aides-regionales/relative');
+                expect(urls).toContain('https://www.grandest.fr/appel-a-projet/absolute');
+            } finally {
+                globalThis.fetch = originalFetch;
+            }
         });
     });
 

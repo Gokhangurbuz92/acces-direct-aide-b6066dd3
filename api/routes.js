@@ -94,6 +94,14 @@ import adminPartnerships from './_handlers/admin/partnerships.js';
 import adminLinkChecks from './_handlers/admin/link-checks.js';
 import adminValidatePublication from './_handlers/admin/validate-publication.js';
 import adminReviewQueue from './_handlers/admin/review-queue.js';
+import adminStats from './_handlers/admin/stats.js';
+import adminFeatures from './_handlers/admin/features.js';
+import adminRagHealth from './_handlers/admin/rag-health.js';
+import adminConversations from './_handlers/admin/conversations.js';
+import adminAnalytics from './_handlers/admin/analytics.js';
+import shareCreate from './_handlers/share/create.js';
+import shareGet from './_handlers/share/get.js';
+import assistantFeedback from './_handlers/assistant/feedback.js';
 
 export const routes = [
     // --- Special / Root ---
@@ -193,4 +201,16 @@ export const routes = [
     { path: 'admin/link-checks', match: 'exact', handler: adminLinkChecks },
     { path: 'admin/validate-publication', match: 'exact', handler: adminValidatePublication },
     { path: 'admin/review-queue', match: 'prefix', handler: adminReviewQueue },
+    { path: 'admin/stats', match: 'exact', handler: adminStats },
+    { path: 'admin/features', match: 'exact', handler: adminFeatures },
+    { path: 'admin/rag-health', match: 'exact', handler: adminRagHealth },
+    { path: 'admin/conversations', match: 'exact', handler: adminConversations },
+    { path: 'admin/analytics', match: 'exact', handler: adminAnalytics },
+
+    // --- Share ---
+    { path: 'share/create', match: 'exact', handler: shareCreate },
+    { path: 'share/get', match: 'exact', handler: shareGet },
+
+    // --- Assistant ---
+    { path: 'assistant/feedback', match: 'exact', handler: assistantFeedback },
 ];

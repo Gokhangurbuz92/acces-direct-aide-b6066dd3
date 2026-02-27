@@ -1,0 +1,25 @@
+{
+    "name": "@ada/db",
+    "version": "0.0.1",
+    "private": true,
+    "type": "module",
+    "description": "Prisma Client singleton et exports pour tout le monorepo Accès Direct Aide",
+    "main": "index.js",
+    "exports": {
+        ".": "./index.js",
+        "./prisma": "./prisma.js"
+    },
+    "scripts": {
+        "db:generate": "prisma generate --schema=../../prisma/schema.prisma",
+        "db:push": "prisma db push --schema=../../prisma/schema.prisma",
+        "db:studio": "prisma studio --schema=../../prisma/schema.prisma",
+        "lint": "echo 'No lint configured yet'",
+        "test": "echo 'No tests configured yet'"
+    },
+    "dependencies": {
+        "@prisma/client": "^5.22.0"
+    },
+    "devDependencies": {
+        "prisma": "^5.22.0"
+    }
+}

@@ -51,26 +51,9 @@ async function runBackup() {
     try {
         // 1. Catalogue d'aides (sans les embeddings — trop volumineux)
         console.log(`[BACKUP] 📖 Extraction du catalogue d'aides...`);
-        const aides = await prisma.aide.findMany({
-            select: {
-                id: true,
-                titre: true,
-                slug: true,
-                statut: true,
-                cest_quoi: true,
-                pour_qui: true,
-                ce_que_ca_aide: true,
-                summary_falc: true,
-                conditions: true,
-                montant: true,
-                lien_officiel: true,
-                theme: true,
-                sub_theme: true,
-                departments: true,
-                createdAt: true,
-                updatedAt: true,
-            },
-        });
+        // Pas de `select` explicite : Prisma retourne tous les champs scalaires.
+        // Le champ `embedding` (type vector) n'est pas retourné car Unsupported.
+        const aides = await prisma.aide.findMany();
 
         // 2. Logs de conversation
         console.log(`[BACKUP] 📖 Extraction des journaux d'échanges...`);

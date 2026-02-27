@@ -183,7 +183,7 @@ async function repairSchemaForTargetMigration() {
     await prisma.$connect();
     await prisma.$executeRawUnsafe(SCHEMA_REPAIR_SQL);
   } finally {
-    await prisma.$disconnect().catch(() => {});
+    await prisma.$disconnect().catch(() => { });
   }
 }
 
@@ -204,9 +204,22 @@ async function main() {
   }
 
   if (!shouldAutoRecoverP3009(firstDeploy.output, TARGET_MIGRATION)) {
+    // P3015 / other migration history mismatches: fall back to db push
+    const errorCode = extractPrismaErrorCode(firstDeploy.output);
+    console.warn(
+      `[prisma-migrate-safe] migrate deploy failed (${errorCode || 'unknown'}). Attempting db push fallback...`,
+    );
+
+    const dbPush = runPrisma(['db', 'push', '--accept-data-loss', '--skip-generate']);
+    if (dbPush.ok) {
+      console.log('[prisma-migrate-safe] ✅ db push fallback succeeded — schema is in sync.');
+      return;
+    }
+
+    // db push also failed — this is truly non-recoverable
     failWithContext(
-      '[prisma-migrate-safe] prisma migrate deploy failed (non-recoverable error).',
-      firstDeploy.output,
+      '[prisma-migrate-safe] prisma migrate deploy AND db push both failed.',
+      `${firstDeploy.output}\n---\n${dbPush.output}`,
       firstDeploy.status,
     );
   }

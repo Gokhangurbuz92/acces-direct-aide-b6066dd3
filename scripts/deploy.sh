@@ -30,6 +30,15 @@ echo ""
 # ─── 1. Env checks ───────────────────────────────────────
 log "Vérification des prérequis..."
 
+# Charger .env si présent (pour exécution locale)
+if [ -f .env ]; then
+    log "Chargement du fichier .env..."
+    set -a
+    # shellcheck source=/dev/null
+    . ./.env
+    set +a
+fi
+
 if [ -z "${DATABASE_URL:-}" ]; then
     fail "DATABASE_URL n'est pas définie. Configurez votre .env"
 fi

@@ -109,9 +109,9 @@ export default async function handler(req, res) {
             effectiveParams.sort = effectiveParams.q ? 'relevance' : 'quality';
         }
 
-        // Public endpoint: only published items unless admin.
+        // Public endpoint: accept published and active items unless admin.
         if (!isAdmin) {
-            effectiveParams.statut = 'publie';
+            effectiveParams.statut_in = ['publie', 'actif'];
         }
 
         // 1. Single Item
@@ -119,14 +119,14 @@ export default async function handler(req, res) {
             const demarche = await prisma.demarche.findFirst({
                 where: effectiveParams.id ? { id: effectiveParams.id } : { slug: effectiveParams.slug },
                 include: {
-                  category: true,
-                  situations: true,
-                  sourceDocument: {
-                    select: {
-                      fetched_at: true,
-                      source_url: true,
+                    category: true,
+                    situations: true,
+                    sourceDocument: {
+                        select: {
+                            fetched_at: true,
+                            source_url: true,
+                        },
                     },
-                  },
                 }
             });
 
@@ -139,12 +139,12 @@ export default async function handler(req, res) {
             }
             const { sourceDocument, ...safeDemarche } = demarche;
             return res.status(200).json({
-              ...safeDemarche,
-              provenance: buildProvenance({
-                verifiedAt: safeDemarche.date_verification,
-                fetchedAt: sourceDocument?.fetched_at,
-                sourceUrl: sourceDocument?.source_url || safeDemarche.source_url || safeDemarche.source_url_exact,
-              }),
+                ...safeDemarche,
+                provenance: buildProvenance({
+                    verifiedAt: safeDemarche.date_verification,
+                    fetchedAt: sourceDocument?.fetched_at,
+                    sourceUrl: sourceDocument?.source_url || safeDemarche.source_url || safeDemarche.source_url_exact,
+                }),
             });
         }
 

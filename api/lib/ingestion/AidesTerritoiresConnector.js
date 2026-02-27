@@ -101,7 +101,16 @@ export class AidesTerritoiresConnector extends SourceConnector {
      * Parses a cached API item into the normalized aide format.
      * @param {string} json - JSON string from fetch()
      * @param {string} url - Virtual URL
-     * @returns {Promise<{ title: string, description: string, content: string, source_url: string, apply_url: string|null, theme: string|null, fetched_at: Date }>}
+     * @returns {Promise<{
+     *   title: string, description: string, content: string,
+     *   source_url: string, apply_url: string|null, theme: string|null,
+     *   fetched_at: Date,
+     *   _territory_scope: string, _source_last_modified: Date|null,
+     *   _montant_max: string|null, _echelon_territorial: string|null,
+     *   _code_insee_territoire: string|null, _source_donnee: string,
+     *   _lien_demarche: string|null, _financers: string|null,
+     *   _targeted_audiences: string[]
+     * }>}
      */
     async parse(json, url) {
         const item = JSON.parse(json);
@@ -120,6 +129,40 @@ export class AidesTerritoiresConnector extends SourceConnector {
             theme = categories[0];
         }
 
+        // ── Cahier des charges enrichment ──
+
+        // Montant max: extract from subvention or loan fields
+        let montantMax = null;
+        if (item.subvention_rate_upper_bound) {
+            montantMax = `${item.subvention_rate_upper_bound}%`;
+        } else if (item.loan_amount) {
+            montantMax = `${item.loan_amount}€`;
+        } else if (item.recoverable_advance_amount) {
+            montantMax = `${item.recoverable_advance_amount}€ (avance récupérable)`;
+        }
+
+        // Echelon territorial: map from AT perimeter scale
+        const echelonTerritorial = this._mapPerimeter(item.perimeter);
+
+        // Code INSEE territoire: extract from perimeter details
+        let codeInseeTerritoire = null;
+        if (item.perimeter) {
+            // perimeter can be a string like "Strasbourg (67)" or an object
+            const perimStr = typeof item.perimeter === 'string' ? item.perimeter : (item.perimeter_scale || '');
+            const codeMatch = perimStr.match(/\((\d{2,5})\)/);
+            if (codeMatch) codeInseeTerritoire = codeMatch[1];
+        }
+
+        // Financers (porteurs): flatten to comma-separated string
+        const financers = Array.isArray(item.financers)
+            ? item.financers.map(f => typeof f === 'string' ? f : (f?.name || '')).filter(Boolean).join(', ')
+            : null;
+
+        // Targeted audiences
+        const targetedAudiences = Array.isArray(item.targeted_audiences)
+            ? item.targeted_audiences.filter(a => typeof a === 'string')
+            : [];
+
         return {
             title,
             description,
@@ -128,9 +171,16 @@ export class AidesTerritoiresConnector extends SourceConnector {
             apply_url: applyUrl,
             theme,
             fetched_at: new Date(),
-            // Extra metadata for enrichment
-            _territory_scope: this._mapPerimeter(item.perimeter),
+            // Enriched metadata for ingest-aids.js
+            _territory_scope: echelonTerritorial,
             _source_last_modified: item.date_updated ? new Date(item.date_updated) : null,
+            _montant_max: montantMax,
+            _echelon_territorial: echelonTerritorial,
+            _code_insee_territoire: codeInseeTerritoire,
+            _source_donnee: 'Aides-Territoires',
+            _lien_demarche: applyUrl,
+            _financers: financers || null,
+            _targeted_audiences: targetedAudiences,
         };
     }
 

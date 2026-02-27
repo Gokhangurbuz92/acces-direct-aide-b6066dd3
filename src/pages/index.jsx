@@ -81,6 +81,9 @@ const SuggestStructure = lazy(() => import("./SuggestStructure.jsx"));
 const SubventionDossier = lazy(() => import("./SubventionDossier.jsx"));
 const Status = lazy(() => import("./Status.jsx"));
 const StructureDetail = lazy(() => import("./StructureDetail.jsx"));
+const DiagnosticPage = lazy(() => import("./DiagnosticPage.jsx"));
+const SharedDiagnostic = lazy(() => import("./SharedDiagnostic.jsx"));
+const AdminAudit = lazy(() => import("./AdminAudit.jsx"));
 const NotFound = lazy(() => import("./NotFound.jsx"));
 
 const BeneficiaryMessages = lazy(() => import("./BeneficiaryMessages.jsx"));
@@ -118,6 +121,9 @@ const AdminSources = lazy(() => import("./AdminSources.jsx"));
 const AdminSync = lazy(() => import("./AdminSync.jsx"));
 const AdminTestSync = lazy(() => import("./AdminTestSync.jsx"));
 const AdminReview = lazy(() => import("./AdminReview.jsx"));
+const AdminDashboard = lazy(() => import("./AdminDashboard.jsx"));
+const AdminFeatures = lazy(() => import("./AdminFeatures.jsx"));
+const AdminConversations = lazy(() => import("./AdminConversations.jsx"));
 
 // Pro
 const ProLayout = lazy(() => import("./pro/ProLayout.jsx"));
@@ -155,7 +161,7 @@ const PAGES = {
     MentionsLegales, SourcesMethode, SentryTest, StructureDetail,
     AdminInbox, AdminRuns, AdminObservability, AdminReviewQueue, AppointmentRequest, AppointmentCancel, AppointmentReschedule, AdminStructures,
     AdminDemarches, AdminDemarcheEdit, AdminAppointments, AdminReview, Status, PublicRdvEntry, AuthRdvAccess, AuthVerifyEmail, AuthForgotPassword, AuthResetPassword,
-    CompteMessages, CompteMessageThread, ProMessages, ProMessageThread
+    CompteMessages, CompteMessageThread, ProMessages, ProMessageThread, AdminDashboard, AdminFeatures
 };
 
 // Loading Fallback
@@ -268,6 +274,7 @@ function PagesContent() {
                     <Route path="/actualites" element={<Actualites />} />
                     <Route path="/actualites/view" element={<LegacyViewRedirect basePath="/actualites" />} />
                     <Route path="/actualites/:slug" element={<ActualiteDetail />} />
+                    <Route path="/share/:id" element={<SharedDiagnostic />} />
 
                     <Route path="/admin/login" element={<AdminLogin />} />
                     <Route path="/admin/health" element={<AdminGuard><AdminHealth /></AdminGuard>} />
@@ -277,7 +284,11 @@ function PagesContent() {
                     <Route path="/admin/runs" element={<AdminGuard><AdminRuns /></AdminGuard>} />
                     <Route path="/admin/aides/:id" element={<AdminGuard><AdminAideEdit /></AdminGuard>} />
                     <Route path="/admin/aides" element={<AdminGuard><AdminAides /></AdminGuard>} />
-                    <Route path="/admin" element={<Navigate to="/admin/aides" replace />} />
+                    <Route path="/admin" element={<Navigate to="/admin/dashboard" replace />} />
+                    <Route path="/admin/dashboard" element={<AdminGuard><AdminDashboard /></AdminGuard>} />
+                    <Route path="/admin/features" element={<AdminGuard><AdminFeatures /></AdminGuard>} />
+                    <Route path="/admin/conversations" element={<AdminGuard><AdminConversations /></AdminGuard>} />
+                    <Route path="/admin/audit" element={<AdminGuard><AdminAudit /></AdminGuard>} />
                     <Route path="/admin/guides/sync" element={<AdminGuard><AdminGuideSync /></AdminGuard>} />
                     <Route path="/admin/messages" element={<AdminGuard><AdminMessages /></AdminGuard>} />
                     <Route path="/admin/review" element={<AdminGuard><AdminReview /></AdminGuard>} />
@@ -355,6 +366,7 @@ function PagesContent() {
                     <Route path="/proposer-une-structure" element={<SuggestStructure />} />
                     <Route path="/dossier-subventions" element={<SubventionDossier />} />
                     <Route path="/status" element={<Status />} />
+                    <Route path="/diagnostic" element={<DiagnosticPage />} />
 
                     {/* Styleguide */}
                     <Route path="/styleguide/branding" element={<StyleguideBranding />} />

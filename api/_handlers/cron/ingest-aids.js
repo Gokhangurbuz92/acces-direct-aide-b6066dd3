@@ -191,6 +191,12 @@ export async function runIngestAids({ limit, runId, wipe = false }) {
                         published_at: new Date(),
                         content_hash: contentHash,
                         source_document_id: sourceDocumentId,
+                        // ── Phase 1: Enriched fields from connectors ──
+                        ...(item._montant_max != null ? { montant_max: item._montant_max } : {}),
+                        ...(item._echelon_territorial != null ? { echelon_territorial: item._echelon_territorial } : {}),
+                        ...(item._code_insee_territoire != null ? { code_insee_territoire: item._code_insee_territoire } : {}),
+                        ...(item._source_donnee != null ? { source_donnee: item._source_donnee } : {}),
+                        ...(item._lien_demarche != null ? { lien_demarche: item._lien_demarche } : {}),
                     };
 
                     if (existing) {

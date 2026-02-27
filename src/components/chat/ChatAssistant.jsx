@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
 import { MessageCircle, Send, X, Loader2, RefreshCw } from 'lucide-react';
 import { sendMessage, AssistantError } from '@/lib/assistant/client';
+import FeedbackButtons from '@/components/assistant/FeedbackButtons';
 
 /**
  * @param {{ embedded?: boolean }} props
@@ -70,6 +71,7 @@ export default function ChatAssistant({ embedded = false }) {
             id: Date.now(),
             role: 'assistant',
             content: response.answer,
+            logId: response.logId || null,
           },
         ]);
       } catch (err) {
@@ -252,6 +254,9 @@ function ChatMessages({ messages, isLoading, error, onRetry, endOfMessagesRef })
               }`}
           >
             {message.content}
+            {message.role === 'assistant' && message.logId && (
+              <FeedbackButtons logId={message.logId} />
+            )}
           </div>
         </div>
       ))}

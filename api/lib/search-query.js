@@ -87,7 +87,7 @@ export async function searchAides(prisma, params) {
   }
 
   if (provider) {
-     conditions.push(Prisma.sql`"providerName" = ${provider}`);
+    conditions.push(Prisma.sql`"providerName" = ${provider}`);
   }
 
   if (providerType) {
@@ -95,7 +95,7 @@ export async function searchAides(prisma, params) {
   }
 
   if (urgent === 'true') {
-      conditions.push(Prisma.sql`"est_urgent" = true`);
+    conditions.push(Prisma.sql`"est_urgent" = true`);
   }
 
   const whereClause = conditions.length > 0
@@ -262,10 +262,10 @@ export async function searchAides(prisma, params) {
     items: enrichedItems,
     total: Number(countResult[0].total || 0),
     facets: {
-        themes: rawFacets.themes || {},
-        organismes: rawFacets.organismes || {},
-        publics: rawFacets.publics || {},
-        territoires: rawFacets.territoires || {}
+      themes: rawFacets.themes || {},
+      organismes: rawFacets.organismes || {},
+      publics: rawFacets.publics || {},
+      territoires: rawFacets.territoires || {}
     }
   };
 }
@@ -289,6 +289,8 @@ export async function searchDemarches(prisma, params) {
     audience,
     online,
     statut = 'publie',
+    statut_in,
+    source,
     sort,
     page,
     pageSize,
@@ -300,7 +302,13 @@ export async function searchDemarches(prisma, params) {
   const LIMIT = pageSize;
   const OFFSET = (page - 1) * LIMIT;
 
-  const conditions = [Prisma.sql`statut = ${statut}`];
+  // Phase 3: support statut_in (array) for multi-value filtering
+  const conditions = [];
+  if (statut_in && Array.isArray(statut_in) && statut_in.length > 0) {
+    conditions.push(Prisma.sql`statut = ANY(ARRAY[${Prisma.join(statut_in)}]::text[])`);
+  } else {
+    conditions.push(Prisma.sql`statut = ${statut}`);
+  }
 
   if (q) {
     conditions.push(Prisma.sql`"search_vector" @@ plainto_tsquery('french', unaccent(${q}))`);
@@ -311,7 +319,7 @@ export async function searchDemarches(prisma, params) {
   }
 
   if (situation) {
-     conditions.push(Prisma.sql`EXISTS (
+    conditions.push(Prisma.sql`EXISTS (
       SELECT 1 FROM "_DemarcheToSituation" j
       JOIN "LifeSituation" s ON s.id = j."B"
       WHERE j."A" = "Demarche".id AND s.slug = ${situation}

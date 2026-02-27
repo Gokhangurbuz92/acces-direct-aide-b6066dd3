@@ -1,0 +1,130 @@
+# ============================================================
+# Accès Direct Aide — Docker Compose Production
+# ============================================================
+# Déploiement souverain avec Traefik (SSL auto Let's Encrypt).
+#
+# Prérequis:
+#   1. Ajouter dans .env.production :
+#        DOMAIN_NAME=aide.votre-domaine.fr
+#        SSL_EMAIL=admin@votre-domaine.fr
+#        POSTGRES_USER=ada_prod
+#        POSTGRES_PASSWORD=<mot-de-passe-fort>
+#        POSTGRES_DB=acces_direct_aide
+#   2. DNS : faire pointer DOMAIN_NAME vers l'IP du serveur
+#
+# Usage:
+#   docker compose -f docker-compose.production.yml up -d
+# ============================================================
+
+services:
+  # ─────────────────────────────────────────────────
+  # Gateway — Traefik v2 (reverse proxy + SSL auto)
+  # ─────────────────────────────────────────────────
+  traefik:
+    image: traefik:v2.10
+    container_name: ada-gateway
+    restart: always
+    command:
+      - "--providers.docker=true"
+      - "--providers.docker.exposedbydefault=false"
+      # Entrypoints
+      - "--entrypoints.web.address=:80"
+      - "--entrypoints.websecure.address=:443"
+      # HTTP → HTTPS redirect
+      - "--entrypoints.web.http.redirections.entrypoint.to=websecure"
+      - "--entrypoints.web.http.redirections.entrypoint.scheme=https"
+      # Let's Encrypt
+      - "--certificatesresolvers.letsencrypt.acme.httpchallenge=true"
+      - "--certificatesresolvers.letsencrypt.acme.httpchallenge.entrypoint=web"
+      - "--certificatesresolvers.letsencrypt.acme.email=${SSL_EMAIL}"
+      - "--certificatesresolvers.letsencrypt.acme.storage=/letsencrypt/acme.json"
+      # Security
+      - "--api.dashboard=false"
+      - "--accesslog=true"
+      - "--accesslog.format=json"
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - letsencrypt_data:/letsencrypt
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    networks:
+      - ada-network
+
+  # ─────────────────────────────────────────────────
+  # API — Accès Direct Aide (standalone server)
+  # ─────────────────────────────────────────────────
+  api:
+    build: .
+    container_name: ada-api-prod
+    restart: always
+    env_file: .env.production
+    environment:
+      - NODE_ENV=production
+      - DATABASE_URL=postgresql://${POSTGRES_USER:-ada_prod}:${POSTGRES_PASSWORD}@ada-postgres-prod:5432/${POSTGRES_DB:-acces_direct_aide}?schema=public
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.ada-api.rule=Host(`${DOMAIN_NAME}`)"
+      - "traefik.http.routers.ada-api.entrypoints=websecure"
+      - "traefik.http.routers.ada-api.tls.certresolver=letsencrypt"
+      - "traefik.http.services.ada-api.loadbalancer.server.port=3000"
+      # Security headers
+      - "traefik.http.middlewares.ada-headers.headers.stsSeconds=31536000"
+      - "traefik.http.middlewares.ada-headers.headers.stsIncludeSubdomains=true"
+      - "traefik.http.middlewares.ada-headers.headers.frameDeny=true"
+      - "traefik.http.middlewares.ada-headers.headers.contentTypeNosniff=true"
+      - "traefik.http.routers.ada-api.middlewares=ada-headers"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - ada-network
+
+  # ─────────────────────────────────────────────────
+  # PostgreSQL 16 + pgvector
+  # ─────────────────────────────────────────────────
+  postgres:
+    image: pgvector/pgvector:pg16
+    container_name: ada-postgres-prod
+    restart: always
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-ada_prod}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB:-acces_direct_aide}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - ada-network
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-ada_prod}" ]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  # ─────────────────────────────────────────────────
+  # Redis 7
+  # ─────────────────────────────────────────────────
+  redis:
+    image: redis:7-alpine
+    container_name: ada-redis-prod
+    restart: always
+    volumes:
+      - redis_data:/data
+    networks:
+      - ada-network
+    healthcheck:
+      test: [ "CMD", "redis-cli", "ping" ]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+networks:
+  ada-network:
+    driver: bridge
+
+volumes:
+  postgres_data:
+  redis_data:
+  letsencrypt_data:

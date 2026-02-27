@@ -1,4 +1,5 @@
 import { useState, useCallback, useEffect, useRef } from 'react';
+import { storage } from '@/lib/storage';
 import { postRecommendations, sendMessage, AssistantError } from '@/lib/assistant/client';
 import StepNeed from './StepNeed';
 import StepTerritory from './StepTerritory';
@@ -19,14 +20,23 @@ const NEED_LABELS = {
 const TOTAL_STEPS = 5;
 
 export default function Wizard() {
-    const [step, setStep] = useState(0);
-    const [data, setData] = useState({});
+    // Restore persisted wizard state (step + data) from localStorage
+    const savedWizard = useRef(storage.loadWizard());
+    const [step, setStep] = useState(savedWizard.current?.step ?? 0);
+    const [data, setData] = useState(savedWizard.current?.data ?? {});
     const [phase, setPhase] = useState('wizard'); // wizard | loading | results | error | diagnostic-loading | diagnostic-results | diagnostic-error
     const [items, setItems] = useState([]);
     const [summary, setSummary] = useState(null);
     const [error, setError] = useState(null);
     const [diagnosticData, setDiagnosticData] = useState(null);
     const abortRef = useRef(null);
+
+    // Persist wizard progress on every step/data change
+    useEffect(() => {
+        if (phase === 'wizard') {
+            storage.saveWizard({ step, data });
+        }
+    }, [step, data, phase]);
 
     useEffect(() => {
         return () => {
@@ -144,6 +154,7 @@ export default function Wizard() {
 
     const handleRestart = useCallback(() => {
         abortRef.current?.abort();
+        storage.clearWizard();
         setStep(0);
         setData({});
         setPhase('wizard');
@@ -165,6 +176,18 @@ export default function Wizard() {
 
     return (
         <div className="rounded-2xl border border-slate-200 bg-white shadow-sm">
+            {/* RGAA: Live announcement of step changes for screen readers */}
+            <p className="sr-only" role="status" aria-live="polite" aria-atomic="true">
+                {phase === 'wizard'
+                    ? `Étape ${step + 1} sur ${TOTAL_STEPS}`
+                    : phase === 'loading' || phase === 'diagnostic-loading'
+                        ? 'Calcul en cours, veuillez patienter.'
+                        : phase === 'results' || phase === 'diagnostic-results'
+                            ? 'Résultats disponibles.'
+                            : phase === 'error' || phase === 'diagnostic-error'
+                                ? 'Une erreur est survenue.'
+                                : ''}
+            </p>
             {/* Progress bar */}
             {phase === 'wizard' && (
                 <div className="px-6 pt-5">

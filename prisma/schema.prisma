@@ -1044,3 +1044,51 @@ model SyncRun {
   @@index([status, started_at])
   @@index([source_id, started_at])
 }
+
+// ---------------------------------------------------------
+// MODÈLE LOGS CONVERSATIONS (Audit & Amélioration RAG)
+// ---------------------------------------------------------
+
+model ConversationLog {
+  id          String   @id @default(cuid())
+  createdAt   DateTime @default(now())
+
+  // Contenu de l'échange (anonymisé)
+  message     String   @db.Text
+  intent      String?  // Intention détectée (ex: "logement", "rsa")
+
+  // Métadonnées de performance RAG
+  searchMode  String   @default("rag") // "rag" | "lexical" | "static"
+  sourceCount Int      @default(0)     // Nombre d'aides trouvées
+
+  // Session anonyme (optionnel)
+  sessionId   String?
+
+  // Feedback usager (amélioration continue)
+  rating      Int?     // 1 (positif) ou -1 (négatif)
+  userComment String?  @db.Text // Commentaire optionnel sur la réponse
+
+  @@index([createdAt])
+  @@index([searchMode])
+  @@index([rating])
+}
+
+// ---------------------------------------------------------
+// MODÈLE DIAGNOSTICS PARTAGÉS (Lien de Partage)
+// ---------------------------------------------------------
+
+model SharedDiagnostic {
+  id          String   @id @default(cuid())
+  createdAt   DateTime @default(now())
+  expiresAt   DateTime // Expiration automatique (7 jours par défaut)
+
+  // Instantané du diagnostic (stocké en JSON natif PostgreSQL)
+  situation   Json     // { birthDate, salary, rent, housingStatus, ... }
+  results     Json     // { rights: [...], period, meta }
+
+  // Métadonnées de partage
+  viewCount   Int      @default(0)
+
+  @@index([createdAt])
+  @@index([expiresAt])
+}

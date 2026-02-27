@@ -159,7 +159,7 @@ async function fetchLexicalContext(message, limit = 5) {
 /**
  * @param {string} message
  * @param {ChatMessage[]=} history
- * @returns {Promise<string>}
+ * @returns {Promise<{ answer: string, meta: { searchMode: string, sourceCount: number, intent: string|null } }>}
  */
 export async function chatWithRulePack(message, history = []) {
     const intent = detectIntent(message);
@@ -173,6 +173,8 @@ export async function chatWithRulePack(message, history = []) {
         contextAides = await fetchLexicalContext(message);
         searchMode = 'lexical';
     }
+
+    const meta = { searchMode, sourceCount: contextAides.length, intent };
 
     // ── 2. Try Gemini chat generation ──
     try {
@@ -215,21 +217,29 @@ export async function chatWithRulePack(message, history = []) {
 
         const result = await chat.sendMessage(message);
         const response = await result.response;
-        return response.text();
+        return { answer: response.text(), meta };
     } catch (geminiError) {
         // ── 3. Static fallback when Gemini is down (429, network, etc.) ──
         console.warn('[Gemini] Chat generation failed, using static fallback:', geminiError.message);
+
+        meta.searchMode = 'static';
 
         if (contextAides.length > 0) {
             const aidesList = contextAides
                 .map(a => `• "${a.titre}"${a.cest_quoi ? ` — ${a.cest_quoi.slice(0, 120)}` : ''}`)
                 .join('\n');
-            return `Je rencontre actuellement une forte affluence et ne peux pas générer une réponse personnalisée. ` +
-                `Cependant, voici les aides qui pourraient correspondre à votre recherche :\n\n${aidesList}\n\n` +
-                `Pour plus de détails, consultez la fiche de chaque aide sur notre plateforme ou contactez un travailleur social.`;
+            return {
+                answer: `Je rencontre actuellement une forte affluence et ne peux pas générer une réponse personnalisée. ` +
+                    `Cependant, voici les aides qui pourraient correspondre à votre recherche :\n\n${aidesList}\n\n` +
+                    `Pour plus de détails, consultez la fiche de chaque aide sur notre plateforme ou contactez un travailleur social.`,
+                meta,
+            };
         }
 
-        return `Je suis temporairement indisponible pour répondre de manière personnalisée. ` +
-            `En attendant, vous pouvez consulter notre annuaire des aides ou contacter un travailleur social pour obtenir de l'aide.`;
+        return {
+            answer: `Je suis temporairement indisponible pour répondre de manière personnalisée. ` +
+                `En attendant, vous pouvez consulter notre annuaire des aides ou contacter un travailleur social pour obtenir de l'aide.`,
+            meta,
+        };
     }
 }

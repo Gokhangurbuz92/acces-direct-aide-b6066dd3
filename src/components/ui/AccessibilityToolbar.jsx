@@ -34,12 +34,16 @@ export default function AccessibilityToolbar() {
   useEffect(() => {
     localStorage.setItem('accessibilitySettings', JSON.stringify(settings));
 
+    // Phase 3.4 RGAA: Apply to <html> element too for CSS cascade
     document.documentElement.style.fontSize = `${settings.fontSize}%`;
 
+    document.documentElement.classList.remove('high-contrast', 'dark-mode');
     document.body.classList.remove('high-contrast', 'dark-mode');
     if (settings.contrast === 'high') {
+      document.documentElement.classList.add('high-contrast');
       document.body.classList.add('high-contrast');
     } else if (settings.contrast === 'dark') {
+      document.documentElement.classList.add('dark-mode');
       document.body.classList.add('dark-mode');
     }
 
@@ -76,7 +80,7 @@ export default function AccessibilityToolbar() {
           className="gap-2 text-foreground border-border hover:bg-accent hover:text-accent-foreground"
           aria-label="Options d'accessibilité"
         >
-          <Eye className="h-4 w-4" />
+          <Eye className="h-4 w-4" aria-hidden="true" />
           <span className="hidden sm:inline">Accessibilité</span>
         </Button>
       </PopoverTrigger>
@@ -99,7 +103,7 @@ export default function AccessibilityToolbar() {
                 aria-label="Réduire la taille du texte"
                 disabled={settings.fontSize <= 80}
               >
-                <Minus className="h-4 w-4" />
+                <Minus className="h-4 w-4" aria-hidden="true" />
               </Button>
               <span className="flex-1 text-center font-medium text-foreground">
                 {settings.fontSize}%
@@ -111,7 +115,7 @@ export default function AccessibilityToolbar() {
                 aria-label="Augmenter la taille du texte"
                 disabled={settings.fontSize >= 150}
               >
-                <Plus className="h-4 w-4" />
+                <Plus className="h-4 w-4" aria-hidden="true" />
               </Button>
             </div>
           </div>
@@ -128,7 +132,7 @@ export default function AccessibilityToolbar() {
                 onClick={() => setSettings(prev => ({ ...prev, contrast: 'normal' }))}
                 className="flex-1"
               >
-                <Sun className="h-4 w-4 mr-1" />
+                <Sun className="h-4 w-4 mr-1" aria-hidden="true" />
                 Normal
               </Button>
               <Button
@@ -137,7 +141,7 @@ export default function AccessibilityToolbar() {
                 onClick={() => setSettings(prev => ({ ...prev, contrast: 'high' }))}
                 className="flex-1"
               >
-                <Eye className="h-4 w-4 mr-1" />
+                <Eye className="h-4 w-4 mr-1" aria-hidden="true" />
                 Fort
               </Button>
               <Button
@@ -146,7 +150,7 @@ export default function AccessibilityToolbar() {
                 onClick={() => setSettings(prev => ({ ...prev, contrast: 'dark' }))}
                 className="flex-1"
               >
-                <Moon className="h-4 w-4 mr-1" />
+                <Moon className="h-4 w-4 mr-1" aria-hidden="true" />
                 Sombre
               </Button>
             </div>
@@ -172,7 +176,7 @@ export default function AccessibilityToolbar() {
                 onClick={() => setSettings(prev => ({ ...prev, lineHeight: 'large' }))}
                 className="flex-1"
               >
-                <Maximize2 className="h-4 w-4 mr-1" />
+                <Maximize2 className="h-4 w-4 mr-1" aria-hidden="true" />
                 Large
               </Button>
             </div>
@@ -186,7 +190,7 @@ export default function AccessibilityToolbar() {
               onClick={() => setSettings(prev => ({ ...prev, simplifiedMode: !prev.simplifiedMode }))}
               className="w-full"
             >
-              <Type className="h-4 w-4 mr-2" />
+              <Type className="h-4 w-4 mr-2" aria-hidden="true" />
               Mode lecture facile
             </Button>
           </div>
@@ -198,7 +202,7 @@ export default function AccessibilityToolbar() {
             onClick={resetSettings}
             className="w-full text-muted-foreground"
           >
-            <RotateCcw className="h-4 w-4 mr-2" />
+            <RotateCcw className="h-4 w-4 mr-2" aria-hidden="true" />
             Réinitialiser
           </Button>
         </div>

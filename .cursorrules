@@ -1,0 +1,138 @@
+# ============================================================
+# Accès Direct Aide — Règles de Développement IA v1.1
+# ============================================================
+# Ce fichier guide Cursor, Claude Code, et tout outil IA
+# pour générer du code conforme aux conventions du projet.
+# Mise à jour : Phase 1.5 Monorepo (février 2026)
+# ============================================================
+
+## Projet
+
+- Nom : Accès Direct Aide (ADA)
+- Objectif : Plateforme souveraine d'accès aux aides sociales
+- Déploiement : Vercel (Serverless Functions)
+- Base de données : PostgreSQL 16 + pgvector (Neon prod / Docker local)
+- Cache : Redis 7 (Upstash prod / Docker local)
+- Architecture : Turborepo Monorepo (apps/, packages/)
+
+## Stack Technique
+
+- Frontend : React 18, Vite 6, TailwindCSS 3.4, Radix UI
+- Backend : Node.js 20, Vercel Serverless Functions (ESM)
+- ORM : Prisma 5.22 (PostgreSQL)
+- Tests : Vitest (unit/integration), Playwright (E2E)
+- CI/CD : GitHub Actions, Vercel, Semgrep (SAST)
+- API Contract : OpenAPI 3.1 (docs/openapi.yaml)
+
+## Architecture Monorepo
+
+```
+/
+├── apps/             # (futur) Applications déployables
+├── packages/
+│   ├── ai-engine/    # Agents IA, RAG, prompts, tools MCP
+│   ├── shared/       # Types, validators Zod, constantes
+│   └── legal-tools/  # Connecteurs OpenFisca, Grist, API-particulier
+├── api/              # Backend Vercel (structure actuelle)
+├── src/              # Frontend React (structure actuelle)
+├── prisma/           # Schéma DB et migrations
+└── e2e/              # Tests E2E Playwright
+```
+
+## Conventions Impératives
+
+### Architecture Patterns
+
+- NEVER place business logic directly in API handlers. Extract into services or packages.
+- ALWAYS use TypeScript (.ts) for new files in `packages/`.
+- Use Zod for ALL input validation (API handlers and form inputs).
+- When creating a new feature, check `packages/shared/` for existing types/validators first.
+- Always generate Vitest unit tests for logic in `packages/`.
+
+### Frontend (src/)
+
+- Composants React en JSX (pas TSX sauf nouveaux fichiers spécifiquement typés)
+- Utiliser les composants Radix UI existants dans `src/components/ui/`
+- Styles : TailwindCSS classes uniquement, jamais de CSS inline
+- État : React Query (@tanstack/react-query) pour le data fetching
+- Routing : React Router DOM v7
+- Accessibilité obligatoire (RGAA 4.1.2) : labels, rôles ARIA, focus management
+- Textes publics en FALC (Facile à Lire et à Comprendre) quand applicable
+
+### Backend (api/)
+
+- Chaque handler est dans `api/_handlers/` et exporté comme default function
+- Routing centralisé dans `api/routes.js` — ne JAMAIS créer de fichiers auto-routés
+- Helpers dans `api/_utils/` (auth, cache, logger, prisma, sentry)
+- Logger : utiliser `api/_utils/logger.js` (pino), jamais console.log en production
+- Prisma : utiliser le singleton de `api/_utils/prisma.js`
+- Sécurité : valider les inputs avec Zod, sanitiser les sorties
+- Handlers de cron : toujours vérifier `CRON_SECRET` via `api/_utils/auth.js`
+
+### Base de Données (prisma/)
+
+- Schéma dans `prisma/schema.prisma`
+- Migrations : `prisma migrate dev --name description_snake_case`
+- Toujours utiliser `IF NOT EXISTS` dans les migrations SQL manuelles
+- Convention de nommage : snake_case pour les colonnes, PascalCase pour les modèles
+- Ajouter des `@@index` sur les colonnes utilisées dans les WHERE/JOIN fréquents
+- Données sensibles : toujours chiffrer (ADA_ENCRYPTION_KEY)
+
+### Package Usage
+
+- `packages/ai-engine` : ALL LLM logic, agents, RAG pipelines, and prompt templates
+- `packages/shared` : Shared types, validators (Zod), enums, and constants
+- `packages/legal-tools` : Connectors for OpenFisca, Grist, and public APIs
+
+### Tests
+
+- Tests unitaires/intégration : fichier `.test.js` dans `tests/integration/`
+- Tests E2E : fichier `.spec.js` dans `e2e/`
+- Toujours mocker les appels externes (LLM, OpenFisca) dans les tests
+- Ne jamais utiliser de données réelles dans les tests
+
+### Sécurité
+
+- JAMAIS de secrets dans le code source — utiliser les variables d'environnement
+- JAMAIS de `eval()` ou `Function()` dynamique
+- JAMAIS de raw SQL — toujours passer par Prisma (sauf migration)
+- CSP strict définie dans `vercel.json`
+- Rate limiting via Upstash KV (`api/_utils/rateLimit.js`)
+- Auth admin : token statique `ADMIN_TOKEN` (migration OIDC prévue)
+- Auth pro : JWT via `api/_utils/auth.js`
+- ALWAYS sanitize prompt inputs before sending to LLMs
+
+### API Contract
+
+- Le contrat OpenAPI est dans `docs/openapi.yaml`
+- Toute nouvelle route DOIT être ajoutée dans `api/routes.js` ET dans `docs/openapi.yaml`
+- Respecter les schemas définis (Aide, Structure, Demarche, Actualite)
+
+### Git
+
+- Commits atomiques, messages en anglais : `type(scope): description`
+- Types : feat, fix, refactor, docs, ci, test, chore
+- PR obligatoire pour main, revue requise
+- Ne jamais force-push sur main
+
+## Fichiers Importants à Connaître
+
+- `api/index.js` — Point d'entrée Vercel (Global Boot Guard)
+- `api/routes.js` — Table de routage centralisée (60+ routes)
+- `vite.config.js` — Config Vite + API middleware pour dev local
+- `vercel.json` — Rewrites, headers sécurité, crons
+- `prisma/schema.prisma` — Schéma complet (30+ modèles)
+- `docs/openapi.yaml` — Contrat d'interface API (OpenAPI 3.1)
+- `turbo.json` — Configuration Turborepo
+- `.env.example` — Template de toutes les variables d'environnement
+
+## Anti-Patterns (NE PAS FAIRE)
+
+- Ne pas créer de nouveau fichier de route — ajouter dans `api/routes.js`
+- Ne pas importer `@prisma/client` directement — utiliser `api/_utils/prisma.js`
+- Ne pas utiliser `fetch` côté serveur — utiliser `undici`
+- Ne pas ajouter de dépendance sans justification (bundle size critique)
+- Ne pas désactiver les règles ESLint a11y sans commentaire justificatif
+- Ne pas créer de composants UI custom quand un équivalent Radix UI existe
+- Ne pas hardcoder de secrets — utiliser `process.env`
+- Ne pas écrire de logique métier dans les handlers — extraire dans services/packages

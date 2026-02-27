@@ -16,6 +16,7 @@ import {
   Search,
   Eye,
   Edit,
+  Cpu,
   CheckCircle,
   AlertCircle,
   Loader2,
@@ -40,6 +41,19 @@ export default function AdminAides() {
     queryFn: () => client.entities.Aide.list('-updated_date'),
   });
 
+  // Secondary query: RAG embedding status per aide
+  const { data: ragData } = useQuery({
+    queryKey: ['admin-rag-health'],
+    queryFn: () => client.get('/api/admin/rag-health').then(r => r.data?.data || []),
+    refetchInterval: 60_000,
+  });
+
+  // Build a quick lookup map: aide.id -> hasEmbedding
+  const embeddingMap = (ragData || []).reduce((acc, item) => {
+    acc[item.id] = item.hasEmbedding;
+    return acc;
+  }, {});
+
   const updateStatusMutation = useMutation({
     mutationFn: ({ id, status }) => client.entities.Aide.update(id, { status }),
     onSuccess: () => {
@@ -60,6 +74,9 @@ export default function AdminAides() {
     NeedsReview: aides.filter(a => a.status === 'NeedsReview').length,
     published: aides.filter(a => a.status === 'published').length,
   };
+
+  const ragIndexed = ragData ? ragData.filter(r => r.hasEmbedding).length : '—';
+  const ragTotal = ragData ? ragData.length : '—';
 
   return (
     <div className="min-h-screen bg-slate-50">
@@ -101,6 +118,15 @@ export default function AdminAides() {
             <CardContent className="p-4">
               <p className="text-sm text-slate-600 mb-1">Publiés</p>
               <p className="text-2xl font-bold text-green-600">{countByStatus.published}</p>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardContent className="p-4">
+              <div className="flex items-center gap-1.5 mb-1">
+                <Cpu className="h-3.5 w-3.5 text-indigo-500" />
+                <p className="text-sm text-slate-600">RAG 3072d</p>
+              </div>
+              <p className="text-2xl font-bold text-indigo-600">{ragIndexed}/{ragTotal}</p>
             </CardContent>
           </Card>
         </div>
@@ -167,6 +193,18 @@ export default function AdminAides() {
                           {aide.departments?.length > 0 && (
                             <span>• {aide.departments.join(', ')}</span>
                           )}
+                        </div>
+                        {/* RAG Status */}
+                        <div className="mt-2">
+                          {embeddingMap[aide.id] === true ? (
+                            <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-emerald-50 text-emerald-700 rounded-full text-[10px] font-bold">
+                              <CheckCircle className="h-3 w-3" /> INDEXÉ (3072d)
+                            </span>
+                          ) : embeddingMap[aide.id] === false ? (
+                            <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-amber-50 text-amber-700 rounded-full text-[10px] font-bold">
+                              <AlertCircle className="h-3 w-3" /> EN ATTENTE
+                            </span>
+                          ) : null}
                         </div>
                       </div>
                       <div className="flex items-center gap-2 flex-shrink-0">

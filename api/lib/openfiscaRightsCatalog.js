@@ -209,6 +209,162 @@ export const RIGHTS_CATALOG = [
             { type: 'aide', slug: 'aide-logement' },
         ],
     },
+    {
+        code: 'aspa',
+        variable: 'aspa',
+        label: 'ASPA (Allocation de solidarité aux personnes âgées)',
+        category: 'minimum_social',
+        explainEligible:
+            "D'après votre situation, vous pourriez bénéficier de l'ASPA. " +
+            "Cette allocation garantit un revenu minimum aux personnes âgées de 65 ans et plus. " +
+            'Elle est versée par la caisse de retraite (CARSAT, MSA).',
+        explainNotEligible:
+            "L'ASPA ne semble pas applicable à votre situation. " +
+            "Cela peut dépendre de votre âge, de vos revenus ou de votre résidence.",
+        explainFalcEligible:
+            '📋 Résumé\n' +
+            "L'ASPA, c'est de l'argent versé chaque mois aux personnes âgées " +
+            'qui ont peu de revenus.\n\n' +
+            '👤 Pour qui ?\n' +
+            '• Vous avez 65 ans ou plus.\n' +
+            '• Vous habitez en France de façon stable.\n' +
+            '• Vos revenus sont en dessous d\'un certain montant.\n\n' +
+            '💶 Ce que ça apporte\n' +
+            'Un complément de revenus versé chaque mois.\n' +
+            'Le montant maximum est d\'environ 1 012 € par mois pour une personne seule (2026).\n\n' +
+            '📝 Comment faire ?\n' +
+            '1. Contactez votre caisse de retraite (CARSAT ou MSA).\n' +
+            '2. Remplissez le formulaire de demande d\'ASPA.\n' +
+            '3. Joignez vos justificatifs de revenus et de résidence.\n' +
+            '4. La caisse étudie votre dossier et vous répond.\n\n' +
+            '📎 Documents nécessaires\n' +
+            '• Pièce d\'identité\n' +
+            '• Justificatif de domicile\n' +
+            '• Dernier avis d\'imposition\n' +
+            '• Relevés de pensions\n\n' +
+            '🔗 Liens officiels\n' +
+            '• https://www.service-public.fr/particuliers/vosdroits/F16871\n' +
+            '• https://www.lassuranceretraite.fr',
+        explainFalcNotEligible:
+            '📋 Résumé\n' +
+            "D'après vos informations, vous ne pouvez probablement pas recevoir l'ASPA.\n\n" +
+            '❓ Pourquoi ?\n' +
+            '• Vous n\'avez peut-être pas encore 65 ans.\n' +
+            '• Ou vos revenus dépassent le plafond.\n\n' +
+            '💡 Que faire ?\n' +
+            '• Quand vous aurez 65 ans, refaites le calcul.\n' +
+            '• Contactez votre caisse de retraite pour vérifier.',
+        nextSteps: [
+            { type: 'aide', slug: 'aspa' },
+            { type: 'demarche', slug: 'demande-aspa' },
+        ],
+    },
+    {
+        code: 'ass',
+        variable: 'ass',
+        label: 'ASS (Allocation de solidarité spécifique)',
+        category: 'chomage',
+        explainEligible:
+            "D'après votre situation, vous pourriez bénéficier de l'ASS. " +
+            "Cette allocation est versée aux demandeurs d'emploi qui ont épuisé " +
+            "leurs droits à l'allocation chômage (ARE).",
+        explainNotEligible:
+            "L'ASS ne semble pas applicable à votre situation. " +
+            "Elle est réservée aux demandeurs d'emploi en fin de droits ayant une activité antérieure suffisante.",
+        explainFalcEligible:
+            '📋 Résumé\n' +
+            "L'ASS, c'est de l'argent versé chaque mois quand vous n'avez plus " +
+            "droit au chômage (ARE).\n\n" +
+            '👤 Pour qui ?\n' +
+            "• Vous êtes inscrit à France Travail (ex-Pôle emploi).\n" +
+            "• Vous n'avez plus droit à l'allocation chômage.\n" +
+            "• Vous avez travaillé au moins 5 ans dans les 10 dernières années.\n" +
+            '• Vos revenus sont faibles.\n\n' +
+            '💶 Ce que ça apporte\n' +
+            "Un montant d'environ 18,17 € par jour (2026).\n" +
+            "L'aide est versée tous les mois.\n\n" +
+            '📝 Comment faire ?\n' +
+            '1. Restez inscrit à France Travail.\n' +
+            "2. Quand vos droits ARE se terminent, France Travail vous propose l'ASS.\n" +
+            '3. Remplissez le formulaire de demande.\n' +
+            '4. Envoyez vos justificatifs de revenus.\n\n' +
+            '📎 Documents nécessaires\n' +
+            "• Pièce d'identité\n" +
+            "• Attestation d'inscription à France Travail\n" +
+            '• Justificatifs de revenus du foyer\n' +
+            "• Avis d'imposition\n\n" +
+            '🔗 Liens officiels\n' +
+            '• https://www.service-public.fr/particuliers/vosdroits/F12484\n' +
+            '• https://www.francetravail.fr',
+        explainFalcNotEligible:
+            '📋 Résumé\n' +
+            "D'après vos informations, vous ne pouvez probablement pas recevoir l'ASS.\n\n" +
+            '❓ Pourquoi ?\n' +
+            "• Vous avez peut-être encore droit au chômage (ARE).\n" +
+            "• Ou vous n'avez pas travaillé assez longtemps.\n" +
+            '• Ou vos revenus dépassent le plafond.\n\n' +
+            '💡 Que faire ?\n' +
+            '• Contactez France Travail pour connaître vos droits.\n' +
+            "• Si votre situation change, refaites le calcul.",
+        nextSteps: [
+            { type: 'aide', slug: 'ass' },
+            { type: 'demarche', slug: 'demande-ass' },
+        ],
+    },
+    {
+        code: 'aah',
+        variable: 'aah',
+        label: 'AAH (Allocation aux adultes handicapés)',
+        category: 'handicap',
+        explainEligible:
+            "D'après votre situation, vous pourriez bénéficier de l'AAH. " +
+            "Cette allocation garantit un revenu minimum aux personnes en situation de handicap. " +
+            "Elle est versée par la CAF ou la MSA.",
+        explainNotEligible:
+            "L'AAH ne semble pas applicable à votre situation actuelle. " +
+            "Elle nécessite une reconnaissance du handicap par la MDPH.",
+        explainFalcEligible:
+            '📋 Résumé\n' +
+            "L'AAH, c'est de l'argent versé chaque mois aux personnes " +
+            "qui ont un handicap.\n\n" +
+            '👤 Pour qui ?\n' +
+            "• Vous avez un handicap reconnu par la MDPH (taux d'incapacité ≥ 80%, " +
+            "ou entre 50% et 79% avec une restriction d'accès à l'emploi).\n" +
+            '• Vous avez 20 ans ou plus.\n' +
+            '• Vous habitez en France.\n' +
+            '• Vos revenus ne dépassent pas un certain montant.\n\n' +
+            '💶 Ce que ça apporte\n' +
+            "Un montant maximum d'environ 1 016 € par mois (2026).\n" +
+            'Le montant dépend de vos revenus.\n\n' +
+            '📝 Comment faire ?\n' +
+            '1. Faites une demande à la MDPH de votre département.\n' +
+            "2. La MDPH évalue votre taux d'incapacité.\n" +
+            "3. Si votre taux est suffisant, demandez l'AAH à la CAF.\n" +
+            '4. La CAF verse le montant chaque mois.\n\n' +
+            '📎 Documents nécessaires\n' +
+            "• Certificat médical MDPH (formulaire Cerfa n°15695*01)\n" +
+            "• Formulaire de demande MDPH (Cerfa n°15692*01)\n" +
+            "• Pièce d'identité\n" +
+            '• Justificatif de domicile\n' +
+            "• Avis d'imposition\n\n" +
+            '🔗 Liens officiels\n' +
+            '• https://www.service-public.fr/particuliers/vosdroits/F12242\n' +
+            '• https://www.monparcourshandicap.gouv.fr',
+        explainFalcNotEligible:
+            '📋 Résumé\n' +
+            "D'après vos informations, vous ne pouvez probablement pas recevoir l'AAH.\n\n" +
+            '❓ Pourquoi ?\n' +
+            "• Votre handicap n'est peut-être pas reconnu par la MDPH.\n" +
+            '• Ou vos revenus dépassent le plafond.\n\n' +
+            '💡 Que faire ?\n' +
+            '• Contactez la MDPH de votre département.\n' +
+            "• Demandez une évaluation de votre taux d'incapacité.\n" +
+            '• Si vous avez déjà une reconnaissance MDPH, refaites le calcul.',
+        nextSteps: [
+            { type: 'aide', slug: 'aah' },
+            { type: 'demarche', slug: 'demande-aah' },
+        ],
+    },
 ];
 
 /** Get variables list for OpenFisca output */

@@ -6,6 +6,8 @@ import * as Sentry from '@sentry/node';
 import { computeContentHash } from '../../_utils/contentHash.js';
 import { ensureSlugOrNull } from '../../_utils/slug.js';
 import { ServicePublicDemarchesConnector } from '../../lib/ingestion/ServicePublicDemarchesConnector.js';
+import { fetchDemarchesSimplifiees } from '../../lib/ingestion/DemarchesSimplifieesConnector.js';
+import { fetchMesAidesReno } from '../../lib/ingestion/MesAidesRenoConnector.js';
 
 /**
  * @param {unknown} error
@@ -293,6 +295,107 @@ export async function runIngestDemarches({ limit, runId } = {}) {
         }
     }
 
+    // -----------------------------------------------------------------------
+    // Phase 2b-A: Démarches Simplifiées GraphQL connector
+    // -----------------------------------------------------------------------
+    try {
+        const dsItems = await fetchDemarchesSimplifiees();
+        if (dsItems.length > 0) {
+            logger.info('INGEST_DEMARCHES_DS_OK', { runId, count: dsItems.length });
+            for (const dsItem of dsItems) {
+                try {
+                    await upsertDemarche({
+                        ...dsItem,
+                        territory_scope: 'NATIONAL',
+                    }, runId, stats);
+                } catch (dsErr) {
+                    stats.errors.push(`DS ${dsItem.external_id}: ${getErrorMessage(dsErr)}`);
+                }
+            }
+        }
+    } catch (dsConnectorErr) {
+        logger.warn('INGEST_DEMARCHES_DS_FAIL', { runId, error: getErrorMessage(dsConnectorErr) });
+        stats.errors.push(`DS connector failed: ${getErrorMessage(dsConnectorErr)}`);
+    }
+
+    // -----------------------------------------------------------------------
+    // Phase 2b-B: Mes Aides Réno (ANAH) → upsert into Aide table
+    // -----------------------------------------------------------------------
+    let renoStats = { created: 0, updated: 0, skipped: 0, errors: 0 };
+    try {
+        const renoItems = await fetchMesAidesReno();
+        if (renoItems.length > 0) {
+            logger.info('INGEST_RENO_OK', { runId, count: renoItems.length });
+            for (const renoItem of renoItems) {
+                try {
+                    const renoContentHash = computeContentHash({
+                        external_id: renoItem.external_id,
+                        titre: renoItem.titre,
+                        description: renoItem.description,
+                    });
+
+                    const existing = await prisma.aide.findFirst({
+                        where: {
+                            OR: [
+                                { externalId: renoItem.external_id },
+                                { source_url: renoItem.lien_officiel },
+                            ],
+                        },
+                    });
+
+                    const renoData = {
+                        titre: renoItem.titre,
+                        summary_falc: renoItem.description.substring(0, 500),
+                        cest_quoi: renoItem.description + '\n\n' + renoItem.conditions,
+                        providerName: 'Mes Aides Réno',
+                        providerType: 'ingest',
+                        source_url: renoItem.lien_officiel,
+                        source_url_exact: renoItem.lien_officiel,
+                        apply_url: renoItem.lien_demarche,
+                        theme: renoItem.categorie,
+                        echelon_territorial: 'NATIONAL',
+                        source_donnee: 'Mes Aides Réno',
+                        lien_demarche: renoItem.lien_demarche,
+                        statut: 'publie',
+                        published_at: new Date(),
+                        fetched_at: new Date(),
+                        retrieved_at: new Date(),
+                        last_checked_at: new Date(),
+                        content_hash: renoContentHash,
+                    };
+
+                    if (existing) {
+                        if (existing.content_hash !== renoContentHash) {
+                            await prisma.aide.update({
+                                where: { id: existing.id },
+                                data: renoData,
+                            });
+                            renoStats.updated++;
+                        } else {
+                            renoStats.skipped++;
+                        }
+                    } else {
+                        const slug = ensureSlugOrNull(`aide-${renoItem.titre}`);
+                        await prisma.aide.create({
+                            data: {
+                                ...renoData,
+                                externalId: renoItem.external_id,
+                                slug,
+                            },
+                        });
+                        renoStats.created++;
+                    }
+                } catch (renoErr) {
+                    renoStats.errors++;
+                    stats.errors.push(`Reno ${renoItem.external_id}: ${getErrorMessage(renoErr)}`);
+                }
+            }
+        }
+    } catch (renoConnectorErr) {
+        logger.warn('INGEST_RENO_FAIL', { runId, error: getErrorMessage(renoConnectorErr) });
+        stats.errors.push(`MesAidesReno connector failed: ${getErrorMessage(renoConnectorErr)}`);
+    }
+
     const durationTotal = Date.now() - startTotal;
 
     // Silent failure detection
@@ -301,7 +404,7 @@ export async function runIngestDemarches({ limit, runId } = {}) {
         stats.errors.push('Silent failure: no items processed');
     }
 
-    logger.info('INGEST_DEMARCHES_END', { runId, stats, duration_ms: durationTotal });
+    logger.info('INGEST_DEMARCHES_END', { runId, stats, renoStats, duration_ms: durationTotal });
 
     // Log the run
     try {
@@ -310,9 +413,9 @@ export async function runIngestDemarches({ limit, runId } = {}) {
                 run_id: runId,
                 source_name: 'CRON_DEMARCHES',
                 status: stats.errors.length > 0 ? 'PARTIAL' : 'SUCCESS',
-                items_new: stats.created,
-                items_updated: stats.updated,
-                items_skipped: stats.skippedExisting,
+                items_new: stats.created + renoStats.created,
+                items_updated: stats.updated + renoStats.updated,
+                items_skipped: stats.skippedExisting + renoStats.skipped,
                 items_total: stats.processed + allItems.length,
                 error_count: stats.errors.length,
                 logs: stats.errors.length ? JSON.stringify(stats.errors.slice(0, 50)) : null,
@@ -323,7 +426,33 @@ export async function runIngestDemarches({ limit, runId } = {}) {
         logger.error('IMPORT_LOG_ERROR', { runId, error: e });
     }
 
-    return stats;
+    // ── Phase 2b: SyncRun entry ──
+    try {
+        await prisma.syncRun.create({
+            data: {
+                id: crypto.randomUUID(),
+                source_id: 'ingest-demarches',
+                status: stats.errors.length > 0 ? 'partial' : 'success',
+                started_at: new Date(startTotal),
+                ended_at: new Date(),
+                stats: {
+                    demarches: {
+                        created: stats.created,
+                        updated: stats.updated,
+                        skipped: stats.skippedExisting,
+                        source: stats.source,
+                    },
+                    renovation: renoStats,
+                    errors: stats.errors.slice(0, 20),
+                    duration_ms: durationTotal,
+                },
+            },
+        });
+    } catch {
+        // SyncRun logging must never break the response
+    }
+
+    return { ...stats, renoStats };
 }
 
 /**

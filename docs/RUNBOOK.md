@@ -1,174 +1,154 @@
-# Runbook - Exploitation & Incidents
+# 🚀 Runbook : Mise en Production Souveraine — Accès Direct Aide
 
-## 1. Incidents Critiques (P0)
+> **Version** : 2.0 — Phases 1–4 complétées  
+> **Cible** : Serveur souverain (Scaleway, OVH, On-Premise) ou Vercel (actuel)
 
-### 1.1 Erreur 500 sur Parcours Public (Aides, RDV)
+---
 
-**Impact** : Service indisponible pour l'usager.
+## 1. Prérequis Serveur
 
-**Actions** :
-1.  **Vérifier Sentry** : Identifier l'exception (ex: `PrismaClientInitializationError`, `UpstashError`).
-2.  **Vérifier Statut** : Base de données (Postgres) et Redis (Upstash).
-3.  **Logs Vercel** : Filtrer par `level:error` pour voir la stack trace complète.
-4.  **Si lié au déploiement** : Rollback Vercel via Dashboard (onglet "Deployments", bouton "Instant Rollback").
-5.  **Si lié à la DB** : Vérifier la connexion string, redémarrer le pool si possible.
+| Ressource | Minimum | Recommandé |
+|---|---|---|
+| OS | Ubuntu 22.04 LTS | Ubuntu 24.04 LTS |
+| CPU | 2 vCPU | 4 vCPU |
+| RAM | 4 Go | 8 Go (embeddings + RAG) |
+| Stockage | 20 Go SSD | 50 Go SSD |
+| Outils | Docker Engine 24+ | + Docker Compose V2 |
 
-### 1.2 Base de Données Indisponible
+## 2. Architecture de Déploiement
 
-**Symptômes** : Erreurs `P1001`, `P1003` (Prisma) ou timeouts.
+```
+┌─────────────────────────────────────────────────────┐
+│                   Reverse Proxy                      │
+│              (Nginx / Traefik + SSL)                 │
+│                   :443 → :3000                       │
+├──────────┬──────────────┬───────────────────────────┤
+│  ada-api │  ada-postgres │  ada-redis               │
+│  :3000   │  :5432        │  :6379                    │
+│  Node 20 │  PG16+pgvector│  Redis 7                  │
+└──────────┴──────────────┴───────────────────────────┘
+```
 
-**Actions** :
-1.  **Status Page Neon/Supabase** : Vérifier panne fournisseur.
-2.  **Connexions** : Vérifier nombre connexions actives vs limite.
-3.  **Redémarrage** : Si instance managée, redémarrer via console cloud.
+## 3. Configuration de l'Environnement
 
-### 1.3 Cron Jobs en Échec (Ingestion)
-
-**Impact** : Données obsolètes (Aides, Actus).
-
-**Actions** :
-1.  **Admin > Runs** : Consulter `/admin/runs` pour voir l'erreur exacte.
-2.  **Relancer** : Via `/admin/sync` (bouton "Force Sync").
-3.  **Logs** : Vérifier logs spécifiques au job (ex: `api/cron/ingest-aids`).
-
-## 2. Procédures Courantes (P1)
-
-### 2.1 Déploiement (Production)
-
-1.  **Checklist** : Suivre `docs/RELEASE_CHECKLIST.md`.
-2.  **Merge** : PR validée -> Merge vers `main`.
-3.  **Vérification** : Smoke test sur URL production (ex: `/health`).
-
-### 2.2 Rollback (Retour Arrière)
-
-1.  **Vercel** : Dashboard > Project > Deployments > "..." sur version précédente > "Instant Rollback".
-2.  **Base de données** : Si migration destructive appliquée, restaurer backup (voir `docs/BACKUP_RESTORE.md`).
-
-### 2.3 Rotation des Secrets
-
-Voir `docs/ROTATE_SECRETS.md`.
-1.  Générer nouveau secret (ex: `JWT_SECRET`).
-2.  Mettre à jour Vercel Environment Variables.
-3.  Redéployer (Redeploy sans changement code).
-
-## 3. Contact & Escalade
-
-| Rôle | Contact | Responsabilité |
-| :--- | :--- | :--- |
-| **Tech Lead** | Slack / Email | Décision Rollback, Architecture. |
-| **DevOps** | Slack / Email | Infra Vercel, DB, Secrets. |
-| **Produit** | Slack / Email | Communication usagers si downtime. |
-
-## 4. SEO Prerender & Sitemap
-
-### Build pipeline
-
-`npm run build` exécute dans l'ordre :
-
-1. `vite build` — bundle client
-2. `node scripts/prerender.mjs` — SSG pour `/`, `/aides`, et top 50 fiches `/aides/:slug`
-3. `node scripts/generate-sitemap.mjs` — génère `dist/sitemap.xml`
-
-### Personnaliser le nombre de fiches
+Créez `.env.production` à la racine :
 
 ```bash
-# Prerender top 100 au lieu de 50
-node scripts/prerender.mjs --limit 100
-node scripts/generate-sitemap.mjs --limit 100
+# Base de données souveraine
+DATABASE_URL=postgresql://user:pass@ada-postgres:5432/acces_direct_aide
+POSTGRES_URL_NON_POOLING=${DATABASE_URL}
+
+# IA (Gemini)
+GEMINI_API_KEY=votre-clé-production
+
+# Cache (Upstash REST ou laisser vide pour in-memory)
+KV_REST_API_URL=https://votre-instance.upstash.io
+KV_REST_API_TOKEN=votre-token
+
+# Chiffrement
+ADA_ENCRYPTION_KEY=clé-32-caractères-aes
+
+# Feature Flags
+ENABLE_AI_AGENT=true
+ENABLE_RAG=true
+ENABLE_OPENFISCA=true
+ENABLE_CACHE=true
+MAINTENANCE_MODE=false
+ENABLE_AUDIT_LOG=true
 ```
 
-### Prérequis
+## 4. Déploiement Étape par Étape
 
-- `DATABASE_URL` doit être défini pour que les scripts puissent interroger les slugs publiés.
-- Si `DATABASE_URL` n'est pas disponible (ex: CI sans DB), seules les routes statiques (`/`, `/aides`) sont générées. C'est non-bloquant.
-
-### Vérification
+### A. Initialisation de la Base de Données
 
 ```bash
-npm run build
-ls dist/sitemap.xml              # doit exister
-head -20 dist/sitemap.xml        # doit contenir <url> entries
-ls dist/aides/*/index.html | head -3  # fiches prerendues
+# Lancer PostgreSQL + Redis
+docker compose up -d postgres redis
+
+# Attendre que PG soit ready
+docker compose exec postgres pg_isready -U postgres
+
+# Activer pgvector
+docker compose exec postgres psql -U postgres -d acces_direct_aide \
+  -c "CREATE EXTENSION IF NOT EXISTS vector;"
+
+# Appliquer les migrations Prisma
+npx prisma migrate deploy
+npx prisma generate
 ```
 
-## 5. Auth — Routes exposées
-
-| Route | Audience | Liée dans le Header ? |
-| :--- | :--- | :--- |
-| `/login` | Public (hub de connexion) | ✅ Oui |
-| `/pro/login` | Professionnels | ✅ Oui (mobile : "Espace Pro") |
-| `/pro/register` | Professionnels | ✅ Oui ("Créer un compte") |
-| `/auth/login` | Bénéficiaires (RDV) | Non (accès via parcours RDV) |
-| `/auth/signup` | Bénéficiaires (RDV) | Non (accès via parcours RDV) |
-| `/admin/login` | Administration | ⛔ Non (accès par URL directe uniquement) |
-
-> **Note** : `/admin/login` existe mais n'est volontairement pas liée dans la navigation publique pour des raisons de sécurité.
-
-> 📖 Pour les détails complets (tokens, guards, variables d'env) : voir [docs/Auth.md](./Auth.md).
-
-> **Alias legacy** : `/login/pro` redirige automatiquement (`301 replace`) vers `/pro/login`. Ne pas créer de liens vers `/login/pro` — utiliser `/pro/login` comme route canonique.
-
-## 6. Assistant Chat API (Gemini)
-
-### Endpoint
-
-`POST /api/assistant/chat`
-
-### Variables d'environnement requises
-
-| Variable | Description |
-| :--- | :--- |
-| `GEMINI_API_KEY` (ou `GOOGLE_API_KEY`) | Clé API Google Generative AI. **SERVER ONLY — ne jamais exposer côté client.** |
-
-### Rate limit
-
-10 requêtes / minute / IP (KV si disponible, sinon in-memory).
-
-### Exemple curl
+### B. Build et Lancement de l'API
 
 ```bash
-curl -X POST https://<domain>/api/assistant/chat \
-  -H 'Content-Type: application/json' \
-  -d '{"message":"Suis-je éligible à l APL en tant que locataire ?"}'
+# Build de l'image de production (Dockerfile à la racine du monorepo)
+docker build -t ada-api .
+
+# Lancement
+docker run -d \
+  --name ada-api \
+  --env-file .env.production \
+  --network ada-network \
+  -p 3000:3000 \
+  ada-api
 ```
 
-### Réponse type (200)
-
-```json
-{
-  "answer": "...",
-  "citations": [],
-  "meta": { "model": "gemini-1.5-flash", "rulepack": "apl_v1", "requestId": "..." }
-}
-```
-
-### Sécurité
-
-- Les données sensibles (NIR, IBAN, numéro de carte bancaire) sont détectées et bloquées côté serveur avant tout appel à Gemini.
-- Le modèle utilise `temperature: 0.2` et des instructions système strictes pour éviter les hallucinations.
-
-### Tester l'interface
-
-1. S'assurer que `GEMINI_API_KEY` est défini dans `.env.local`
-2. Lancer `npm run dev`
-3. Naviguer vers `/orientation` — le chat est embarqué dans la page
-4. Le composant `ChatAssistant` est aussi disponible en widget flottant (sans prop `embedded`)
-
-### POST /api/assistant/recommendations
-
-Recommandations basées sur la recherche ADA (embedding + lexical).
-
-| Paramètre  | Type       | Défaut | Description |
-|:-----------|:-----------|:-------|:------------|
-| `need`     | string     | (requis) | Besoin de l'utilisateur (1-200 car.) |
-| `territory`| string     | —      | Code postal ou ville |
-| `limit`    | number     | 6      | Nombre max de résultats (1-20) |
-| `types`    | string[]   | all    | `["aide","demarche","structure"]` |
+### C. Vérification Santé
 
 ```bash
-curl -X POST https://<domain>/api/assistant/recommendations \
-  -H 'Content-Type: application/json' \
-  -d '{"need":"logement social","territory":"75","limit":4}'
+# Health check basique
+curl http://localhost:3000/api/health
+
+# Health check approfondi (DB + storage + services)
+curl http://localhost:3000/api/health/deep
+
+# Logs (format JSON structuré, compatible Pino)
+docker logs -f ada-api | jq .
 ```
 
-Réponse : `{ items: [{ type, slug, title, excerpt, url, sourceUrl?, verifiedAt? }], meta: { from, method, requestId } }`
+## 5. Monitoring & KPIs
+
+| Indicateur | Cible | Comment mesurer |
+|---|---|---|
+| Latence RAG | < 200ms | Logs `[ai-engine] rag search` |
+| Cache Hit Rate | > 70% | Logs `[Cache] Hit` / `[Cache] Miss` |
+| Uptime API | 99.9% | Docker HEALTHCHECK + monitoring |
+| Semgrep 0-day | 0 bloquant | CI auto `.github/workflows/semgrep.yml` |
+| Audit Logs | Actifs | Logs niveau `AUDIT` (RGPD) |
+
+## 6. Plan de Rollback
+
+```bash
+# 1. Activer la maintenance (Feature Flag)
+# → MAINTENANCE_MODE=true dans .env.production, puis restart
+
+# 2. Revenir à l'image précédente
+docker tag ada-api ada-api:broken
+docker tag ada-api:previous ada-api:latest
+
+# 3. Relancer
+docker stop ada-api && docker rm ada-api
+docker run -d --name ada-api --env-file .env.production -p 3000:3000 ada-api
+
+# 4. Vérifier
+curl http://localhost:3000/api/health
+```
+
+## 7. Packages npm Disponibles
+
+| Package | Usage |
+|---|---|
+| `@ada/db` | `import { prisma } from '@ada/db'` |
+| `@ada/shared` | Constants, validators Zod, cache, feature flags, logger |
+| `@ada/ai-engine` | GeminiChat, RagService, AgentOrchestrator |
+| `@ada/legal-tools` | OpenFiscaClient, buildTestCase, RIGHTS_CATALOG |
+
+## 8. Commandes Utiles
+
+```bash
+npm run docker:up      # Démarre PG + Redis
+npm run docker:down    # Arrête les services
+npm run docker:admin   # pgAdmin sur :5050
+npm run lint           # ESLint
+npm run build          # Vite build
+npm run dev            # Dev local
+```

@@ -79,7 +79,7 @@ model Aide {
   source_hash   String?
   last_checked  DateTime?
   geo_scope     String?
-  embedding     Unsupported("vector(768)")?
+  embedding     Unsupported("vector(3072)")?
   ts_content    Unsupported("tsvector")?
 
   // Ingestion Fields
@@ -97,6 +97,13 @@ model Aide {
   source_last_modified DateTime?
   fetched_at           DateTime?
 
+  // Cahier des charges — Architecture Data Universelle
+  montant_max           String?   // Montant max de l'aide (ex: "1500€")
+  echelon_territorial   String?   // "NATIONAL" | "REGIONAL" | "DEPARTEMENTAL" | "COMMUNAL"
+  code_insee_territoire String?   // vide si national, "44" Grand Est, "67000" Strasbourg
+  lien_demarche         String?   // URL directe pour candidater
+  source_donnee         String?   // "Aides-Territoires", "Scraping GrandEst", "OpenFisca", "DREES"
+
   // Traceability Fields (P1)
   retrieved_at    DateTime?
   last_checked_at DateTime?
@@ -112,6 +119,8 @@ model Aide {
   @@index([status_code])
   @@index([source_hash])
   @@index([geo_scope])
+  @@index([echelon_territorial])
+  @@index([code_insee_territoire])
 }
 
 model AidCategory {
@@ -213,6 +222,12 @@ model Structure {
   insee_codes        String[] // For COMMUNAL scope
   content_hash       String?
 
+  // Cahier des charges — Annuaire Universel
+  type_finess      String?   // Type FINESS (EHPAD, Hôpital, CMS, CCAS…)
+  numero_finess    String?   @unique // Identifiant national FINESS
+  rna_id           String?   @unique // Identifiant RNA pour les associations
+  source_annuaire  String?   // "FINESS", "RNA", "OPENDATA_ALSACE", "ADMINISTRATION"
+
   // Traceability Fields (P1)
   retrieved_at         DateTime?
   last_checked_at      DateTime?
@@ -242,6 +257,9 @@ model Structure {
   @@index([type_structure])
   @@index([statut, nom])
   @@index([source_document_id])
+  @@index([numero_finess])
+  @@index([rna_id])
+  @@index([source_annuaire])
 }
 
 model Demarche {
@@ -272,6 +290,11 @@ model Demarche {
   categoryId            String?
   category              AidCategory?    @relation("DemarcheToCategory", fields: [categoryId], references: [id])
   situations            LifeSituation[] @relation("DemarcheToSituation")
+
+  // Cahier des charges — Démarches enrichies
+  public_cible       String?          // Public cible de la démarche
+  contenu_detaille   String?  @db.Text // Contenu aspiré via Service-Public.fr
+  lien_teleservice   String?          // Lien vers le téléservice en ligne
 
   // Ingestion Fields
   source_url_exact String?
@@ -998,4 +1021,74 @@ model ContentReport {
 
   @@index([contentType, contentId])
   @@index([status, createdAt])
+}
+
+// ─────────────────────────────────────────────────────────
+// Architecture Data Universelle — Phase 1
+// ─────────────────────────────────────────────────────────
+
+/// Tracks synchronisation runs for pipeline orchestration.
+/// Fixes the runtime crash in ingest-structures.js which
+/// referenced prisma.syncRun but had no backing model.
+model SyncRun {
+  id         String    @id @default(uuid())
+  source_id  String?   // "FINESS", "RNA", "STRUCTURES", etc.
+  status     String    // "running" | "success" | "partial" | "failed" | "skipped"
+  started_at DateTime  @default(now())
+  ended_at   DateTime?
+  error      String?   @db.Text
+  stats      Json?
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+
+  @@index([status, started_at])
+  @@index([source_id, started_at])
+}
+
+// ---------------------------------------------------------
+// MODÈLE LOGS CONVERSATIONS (Audit & Amélioration RAG)
+// ---------------------------------------------------------
+
+model ConversationLog {
+  id          String   @id @default(cuid())
+  createdAt   DateTime @default(now())
+
+  // Contenu de l'échange (anonymisé)
+  message     String   @db.Text
+  intent      String?  // Intention détectée (ex: "logement", "rsa")
+
+  // Métadonnées de performance RAG
+  searchMode  String   @default("rag") // "rag" | "lexical" | "static"
+  sourceCount Int      @default(0)     // Nombre d'aides trouvées
+
+  // Session anonyme (optionnel)
+  sessionId   String?
+
+  // Feedback usager (amélioration continue)
+  rating      Int?     // 1 (positif) ou -1 (négatif)
+  userComment String?  @db.Text // Commentaire optionnel sur la réponse
+
+  @@index([createdAt])
+  @@index([searchMode])
+  @@index([rating])
+}
+
+// ---------------------------------------------------------
+// MODÈLE DIAGNOSTICS PARTAGÉS (Lien de Partage)
+// ---------------------------------------------------------
+
+model SharedDiagnostic {
+  id          String   @id @default(cuid())
+  createdAt   DateTime @default(now())
+  expiresAt   DateTime // Expiration automatique (7 jours par défaut)
+
+  // Instantané du diagnostic (stocké en JSON natif PostgreSQL)
+  situation   Json     // { birthDate, salary, rent, housingStatus, ... }
+  results     Json     // { rights: [...], period, meta }
+
+  // Métadonnées de partage
+  viewCount   Int      @default(0)
+
+  @@index([createdAt])
+  @@index([expiresAt])
 }

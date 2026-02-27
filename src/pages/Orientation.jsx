@@ -32,7 +32,7 @@ export default function Orientation() {
           <Link to="/annuaire">
             <Button variant="outline" className="gap-2">
               Voir l&apos;annuaire
-              <ArrowRight className="h-4 w-4" />
+              <ArrowRight className="h-4 w-4" aria-hidden="true" />
             </Button>
           </Link>
         </div>

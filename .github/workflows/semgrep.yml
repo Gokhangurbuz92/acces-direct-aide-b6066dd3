@@ -1,0 +1,52 @@
+name: "\U0001F6E1\uFE0F Security Scan (Semgrep)"
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+  security-events: write
+
+jobs:
+  semgrep:
+    name: Semgrep SAST Analysis
+    runs-on: ubuntu-latest
+    container:
+      image: returntocorp/semgrep
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: "\U0001F50D Run Semgrep (OWASP + Auto)"
+        run: |
+          semgrep scan \
+            --config auto \
+            --config p/owasp-top-ten \
+            --config p/javascript \
+            --config p/nodejs \
+            --error \
+            --severity=ERROR \
+            --json --json-output=semgrep-results.json \
+            --exclude='node_modules' \
+            --exclude='dist' \
+            --exclude='storybook-static' \
+            --exclude='playwright-report' \
+            --exclude='*.min.js' \
+            --exclude='release' \
+            --exclude='docker-compose*.yml' \
+            --exclude='Dockerfile' \
+            --exclude='data/' \
+            --exclude='docs/' \
+            .
+
+      - name: "\U0001F4CB Upload Results"
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: semgrep-results
+          path: semgrep-results.json
+          retention-days: 30

@@ -5,6 +5,7 @@ import crypto from 'crypto';
 import { runIngestStructures } from './ingest-structures.js';
 import { runIngestAids } from './ingest-aids.js';
 import { runIngestActualitesRss } from './ingest-actualites-rss.js';
+import { runIngestAnnuaire } from './ingest-annuaire.js';
 /**
  * @param {import('../../_utils/http-types').ApiRequest} req
  * @param {import('../../_utils/http-types').ApiResponse} res
@@ -111,8 +112,15 @@ export default async function handler(req, res) {
             const result = await retry(() => runIngestActualitesRss({ limit, runId }));
             stats = { ...stats, ...result };
             stats.ingested = result.created || 0;
+
+        } else if (sourceResolved === 'annuaire') {
+            // Annuaire ingestion (FINESS + RNA)
+            const result = await retry(() => runIngestAnnuaire({ limit, runId }));
+            stats = { ...stats, ...result };
+            stats.ingested = result.created || 0;
+
         } else {
-            const err = new Error(`Invalid source '${sourceResolved}' (resolved from '${sourceInput}'). Valid: structures, aides, rss`);
+            const err = new Error(`Invalid source '${sourceResolved}' (resolved from '${sourceInput}'). Valid: structures, aides, rss, annuaire`);
             throw err;
         }
 

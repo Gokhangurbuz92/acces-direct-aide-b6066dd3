@@ -1,12 +1,16 @@
 /**
  * POST /api/diagnostic      — public: compute rights via OpenFisca
  * POST /api/diagnostic/trace — pro/admin: get OpenFisca trace
+ *
+ * Phase 2: SyncRun tracing for observability.
  */
 
 import * as Sentry from '@sentry/node';
 import { calculate, trace as traceCall, isAvailable } from '../lib/openfiscaClient.js';
 import { buildTestCase, parseResults, getCurrentPeriod } from '../lib/openfiscaMapping.js';
 import { checkRateLimit } from '../_utils/rateLimit.js';
+import prisma from '../_utils/prisma.js';
+import crypto from 'crypto';
 
 // Simple input validation — we use manual checks to avoid adding a Zod dependency
 function validateAnswers(answers) {
@@ -63,6 +67,23 @@ async function handleDiagnostic(req, res) {
 
     const requestId = generateRequestId();
     const start = Date.now();
+
+    // ── Phase 2: SyncRun tracing ──
+    let syncRunId = null;
+    try {
+        const run = await prisma.syncRun.create({
+            data: {
+                id: crypto.randomUUID(),
+                source_id: 'openfisca-diagnostic',
+                status: 'running',
+                started_at: new Date(),
+                stats: { requestId },
+            },
+        });
+        syncRunId = run.id;
+    } catch {
+        // SyncRun logging must never break the diagnostic flow
+    }
 
     try {
         // Rate limiting
@@ -126,6 +147,28 @@ async function handleDiagnostic(req, res) {
         const duration = Date.now() - start;
         console.log('[Diagnostic]', { requestId, duration_ms: duration, rightsCount: rights.length });
 
+        // ── Phase 2: SyncRun success ──
+        if (syncRunId) {
+            try {
+                await prisma.syncRun.update({
+                    where: { id: syncRunId },
+                    data: {
+                        status: 'success',
+                        ended_at: new Date(),
+                        stats: {
+                            requestId,
+                            duration_ms: duration,
+                            rightsCount: rights.length,
+                            eligibleCount: rights.filter(r => r.eligible).length,
+                            variables: rights.map(r => r.code),
+                        },
+                    },
+                });
+            } catch {
+                // SyncRun update must never break the response
+            }
+        }
+
         return res.status(200).json({
             period,
             rights,
@@ -144,6 +187,23 @@ async function handleDiagnostic(req, res) {
             code: err.code || 'UNKNOWN',
             message: err.message,
         });
+
+        // ── Phase 2: SyncRun failure ──
+        if (syncRunId) {
+            try {
+                await prisma.syncRun.update({
+                    where: { id: syncRunId },
+                    data: {
+                        status: 'failed',
+                        ended_at: new Date(),
+                        error: `${err.code || 'UNKNOWN'}: ${err.message}`.slice(0, 500),
+                        stats: { requestId, duration_ms: duration },
+                    },
+                });
+            } catch {
+                // SyncRun update must never break the error response
+            }
+        }
 
         Sentry.captureException(err, {
             extra: { requestId, phase: 'diagnostic', duration_ms: duration },

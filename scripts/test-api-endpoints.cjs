@@ -13,13 +13,13 @@ console.log('🚀 Démarrage du serveur de développement...\n');
 
 const server = spawn('npm', ['run', 'dev'], {
   stdio: 'pipe',
-  shell: true
+  shell: false
 });
 
 server.stdout.on('data', (data) => {
   const output = data.toString();
   console.log(output);
-  
+
   if (output.includes('Local:') || output.includes('localhost')) {
     setTimeout(runTests, 2000); // Attendre 2 secondes après le démarrage
   }
@@ -52,7 +52,7 @@ async function testEndpoint(path, description) {
         const status = res.statusCode;
         const icon = status === 200 ? '✅' : status === 400 ? '⚠️' : '❌';
         console.log(`${icon} ${description}: ${status}`);
-        
+
         if (status !== 200 && data) {
           try {
             const json = JSON.parse(data);
@@ -61,7 +61,7 @@ async function testEndpoint(path, description) {
             console.log(`   Réponse: ${data.substring(0, 100)}`);
           }
         }
-        
+
         resolve({ status, data });
       });
     });
@@ -102,7 +102,7 @@ async function runTests() {
   }
 
   console.log('\n✅ Tests terminés!\n');
-  
+
   // Arrêter le serveur
   server.kill();
   process.exit(0);

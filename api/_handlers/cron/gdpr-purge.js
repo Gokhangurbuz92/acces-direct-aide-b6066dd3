@@ -1,3 +1,4 @@
+import logger from '../../_utils/logger.js';
 import prisma from '../../_utils/prisma.js';
 import { getCronAuth } from '../../_utils/cronAuth.js';
 
@@ -26,7 +27,7 @@ export default async function handler(req, res) {
     cutoff.setDate(cutoff.getDate() - RETENTION_DAYS);
 
     try {
-        console.log(`🧹 Starting GDPR Purge (older than ${RETENTION_DAYS} days: ${cutoff.toISOString()})...`);
+        logger.info(`🧹 Starting GDPR Purge (older than ${RETENTION_DAYS} days: ${cutoff.toISOString()})...`);
 
         // 1. Purge Old Entity Versions
         const deletedVersions = await prisma.entityVersion.deleteMany({
@@ -56,10 +57,10 @@ export default async function handler(req, res) {
             status: 'success'
         };
 
-        console.log('✅ Purge complete:', summary);
+        logger.info('✅ Purge complete:', summary);
         return res.status(200).json(summary);
     } catch (e) {
-        console.error('Purge Failed:', e);
+        logger.error('Purge Failed:', e);
         return res.status(500).json({ error: e.message });
     }
 }

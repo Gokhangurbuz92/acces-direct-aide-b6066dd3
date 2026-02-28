@@ -1,3 +1,4 @@
+import logger from '../../_utils/logger.js';
 import { checkRateLimit } from '../_utils/rateLimit.js';
 /**
  * @param {import('../../_utils/http-types').ApiRequest} req
@@ -15,6 +16,6 @@ export default function handler(req, res) {
     }
 
     // Mock Success
-    console.log(`[AUDIT] OTP Generated for ${identifier}`);
+    logger.info(`[AUDIT] OTP Generated for ${identifier}`);
     return res.status(200).json({ status: 'sent', message: 'Code envoyé' });
 }

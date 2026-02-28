@@ -1,3 +1,4 @@
+import logger from '../../_utils/logger.js';
 
 import prisma from '../../_utils/prisma.js';
 import { ROLE, logProAudit } from '../../lib/pro-auth.js';
@@ -40,14 +41,14 @@ async function handler(req, res) {
         });
 
         // Mock sending email (token intentionally redacted in logs)
-        console.log(`[MOCK EMAIL] Invitation sent to ${email} with token [REDACTED]`);
+        logger.info(`[MOCK EMAIL] Invitation sent to ${email} with token [REDACTED]`);
 
         await logProAudit('INVITATION_SENT', userId, structureId, { email, role: inviteRole }, req.socket.remoteAddress);
 
         return res.status(201).json(invitation);
 
     } catch (e) {
-        console.error("Invite API Error", e);
+        logger.error("Invite API Error", e);
         return res.status(500).json({ error: "Internal Error" });
     }
 }

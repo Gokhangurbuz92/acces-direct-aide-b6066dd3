@@ -1,3 +1,4 @@
+import { logger } from './logger.js';
 import { S3Client, PutObjectCommand, GetObjectCommand, DeleteObjectCommand } from '@aws-sdk/client-s3';
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner'; // Optional if we need signed URLs, but demand was upload/download logic.
 import crypto from 'crypto';
@@ -25,7 +26,7 @@ function checkConfig() {
 
     if (missing.length > 0) {
         const msg = `Missing Storage Configuration: ${missing.join(', ')}`;
-        console.error(`[Storage] CRITICAL: ${msg}`);
+        logger.error(`[Storage] CRITICAL: ${msg}`);
 
         if (IS_PRODUCTION) {
             const error = new Error("Service Unavailable: Storage Configuration Missing");
@@ -56,7 +57,7 @@ try {
 } catch (e) {
     if (IS_PRODUCTION && e.statusCode === 503) {
         // We defer throwing until methods are called, effectively "disabling" storage
-        console.error("[Storage] Disabled due to missing config in PROD");
+        logger.error("[Storage] Disabled due to missing config in PROD");
     }
 }
 
@@ -83,7 +84,7 @@ export const storage = {
         });
 
         await s3Client.send(command);
-        console.log(`[Storage] Uploaded ${key} (${buffer.length} bytes)`);
+        logger.info(`[Storage] Uploaded ${key} (${buffer.length} bytes)`);
 
         return key;
     },
@@ -121,7 +122,7 @@ export const storage = {
      */
     async delete(key) {
         if (!s3Client) {
-            console.warn("[Storage] Skipping delete (not configured)");
+            logger.warn("[Storage] Skipping delete (not configured)");
             if (IS_PRODUCTION) checkConfig(); // Throw if strict
             return;
         }
@@ -132,6 +133,6 @@ export const storage = {
         });
 
         await s3Client.send(command);
-        console.log(`[Storage] Deleted ${key}`);
+        logger.info(`[Storage] Deleted ${key}`);
     }
 };

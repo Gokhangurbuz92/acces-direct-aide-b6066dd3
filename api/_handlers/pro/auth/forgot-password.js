@@ -1,3 +1,4 @@
+import logger from '../../../_utils/logger.js';
 import { kv } from '../../../_utils/kv.js';
 import crypto from 'crypto';
 import { checkRateLimit } from '../../../_utils/rateLimit.js';
@@ -49,14 +50,14 @@ export default async function handler(req, res) {
         const baseUrl = env.runtime.appBaseUrl || 'http://localhost:3000';
         const resetLink = `${baseUrl}/pro/reset-password?token=${token}`;
         // Avoid logging sensitive reset tokens.
-        console.log(`[MOCK EMAIL] To: ${email} | Subject: Reset Password | Link: [REDACTED]`);
+        logger.info(`[MOCK EMAIL] To: ${email} | Subject: Reset Password | Link: [REDACTED]`);
 
         await logProAudit('RESET_REQUESTED', user.id, user.structureId, {}, ip);
 
         return res.status(200).json({ message: "Si cet email existe, un lien a été envoyé." });
 
     } catch (e) {
-        console.error("Forgot Password Error", e);
+        logger.error("Forgot Password Error", e);
         return res.status(500).json({ error: "Internal Error" });
     }
 }

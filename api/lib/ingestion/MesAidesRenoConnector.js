@@ -1,3 +1,4 @@
+import { logger } from '../logger.js';
 /**
  * MesAidesRenoConnector — Connecteur pour les aides à la rénovation (ANAH / MaPrimeRénov').
  *
@@ -130,7 +131,7 @@ async function fetchJson(url, retries = MAX_RETRIES) {
         } catch (err) {
             if (attempt === retries - 1) throw err;
             const delay = 1000 * Math.pow(2, attempt);
-            console.warn(`[MesAidesReno] Retry ${attempt + 1}/${retries}: ${err.message}`);
+            logger.warn(`[MesAidesReno] Retry ${attempt + 1}/${retries}: ${err.message}`);
             await new Promise((r) => setTimeout(r, delay));
         }
     }
@@ -159,7 +160,7 @@ async function fetchJson(url, retries = MAX_RETRIES) {
 export async function fetchMesAidesReno(options = {}) {
     const limit = options.limit || DISPOSITIFS_RENO.length;
 
-    console.log(`[MesAidesReno] Fetching dispositifs rénovation (limit: ${limit})`);
+    logger.info(`[MesAidesReno] Fetching dispositifs rénovation (limit: ${limit})`);
 
     // Try the beta API first for fresh data
     try {
@@ -170,14 +171,14 @@ export async function fetchMesAidesReno(options = {}) {
         // For now, the API is "conversational" (requires situation input),
         // so we augment our curated data with API health status
         if (data) {
-            console.log('[MesAidesReno] API reachable — using curated dataset enriched with live status');
+            logger.info('[MesAidesReno] API reachable — using curated dataset enriched with live status');
         }
     } catch {
-        console.log('[MesAidesReno] API unreachable — using curated dataset (fallback)');
+        logger.info('[MesAidesReno] API unreachable — using curated dataset (fallback)');
     }
 
     // Return curated dispositifs (always reliable)
     const items = DISPOSITIFS_RENO.slice(0, limit);
-    console.log(`[MesAidesReno] Returning ${items.length} dispositifs`);
+    logger.info(`[MesAidesReno] Returning ${items.length} dispositifs`);
     return items;
 }

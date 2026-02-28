@@ -1,3 +1,4 @@
+import { logger } from '../logger.js';
 /**
  * FinessConnector — Ingestion du fichier FINESS (Fichier National des Établissements
  * Sanitaires et Sociaux) depuis data.gouv.fr.
@@ -117,7 +118,7 @@ async function fetchWithRetry(url, retries = MAX_RETRIES) {
     } catch (err) {
       if (attempt === retries - 1) throw err;
       const delay = 1000 * Math.pow(2, attempt);
-      console.warn(`[FINESS] Retry ${attempt + 1}/${retries} after ${delay}ms: ${err.message}`);
+      logger.warn(`[FINESS] Retry ${attempt + 1}/${retries} after ${delay}ms: ${err.message}`);
       await new Promise((r) => setTimeout(r, delay));
     }
   }
@@ -151,7 +152,7 @@ export async function fetchFinessData(options = {}) {
   const departments = options.departments || (process.env.FINESS_DEPARTMENTS || '').split(',').filter(Boolean);
   const limit = options.limit || MAX_ITEMS;
 
-  console.log(`[FINESS] Fetching from ${url} (departments: ${departments.join(',') || 'ALL'})`);
+  logger.info(`[FINESS] Fetching from ${url} (departments: ${departments.join(',') || 'ALL'})`);
 
   const text = await fetchWithRetry(url);
 
@@ -165,7 +166,7 @@ export async function fetchFinessData(options = {}) {
 
   // Line 0 is metadata ("finess;etalab;106;2026-01-07") — skip it
   const dataLines = lines.slice(1);
-  console.log(`[FINESS] Total data lines: ${dataLines.length}`);
+  logger.info(`[FINESS] Total data lines: ${dataLines.length}`);
 
   /** @type {ReturnType<typeof fetchFinessData> extends Promise<infer T> ? T : never} */
   const items = [];
@@ -227,6 +228,6 @@ export async function fetchFinessData(options = {}) {
     });
   }
 
-  console.log(`[FINESS] Filtered items: ${items.length} (departments: ${departments.join(',') || 'ALL'})`);
+  logger.info(`[FINESS] Filtered items: ${items.length} (departments: ${departments.join(',') || 'ALL'})`);
   return items;
 }

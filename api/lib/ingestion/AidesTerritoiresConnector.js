@@ -1,3 +1,4 @@
+import { logger } from '../logger.js';
 import { SourceConnector } from './SourceConnector.js';
 import crypto from 'crypto';
 
@@ -49,7 +50,7 @@ export class AidesTerritoiresConnector extends SourceConnector {
                     // Retry on 5xx
                     if (response.status >= 500 && retries < maxRetries) {
                         retries++;
-                        console.warn(`[AidesTerritoires] Retry ${retries}/${maxRetries} after ${response.status} on page ${page}`);
+                        logger.warn(`[AidesTerritoires] Retry ${retries}/${maxRetries} after ${response.status} on page ${page}`);
                         await new Promise(r => setTimeout(r, 2000));
                         continue;
                     }
@@ -57,7 +58,7 @@ export class AidesTerritoiresConnector extends SourceConnector {
                 } catch (err) {
                     if (retries < maxRetries && err.name !== 'AbortError') {
                         retries++;
-                        console.warn(`[AidesTerritoires] Retry ${retries}/${maxRetries} after error on page ${page}: ${err.message}`);
+                        logger.warn(`[AidesTerritoires] Retry ${retries}/${maxRetries} after error on page ${page}: ${err.message}`);
                         await new Promise(r => setTimeout(r, 2000));
                         continue;
                     }
@@ -78,11 +79,11 @@ export class AidesTerritoiresConnector extends SourceConnector {
 
             // Log progress every 10 pages
             if (page % 10 === 0) {
-                console.log(`[AidesTerritoires] Fetched page ${page}, cache size: ${this._cache.size}`);
+                logger.info(`[AidesTerritoires] Fetched page ${page}, cache size: ${this._cache.size}`);
             }
         }
 
-        console.log(`[AidesTerritoires] Total fetched: ${this._cache.size} aides across ${page} pages`);
+        logger.info(`[AidesTerritoires] Total fetched: ${this._cache.size} aides across ${page} pages`);
         return Array.from(this._cache.keys());
     }
 

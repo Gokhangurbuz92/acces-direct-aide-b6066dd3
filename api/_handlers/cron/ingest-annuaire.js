@@ -1,3 +1,4 @@
+import logger from '../../_utils/logger.js';
 /**
  * ingest-annuaire — Cron handler for ingesting Annuaire data (FINESS + RNA).
  *
@@ -55,14 +56,14 @@ export async function runIngestAnnuaire({ limit, runId } = {}) {
     // ─────────────────────────────────────────────
     // 1. FINESS — Établissements sanitaires et sociaux
     // ─────────────────────────────────────────────
-    console.log(`[ANNUAIRE] Starting FINESS ingestion (runId: ${runId})`);
+    logger.info(`[ANNUAIRE] Starting FINESS ingestion (runId: ${runId})`);
     try {
         const startFetch = Date.now();
         const finessItems = await fetchFinessData({ limit });
         stats.durationByStage.fetchMs += Date.now() - startFetch;
         stats.fetched += finessItems.length;
 
-        console.log(`[ANNUAIRE] FINESS fetched: ${finessItems.length} items`);
+        logger.info(`[ANNUAIRE] FINESS fetched: ${finessItems.length} items`);
 
         const startProcess = Date.now();
         for (const item of finessItems) {
@@ -151,27 +152,27 @@ export async function runIngestAnnuaire({ limit, runId } = {}) {
                     stats.created++;
                 }
             } catch (err) {
-                console.error(`[ANNUAIRE] FINESS item error (${item.numero_finess}):`, getErrorMessage(err));
+                logger.error(`[ANNUAIRE] FINESS item error (${item.numero_finess}):`, getErrorMessage(err));
                 stats.errors.push(`FINESS ${item.numero_finess}: ${getErrorMessage(err)}`);
             }
         }
         stats.durationByStage.processingMs += Date.now() - startProcess;
     } catch (err) {
-        console.error('[ANNUAIRE] FINESS fatal error:', getErrorMessage(err));
+        logger.error('[ANNUAIRE] FINESS fatal error:', getErrorMessage(err));
         stats.errors.push(`FINESS fatal: ${getErrorMessage(err)}`);
     }
 
     // ─────────────────────────────────────────────
     // 2. RNA — Associations
     // ─────────────────────────────────────────────
-    console.log(`[ANNUAIRE] Starting RNA ingestion (runId: ${runId})`);
+    logger.info(`[ANNUAIRE] Starting RNA ingestion (runId: ${runId})`);
     try {
         const startFetch = Date.now();
         const rnaItems = await fetchRnaData({ limit });
         stats.durationByStage.fetchMs += Date.now() - startFetch;
         stats.fetched += rnaItems.length;
 
-        console.log(`[ANNUAIRE] RNA fetched: ${rnaItems.length} items`);
+        logger.info(`[ANNUAIRE] RNA fetched: ${rnaItems.length} items`);
 
         const startProcess = Date.now();
         for (const item of rnaItems) {
@@ -254,13 +255,13 @@ export async function runIngestAnnuaire({ limit, runId } = {}) {
                     stats.created++;
                 }
             } catch (err) {
-                console.error(`[ANNUAIRE] RNA item error (${item.rna_id}):`, getErrorMessage(err));
+                logger.error(`[ANNUAIRE] RNA item error (${item.rna_id}):`, getErrorMessage(err));
                 stats.errors.push(`RNA ${item.rna_id}: ${getErrorMessage(err)}`);
             }
         }
         stats.durationByStage.processingMs += Date.now() - startProcess;
     } catch (err) {
-        console.error('[ANNUAIRE] RNA fatal error:', getErrorMessage(err));
+        logger.error('[ANNUAIRE] RNA fatal error:', getErrorMessage(err));
         stats.errors.push(`RNA fatal: ${getErrorMessage(err)}`);
     }
 
@@ -285,10 +286,10 @@ export async function runIngestAnnuaire({ limit, runId } = {}) {
             },
         });
     } catch (e) {
-        console.error('[ANNUAIRE] ImportLog failed:', getErrorMessage(e));
+        logger.error('[ANNUAIRE] ImportLog failed:', getErrorMessage(e));
     }
 
-    console.log(`[ANNUAIRE] Done (${durationTotal}ms) — created: ${stats.created}, updated: ${stats.updated}, skipped: ${stats.skippedExisting}, errors: ${stats.errors.length}`);
+    logger.info(`[ANNUAIRE] Done (${durationTotal}ms) — created: ${stats.created}, updated: ${stats.updated}, skipped: ${stats.skippedExisting}, errors: ${stats.errors.length}`);
 
     return stats;
 }
@@ -303,7 +304,7 @@ export default async function handler(req, res) {
         if (auth.reason === 'missing_secret') {
             return res.status(500).json({ error: 'CRON_SECRET is not configured' });
         }
-        console.warn('[ANNUAIRE] Unauthorized attempt');
+        logger.warn('[ANNUAIRE] Unauthorized attempt');
         return res.status(401).json({ error: 'Unauthorized' });
     }
 
@@ -314,7 +315,7 @@ export default async function handler(req, res) {
         const stats = await runIngestAnnuaire({ limit, runId });
         return res.status(200).json({ ok: true, runId, stats });
     } catch (error) {
-        console.error('[ANNUAIRE] Handler error:', getErrorMessage(error));
+        logger.error('[ANNUAIRE] Handler error:', getErrorMessage(error));
         return res.status(500).json({ error: 'Internal Server Error', runId });
     }
 }

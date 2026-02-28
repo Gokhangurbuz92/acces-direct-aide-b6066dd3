@@ -1,3 +1,4 @@
+import { logger } from '../logger.js';
 /**
  * DemarchesSimplifieesConnector — Connecteur GraphQL pour l'API Démarches Simplifiées.
  *
@@ -92,7 +93,7 @@ async function graphqlFetch(url, token, query, variables, retries = MAX_RETRIES)
         } catch (err) {
             if (err.message.includes('auth error') || attempt === retries - 1) throw err;
             const delay = 1000 * Math.pow(2, attempt);
-            console.warn(`[DS] Retry ${attempt + 1}/${retries} after ${delay}ms: ${err.message}`);
+            logger.warn(`[DS] Retry ${attempt + 1}/${retries} after ${delay}ms: ${err.message}`);
             await new Promise((r) => setTimeout(r, delay));
         }
     }
@@ -137,12 +138,12 @@ export async function fetchDemarchesSimplifiees(options = {}) {
 
     // Guard: skip if not enabled or no token
     if (!enabled) {
-        console.log('[DS] Ingestion désactivée (ENABLE_DS_INGESTION != true). Skipping.');
+        logger.info('[DS] Ingestion désactivée (ENABLE_DS_INGESTION != true). Skipping.');
         return [];
     }
 
     if (!token) {
-        console.warn('[DS] DS_GRAPHQL_TOKEN manquant. Skipping ingestion.');
+        logger.warn('[DS] DS_GRAPHQL_TOKEN manquant. Skipping ingestion.');
         return [];
     }
 
@@ -151,11 +152,11 @@ export async function fetchDemarchesSimplifiees(options = {}) {
         || DEFAULT_DEMARCHE_IDS;
 
     if (demarcheIds.length === 0) {
-        console.warn('[DS] Aucun ID de démarche configuré (DS_DEMARCHE_IDS). Skipping.');
+        logger.warn('[DS] Aucun ID de démarche configuré (DS_DEMARCHE_IDS). Skipping.');
         return [];
     }
 
-    console.log(`[DS] Fetching ${demarcheIds.length} démarches from ${apiUrl}`);
+    logger.info(`[DS] Fetching ${demarcheIds.length} démarches from ${apiUrl}`);
 
     /** @type {ReturnType<typeof fetchDemarchesSimplifiees> extends Promise<infer T> ? T : never} */
     const items = [];
@@ -168,14 +169,14 @@ export async function fetchDemarchesSimplifiees(options = {}) {
 
             const d = data?.demarche;
             if (!d) {
-                console.warn(`[DS] Démarche #${demarcheId}: not found`);
+                logger.warn(`[DS] Démarche #${demarcheId}: not found`);
                 continue;
             }
 
             // Skip closed/draft démarches
             const state = safe(d.state);
             if (state === 'close' || state === 'brouillon') {
-                console.log(`[DS] Démarche #${demarcheId}: state=${state}, skipping`);
+                logger.info(`[DS] Démarche #${demarcheId}: state=${state}, skipping`);
                 continue;
             }
 
@@ -196,11 +197,11 @@ export async function fetchDemarchesSimplifiees(options = {}) {
                 state,
             });
         } catch (err) {
-            console.error(`[DS] Démarche #${demarcheId} error: ${err.message}`);
+            logger.error(`[DS] Démarche #${demarcheId} error: ${err.message}`);
             // Continue with other démarches
         }
     }
 
-    console.log(`[DS] Fetched ${items.length} démarches`);
+    logger.info(`[DS] Fetched ${items.length} démarches`);
     return items;
 }

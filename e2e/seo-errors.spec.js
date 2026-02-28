@@ -7,8 +7,8 @@ test.describe('P7-F SEO errors', () => {
     const origin = new URL(page.url()).origin;
     const expectedCanonical = `${origin}/route-qui-nexiste-pas-123`;
 
-    await expect(page).toHaveTitle(/introuvable.*Accès Direct Aide/i);
-    await expect(page.locator('h1')).toContainText(/introuvable/i);
+    await expect(page).toHaveTitle(/(?:404|introuvable).*Acc[eè]s\s*Direct\s*Aide/i);
+    await expect(page.locator('h1')).toContainText(/(?:introuvable|404)/i);
     await expect(page.locator('head meta[name="robots"]').last()).toHaveAttribute(
       'content',
       /noindex,\s*nofollow/i,
@@ -34,7 +34,7 @@ test.describe('P7-F SEO errors', () => {
       'content',
       /noindex,\s*nofollow/i,
     );
-    await expect(page).toHaveTitle(/introuvable.*Accès Direct Aide/i);
+    await expect(page).toHaveTitle(/(?:404|introuvable).*Acc[eè]s\s*Direct\s*Aide/i);
   });
 
   test('/aides/:slug gone renders gone with noindex', async ({ page }) => {

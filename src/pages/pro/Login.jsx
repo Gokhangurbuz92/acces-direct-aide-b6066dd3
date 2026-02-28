@@ -128,7 +128,6 @@ export default function ProLogin() {
                                     value={mfaCode}
                                     onChange={e => setMfaCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
                                     className="text-center text-xl tracking-[0.3em] font-mono"
-                                    autoFocus
                                     required
                                 />
                             </div>

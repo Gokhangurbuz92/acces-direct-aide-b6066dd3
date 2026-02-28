@@ -142,8 +142,8 @@ export default function AdminAideEdit() {
           <CardContent className="p-6 space-y-4">
             <h3 className="font-semibold text-slate-900">Contenu FALC</h3>
             <div>
-              <Label>C'est quoi ?</Label>
-              <Textarea
+              <Label htmlFor="adminaidee-f1">C'est quoi ?</Label>
+              <Textarea id="adminaidee-f1"
                 rows={3}
                 value={formData.content_falc?.cest_quoi || ''}
                 onChange={(e) => setFormData({
@@ -153,8 +153,8 @@ export default function AdminAideEdit() {
               />
             </div>
             <div>
-              <Label>Pour qui ?</Label>
-              <Textarea
+              <Label htmlFor="adminaidee-f2">Pour qui ?</Label>
+              <Textarea id="adminaidee-f2"
                 rows={3}
                 value={formData.content_falc?.pour_qui || ''}
                 onChange={(e) => setFormData({
@@ -164,8 +164,8 @@ export default function AdminAideEdit() {
               />
             </div>
             <div>
-              <Label>Ce que ça aide</Label>
-              <Textarea
+              <Label htmlFor="adminaidee-f3">Ce que ça aide</Label>
+              <Textarea id="adminaidee-f3"
                 rows={3}
                 value={formData.content_falc?.ce_que_ca_aide || ''}
                 onChange={(e) => setFormData({
@@ -182,8 +182,8 @@ export default function AdminAideEdit() {
           <CardContent className="p-6 space-y-4">
             <h3 className="font-semibold text-slate-900">Où faire la demande</h3>
             <div>
-              <Label>Texte explicatif</Label>
-              <Textarea
+              <Label htmlFor="adminaidee-f4">Texte explicatif</Label>
+              <Textarea id="adminaidee-f4"
                 rows={2}
                 value={formData.how_to_apply?.texte || ''}
                 onChange={(e) => setFormData({
@@ -193,8 +193,8 @@ export default function AdminAideEdit() {
               />
             </div>
             <div>
-              <Label>Délai indicatif</Label>
-              <Input
+              <Label htmlFor="adminaidee-f5">Délai indicatif</Label>
+              <Input id="adminaidee-f5"
                 value={formData.delai_indicatif || ''}
                 onChange={(e) => setFormData({ ...formData, delai_indicatif: e.target.value })}
                 placeholder="Ex: 2 à 3 mois"
@@ -208,16 +208,16 @@ export default function AdminAideEdit() {
           <CardContent className="p-6 space-y-4">
             <h3 className="font-semibold text-slate-900">Métadonnées</h3>
             <div>
-              <Label>Date de vérification</Label>
-              <Input
+              <Label htmlFor="adminaidee-f6">Date de vérification</Label>
+              <Input id="adminaidee-f6"
                 type="date"
                 value={formData.verified_at || ''}
                 onChange={(e) => setFormData({ ...formData, verified_at: e.target.value })}
               />
             </div>
             <div>
-              <Label>Statut</Label>
-              <Select
+              <Label htmlFor="adminaidee-f7">Statut</Label>
+              <Select id="adminaidee-f7"
                 value={formData.status}
                 onValueChange={(value) => setFormData({ ...formData, status: value })}
               >

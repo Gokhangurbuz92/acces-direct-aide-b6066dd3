@@ -14,6 +14,10 @@ import { setupPublicMocks } from './_mocks/publicApiMocks.js';
 
 const test = base.extend({
     page: async ({ page }, use) => {
+        // Dismiss the OnboardingTour welcome dialog so it doesn't block clicks
+        await page.addInitScript(() => {
+            window.localStorage.setItem('ada_onboarding_done', 'true');
+        });
         if (process.env.USE_MOCKS === 'true') {
             await setupPublicMocks(page);
         }

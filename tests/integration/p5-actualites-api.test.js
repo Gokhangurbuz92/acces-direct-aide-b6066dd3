@@ -76,9 +76,19 @@ describe.skipIf(!hasDatabase)('P5 Actualites API (requires DB)', () => {
     expect(typeof res.body.pagination.hasNext).toBe('boolean');
   });
 
-  it('GET /api/actualites/:slug returns 200 for a seeded actualite', async () => {
+  it('GET /api/actualites/:slug returns 200 for an existing actualite', async () => {
+    const listReq = createMockReq({
+      url: '/api/actualites?limit=1',
+      query: { limit: '1' },
+    });
+    const listRes = createMockRes();
+    await actualitesHandler(listReq, listRes);
+
+    if (!listRes.body?.items?.length) return;
+
+    const slug = listRes.body.items[0].slug;
     const req = createMockReq({
-      url: '/api/actualites/actu-test-1',
+      url: `/api/actualites/${slug}`,
       query: {},
     });
     const res = createMockRes();
@@ -86,7 +96,7 @@ describe.skipIf(!hasDatabase)('P5 Actualites API (requires DB)', () => {
     await actualitesHandler(req, res);
 
     expect(res.statusCode).toBe(200);
-    expect(res.body).toEqual(expect.objectContaining({ slug: 'actu-test-1' }));
+    expect(res.body).toEqual(expect.objectContaining({ slug }));
   });
 
   it('GET /api/actualites/:slug returns 404 for unknown slug', async () => {

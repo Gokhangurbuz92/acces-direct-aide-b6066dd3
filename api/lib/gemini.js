@@ -161,6 +161,33 @@ async function fetchLexicalContext(message, limit = 5) {
  * @param {ChatMessage[]=} history
  * @returns {Promise<{ answer: string, meta: { searchMode: string, sourceCount: number, intent: string|null } }>}
  */
+/**
+ * Simple text generation with Gemini (no RAG, no RulePack).
+ * Used by AI repair agents for structured JSON extraction.
+ *
+ * @param {string} prompt - The prompt to send to Gemini
+ * @param {{ useSearch?: boolean }} [options] - Generation options
+ * @returns {Promise<string>} Raw text response
+ */
+export async function generateText(prompt, options = {}) {
+    const model = getGenAI().getGenerativeModel({
+        model: 'gemini-2.0-flash',
+        generationConfig: {
+            temperature: 0.1,
+            topP: 0.9,
+            topK: 40,
+        },
+    });
+
+    const searchHint = options.useSearch
+        ? '\nIMPORTANT : Utilise tes connaissances les plus récentes et les sources officielles françaises (.gouv.fr, service-public.fr).\n'
+        : '';
+
+    const result = await model.generateContent(searchHint + prompt);
+    const response = await result.response;
+    return response.text();
+}
+
 export async function chatWithRulePack(message, history = []) {
     const intent = detectIntent(message);
     const rulePack = intent ? loadRulePack(intent) : null;

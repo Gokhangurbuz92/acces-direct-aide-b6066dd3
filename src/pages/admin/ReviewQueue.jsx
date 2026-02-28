@@ -2,7 +2,7 @@ import { Fragment, useCallback, useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
-import { Loader2, RefreshCw } from 'lucide-react';
+import { Loader2, RefreshCw, Wrench } from 'lucide-react';
 
 import SEO from '@/components/SEO';
 import { apiClient } from '@/api/client';
@@ -48,6 +48,7 @@ function severityClass(severity) {
 function statusClass(status) {
   if (status === 'open') return 'border-amber-200 bg-amber-50 text-amber-900';
   if (status === 'resolved') return 'border-emerald-200 bg-emerald-50 text-emerald-900';
+  if (status === 'resolved_by_ai') return 'border-teal-200 bg-teal-50 text-teal-900';
   if (status === 'ignored') return 'border-slate-200 bg-slate-100 text-slate-700';
   return 'border-slate-200 bg-slate-50 text-slate-700';
 }
@@ -93,18 +94,21 @@ function extractDetailHighlights(details) {
 }
 
 export default function AdminReviewQueue() {
-  const [items, setItems] = useState(/** @type {any[]} */ ([]));
+  const [items, setItems] = useState(/** @type {any[]} */([]));
   const [pagination, setPagination] = useState({ nextCursor: null, limit: DEFAULT_LIMIT });
   const [loading, setLoading] = useState(false);
   const [scanning, setScanning] = useState(false);
   const [savingId, setSavingId] = useState('');
   const [bulkSaving, setBulkSaving] = useState('');
   const [error, setError] = useState('');
-  const [summary, setSummary] = useState(/** @type {any} */ (null));
+  const [summary, setSummary] = useState(/** @type {any} */(null));
   const [requestId, setRequestId] = useState('');
   const [liveMessage, setLiveMessage] = useState('');
-  const [expandedDetailsIds, setExpandedDetailsIds] = useState(/** @type {string[]} */ ([]));
-  const [selectedIds, setSelectedIds] = useState(/** @type {string[]} */ ([]));
+  const [expandedDetailsIds, setExpandedDetailsIds] = useState(/** @type {string[]} */([]));
+  const [selectedIds, setSelectedIds] = useState(/** @type {string[]} */([]));
+  const [repairingId, setRepairingId] = useState('');
+  const [bulkRepairing, setBulkRepairing] = useState(false);
+  const [bulkRepairResult, setBulkRepairResult] = useState(/** @type {any} */(null));
 
   const [filters, setFilters] = useState({ ...DEFAULT_FILTERS });
 
@@ -258,10 +262,45 @@ export default function AdminReviewQueue() {
     [selectedIds, loadItems],
   );
 
+  const handleAIRepair = useCallback(
+    /** @param {string} id */
+    async (id) => {
+      setRepairingId(id);
+      setError('');
+      try {
+        await apiClient.admin.hiveRepair(id);
+        setLiveMessage('Suggestion IA generee');
+        await loadItems();
+      } catch {
+        setError('Echec de la reparation IA.');
+      } finally {
+        setRepairingId('');
+      }
+    },
+    [loadItems],
+  );
+
+  const handleBulkRepairAI = useCallback(async () => {
+    setBulkRepairing(true);
+    setBulkRepairResult(null);
+    setError('');
+    try {
+      const result = await apiClient.admin.bulkRepairAI('P0', 10);
+      setBulkRepairResult(result);
+      setLiveMessage(`Reparation en masse : ${result?.count || 0} items repares`);
+      await loadItems();
+    } catch {
+      setError('Echec de la reparation en masse.');
+    } finally {
+      setBulkRepairing(false);
+    }
+  }, [loadItems]);
+
   const resetFilters = useCallback(() => {
     setFilters({ ...DEFAULT_FILTERS });
     setSelectedIds([]);
     setExpandedDetailsIds([]);
+    setBulkRepairResult(null);
     setLiveMessage('Filtres reinitialises');
   }, []);
 
@@ -292,6 +331,14 @@ export default function AdminReviewQueue() {
             {scanning ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
             Scan now
           </Button>
+          <Button
+            onClick={handleBulkRepairAI}
+            disabled={bulkRepairing || loading}
+            className="gap-2 bg-teal-700 hover:bg-teal-800 text-white"
+          >
+            {bulkRepairing ? <Loader2 className="h-4 w-4 animate-spin" /> : <Wrench className="h-4 w-4" />}
+            Bulk Repair P0
+          </Button>
         </div>
       </div>
 
@@ -315,6 +362,7 @@ export default function AdminReviewQueue() {
             >
               <option value="open">open</option>
               <option value="resolved">resolved</option>
+              <option value="resolved_by_ai">resolved_by_ai</option>
               <option value="ignored">ignored</option>
             </select>
           </label>
@@ -442,6 +490,16 @@ export default function AdminReviewQueue() {
         </Card>
       )}
 
+      {bulkRepairResult && (
+        <Card>
+          <CardContent className="py-4">
+            <p className="text-sm font-semibold text-teal-800">
+              🤖 Réparation IA terminée : {bulkRepairResult.count || 0}/{bulkRepairResult.total || 0} items réparés
+            </p>
+          </CardContent>
+        </Card>
+      )}
+
       <Card>
         <CardHeader>
           <CardTitle>Items ({filteredItems.length})</CardTitle>
@@ -536,6 +594,15 @@ export default function AdminReviewQueue() {
                                 >
                                   Ignore
                                 </Button>
+                                <Button
+                                  size="sm"
+                                  className="gap-1 bg-teal-700 hover:bg-teal-800 text-white"
+                                  disabled={repairingId === item.id}
+                                  onClick={() => handleAIRepair(item.id)}
+                                >
+                                  {repairingId === item.id ? <Loader2 className="h-3 w-3 animate-spin" /> : <Wrench className="h-3 w-3" />}
+                                  Réparer IA
+                                </Button>
                               </>
                             )}
                             <Button
@@ -560,6 +627,17 @@ export default function AdminReviewQueue() {
                                       {entry.label}: {entry.value}
                                     </Badge>
                                   ))}
+                                </div>
+                              )}
+                              {(item.details?.ai_suggestion || item.details?.ai_fix) && (
+                                <div className="rounded-lg border-2 border-teal-200 bg-teal-50 p-3">
+                                  <p className="mb-1 text-xs font-bold text-teal-800">🤖 Suggestion IA</p>
+                                  <pre className="max-h-40 overflow-auto whitespace-pre-wrap break-all rounded bg-teal-900 p-3 text-xs text-teal-100">
+                                    {JSON.stringify(item.details.ai_suggestion || item.details.ai_fix, null, 2)}
+                                  </pre>
+                                  {item.details?.repaired_at && (
+                                    <p className="mt-1 text-[10px] text-teal-600">Réparé le {formatDate(item.details.repaired_at)}</p>
+                                  )}
                                 </div>
                               )}
                               <pre className="max-h-40 overflow-auto whitespace-pre-wrap break-all rounded bg-slate-900 p-3 text-xs text-slate-100">

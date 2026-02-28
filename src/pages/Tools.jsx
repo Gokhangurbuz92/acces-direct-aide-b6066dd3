@@ -67,8 +67,8 @@ export default function Tools() {
                     <h2 className="font-semibold mb-4">Filtrer par</h2>
 
                     <div className="mb-4">
-                        <label className="block text-sm font-medium mb-1">Type d'outil</label>
-                        <select
+                        <label htmlFor="tools-f1" className="block text-sm font-medium mb-1">Type d'outil</label>
+                        <select id="tools-f1"
                             className="w-full border rounded p-2"
                             value={filters.type}
                             onChange={e => setFilters({ ...filters, type: e.target.value })}
@@ -81,8 +81,8 @@ export default function Tools() {
                     </div>
 
                     <div className="mb-4">
-                        <label className="block text-sm font-medium mb-1">Catégorie</label>
-                        <select
+                        <label htmlFor="tools-f2" className="block text-sm font-medium mb-1">Catégorie</label>
+                        <select id="tools-f2"
                             className="w-full border rounded p-2"
                             value={filters.categorie}
                             onChange={e => setFilters({ ...filters, categorie: e.target.value })}
@@ -95,8 +95,8 @@ export default function Tools() {
                     </div>
 
                     <div className="mb-4">
-                        <label className="block text-sm font-medium mb-1">Public</label>
-                        <select
+                        <label htmlFor="tools-f3" className="block text-sm font-medium mb-1">Public</label>
+                        <select id="tools-f3"
                             className="w-full border rounded p-2"
                             value={filters.public}
                             onChange={e => setFilters({ ...filters, public: e.target.value })}

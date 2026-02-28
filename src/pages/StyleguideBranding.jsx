@@ -64,17 +64,17 @@ export default function StyleguideBranding() {
             <div className="grid md:grid-cols-2 gap-6">
               {/* Sélection famille */}
               <div>
-                <label className="block text-sm font-semibold text-body mb-3">
+                <span className="block text-sm font-semibold text-body mb-3">
                   Famille de logo
-                </label>
+                </span>
                 <div className="space-y-2">
                   {families.map(family => (
                     <button
                       key={family.id}
                       onClick={() => setSelectedFamily(family.id)}
                       className={`w-full text-left px-4 py-3 rounded-lg border-2 transition-all ${selectedFamily === family.id
-                          ? 'border-primary bg-primary/5 shadow-sm'
-                          : 'border-slate-200 hover:border-primary/50'
+                        ? 'border-primary bg-primary/5 shadow-sm'
+                        : 'border-slate-200 hover:border-primary/50'
                         }`}
                     >
                       <div className="font-semibold text-body">{family.name}</div>
@@ -86,17 +86,17 @@ export default function StyleguideBranding() {
 
               {/* Sélection fond */}
               <div>
-                <label className="block text-sm font-semibold text-body mb-3">
+                <span className="block text-sm font-semibold text-body mb-3">
                   Fond de test
-                </label>
+                </span>
                 <div className="grid grid-cols-2 gap-2">
                   {backgrounds.map(bg => (
                     <button
                       key={bg.id}
                       onClick={() => setSelectedBackground(bg.id)}
                       className={`px-4 py-3 rounded-lg border-2 transition-all ${selectedBackground === bg.id
-                          ? 'border-primary shadow-sm'
-                          : 'border-slate-200 hover:border-primary/50'
+                        ? 'border-primary shadow-sm'
+                        : 'border-slate-200 hover:border-primary/50'
                         }`}
                     >
                       <div className="flex items-center gap-2">
@@ -137,8 +137,8 @@ export default function StyleguideBranding() {
                           />
                         </div>
                         <div className={`text-xs font-medium ${selectedBackground === 'dark' || selectedBackground === 'accent'
-                            ? 'text-white'
-                            : 'text-muted'
+                          ? 'text-white'
+                          : 'text-muted'
                           }`}>
                           {size.name}
                         </div>

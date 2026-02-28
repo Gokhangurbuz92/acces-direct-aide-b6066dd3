@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import ChatWindow from '@/components/Messaging/ChatWindow';
+import VisioTrigger from '@/components/pro/VisioTrigger';
 
 export default function ProAppointmentDetail() {
     const { id } = useParams();
@@ -157,6 +158,17 @@ export default function ProAppointmentDetail() {
                             </div>
                         </div>
                     </div>
+
+                    {/* Visio */}
+                    {appointment.status !== 'cancelled' && (
+                        <div className="border-t border-slate-200 pt-4">
+                            <h3 className="font-semibold text-slate-900 mb-3">Visioconférence</h3>
+                            <VisioTrigger
+                                appointmentId={appointment.id}
+                                existingRoomId={appointment.visioRoomId}
+                            />
+                        </div>
+                    )}
                 </div>
             )}
 

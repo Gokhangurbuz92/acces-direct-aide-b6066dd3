@@ -1,21 +1,24 @@
 // @ts-nocheck
 import { useEffect, useState } from 'react';
 import { useNavigate, useLocation, Link, Outlet } from 'react-router-dom';
-import { Loader2, LayoutDashboard, Building2, Users, FileText, LogOut, CalendarDays, Clock3, MessageCircle } from 'lucide-react';
+import { Loader2, LayoutDashboard, Building2, Users, FileText, LogOut, CalendarDays, Clock3, MessageCircle, Video, Shield, BarChart3 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import SEO from '@/components/SEO';
+import NotificationCenter from '@/components/NotificationCenter';
+import OnboardingTour from '@/components/OnboardingTour';
 
 export default function ProLayout() {
     const navigate = useNavigate();
     const location = useLocation();
     const [loading, setLoading] = useState(true);
     const [user, setUser] = useState(null);
+    const [showOnboarding, setShowOnboarding] = useState(false);
     const proLoginEntry = '/login?mode=pro';
 
     useEffect(() => {
         const token = localStorage.getItem('pro_token');
         if (!token) {
-            if (location.pathname !== '/pro/login' && location.pathname !== '/pro/register' && location.pathname !== '/pro/forgot-password' && location.pathname !== '/pro/reset-password') {
+            if (location.pathname !== '/pro/login' && location.pathname !== '/pro/register' && location.pathname !== '/pro/register-invite' && location.pathname !== '/pro/forgot-password' && location.pathname !== '/pro/reset-password') {
                 navigate(proLoginEntry, { replace: true });
             } else {
                 setLoading(false);
@@ -33,6 +36,10 @@ export default function ProLayout() {
             })
             .then(data => {
                 setUser(data.user);
+                // Show onboarding on first login
+                if (!localStorage.getItem('ada_onboarding_done')) {
+                    setShowOnboarding(true);
+                }
                 if (['/pro/login', '/pro/register', '/pro/forgot-password', '/pro/reset-password'].includes(location.pathname)) {
                     navigate('/pro/dashboard');
                 }
@@ -54,7 +61,7 @@ export default function ProLayout() {
     }
 
     // If on public auth pages, just render Outlet
-    if (['/pro/login', '/pro/register', '/pro/forgot-password', '/pro/reset-password'].includes(location.pathname)) {
+    if (['/pro/login', '/pro/register', '/pro/register-invite', '/pro/forgot-password', '/pro/reset-password'].includes(location.pathname)) {
         return <Outlet />;
     }
 
@@ -65,10 +72,15 @@ export default function ProLayout() {
                 description="Espace professionnel."
                 noindex={true}
             />
+            {/* Onboarding Tour */}
+            {showOnboarding && (
+                <OnboardingTour onComplete={() => setShowOnboarding(false)} />
+            )}
             {/* Sidebar */}
             <aside className="w-64 bg-white border-r border-slate-200 hidden md:flex flex-col">
-                <div className="p-6 border-b border-slate-200">
+                <div className="p-6 border-b border-slate-200 flex items-center justify-between">
                     <h1 className="font-bold text-xl text-blue-800">AccesDirect Pro</h1>
+                    {user && <NotificationCenter proId={user.id} />}
                 </div>
                 <nav className="flex-1 p-4 space-y-1">
                     <NavLink to="/pro/dashboard" icon={LayoutDashboard}>Tableau de bord</NavLink>
@@ -78,9 +90,12 @@ export default function ProLayout() {
                     <NavLink to="/pro/rdv/disponibilites" icon={Clock3}>Disponibilites</NavLink>
                     <NavLink to="/pro/rdv/absences" icon={Clock3}>Absences</NavLink>
                     <NavLink to="/pro/messages" icon={MessageCircle}>Messages</NavLink>
+                    <NavLink to="/pro/visio" icon={Video}>Visioconférence</NavLink>
                     {user?.role === 'STRUCTURE_ADMIN' || user?.role === 'SUPERADMIN' ? (
                         <>
                             <NavLink to="/pro/team" icon={Users}>Mon équipe</NavLink>
+                            <NavLink to="/pro/audit" icon={Shield}>Journal d&apos;audit</NavLink>
+                            <NavLink to="/pro/reports" icon={BarChart3}>Impact</NavLink>
                             <NavLink to="/pro/structure" icon={Building2}>Ma structure</NavLink>
                         </>
                     ) : null}

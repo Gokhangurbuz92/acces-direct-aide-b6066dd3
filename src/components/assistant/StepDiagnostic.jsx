@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
+import VoiceAssistant from '@/components/VoiceAssistant';
 
 const HOUSING_OPTIONS = [
     { key: 'tenant', label: 'Locataire' },
@@ -43,9 +44,14 @@ export default function StepDiagnostic({ onNext, onBack }) {
             <h2 className="mb-1 text-lg font-semibold text-slate-900">
                 Vos informations pour le calcul
             </h2>
-            <p className="mb-5 text-sm text-slate-500">
-                Ces données sont envoyées de manière anonyme au moteur de calcul. Rien n&apos;est enregistré.
-            </p>
+            <div className="flex items-center justify-between mb-5">
+                <p className="text-sm text-slate-500">
+                    Ces données sont envoyées de manière anonyme au moteur de calcul. Rien n&apos;est enregistré.
+                </p>
+                <VoiceAssistant
+                    text="Nous allons maintenant calculer vos droits. Renseignez votre date de naissance, vos revenus mensuels nets, et votre situation de logement. Ces données sont envoyées de manière anonyme. Rien n'est enregistré."
+                />
+            </div>
 
             {/* Birth date */}
             <div className="mb-4">

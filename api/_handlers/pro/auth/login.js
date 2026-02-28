@@ -1,7 +1,9 @@
 
 import bcrypt from 'bcryptjs';
+import jwt from 'jsonwebtoken';
 import { signProToken, checkRateLimit, logProAudit } from '../../../lib/pro-auth.js';
 import prisma from '../../../_utils/prisma.js';
+import { env } from '../../../_utils/env.js';
 /**
  * @param {import('../../../_utils/http-types').ApiRequest} req
  * @param {import('../../../_utils/http-types').ApiResponse} res
@@ -57,7 +59,34 @@ export default async function handler(req, res) {
             return authError();
         }
 
-        // Success
+        // --- MFA Challenge ---
+        if (targetUser.mfa_enabled && targetUser.mfa_secret) {
+            const jwtSecret = env.secrets.jwtSecret;
+            if (!jwtSecret) {
+                return res.status(500).json({ error: 'Server configuration error' });
+            }
+
+            // Issue a short-lived token that can ONLY be used for MFA verification
+            const mfaToken = jwt.sign(
+                {
+                    userId: targetUser.id,
+                    email: targetUser.email,
+                    structureId: targetUser.structureId,
+                    scope: 'mfa_pending',
+                },
+                jwtSecret,
+                { expiresIn: '5m', algorithm: 'HS256' }
+            );
+
+            await logProAudit('MFA_CHALLENGE', targetUser.id, targetUser.structureId, {}, ip);
+
+            return res.status(200).json({
+                mfa_required: true,
+                mfa_token: mfaToken,
+            });
+        }
+
+        // --- Standard login (no MFA) ---
         const token = signProToken(targetUser);
 
         await logProAudit('LOGIN_SUCCESS', targetUser.id, targetUser.structureId, {}, ip);
@@ -77,3 +106,4 @@ export default async function handler(req, res) {
         return res.status(500).json({ error: "Login failed" });
     }
 }
+

@@ -554,6 +554,10 @@ model ProUser {
   rdvMessagesSent          RdvConversationMessage[] @relation("RdvMessageSenderPro")
   structure                Structure                @relation(fields: [structureId], references: [id])
 
+  // --- MFA (TOTP) ---
+  mfa_enabled              Boolean                  @default(false)
+  mfa_secret               String?
+
   @@unique([structureId, email])
 }
 
@@ -631,6 +635,11 @@ model ProAppointment {
   service              ProRdvService    @relation(fields: [serviceId], references: [id], onDelete: Cascade)
   structure            Structure        @relation(fields: [structureId], references: [id], onDelete: Cascade)
   conversation         RdvConversation?
+
+  // --- Visio (Jitsi) ---
+  visioRoomId          String?
+  visioEnabled         Boolean          @default(false)
+  visioStartedAt       DateTime?
 
   @@unique([citizenUserId, idempotencyKey])
   @@index([structureId, startAt])

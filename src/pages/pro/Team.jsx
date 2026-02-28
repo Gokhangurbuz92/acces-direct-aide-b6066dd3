@@ -1,68 +1,91 @@
-
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useOutletContext } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Loader2, UserPlus, Mail } from 'lucide-react';
+import {
+    Loader2,
+    UserPlus,
+    Mail,
+    Users,
+    Calendar,
+    MessageCircle,
+    ShieldCheck,
+    BarChart3,
+    Crown,
+    UserCog,
+    UserX,
+    TrendingUp,
+} from 'lucide-react';
 import {
     Dialog,
     DialogContent,
     DialogHeader,
     DialogTitle,
     DialogFooter,
-} from "@/components/ui/dialog";
+} from '@/components/ui/dialog';
 import {
     Select,
     SelectContent,
     SelectItem,
     SelectTrigger,
     SelectValue,
-} from "@/components/ui/select";
+} from '@/components/ui/select';
 
+/**
+ * ProTeam — Page enrichie de gestion d'équipe
+ *
+ * Affiche les statistiques globales et par agent, les invitations
+ * en attente, et permet d'inviter ou désactiver des membres.
+ *
+ * Accessible uniquement aux STRUCTURE_ADMIN et SUPERADMIN.
+ */
 export default function ProTeam() {
     const { user } = useOutletContext();
     const [data, setData] = useState({ users: [], invitations: [] });
+    const [stats, setStats] = useState(null);
     const [loading, setLoading] = useState(true);
     const [isInviteOpen, setIsInviteOpen] = useState(false);
     const [inviteEmail, setInviteEmail] = useState('');
     const [inviteRole, setInviteRole] = useState('PRO');
 
-    const fetchTeam = async () => {
+    const token = typeof window !== 'undefined' ? localStorage.getItem('pro_token') : null;
+    const headers = { Authorization: `Bearer ${token}` };
+
+    const fetchTeam = useCallback(async () => {
         setLoading(true);
         try {
-            const token = localStorage.getItem('pro_token');
-            const res = await fetch('/api/pro/team', {
-                headers: { Authorization: `Bearer ${token}` }
-            });
-            if (res.ok) {
-                setData(await res.json());
-            } else {
-                // Redirect or error if 403 (should be handled by layout/guard usually)
+            const [teamRes, statsRes] = await Promise.allSettled([
+                fetch('/api/pro/team', { headers }),
+                fetch('/api/pro/team/stats', { headers }),
+            ]);
+
+            if (teamRes.status === 'fulfilled' && teamRes.value.ok) {
+                setData(await teamRes.value.json());
+            }
+            if (statsRes.status === 'fulfilled' && statsRes.value.ok) {
+                setStats(await statsRes.value.json());
             }
         } catch (e) {
-            console.error(e);
+            console.error('[ProTeam] Erreur:', e);
         } finally {
             setLoading(false);
         }
-    };
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
 
     useEffect(() => {
         fetchTeam();
-    }, []);
+    }, [fetchTeam]);
 
     const handleInvite = async (e) => {
         e.preventDefault();
-        const token = localStorage.getItem('pro_token');
         try {
             const res = await fetch('/api/pro/invite', {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    Authorization: `Bearer ${token}`
-                },
-                body: JSON.stringify({ email: inviteEmail, role: inviteRole })
+                headers: { 'Content-Type': 'application/json', ...headers },
+                body: JSON.stringify({ email: inviteEmail, role: inviteRole }),
             });
             if (res.ok) {
                 fetchTeam();
@@ -70,7 +93,7 @@ export default function ProTeam() {
                 setInviteEmail('');
             } else {
                 const err = await res.json();
-                alert("Erreur: " + err.error);
+                alert('Erreur: ' + err.error);
             }
         } catch (e) {
             console.error(e);
@@ -78,67 +101,180 @@ export default function ProTeam() {
     };
 
     const handleDisable = async (targetUserId) => {
-        if (!confirm("Désactiver ce compte collaborateur ?")) return;
-        const token = localStorage.getItem('pro_token');
+        if (!confirm('Désactiver ce compte collaborateur ?')) return;
         await fetch(`/api/pro/team?userId=${targetUserId}`, {
             method: 'DELETE',
-            headers: { Authorization: `Bearer ${token}` }
+            headers,
         });
         fetchTeam();
     };
 
-    if (loading) return <Loader2 className="animate-spin" />;
+    if (loading) {
+        return (
+            <div className="flex items-center justify-center py-20">
+                <Loader2 className="animate-spin text-slate-400" size={28} />
+            </div>
+        );
+    }
+
+    const globalStats = stats?.global || {};
+    const memberStats = stats?.members || [];
+    const activeMemberCount = data.users.filter((u) => u.status === 'active').length;
+
+    // Build a lookup for per-member appointment counts from stats
+    const memberCountMap = {};
+    for (const m of memberStats) {
+        memberCountMap[m.id] = m.appointmentsCount || 0;
+    }
 
     return (
         <div className="space-y-8">
-            <div className="flex justify-between items-center">
-                <h1 className="text-2xl font-bold text-slate-900">Mon Équipe</h1>
+            {/* Header */}
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+                <div>
+                    <h1 className="text-2xl font-bold text-slate-900">Mon Équipe</h1>
+                    <p className="text-sm text-slate-500">
+                        Gestion et pilotage de votre structure
+                    </p>
+                </div>
                 <Button onClick={() => setIsInviteOpen(true)}>
                     <UserPlus className="mr-2 h-4 w-4" />
                     Inviter un collaborateur
                 </Button>
             </div>
 
-            {/* Members */}
-            <div className="space-y-4">
-                <h2 className="text-lg font-semibold">Membres Actifs</h2>
-                {data.users.map(u => (
-                    <Card key={u.id}>
-                        <CardContent className="flex justify-between items-center p-4">
-                            <div>
-                                <p className="font-medium">{u.email}</p>
-                                <div className="flex gap-2 text-sm text-slate-500">
-                                    <span>{u.role}</span>
-                                    <span>•</span>
-                                    <span className={u.status === 'active' ? 'text-green-600' : 'text-slate-400'}>{u.status}</span>
-                                </div>
-                            </div>
-                            {u.id !== user.id && u.status !== 'disabled' && (
-                                <Button variant="ghost" className="text-red-600" onClick={() => handleDisable(u.id)}>Désactiver</Button>
-                            )}
-                        </CardContent>
-                    </Card>
-                ))}
+            {/* Stats cards */}
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                <StatCard
+                    icon={<Users className="text-indigo-500" size={18} />}
+                    label="Membres actifs"
+                    value={activeMemberCount}
+                />
+                <StatCard
+                    icon={<Calendar className="text-emerald-500" size={18} />}
+                    label="RDV aujourd'hui"
+                    value={globalStats.appointmentsToday ?? '--'}
+                />
+                <StatCard
+                    icon={<TrendingUp className="text-amber-500" size={18} />}
+                    label="RDV à venir"
+                    value={globalStats.appointmentsUpcoming ?? '--'}
+                />
+                <StatCard
+                    icon={<MessageCircle className="text-purple-500" size={18} />}
+                    label="Conversations actives"
+                    value={globalStats.conversationsActive ?? '--'}
+                />
             </div>
 
-            {/* Invitations */}
-            {data.invitations.length > 0 && (
-                <div className="space-y-4">
-                    <h2 className="text-lg font-semibold">Invitations en attente</h2>
-                    {data.invitations.map(inv => (
-                        <Card key={inv.id} className="bg-slate-50">
-                            <CardContent className="flex justify-between items-center p-4">
-                                <div>
-                                    <p className="font-medium">{inv.email}</p>
-                                    <span className="text-sm text-slate-500">{inv.role}</span>
+            {/* E2EE notice */}
+            <div className="flex items-center gap-3 p-4 bg-emerald-50 border border-emerald-100 rounded-xl">
+                <ShieldCheck className="text-emerald-600 shrink-0" size={18} />
+                <p className="text-xs text-emerald-700">
+                    <strong>Zero-Knowledge :</strong> les messages entre agents et usagers
+                    sont chiffrés de bout en bout. Même en tant que Responsable, vous ne
+                    pouvez pas lire leur contenu.
+                </p>
+            </div>
+
+            {/* Members table */}
+            <div>
+                <h2 className="text-sm font-bold text-slate-800 mb-4 flex items-center gap-2">
+                    <BarChart3 size={16} className="text-indigo-500" />
+                    Membres et Performance
+                </h2>
+                <div className="space-y-3">
+                    {data.users.map((u) => (
+                        <Card
+                            key={u.id}
+                            className={
+                                u.status === 'disabled'
+                                    ? 'opacity-50'
+                                    : u.status === 'active'
+                                        ? ''
+                                        : 'bg-slate-50'
+                            }
+                        >
+                            <CardContent className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 p-4">
+                                <div className="flex items-center gap-4 min-w-0">
+                                    <div className="relative w-10 h-10 bg-slate-100 rounded-xl flex items-center justify-center text-sm font-bold text-slate-500 shrink-0">
+                                        {(u.email || '?')[0].toUpperCase()}
+                                        {u.status === 'active' && (
+                                            <div className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 bg-emerald-500 border-2 border-white rounded-full" />
+                                        )}
+                                    </div>
+                                    <div className="min-w-0">
+                                        <p className="font-medium text-slate-900 text-sm truncate">
+                                            {u.email}
+                                        </p>
+                                        <div className="flex items-center gap-2 text-xs text-slate-500 mt-0.5">
+                                            <RoleBadge role={u.role} />
+                                            <span>•</span>
+                                            <span
+                                                className={
+                                                    u.status === 'active'
+                                                        ? 'text-emerald-600'
+                                                        : 'text-slate-400'
+                                                }
+                                            >
+                                                {u.status === 'active' ? 'Actif' : u.status}
+                                            </span>
+                                        </div>
+                                    </div>
                                 </div>
-                                <div className="flex items-center text-sm text-slate-500">
-                                    <Mail className="h-4 w-4 mr-2" />
-                                    Envoyé
+
+                                <div className="flex items-center gap-4">
+                                    {/* Stat pill */}
+                                    <div className="flex items-center gap-1.5 text-xs text-slate-500 bg-slate-50 px-3 py-1.5 rounded-lg">
+                                        <Calendar size={12} />
+                                        <span className="font-semibold text-slate-700">
+                                            {memberCountMap[u.id] ?? 0}
+                                        </span>
+                                        <span>RDV</span>
+                                    </div>
+
+                                    {/* Actions */}
+                                    {u.id !== user?.id && u.status !== 'disabled' && (
+                                        <Button
+                                            variant="ghost"
+                                            size="sm"
+                                            className="text-red-500 hover:text-red-700 hover:bg-red-50"
+                                            onClick={() => handleDisable(u.id)}
+                                        >
+                                            <UserX className="mr-1 h-3.5 w-3.5" />
+                                            Désactiver
+                                        </Button>
+                                    )}
                                 </div>
                             </CardContent>
                         </Card>
                     ))}
+                </div>
+            </div>
+
+            {/* Pending Invitations */}
+            {data.invitations.length > 0 && (
+                <div>
+                    <h2 className="text-sm font-bold text-slate-800 mb-4 flex items-center gap-2">
+                        <Mail size={16} className="text-indigo-500" />
+                        Invitations en attente
+                    </h2>
+                    <div className="space-y-2">
+                        {data.invitations.map((inv) => (
+                            <Card key={inv.id} className="bg-slate-50">
+                                <CardContent className="flex justify-between items-center p-4">
+                                    <div>
+                                        <p className="font-medium text-sm">{inv.email}</p>
+                                        <p className="text-xs text-slate-500">{inv.role}</p>
+                                    </div>
+                                    <div className="flex items-center text-xs text-slate-400 gap-1.5">
+                                        <Mail className="h-3.5 w-3.5" />
+                                        Envoyé
+                                    </div>
+                                </CardContent>
+                            </Card>
+                        ))}
+                    </div>
                 </div>
             )}
 
@@ -150,18 +286,28 @@ export default function ProTeam() {
                     </DialogHeader>
                     <form onSubmit={handleInvite} className="space-y-4">
                         <div>
-                            <Label>Email</Label>
-                            <Input type="email" value={inviteEmail} onChange={e => setInviteEmail(e.target.value)} required />
+                            <Label htmlFor="invite-email">Email</Label>
+                            <Input
+                                id="invite-email"
+                                type="email"
+                                value={inviteEmail}
+                                onChange={(e) => setInviteEmail(e.target.value)}
+                                required
+                            />
                         </div>
                         <div>
-                            <Label>Rôle</Label>
+                            <Label htmlFor="invite-role">Rôle</Label>
                             <Select value={inviteRole} onValueChange={setInviteRole}>
-                                <SelectTrigger>
+                                <SelectTrigger id="invite-role">
                                     <SelectValue />
                                 </SelectTrigger>
                                 <SelectContent>
-                                    <SelectItem value="PRO">Professionnel (Lecture seule équipe)</SelectItem>
-                                    <SelectItem value="STRUCTURE_ADMIN">Administrateur (Gestion équipe/services)</SelectItem>
+                                    <SelectItem value="PRO">
+                                        Professionnel (Lecture seule équipe)
+                                    </SelectItem>
+                                    <SelectItem value="STRUCTURE_ADMIN">
+                                        Administrateur (Gestion équipe/services)
+                                    </SelectItem>
                                 </SelectContent>
                             </Select>
                         </div>
@@ -172,5 +318,38 @@ export default function ProTeam() {
                 </DialogContent>
             </Dialog>
         </div>
+    );
+}
+
+function StatCard({ icon, label, value }) {
+    return (
+        <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-xs font-medium text-slate-500">
+                    {label}
+                </CardTitle>
+                {icon}
+            </CardHeader>
+            <CardContent>
+                <div className="text-2xl font-bold">{value}</div>
+            </CardContent>
+        </Card>
+    );
+}
+
+function RoleBadge({ role }) {
+    if (role === 'STRUCTURE_ADMIN' || role === 'SUPERADMIN') {
+        return (
+            <span className="inline-flex items-center gap-1 text-amber-600">
+                <Crown size={10} />
+                {role === 'SUPERADMIN' ? 'Super Admin' : 'Responsable'}
+            </span>
+        );
+    }
+    return (
+        <span className="inline-flex items-center gap-1">
+            <UserCog size={10} />
+            Agent
+        </span>
     );
 }

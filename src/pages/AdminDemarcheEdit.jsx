@@ -112,15 +112,15 @@ export default function AdminDemarcheEdit() {
                         </CardHeader>
                         <CardContent className="space-y-4">
                             <div>
-                                <Label>Titre</Label>
-                                <Input
+                                <Label htmlFor="admindemar-f1">Titre</Label>
+                                <Input id="admindemar-f1"
                                     value={formData.titre}
                                     onChange={e => setFormData({ ...formData, titre: e.target.value })}
                                 />
                             </div>
                             <div>
-                                <Label>Catégorie</Label>
-                                <select
+                                <Label htmlFor="admindemar-f2">Catégorie</Label>
+                                <select id="admindemar-f2"
                                     className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
                                     value={formData.categorie}
                                     onChange={e => setFormData({ ...formData, categorie: e.target.value })}
@@ -129,8 +129,8 @@ export default function AdminDemarcheEdit() {
                                 </select>
                             </div>
                             <div>
-                                <Label>Description courte (FALC)</Label>
-                                <Textarea
+                                <Label htmlFor="admindemar-f3">Description courte (FALC)</Label>
+                                <Textarea id="admindemar-f3"
                                     value={formData.description_courte}
                                     onChange={e => setFormData({ ...formData, description_courte: e.target.value })}
                                 />
@@ -168,22 +168,22 @@ export default function AdminDemarcheEdit() {
                         </CardHeader>
                         <CardContent className="space-y-4">
                             <div>
-                                <Label>Pour qui ? (Critères)</Label>
-                                <Textarea
+                                <Label htmlFor="admindemar-f4">Pour qui ? (Critères)</Label>
+                                <Textarea id="admindemar-f4"
                                     value={formData.pour_qui}
                                     onChange={e => setFormData({ ...formData, pour_qui: e.target.value })}
                                 />
                             </div>
                             <div>
-                                <Label>Où faire la demande ?</Label>
-                                <Textarea
+                                <Label htmlFor="admindemar-f5">Où faire la demande ?</Label>
+                                <Textarea id="admindemar-f5"
                                     value={formData.ou_faire}
                                     onChange={e => setFormData({ ...formData, ou_faire: e.target.value })}
                                 />
                             </div>
                             <div>
-                                <Label>Lien officiel</Label>
-                                <Input
+                                <Label htmlFor="admindemar-f6">Lien officiel</Label>
+                                <Input id="admindemar-f6"
                                     value={formData.lien_officiel}
                                     onChange={e => setFormData({ ...formData, lien_officiel: e.target.value })}
                                     placeholder="https://..."

@@ -134,8 +134,8 @@ export default function AdminSources() {
             </CardHeader>
             <CardContent className="space-y-4">
               <div>
-                <Label>Nom</Label>
-                <Input
+                <Label htmlFor="adminsourc-f1">Nom</Label>
+                <Input id="adminsourc-f1"
                   value={formData.name}
                   onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                   placeholder="Service-Public.fr RSS"
@@ -143,8 +143,8 @@ export default function AdminSources() {
               </div>
               <div className="grid md:grid-cols-2 gap-4">
                 <div>
-                  <Label>Type</Label>
-                  <Select
+                  <Label htmlFor="adminsourc-f2">Type</Label>
+                  <Select id="adminsourc-f2"
                     value={formData.type}
                     onValueChange={(value) => setFormData({ ...formData, type: value })}
                   >
@@ -159,8 +159,8 @@ export default function AdminSources() {
                   </Select>
                 </div>
                 <div>
-                  <Label>Niveau de confiance</Label>
-                  <Select
+                  <Label htmlFor="adminsourc-f3">Niveau de confiance</Label>
+                  <Select id="adminsourc-f3"
                     value={formData.trust_level}
                     onValueChange={(value) => setFormData({ ...formData, trust_level: value })}
                   >
@@ -175,16 +175,16 @@ export default function AdminSources() {
                 </div>
               </div>
               <div>
-                <Label>URL</Label>
-                <Input
+                <Label htmlFor="adminsourc-f4">URL</Label>
+                <Input id="adminsourc-f4"
                   value={formData.url}
                   onChange={(e) => setFormData({ ...formData, url: e.target.value })}
                   placeholder="https://..."
                 />
               </div>
               <div>
-                <Label>Statut</Label>
-                <Select
+                <Label htmlFor="adminsourc-f5">Statut</Label>
+                <Select id="adminsourc-f5"
                   value={formData.status}
                   onValueChange={(value) => setFormData({ ...formData, status: value })}
                 >
@@ -198,8 +198,8 @@ export default function AdminSources() {
                 </Select>
               </div>
               <div>
-                <Label>Notes</Label>
-                <Textarea
+                <Label htmlFor="adminsourc-f6">Notes</Label>
+                <Textarea id="adminsourc-f6"
                   value={formData.notes}
                   onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
                   rows={2}

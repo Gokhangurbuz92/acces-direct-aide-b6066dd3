@@ -215,6 +215,20 @@ export const apiClient = {
                     status: status
                 }
             });
+        },
+        /** @param {string} itemId */
+        hiveRepair: function (itemId) {
+            return apiRequest('/api/admin/hive-repair', {
+                method: 'POST',
+                body: { itemId: itemId }
+            });
+        },
+        /** @param {string=} severity @param {number=} limit */
+        bulkRepairAI: function (severity, limit) {
+            return apiRequest('/api/admin/bulk-repair', {
+                method: 'POST',
+                body: { severity: severity || 'P0', limit: limit || 10 }
+            });
         }
     },
     monitor: {

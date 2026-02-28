@@ -126,6 +126,8 @@ import adminFeatures from './_handlers/admin/features.js';
 import adminRagHealth from './_handlers/admin/rag-health.js';
 import adminConversations from './_handlers/admin/conversations.js';
 import adminAnalytics from './_handlers/admin/analytics.js';
+import adminHiveRepair from './_handlers/admin/hive-repair.js';
+import adminBulkRepair from './_handlers/admin/bulk-repair.js';
 import shareCreate from './_handlers/share/create.js';
 import shareGet from './_handlers/share/get.js';
 import assistantFeedback from './_handlers/assistant/feedback.js';
@@ -264,6 +266,8 @@ export const routes = [
     { path: 'admin/rag-health', match: 'exact', handler: adminRagHealth },
     { path: 'admin/conversations', match: 'exact', handler: adminConversations },
     { path: 'admin/analytics', match: 'exact', handler: adminAnalytics },
+    { path: 'admin/hive-repair', match: 'exact', handler: adminHiveRepair },
+    { path: 'admin/bulk-repair', match: 'exact', handler: adminBulkRepair },
 
     // --- Share ---
     { path: 'share/create', match: 'exact', handler: shareCreate },

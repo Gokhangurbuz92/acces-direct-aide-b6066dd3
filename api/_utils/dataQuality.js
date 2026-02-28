@@ -760,11 +760,11 @@ export function normalizeReviewStatus(raw, fallback = 'open') {
 
 /**
  * @param {unknown} raw
- * @returns {'resolved' | 'ignored' | null}
+ * @returns {'resolved' | 'ignored' | 'resolved_by_ai' | null}
  */
 export function parsePatchStatus(raw) {
   const normalized = String(raw || '').trim().toLowerCase();
-  if (normalized === 'resolved' || normalized === 'ignored') return normalized;
+  if (normalized === 'resolved' || normalized === 'ignored' || normalized === 'resolved_by_ai') return normalized;
   return null;
 }
 

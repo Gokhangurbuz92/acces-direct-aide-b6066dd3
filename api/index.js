@@ -111,7 +111,7 @@ export default async function handler(req, res) {
         try {
             log = logger.child({ requestId });
         } catch (e) {
-            console.error("Logger init failed, using root logger fallback:", e);
+            logger.error("Logger init failed, using root logger fallback:", e);
             log = logger;
         }
 
@@ -225,7 +225,7 @@ export default async function handler(req, res) {
         if (path === 'cron/pipeline') {
             const runId = req.query.runId || req.headers['x-run-id'] || 'N/A';
             const source = req.query.source || 'N/A';
-            console.log(`PIPELINE_ROUTE_ENTER source=${source} runId=${runId}`);
+            logger.info(`PIPELINE_ROUTE_ENTER source=${source} runId=${runId}`);
         }
 
         await Sentry.withScope(async (scope) => {
@@ -278,7 +278,7 @@ export default async function handler(req, res) {
     } catch (bootError) {
         // GLOBAL CATCH: Catches errors before the handler specific try/catch or if it bubble up
         // This prevents "FUNCTION_INVOCATION_FAILED" generic errors
-        console.error("CRITICAL HANDLER CRASH:", bootError);
+        logger.error("CRITICAL HANDLER CRASH:", bootError);
         const bootMessage = bootError instanceof Error ? bootError.message : String(bootError);
 
         if (!res.headersSent) {
@@ -291,7 +291,7 @@ export default async function handler(req, res) {
                     message: env.runtime.nodeEnv === 'production' ? "Internal Error" : bootMessage
                 });
             } catch (inner) {
-                console.error("Error sending 500 response:", inner);
+                logger.error("Error sending 500 response:", inner);
                 res.end('{"error": "Critical Failure"}');
             }
         }

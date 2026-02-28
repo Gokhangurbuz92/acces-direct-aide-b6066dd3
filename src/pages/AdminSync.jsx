@@ -48,12 +48,12 @@ export default function AdminSync() {
     mutationFn: async ({ dryRun = false }) => {
       // FIX: Envoyer les deux formats pour être sûr (compatible avec les anciens paramètres)
       // + Ajout de logs debug.
-      console.log('Invoking daily_sync_official_sources with:', { dryRun, dry_run: dryRun });
+      void('Invoking daily_sync_official_sources with:', { dryRun, dry_run: dryRun });
       const result = await client.functions.invoke('daily_sync_official_sources', {
         dryRun,
         dry_run: dryRun // Compatibility fix
       });
-      console.log('Sync result:', result);
+      void('Sync result:', result);
       return result;
     },
     onSuccess: () => {

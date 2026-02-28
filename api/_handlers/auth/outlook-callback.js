@@ -1,3 +1,4 @@
+import logger from '../../_utils/logger.js';
 // @ts-nocheck
 /**
  * Outlook OAuth2 Callback Handler
@@ -37,7 +38,7 @@ export default async function handler(req, res) {
     const redirectUri = process.env.OUTLOOK_REDIRECT_URI;
 
     if (!clientId || !clientSecret || !redirectUri) {
-        console.error('[Outlook Auth] Variables d\'environnement manquantes');
+        logger.error('[Outlook Auth] Variables d\'environnement manquantes');
         return res.status(500).json({
             error: 'Configuration Outlook incomplète. Vérifiez OUTLOOK_CLIENT_ID, OUTLOOK_CLIENT_SECRET et OUTLOOK_REDIRECT_URI.',
         });
@@ -63,7 +64,7 @@ export default async function handler(req, res) {
         const tokens = await tokenResponse.json();
 
         if (tokens.error) {
-            console.error('[Outlook Auth] Token error:', tokens.error_description);
+            logger.error('[Outlook Auth] Token error:', tokens.error_description);
             return res.status(400).json({
                 error: 'Erreur Microsoft : ' + (tokens.error_description || tokens.error),
             });
@@ -73,7 +74,7 @@ export default async function handler(req, res) {
         //    `state` contains the structureId (set when initiating the OAuth flow)
         const structureId = state;
         if (!structureId) {
-            console.error('[Outlook Auth] Missing structureId in state parameter');
+            logger.error('[Outlook Auth] Missing structureId in state parameter');
             return res.status(400).json({ error: 'Identifiant de structure manquant.' });
         }
 
@@ -121,17 +122,17 @@ export default async function handler(req, res) {
                 },
             });
         } catch (auditErr) {
-            console.error('[Outlook Auth] Audit log failed:', auditErr.message);
+            logger.error('[Outlook Auth] Audit log failed:', auditErr.message);
         }
 
-        console.log('[Outlook Auth] Tokens persistés pour structure:', structureId);
+        logger.info('[Outlook Auth] Tokens persistés pour structure:', structureId);
 
         // 4. Redirect to pro dashboard with success indicator
         const dashboardUrl = '/pro/dashboard?outlook=connected';
         res.setHeader('Location', dashboardUrl);
         return res.status(302).end();
     } catch (error) {
-        console.error('[Outlook Auth] Erreur critique:', error.message);
+        logger.error('[Outlook Auth] Erreur critique:', error.message);
         return res.status(500).json({
             error: 'Erreur lors de la synchronisation Outlook.',
         });

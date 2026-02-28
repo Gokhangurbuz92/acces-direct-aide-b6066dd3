@@ -1,3 +1,4 @@
+import logger from '../../_utils/logger.js';
 
 import { getCronAuth } from '../../_utils/cronAuth.js';
 import prisma from '../../_utils/prisma.js';
@@ -16,7 +17,7 @@ export default async function handler(req, res) {
     const runId = crypto.randomUUID();
     const query = req.query || {}; // Safe access
     const sourceLog = query.source || 'N/A';
-    console.log(`PIPELINE_LOGIC_ENTER source=${sourceLog} runId=${runId}`);
+    logger.info(`PIPELINE_LOGIC_ENTER source=${sourceLog} runId=${runId}`);
 
     // 1. Authorization
     const auth = getCronAuth(req);
@@ -24,7 +25,7 @@ export default async function handler(req, res) {
         if (auth.reason === 'missing_secret') {
             return res.status(500).json({ error: 'CRON_SECRET is not configured' });
         }
-        console.warn("Unauthorized Pipeline Attempt");
+        logger.warn("Unauthorized Pipeline Attempt");
         return res.status(401).json({ error: 'Unauthorized' });
     }
 
@@ -84,7 +85,7 @@ export default async function handler(req, res) {
     );
 
     const pipelineLogic = async () => {
-        console.log("[PIPELINE] calling ingester", { sourceResolved, mode, limit });
+        logger.info("[PIPELINE] calling ingester", { sourceResolved, mode, limit });
 
         // ==========================================
         // ROUTING LOGIC
@@ -149,7 +150,7 @@ export default async function handler(req, res) {
         }
 
     } catch (globalErr) {
-        console.error("Pipeline Global Error:", globalErr);
+        logger.error("Pipeline Global Error:", globalErr);
         // Try to log failure
         try {
             await prisma.importLog.create({
@@ -181,7 +182,7 @@ export default async function handler(req, res) {
     // Condition: (fetchMs=0 AND errors=[]) AND fetched=0.
     if (stats.fetched === 0 && stats.durationByStage.fetchMs === 0 && stats.errors.length === 0) {
         const errorMsg = "PIPELINE_NOOP: Execution yielded zero fetched results with no errors. This is a contract violation.";
-        console.error(errorMsg);
+        logger.error(errorMsg);
 
         // Log this specific failure
         try {
@@ -194,7 +195,7 @@ export default async function handler(req, res) {
                 }
             });
         } catch (e) {
-            console.error('Failed to log NOOP error:', e);
+            logger.error('Failed to log NOOP error:', e);
         }
 
         return res.status(502).json({

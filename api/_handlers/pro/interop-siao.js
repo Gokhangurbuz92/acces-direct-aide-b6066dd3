@@ -1,3 +1,4 @@
+import logger from '../../_utils/logger.js';
 // @ts-nocheck
 import prisma from '../../_utils/prisma.js';
 import { verifyProToken } from '../../lib/pro-auth.js';
@@ -60,7 +61,7 @@ export default async function handler(req, res) {
         };
 
         // Production: POST to https://api.siao.gouv.fr/v2/demande with mTLS
-        console.log(`[SIAO] Transmission ${transmissionId} → api.siao.gouv.fr`);
+        logger.info(`[SIAO] Transmission ${transmissionId} → api.siao.gouv.fr`);
 
         // Audit trail
         await prisma.auditLog.create({
@@ -85,7 +86,7 @@ export default async function handler(req, res) {
             destination: 'SI-SIAO National',
         });
     } catch (error) {
-        console.error('[SIAO] Erreur:', error.message);
+        logger.error('[SIAO] Erreur:', error.message);
         return res.status(500).json({ error: 'Échec interopérabilité nationale.' });
     }
 }

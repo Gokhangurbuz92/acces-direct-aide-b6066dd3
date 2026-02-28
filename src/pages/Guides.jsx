@@ -61,8 +61,8 @@ export default function Guides() {
                     <h2 className="font-semibold mb-4">Filtrer par</h2>
 
                     <div className="mb-4">
-                        <label className="block text-sm font-medium mb-1">Catégorie</label>
-                        <select
+                        <label htmlFor="guides-f1" className="block text-sm font-medium mb-1">Catégorie</label>
+                        <select id="guides-f1"
                             className="w-full border rounded p-2"
                             value={filters.categorie}
                             onChange={e => setFilters({ ...filters, categorie: e.target.value })}
@@ -75,8 +75,8 @@ export default function Guides() {
                     </div>
 
                     <div className="mb-4">
-                        <label className="block text-sm font-medium mb-1">Public</label>
-                        <select
+                        <label htmlFor="guides-f2" className="block text-sm font-medium mb-1">Public</label>
+                        <select id="guides-f2"
                             className="w-full border rounded p-2"
                             value={filters.public}
                             onChange={e => setFilters({ ...filters, public: e.target.value })}
@@ -89,8 +89,8 @@ export default function Guides() {
                     </div>
 
                     <div className="mb-4">
-                        <label className="block text-sm font-medium mb-1">Contexte</label>
-                        <select
+                        <label htmlFor="guides-f3" className="block text-sm font-medium mb-1">Contexte</label>
+                        <select id="guides-f3"
                             className="w-full border rounded p-2"
                             value={filters.contexte}
                             onChange={e => setFilters({ ...filters, contexte: e.target.value })}

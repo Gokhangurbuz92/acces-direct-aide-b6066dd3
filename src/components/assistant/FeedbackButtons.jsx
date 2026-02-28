@@ -82,7 +82,6 @@ export default function FeedbackButtons({ logId }) {
                 <div className="flex gap-2">
                     <input
                         type="text"
-                        autoFocus
                         className="flex-1 rounded-xl border border-slate-200 bg-white px-3 py-1.5 text-xs outline-none transition-all focus:border-red-400 focus:ring-2 focus:ring-red-400/20"
                         placeholder="Qu'est-ce qui manquait ? (Optionnel)"
                         value={comment}

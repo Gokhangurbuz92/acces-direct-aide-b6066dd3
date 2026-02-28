@@ -92,9 +92,9 @@ export default function AccessibilityToolbar() {
 
           {/* Taille du texte */}
           <div className="space-y-2">
-            <label className="text-sm font-medium text-muted-foreground">
+            <span className="text-sm font-medium text-muted-foreground">
               Taille du texte
-            </label>
+            </span>
             <div className="flex items-center gap-2">
               <Button
                 variant="outline"
@@ -122,9 +122,9 @@ export default function AccessibilityToolbar() {
 
           {/* Contraste */}
           <div className="space-y-2">
-            <label className="text-sm font-medium text-muted-foreground">
+            <span className="text-sm font-medium text-muted-foreground">
               Contraste
-            </label>
+            </span>
             <div className="flex gap-2">
               <Button
                 variant={settings.contrast === 'normal' ? 'default' : 'outline'}
@@ -158,9 +158,9 @@ export default function AccessibilityToolbar() {
 
           {/* Interligne */}
           <div className="space-y-2">
-            <label className="text-sm font-medium text-muted-foreground">
+            <span className="text-sm font-medium text-muted-foreground">
               Espacement des lignes
-            </label>
+            </span>
             <div className="flex gap-2">
               <Button
                 variant={settings.lineHeight === 'normal' ? 'default' : 'outline'}

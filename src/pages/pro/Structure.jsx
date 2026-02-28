@@ -95,8 +95,8 @@ export default function ProStructure() {
                 <CardContent>
                     <form onSubmit={handleSave} className="space-y-6">
                         <div className="space-y-2">
-                            <Label>Résumé FALC (Facile à lire et à comprendre)</Label>
-                            <Textarea
+                            <Label htmlFor="structure-f1">Résumé FALC (Facile à lire et à comprendre)</Label>
+                            <Textarea id="structure-f1"
                                 rows={5}
                                 value={summaryFalc}
                                 onChange={e => setSummaryFalc(e.target.value)}

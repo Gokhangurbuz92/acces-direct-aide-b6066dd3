@@ -94,8 +94,8 @@ export default function SuggestStructure() {
 
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <div>
-                            <label className="block text-sm font-bold mb-2">Nom de la structure *</label>
-                            <input
+                            <label htmlFor="suggeststr-f1" className="block text-sm font-bold mb-2">Nom de la structure *</label>
+                            <input id="suggeststr-f1"
                                 type="text"
                                 name="structureName"
                                 value={form.structureName}
@@ -106,8 +106,8 @@ export default function SuggestStructure() {
                             />
                         </div>
                         <div>
-                            <label className="block text-sm font-bold mb-2">Ville / Département</label>
-                            <input
+                            <label htmlFor="suggeststr-f2" className="block text-sm font-bold mb-2">Ville / Département</label>
+                            <input id="suggeststr-f2"
                                 type="text"
                                 name="city"
                                 value={form.city}
@@ -119,8 +119,8 @@ export default function SuggestStructure() {
                     </div>
 
                     <div>
-                        <label className="block text-sm font-bold mb-2">Type</label>
-                        <select
+                        <label htmlFor="suggeststr-f3" className="block text-sm font-bold mb-2">Type</label>
+                        <select id="suggeststr-f3"
                             name="type"
                             value={form.type}
                             onChange={handleChange}
@@ -135,8 +135,8 @@ export default function SuggestStructure() {
 
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <div>
-                            <label className="block text-sm font-bold mb-2">Site Internet officiel *</label>
-                            <input
+                            <label htmlFor="suggeststr-f4" className="block text-sm font-bold mb-2">Site Internet officiel *</label>
+                            <input id="suggeststr-f4"
                                 type="url"
                                 name="website"
                                 value={form.website}
@@ -147,8 +147,8 @@ export default function SuggestStructure() {
                             />
                         </div>
                         <div>
-                            <label className="block text-sm font-bold mb-2">Email de contact *</label>
-                            <input
+                            <label htmlFor="suggeststr-f5" className="block text-sm font-bold mb-2">Email de contact *</label>
+                            <input id="suggeststr-f5"
                                 type="email"
                                 name="email"
                                 value={form.email}
@@ -161,8 +161,8 @@ export default function SuggestStructure() {
                     </div>
 
                     <div>
-                        <label className="block text-sm font-bold mb-2">Message (Facultatif)</label>
-                        <textarea
+                        <label htmlFor="suggeststr-f6" className="block text-sm font-bold mb-2">Message (Facultatif)</label>
+                        <textarea id="suggeststr-f6"
                             name="message"
                             value={form.message}
                             onChange={handleChange}

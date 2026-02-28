@@ -179,8 +179,8 @@ export default function AdminAppointments() {
                             <p><strong>Créneaux souhaités:</strong> {selectedRequest?.creneaux_souhaites?.join(', ')}</p>
                         </div>
                         <div className="space-y-2">
-                            <label className="text-sm font-medium">Réponse par email :</label>
-                            <Textarea
+                            <label htmlFor="adminappoi-f1" className="text-sm font-medium">Réponse par email :</label>
+                            <Textarea id="adminappoi-f1"
                                 value={responseMessage}
                                 onChange={(e) => setResponseMessage(e.target.value)}
                                 rows={5}

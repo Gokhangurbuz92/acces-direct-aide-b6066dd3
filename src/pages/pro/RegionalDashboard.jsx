@@ -64,15 +64,16 @@ export default function RegionalDashboard() {
     }, [fetchStats]);
 
     const stats = data?.stats || {};
-    const cities = stats.cities || [];
     const filtered = useMemo(
-        () =>
-            cities.filter(
+        () => {
+            const cities = stats.cities || [];
+            return cities.filter(
                 (c) =>
                     c.name.toLowerCase().includes(search.toLowerCase()) ||
                     (c.city || '').toLowerCase().includes(search.toLowerCase())
-            ),
-        [cities, search]
+            );
+        },
+        [stats.cities, search]
     );
 
     if (loading) {
@@ -284,8 +285,8 @@ function StructureCard({ city }) {
                     </div>
                     <span
                         className={`px-1.5 py-0.5 rounded text-[8px] font-bold uppercase ${isActive
-                                ? 'bg-emerald-50 text-emerald-600'
-                                : 'bg-slate-100 text-slate-400'
+                            ? 'bg-emerald-50 text-emerald-600'
+                            : 'bg-slate-100 text-slate-400'
                             }`}
                     >
                         {isActive ? 'actif' : 'inactif'}

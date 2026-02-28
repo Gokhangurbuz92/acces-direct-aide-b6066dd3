@@ -3,6 +3,7 @@ import { NavLink } from "react-router-dom";
 import { Menu, X, LogIn, UserPlus } from "lucide-react";
 import { buttonVariants } from "@/components/ui/button";
 import ADALogo from "@/components/Brand/ADALogo";
+import brand from "@/lib/brand-config";
 
 const NAV_ITEMS = [
   { label: "Accueil", to: "/" },
@@ -31,20 +32,35 @@ export function Header() {
         Aller au contenu
       </a>
 
-      <header className="fixed top-0 z-50 w-full border-b border-slate-200 bg-white/95 backdrop-blur">
+      {/* Government banner */}
+      {brand.features.showGouvBanner && (
+        <div
+          className="w-full text-center py-1 text-[10px] font-semibold tracking-wider uppercase"
+          style={{ backgroundColor: brand.banner.bgColor, color: brand.banner.textColor }}
+        >
+          {brand.banner.text}
+        </div>
+      )}
+
+      <header className="fixed top-0 z-50 w-full border-b border-slate-200 bg-white/95 backdrop-blur" style={{ top: brand.features.showGouvBanner ? '24px' : 0 }}>
         <div className="mx-auto max-w-7xl px-4 sm:px-6">
           <div className="flex h-20 items-center justify-between">
             <NavLink
               to="/"
               className="flex items-center gap-3 rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-400"
               onClick={() => setMobileOpen(false)}
-              aria-label="Aller à l’accueil"
+              aria-label="Aller à l'accueil"
             >
-              <img src="/logo.svg" alt="Logo AccesDirectAide" className="h-9 w-9" />
+              <img src={brand.logo} alt={`Logo ${brand.name}`} className="h-9 w-9" />
               <div className="hidden sm:block">
-                <p className="text-base font-semibold text-slate-900">AccesDirectAide</p>
-                <p className="text-xs text-slate-500">L'information sociale claire</p>
+                <p className="text-base font-semibold text-slate-900">{brand.name}</p>
+                <p className="text-xs text-slate-500">{brand.tagline}</p>
               </div>
+              {brand.features.showInstitutionBadge && (
+                <span className="hidden md:inline-flex ml-2 px-2 py-0.5 text-[9px] font-bold uppercase tracking-wider rounded-full" style={{ backgroundColor: brand.colors.primaryLight, color: brand.colors.primary }}>
+                  {brand.institutionShort}
+                </span>
+              )}
             </NavLink>
 
             <nav className="hidden items-center gap-1 lg:flex" aria-label="Navigation principale">
@@ -140,8 +156,8 @@ export function Header() {
         )}
       </header>
 
-      {/* Spacer pour compenser le header fixed */}
-      <div className="h-20" aria-hidden="true" />
+      {/* Spacer pour compenser le header fixed + banner */}
+      <div className={brand.features.showGouvBanner ? 'h-[104px]' : 'h-20'} aria-hidden="true" />
     </>
   );
 }

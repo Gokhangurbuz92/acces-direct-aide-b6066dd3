@@ -62,6 +62,8 @@ function serialize(appointment) {
     beneficiaryName: appointment.beneficiaryName,
     beneficiaryPhone: appointment.beneficiaryPhone || null,
     notes: appointment.notes || null,
+    visioRoomId: appointment.visioRoomId || null,
+    visioEnabled: appointment.visioEnabled || false,
     beneficiary: {
       id: appointment.id,
       contactMasked: maskContact(appointment.beneficiaryPhone || appointment.beneficiaryName),

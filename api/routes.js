@@ -29,22 +29,47 @@ import authResetPassword from './_handlers/auth/reset-password.js';
 
 // --- Pro Module ---
 import proAuthLogin from './_handlers/pro/auth/login.js';
+import proAuthMfaVerify from './_handlers/pro/auth/mfa-verify.js';
 import proAuthRegister from './_handlers/pro/auth/register.js';
 import proAuthForgotPassword from './_handlers/pro/auth/forgot-password.js';
 import proAuthResetPassword from './_handlers/pro/auth/reset-password.js';
+import proAuthRegisterInvite from './_handlers/pro/auth/register-invite.js';
 import proMe from './_handlers/pro/me.js';
+import proMfaSetup from './_handlers/pro/mfa-setup.js';
 import proMessages from './_handlers/pro/messages.js';
 import proMessagesConversations from './_handlers/pro/messages-conversations.js';
 import proServices from './_handlers/pro/services.js';
 import proAppointmentsIndex from './_handlers/pro/appointments/index.js';
 import proAppointmentsCancel from './_handlers/pro/appointments/cancel.js';
+import proAppointmentsStartVisio from './_handlers/pro/appointments/start-visio.js';
 import proAvailability from './_handlers/pro/availability.js';
 import proSlots from './_handlers/pro/slots.js';
 import proTimeOff from './_handlers/pro/timeoff.js';
 import proRdvSettings from './_handlers/pro/rdv-settings.js';
+import proOutlookAvailability from './_handlers/pro/outlook-availability.js';
+import proTeam from './_handlers/pro/team.js';
+import proTeamStats from './_handlers/pro/team-stats.js';
+import proInvite from './_handlers/pro/invite.js';
+import proDossier from './_handlers/pro/dossier.js';
+import proNotifications from './_handlers/pro/notifications.js';
+import proAudit from './_handlers/pro/audit.js';
+import proReports from './_handlers/pro/reports.js';
+import proDossierUpload from './_handlers/pro/dossier/upload-secure.js';
+import proConsent from './_handlers/pro/consent.js';
+import proDossierSynthesis from './_handlers/pro/dossier-synthesis.js';
+import proRegionalStats from './_handlers/pro/regional-stats.js';
+import proAttestationData from './_handlers/pro/attestation-data.js';
+import proInteropSiao from './_handlers/pro/interop-siao.js';
+import proSystemMaint from './_handlers/pro/system-maintenance.js';
+import proAgentDiscovery from './_handlers/pro/agent-discovery.js';
+import proAgentScheduler from './_handlers/pro/agent-scheduler.js';
+import tts from './_handlers/tts.js';
 
 // --- Public Content ---
 import publicMessages from './_handlers/public/messages.js';
+import publicDossierRevoke from './_handlers/public/dossier-revoke.js';
+import publicPassport from './_handlers/public/passport.js';
+import publicSmsNotify from './_handlers/public/sms-notify.js';
 import publicSuggestStructure from './_handlers/public/suggest-structure.js';
 import publicStats from './_handlers/public/stats.js';
 import publicAvailability from './_handlers/public/availability.js';
@@ -82,6 +107,7 @@ import cronIngestStructures from './_handlers/cron/ingest-structures.js';
 import cronIngestAids from './_handlers/cron/ingest-aids.js';
 import cronPurge from './_handlers/cron/purge.js';
 import cronLinkCheck from './_handlers/cron/link-check.js';
+import cronHiveScan from './_handlers/cron/hive-scan.js';
 
 // --- Admin ---
 import adminPrivacyExport from './_handlers/admin/privacy/export.js';
@@ -95,6 +121,7 @@ import adminLinkChecks from './_handlers/admin/link-checks.js';
 import adminValidatePublication from './_handlers/admin/validate-publication.js';
 import adminReviewQueue from './_handlers/admin/review-queue.js';
 import adminStats from './_handlers/admin/stats.js';
+import adminNationalStats from './_handlers/admin/national-stats.js';
 import adminFeatures from './_handlers/admin/features.js';
 import adminRagHealth from './_handlers/admin/rag-health.js';
 import adminConversations from './_handlers/admin/conversations.js';
@@ -102,6 +129,10 @@ import adminAnalytics from './_handlers/admin/analytics.js';
 import shareCreate from './_handlers/share/create.js';
 import shareGet from './_handlers/share/get.js';
 import assistantFeedback from './_handlers/assistant/feedback.js';
+
+// --- Phase 2: E2EE Messaging & Outlook ---
+import secureMessages from './_handlers/secure-messages.js';
+import outlookCallback from './_handlers/auth/outlook-callback.js';
 
 export const routes = [
     // --- Special / Root ---
@@ -135,22 +166,47 @@ export const routes = [
 
     // --- Pro Module ---
     { path: 'pro/auth/login', match: 'exact', handler: proAuthLogin },
+    { path: 'pro/auth/mfa-verify', match: 'exact', handler: proAuthMfaVerify },
     { path: 'pro/auth/register', match: 'exact', handler: proAuthRegister },
     { path: 'pro/auth/forgot-password', match: 'exact', handler: proAuthForgotPassword },
     { path: 'pro/auth/reset-password', match: 'exact', handler: proAuthResetPassword },
+    { path: 'pro/auth/register-invite', match: 'exact', handler: proAuthRegisterInvite },
     { path: 'pro/me', match: 'exact', handler: proMe },
+    { path: 'pro/mfa-setup', match: 'exact', handler: proMfaSetup },
     { path: 'pro/services', match: 'exact', handler: proServices },
     { path: 'pro/slots', match: 'exact', handler: proSlots },
     { path: 'pro/messages', match: 'exact', handler: proMessages },
     { path: 'pro/messages/conversations', match: 'prefix', handler: proMessagesConversations },
     { path: 'pro/appointments', match: 'exact', handler: proAppointmentsIndex },
     { path: 'pro/appointments/cancel', match: 'exact', handler: proAppointmentsCancel },
+    { path: 'pro/appointments/start-visio', match: 'exact', handler: proAppointmentsStartVisio },
     { path: 'pro/availability', match: 'exact', handler: proAvailability },
     { path: 'pro/timeoff', match: 'exact', handler: proTimeOff },
     { path: 'pro/rdv/settings', match: 'exact', handler: proRdvSettings },
+    { path: 'pro/outlook/availability', match: 'exact', handler: proOutlookAvailability },
+    { path: 'pro/team/stats', match: 'exact', handler: proTeamStats },
+    { path: 'pro/team', match: 'exact', handler: proTeam },
+    { path: 'pro/invite', match: 'exact', handler: proInvite },
+    { path: 'pro/dossier', match: 'exact', handler: proDossier },
+    { path: 'pro/notifications', match: 'exact', handler: proNotifications },
+    { path: 'pro/audit', match: 'exact', handler: proAudit },
+    { path: 'pro/reports', match: 'exact', handler: proReports },
+    { path: 'pro/dossier/upload-secure', match: 'exact', handler: proDossierUpload },
+    { path: 'pro/consent', match: 'exact', handler: proConsent },
+    { path: 'pro/dossier-synthesis', match: 'exact', handler: proDossierSynthesis },
+    { path: 'pro/regional-stats', match: 'exact', handler: proRegionalStats },
+    { path: 'pro/attestation-data', match: 'exact', handler: proAttestationData },
+    { path: 'pro/interop-siao', match: 'exact', handler: proInteropSiao },
+    { path: 'pro/system-maintenance', match: 'exact', handler: proSystemMaint },
+    { path: 'pro/agent-discovery', match: 'exact', handler: proAgentDiscovery },
+    { path: 'pro/agent-scheduler', match: 'exact', handler: proAgentScheduler },
+    { path: 'tts', match: 'exact', handler: tts },
 
     // --- Public Content ---
     { path: 'public/messages', match: 'exact', handler: publicMessages },
+    { path: 'public/dossier-revoke', match: 'exact', handler: publicDossierRevoke },
+    { path: 'public/passport', match: 'exact', handler: publicPassport },
+    { path: 'public/sms-notify', match: 'exact', handler: publicSmsNotify },
     { path: 'messages', match: 'prefix', handler: rdvMessages },
     { path: 'public/suggest-structure', match: 'exact', handler: publicSuggestStructure },
     { path: 'public/stats', match: 'exact', handler: publicStats },
@@ -185,6 +241,7 @@ export const routes = [
     { path: 'cron/pipeline', match: 'exact', handler: cronPipeline },
     { path: 'cron/actualites', match: 'exact', handler: cronActualites },
     { path: 'cron/review-queue/scan', match: 'exact', handler: cronReviewQueueScan },
+    { path: 'cron/hive-scan', match: 'exact', handler: cronHiveScan },
     { path: 'cron/ingest-structures', match: 'exact', handler: cronIngestStructures },
     { path: 'cron/ingest-aids', match: 'exact', handler: cronIngestAids },
     { path: 'cron/purge', match: 'exact', handler: cronPurge },
@@ -202,6 +259,7 @@ export const routes = [
     { path: 'admin/validate-publication', match: 'exact', handler: adminValidatePublication },
     { path: 'admin/review-queue', match: 'prefix', handler: adminReviewQueue },
     { path: 'admin/stats', match: 'exact', handler: adminStats },
+    { path: 'admin/national-stats', match: 'exact', handler: adminNationalStats },
     { path: 'admin/features', match: 'exact', handler: adminFeatures },
     { path: 'admin/rag-health', match: 'exact', handler: adminRagHealth },
     { path: 'admin/conversations', match: 'exact', handler: adminConversations },
@@ -213,4 +271,8 @@ export const routes = [
 
     // --- Assistant ---
     { path: 'assistant/feedback', match: 'exact', handler: assistantFeedback },
+
+    // --- Phase 2: E2EE Messaging & Outlook ---
+    { path: 'secure-messages', match: 'exact', handler: secureMessages },
+    { path: 'auth/callback/outlook', match: 'exact', handler: outlookCallback },
 ];

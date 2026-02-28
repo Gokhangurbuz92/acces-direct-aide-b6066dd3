@@ -84,13 +84,26 @@ const StructureDetail = lazy(() => import("./StructureDetail.jsx"));
 const DiagnosticPage = lazy(() => import("./DiagnosticPage.jsx"));
 const SharedDiagnostic = lazy(() => import("./SharedDiagnostic.jsx"));
 const AdminAudit = lazy(() => import("./AdminAudit.jsx"));
-const NotFound = lazy(() => import("./NotFound.jsx"));
+const ServiceError = lazy(() => import("./ServiceError.jsx"));
 
 const BeneficiaryMessages = lazy(() => import("./BeneficiaryMessages.jsx"));
 const AppointmentRequest = lazy(() => import("./AppointmentRequest.jsx"));
 const AppointmentCancel = lazy(() => import("./AppointmentCancel.jsx"));
 const AppointmentReschedule = lazy(() => import("./AppointmentReschedule.jsx"));
 const PublicRdvEntry = lazy(() => import("./PublicRdvEntry.jsx"));
+const PublicBooking = lazy(() => import("./PublicBooking.jsx"));
+const RegisterPro = lazy(() => import("./pro/RegisterPro.jsx"));
+const SharedDossier = lazy(() => import("./pro/SharedDossier.jsx"));
+const ProAuditLog = lazy(() => import("./pro/AuditLog.jsx"));
+const ImpactReports = lazy(() => import("./pro/ImpactReports.jsx"));
+const UserPassport = lazy(() => import("./UserPassport.jsx"));
+const RegionalDashboard = lazy(() => import("./pro/RegionalDashboard.jsx"));
+const OfficialAttestation = lazy(() => import("./pro/OfficialAttestation.jsx"));
+const SystemHealth = lazy(() => import("./pro/SystemHealth.jsx"));
+const FullSimulation = lazy(() => import("./pro/FullSimulation.jsx"));
+const AiOrchestrator = lazy(() => import("./pro/AiOrchestrator.jsx"));
+const HiveOrchestrator = lazy(() => import("./pro/HiveOrchestrator.jsx"));
+const ContentFactory = lazy(() => import("./pro/ContentFactory.jsx"));
 const AuthRdvAccess = lazy(() => import("./AuthRdvAccess.jsx"));
 const AuthVerifyEmail = lazy(() => import("./AuthVerifyEmail.jsx"));
 const AuthForgotPassword = lazy(() => import("./AuthForgotPassword.jsx"));
@@ -124,6 +137,7 @@ const AdminReview = lazy(() => import("./AdminReview.jsx"));
 const AdminDashboard = lazy(() => import("./AdminDashboard.jsx"));
 const AdminFeatures = lazy(() => import("./AdminFeatures.jsx"));
 const AdminConversations = lazy(() => import("./AdminConversations.jsx"));
+const AdminNationalDashboard = lazy(() => import("./admin/NationalDashboard.jsx"));
 
 // Pro
 const ProLayout = lazy(() => import("./pro/ProLayout.jsx"));
@@ -143,6 +157,9 @@ const ProRdvNew = lazy(() => import("./pro/RdvNew.jsx"));
 const ProRdvAbsences = lazy(() => import("./pro/RdvAbsences.jsx"));
 const ProMessages = lazy(() => import("./pro/Messages.jsx"));
 const ProMessageThread = lazy(() => import("./pro/MessageThread.jsx"));
+const ProVisio = lazy(() => import("./pro/Visio.jsx"));
+const ProRehearsal = lazy(() => import("./pro/ProductionRehearsal.jsx"));
+const ProMfaSettings = lazy(() => import("./pro/MfaSettings.jsx"));
 
 // Sentry
 const SentryTest = lazy(() => import("@/components/SentryTest.jsx"));
@@ -231,6 +248,7 @@ function PagesContent() {
                         <Route index element={<Navigate to="dashboard" replace />} />
                         <Route path="login" element={<ProLogin />} />
                         <Route path="register" element={<ProRegister />} />
+                        <Route path="register-invite" element={<RegisterPro />} />
                         <Route path="forgot-password" element={<ProForgotPassword />} />
                         <Route path="reset-password" element={<ProResetPassword />} />
                         <Route path="dashboard" element={<ProGuard><ProDashboard /></ProGuard>} />
@@ -244,12 +262,26 @@ function PagesContent() {
                         </Route>
                         <Route path="messages" element={<ProGuard><ProMessages /></ProGuard>} />
                         <Route path="messages/:conversationId" element={<ProGuard><ProMessageThread /></ProGuard>} />
+                        <Route path="visio/:roomId" element={<ProGuard><ProVisio /></ProGuard>} />
+                        <Route path="visio" element={<ProGuard><ProVisio /></ProGuard>} />
                         <Route path="services" element={<Navigate to="/pro/rdv/services" replace />} />
                         <Route path="availability" element={<Navigate to="/pro/rdv/disponibilites" replace />} />
                         <Route path="appointments" element={<Navigate to="/pro/rdv/agenda" replace />} />
                         <Route path="team" element={<ProGuard><ProTeam /></ProGuard>} />
                         <Route path="structure" element={<ProGuard><ProStructure /></ProGuard>} />
                         <Route path="appointments/:id" element={<ProGuard><ProAppointmentDetail /></ProGuard>} />
+                        <Route path="dossier/:shareId" element={<ProGuard><SharedDossier /></ProGuard>} />
+                        <Route path="audit" element={<ProGuard><ProAuditLog /></ProGuard>} />
+                        <Route path="reports" element={<ProGuard><ImpactReports /></ProGuard>} />
+                        <Route path="regional" element={<ProGuard><RegionalDashboard /></ProGuard>} />
+                        <Route path="attestation/:shareId" element={<ProGuard><OfficialAttestation /></ProGuard>} />
+                        <Route path="health" element={<ProGuard><SystemHealth /></ProGuard>} />
+                        <Route path="simulation" element={<ProGuard><FullSimulation /></ProGuard>} />
+                        <Route path="orchestrator" element={<ProGuard><AiOrchestrator /></ProGuard>} />
+                        <Route path="hive" element={<ProGuard><HiveOrchestrator /></ProGuard>} />
+                        <Route path="content-factory" element={<ProGuard><ContentFactory /></ProGuard>} />
+                        <Route path="rehearsal" element={<ProGuard><ProRehearsal /></ProGuard>} />
+                        <Route path="mfa-settings" element={<ProGuard><ProMfaSettings /></ProGuard>} />
                     </Route>
                 </Routes>
             </Suspense>
@@ -286,6 +318,7 @@ function PagesContent() {
                     <Route path="/admin/aides" element={<AdminGuard><AdminAides /></AdminGuard>} />
                     <Route path="/admin" element={<Navigate to="/admin/dashboard" replace />} />
                     <Route path="/admin/dashboard" element={<AdminGuard><AdminDashboard /></AdminGuard>} />
+                    <Route path="/admin/national" element={<AdminGuard><AdminNationalDashboard /></AdminGuard>} />
                     <Route path="/admin/features" element={<AdminGuard><AdminFeatures /></AdminGuard>} />
                     <Route path="/admin/conversations" element={<AdminGuard><AdminConversations /></AdminGuard>} />
                     <Route path="/admin/audit" element={<AdminGuard><AdminAudit /></AdminGuard>} />
@@ -298,10 +331,12 @@ function PagesContent() {
                     <Route path="/admin/sync/test" element={<AdminGuard><AdminTestSync /></AdminGuard>} />
                     <Route path="/appointments/request" element={<AppointmentRequest />} />
                     <Route path="/appointments/cancel/:token" element={<AppointmentCancel />} />
+                    <Route path="/passport/:shareId" element={<UserPassport />} />
                     <Route path="/appointments/reschedule/:token" element={<AppointmentReschedule />} />
                     <Route path="/rdv/:structureSlug" element={<PublicRdvEntry view="landing" />} />
                     <Route path="/rdv/:structureSlug/services" element={<PublicRdvEntry view="services" />} />
                     <Route path="/rdv/:structureSlug/creneaux" element={<PublicRdvEntry view="creneaux" />} />
+                    <Route path="/rdv/:structureSlug/booking" element={<PublicBooking />} />
                     <Route path="/admin/appointments" element={<AdminGuard><AdminAppointments /></AdminGuard>} />
                     <Route path="/admin/structures" element={<AdminGuard><AdminStructures /></AdminGuard>} />
                     <Route path="/admin/demarches" element={<AdminGuard><AdminDemarches /></AdminGuard>} />
@@ -391,7 +426,7 @@ function PagesContent() {
                     } />
 
 
-                    <Route path="*" element={<NotFound />} />
+                    <Route path="*" element={<ServiceError code={404} />} />
                 </Routes>
             </Layout>
         </Suspense>

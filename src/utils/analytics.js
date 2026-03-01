@@ -8,8 +8,8 @@ export const trackBusinessEvent = (eventName, properties = {}) => {
     // In production, this would connect to plausible, matomo, or google analytics
     if (frontendEnv.runtime.isDev || frontendEnv.flags.publicEnableLogging) {
         console.groupCollapsed(`[Analytics] ${eventName}`);
-        console.log('Properties:', properties);
-        console.log('Timestamp:', new Date().toISOString());
+        void('Properties:', properties);
+        void('Timestamp:', new Date().toISOString());
         console.groupEnd();
     }
 

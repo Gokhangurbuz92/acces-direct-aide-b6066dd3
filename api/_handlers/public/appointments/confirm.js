@@ -1,3 +1,4 @@
+import logger from '../../../_utils/logger.js';
 
 import prisma from '../../../_utils/prisma.js';
 import crypto from 'crypto';
@@ -62,8 +63,8 @@ export default async function handler(req, res) {
         });
 
         // Send Email (Mocked for now as per Lot 5 MVP, user says "console" if resend disabled)
-        console.log(`📧 SEND EMAIL to Beneficiary: Booking Confirmed for ${appointment.start_at}.`);
-        console.log(`🔗 Cancel Link: /cancel?token=${cancelToken}`);
+        logger.info(`📧 SEND EMAIL to Beneficiary: Booking Confirmed for ${appointment.start_at}.`);
+        logger.info(`🔗 Cancel Link: /cancel?token=${cancelToken}`);
 
         // Audit
         await prisma.auditLog.create({
@@ -83,7 +84,7 @@ export default async function handler(req, res) {
         });
 
     } catch (e) {
-        console.error("Confirm API Error", e);
+        logger.error("Confirm API Error", e);
         return res.status(500).json({ error: "Confirmation failed" });
     }
 }

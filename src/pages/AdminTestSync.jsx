@@ -188,11 +188,11 @@ function DiagnosticPingCard() {
 
   const pingMutation = useMutation({
     mutationFn: async () => {
-      console.log('Invoking debug_ping...');
+      void('Invoking debug_ping...');
       return await client.functions.invoke('debug_ping', { hello: 'world' });
     },
     onSuccess: (data) => {
-      console.log('Ping success:', data);
+      void('Ping success:', data);
       setResult({ success: true, data });
     },
     onError: (error) => {

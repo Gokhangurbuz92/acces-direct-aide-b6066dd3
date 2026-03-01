@@ -1,3 +1,4 @@
+import logger from './logger.js';
 // Rate Limiter: Upstash REST (Primary) + In-Memory Fallback
 import crypto from 'crypto';
 import { Redis } from '@upstash/redis';
@@ -14,7 +15,7 @@ const hasHttpKv = !!(envUrl && envUrl.startsWith('https://') && envToken);
 const BACKEND_NAME = hasHttpKv ? "KV_REST_API" : "MEMORY";
 const IS_PRODUCTION = env.runtime.vercelEnv === 'production';
 
-console.log(`[RateLimit] Init: Backend=${BACKEND_NAME} Env=${env.runtime.vercelEnv}`);
+logger.info(`[RateLimit] Init: Backend=${BACKEND_NAME} Env=${env.runtime.vercelEnv}`);
 
 // 2. Initialize Clients
 let redisClient = null; // Module-level singleton
@@ -90,7 +91,7 @@ function checkRateLimitInMemory(action, identifier) {
     memoryStore.set(key, record);
 
     if (record.count > config.limit) {
-        console.warn(`[AUDIT] Rate Limit Denied: Backend=${BACKEND_NAME} Action=${action} KeyHash=${hashedKey} Count=${record.count}`);
+        logger.warn(`[AUDIT] Rate Limit Denied: Backend=${BACKEND_NAME} Action=${action} KeyHash=${hashedKey} Count=${record.count}`);
         return { allowed: false, error: getErrorObject() };
     }
     return { allowed: true };
@@ -119,18 +120,18 @@ async function checkRateLimitKV(action, identifier) {
         const { success, limit, remaining } = await actionLimiter.limit(key);
 
         if (!success) {
-            console.warn(`[AUDIT] Rate Limit Denied: Backend=${BACKEND_NAME} Action=${action} KeyHash=${hashedKey} Remaining=${remaining}`);
+            logger.warn(`[AUDIT] Rate Limit Denied: Backend=${BACKEND_NAME} Action=${action} KeyHash=${hashedKey} Remaining=${remaining}`);
             return { allowed: false, error: getErrorObject() };
         }
 
         return { allowed: true };
 
     } catch (e) {
-        console.error(`[RateLimit] KV REST Error:`, e);
+        logger.error(`[RateLimit] KV REST Error:`, e);
 
         // P0.4: FAIL-CLOSED in PRODUCTION
         if (IS_PRODUCTION) {
-            console.error(`[RateLimit] CRITICAL: Fail-Closed triggered in Production. Blocking request.`);
+            logger.error(`[RateLimit] CRITICAL: Fail-Closed triggered in Production. Blocking request.`);
             return {
                 allowed: false,
                 error: {
@@ -143,7 +144,7 @@ async function checkRateLimitKV(action, identifier) {
         }
 
         // Allow fallback in Dev/Preview
-        console.warn(`[RateLimit] Falling back to Memory Store (Non-Production)`);
+        logger.warn(`[RateLimit] Falling back to Memory Store (Non-Production)`);
         return checkRateLimitInMemory(action, identifier);
     }
 }
@@ -172,7 +173,7 @@ const DEFAULT_RATE_LIMIT = { limit: 30, window: 60 };
 export async function checkRateLimit(action, identifier) {
     let config = CONFIG[action];
     if (!config) {
-        console.warn(`[RateLimit] Unknown action "${action}" — using default (${DEFAULT_RATE_LIMIT.limit}/${DEFAULT_RATE_LIMIT.window}s)`);
+        logger.warn(`[RateLimit] Unknown action "${action}" — using default (${DEFAULT_RATE_LIMIT.limit}/${DEFAULT_RATE_LIMIT.window}s)`);
         config = DEFAULT_RATE_LIMIT;
     }
 
@@ -181,7 +182,7 @@ export async function checkRateLimit(action, identifier) {
     } else {
         // P0.4: If KV is missing entirely in PRODUCTION -> Block
         if (IS_PRODUCTION) {
-            console.error(`[RateLimit] CRITICAL: KV Credentials missing in Production. Fail-Closed.`);
+            logger.error(`[RateLimit] CRITICAL: KV Credentials missing in Production. Fail-Closed.`);
             return {
                 allowed: false,
                 error: {

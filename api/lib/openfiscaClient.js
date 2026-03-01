@@ -1,3 +1,4 @@
+import { logger } from './logger.js';
 /**
  * OpenFisca France API client.
  * Encapsulates /calculate and /trace calls with timeout, error handling, and PII protection.
@@ -66,14 +67,14 @@ async function post(endpoint, payload) {
  */
 export async function calculate(situation) {
     // Log without PII — only structure info
-    console.log('[OpenFisca] calculate request', {
+    logger.info('[OpenFisca] calculate request', {
         individuCount: Object.keys(situation.individus || {}).length,
         hasFamily: !!situation.familles,
     });
 
     const result = await post('/calculate', situation);
 
-    console.log('[OpenFisca] calculate success');
+    logger.info('[OpenFisca] calculate success');
     return result;
 }
 
@@ -90,10 +91,10 @@ export async function trace(situation) {
         throw err;
     }
 
-    console.log('[OpenFisca] trace request');
+    logger.info('[OpenFisca] trace request');
     const result = await post('/trace', situation);
 
-    console.log('[OpenFisca] trace success');
+    logger.info('[OpenFisca] trace success');
     return result;
 }
 

@@ -39,7 +39,7 @@ export default function ChatWidget() {
         });
         setConversationId(conv.id);
       } catch {
-        console.log('Agent non disponible, utilisation du mode de secours');
+        void('Agent non disponible, utilisation du mode de secours');
       }
     };
 

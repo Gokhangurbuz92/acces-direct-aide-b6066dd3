@@ -1,3 +1,4 @@
+import { logger } from '../logger.js';
 import { SourceConnector } from './SourceConnector.js';
 import crypto from 'crypto';
 
@@ -96,7 +97,7 @@ export class ServicePublicDemarchesConnector extends SourceConnector {
     async getDetailUrls() {
         this._cache.clear();
 
-        console.log(`[ServicePublic] Fetching dataset from: ${this._datasetUrl}`);
+        logger.info(`[ServicePublic] Fetching dataset from: ${this._datasetUrl}`);
 
         const response = await fetch(this._datasetUrl, {
             headers: { Accept: 'application/json, application/xml, text/xml' },
@@ -118,7 +119,7 @@ export class ServicePublicDemarchesConnector extends SourceConnector {
             items = this._parseXML(body);
         }
 
-        console.log(`[ServicePublic] Parsed ${items.length} fiches from dataset`);
+        logger.info(`[ServicePublic] Parsed ${items.length} fiches from dataset`);
 
         // Filter: keep only "Particuliers" scope if available, and only fiches with titles
         let filtered = items.filter(item => {
@@ -139,7 +140,7 @@ export class ServicePublicDemarchesConnector extends SourceConnector {
             this._cache.set(virtualUrl, item);
         }
 
-        console.log(`[ServicePublic] After filtering: ${this._cache.size} fiches (Particuliers scope)`);
+        logger.info(`[ServicePublic] After filtering: ${this._cache.size} fiches (Particuliers scope)`);
         return Array.from(this._cache.keys());
     }
 
@@ -208,10 +209,10 @@ export class ServicePublicDemarchesConnector extends SourceConnector {
             if (data.next && data.results) return data.results;
             // Wrap single item
             if (data.titre || data.title || data.id) return [data];
-            console.warn('[ServicePublic] Unexpected JSON structure, keys:', Object.keys(data).slice(0, 10));
+            logger.warn('[ServicePublic] Unexpected JSON structure, keys:', Object.keys(data).slice(0, 10));
             return [];
         } catch (e) {
-            console.error('[ServicePublic] JSON parse error:', e.message);
+            logger.error('[ServicePublic] JSON parse error:', e.message);
             return [];
         }
     }
@@ -246,7 +247,7 @@ export class ServicePublicDemarchesConnector extends SourceConnector {
 
         // If no structured elements found, try flat tag extraction
         if (items.length === 0) {
-            console.warn('[ServicePublic] No structured XML elements found, trying flat extraction');
+            logger.warn('[ServicePublic] No structured XML elements found, trying flat extraction');
             const titles = body.match(/<dc:title>(.*?)<\/dc:title>/gi) || [];
             for (const titleTag of titles) {
                 const titre = titleTag.replace(/<\/?dc:title>/gi, '').trim();

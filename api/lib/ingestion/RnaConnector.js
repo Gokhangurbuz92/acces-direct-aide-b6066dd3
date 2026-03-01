@@ -1,3 +1,4 @@
+import { logger } from '../logger.js';
 /**
  * RnaConnector — Ingestion de l'API RNA (Répertoire National des Associations).
  *
@@ -43,7 +44,7 @@ async function fetchJson(url, retries = MAX_RETRIES) {
         } catch (err) {
             if (attempt === retries - 1) throw err;
             const delay = 1000 * Math.pow(2, attempt);
-            console.warn(`[RNA] Retry ${attempt + 1}/${retries} after ${delay}ms: ${err.message}`);
+            logger.warn(`[RNA] Retry ${attempt + 1}/${retries} after ${delay}ms: ${err.message}`);
             await new Promise((r) => setTimeout(r, delay));
         }
     }
@@ -87,11 +88,11 @@ export async function fetchRnaData(options = {}) {
     const globalLimit = options.limit || MAX_ITEMS;
 
     if (departments.length === 0) {
-        console.warn('[RNA] No departments configured — set RNA_DEPARTMENTS env var');
+        logger.warn('[RNA] No departments configured — set RNA_DEPARTMENTS env var');
         return [];
     }
 
-    console.log(`[RNA] Fetching from ${baseUrl} (departments: ${departments.join(',')})`);
+    logger.info(`[RNA] Fetching from ${baseUrl} (departments: ${departments.join(',')})`);
 
     /** @type {Array<ReturnType<typeof fetchRnaData> extends Promise<(infer T)[]> ? T : never>} */
     const allItems = [];
@@ -117,7 +118,7 @@ export async function fetchRnaData(options = {}) {
         let page = 1;
         let hasMore = true;
 
-        console.log(`[RNA] Searching department ${dept} (query: "${searchQuery}")`);
+        logger.info(`[RNA] Searching department ${dept} (query: "${searchQuery}")`);
 
         while (hasMore && allItems.length < globalLimit) {
             const url = `${baseUrl}/full_text/${encodeURIComponent(searchQuery)}?per_page=${PER_PAGE}&page=${page}`;
@@ -171,18 +172,18 @@ export async function fetchRnaData(options = {}) {
 
                 // Safety: max 20 pages per department to avoid infinite loops
                 if (page > 20) {
-                    console.warn(`[RNA] Max page limit (20) reached for department ${dept}`);
+                    logger.warn(`[RNA] Max page limit (20) reached for department ${dept}`);
                     hasMore = false;
                 }
             } catch (err) {
-                console.error(`[RNA] Error fetching page ${page} for dept ${dept}: ${err.message}`);
+                logger.error(`[RNA] Error fetching page ${page} for dept ${dept}: ${err.message}`);
                 hasMore = false;
             }
         }
 
-        console.log(`[RNA] Department ${dept}: ${allItems.length} total items so far`);
+        logger.info(`[RNA] Department ${dept}: ${allItems.length} total items so far`);
     }
 
-    console.log(`[RNA] Total items: ${allItems.length}`);
+    logger.info(`[RNA] Total items: ${allItems.length}`);
     return allItems;
 }

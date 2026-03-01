@@ -1,3 +1,4 @@
+import { logger } from '../logger.js';
 /**
  * GrandEstConnector — Scraper pour les aides de la Région Grand Est.
  *
@@ -52,7 +53,7 @@ async function fetchHtml(url, retries = MAX_RETRIES) {
         } catch (err) {
             if (attempt === retries - 1) throw err;
             const delay = 1000 * Math.pow(2, attempt);
-            console.warn(`[GrandEst] Retry ${attempt + 1}/${retries} after ${delay}ms: ${err.message}`);
+            logger.warn(`[GrandEst] Retry ${attempt + 1}/${retries} after ${delay}ms: ${err.message}`);
             await new Promise((r) => setTimeout(r, delay));
         }
     }
@@ -105,7 +106,7 @@ export class GrandEstConnector extends SourceConnector {
      */
     async getDetailUrls() {
         this._cache.clear();
-        console.log(`[GrandEst] Fetching listing: ${LISTING_URL}`);
+        logger.info(`[GrandEst] Fetching listing: ${LISTING_URL}`);
 
         const html = await fetchHtml(LISTING_URL);
         const $ = cheerio.load(html);
@@ -127,7 +128,7 @@ export class GrandEstConnector extends SourceConnector {
 
         // Fallback: if Cheerio finds no .card.aide, try regex (backward compat)
         if (urls.size === 0) {
-            console.warn('[GrandEst] No cards found via Cheerio, falling back to regex');
+            logger.warn('[GrandEst] No cards found via Cheerio, falling back to regex');
             const regex = /href=["']((?:https?:\/\/www\.grandest\.fr)?\/+(?:vos-aides-regionales|appel-a-projet)\/[^"']+)["']/gi;
             let match;
             while ((match = regex.exec(html)) !== null) {
@@ -165,7 +166,7 @@ export class GrandEstConnector extends SourceConnector {
 
         // Cap items
         const allUrls = Array.from(urls).slice(0, MAX_ITEMS);
-        console.log(`[GrandEst] Found ${urls.size} aide URLs (capped to ${allUrls.length}), ${this._cache.size} with card metadata`);
+        logger.info(`[GrandEst] Found ${urls.size} aide URLs (capped to ${allUrls.length}), ${this._cache.size} with card metadata`);
         return allUrls;
     }
 

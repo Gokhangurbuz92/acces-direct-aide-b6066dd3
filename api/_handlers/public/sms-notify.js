@@ -1,3 +1,4 @@
+import logger from '../../_utils/logger.js';
 // @ts-nocheck
 import prisma from '../../_utils/prisma.js';
 import { logProAudit } from '../../lib/pro-auth.js';
@@ -91,7 +92,7 @@ export default async function handler(req, res) {
         const message = `Rappel ADA : Votre RDV avec ${proName} est prévu le ${dateStr}. ${mode}.`;
 
         // In production, replace with: await twilio.messages.create(...)
-        console.log(`[SMS QUEUED → ${maskPhone(phoneNumber)}]: ${message}`);
+        logger.info(`[SMS QUEUED → ${maskPhone(phoneNumber)}]: ${message}`);
 
         // Audit
         const ip = req.headers?.['x-forwarded-for'] || req.socket?.remoteAddress || 'unknown';
@@ -105,7 +106,7 @@ export default async function handler(req, res) {
             message: 'Rappel SMS activé. Vous recevrez un rappel 2h avant le RDV.',
         });
     } catch (error) {
-        console.error('[SMS] Erreur:', error.message);
+        logger.error('[SMS] Erreur:', error.message);
         return res.status(500).json({ error: "Échec de l'activation du rappel SMS." });
     }
 }

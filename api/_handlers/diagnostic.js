@@ -1,3 +1,4 @@
+import logger from '../_utils/logger.js';
 /**
  * POST /api/diagnostic      — public: compute rights via OpenFisca
  * POST /api/diagnostic/trace — pro/admin: get OpenFisca trace
@@ -102,13 +103,13 @@ async function handleDiagnostic(req, res) {
         try {
             engineUp = await isAvailable();
         } catch (healthCheckErr) {
-            console.warn('[Diagnostic] isAvailable() threw', { requestId, error: healthCheckErr.message });
+            logger.warn('[Diagnostic] isAvailable() threw', { requestId, error: healthCheckErr.message });
             Sentry.captureException(healthCheckErr, {
                 extra: { requestId, phase: 'health-check' },
             });
         }
         if (!engineUp) {
-            console.warn('[Diagnostic] OpenFisca unavailable (cached health probe)', { requestId });
+            logger.warn('[Diagnostic] OpenFisca unavailable (cached health probe)', { requestId });
             return res.status(503).json({
                 code: 'OPENFISCA_UNAVAILABLE',
                 message: 'Service de calcul temporairement indisponible. Veuillez réessayer dans quelques instants.',
@@ -145,7 +146,7 @@ async function handleDiagnostic(req, res) {
         const rights = parseResults(result, period);
 
         const duration = Date.now() - start;
-        console.log('[Diagnostic]', { requestId, duration_ms: duration, rightsCount: rights.length });
+        logger.info('[Diagnostic]', { requestId, duration_ms: duration, rightsCount: rights.length });
 
         // ── Phase 2: SyncRun success ──
         if (syncRunId) {
@@ -181,7 +182,7 @@ async function handleDiagnostic(req, res) {
         });
     } catch (err) {
         const duration = Date.now() - start;
-        console.error('[Diagnostic] ERROR', {
+        logger.error('[Diagnostic] ERROR', {
             requestId,
             duration_ms: duration,
             code: err.code || 'UNKNOWN',
@@ -292,7 +293,7 @@ async function handleTrace(req, res) {
             meta: { requestId, source: 'openfisca-trace' },
         });
     } catch (err) {
-        console.error('[Diagnostic/Trace] ERROR', { requestId, message: err.message });
+        logger.error('[Diagnostic/Trace] ERROR', { requestId, message: err.message });
 
         Sentry.captureException(err, {
             extra: { requestId, phase: 'diagnostic-trace' },

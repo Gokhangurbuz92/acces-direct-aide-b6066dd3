@@ -35,7 +35,7 @@ function getErrorMessage(error) {
 export async function runIngestStructures({ limit, runId }) {
     // Log format: INGEST_<SOURCE>_ENTER url=<...>
     // URL is from DATASETS[0] for simplicity in this loop
-    console.log(`INGEST_STRUCTURES_ENTER url=${DATASETS[0].url}`);
+    logger.info(`INGEST_STRUCTURES_ENTER url=${DATASETS[0].url}`);
 
     // Ensure runId
     if (!runId) runId = crypto.randomUUID();
@@ -57,7 +57,7 @@ export async function runIngestStructures({ limit, runId }) {
     const startTotal = Date.now();
 
     for (const dataset of DATASETS) {
-        // console.log(`[STRUCTURES] Ingesting ${dataset.name}`);
+        // logger.info(`[STRUCTURES] Ingesting ${dataset.name}`);
 
         const startFetch = Date.now();
         let response;
@@ -65,20 +65,20 @@ export async function runIngestStructures({ limit, runId }) {
             response = await fetch(dataset.url);
         } catch (fetchErr) {
             stats.errors.push(`${dataset.id}: Fetch failed - ${getErrorMessage(fetchErr)}`);
-            console.error(`[STRUCTURES] Fetch Error: ${getErrorMessage(fetchErr)}`);
+            logger.error(`[STRUCTURES] Fetch Error: ${getErrorMessage(fetchErr)}`);
             continue;
         }
 
         const fetchDuration = Date.now() - startFetch;
         stats.durationByStage.fetchMs += fetchDuration;
 
-        // console.log(`[STRUCTURES] Fetch Status: ${response.status} CT: ${response.headers.get('content-type')}`);
+        // logger.info(`[STRUCTURES] Fetch Status: ${response.status} CT: ${response.headers.get('content-type')}`);
 
         if (!response.ok) {
             const bodyText = await response.text();
             const errorMsg = `${dataset.id}: HTTP ${response.status} - ${bodyText.substring(0, 200)}`;
             stats.errors.push(errorMsg);
-            console.error(`[STRUCTURES] ${errorMsg}`);
+            logger.error(`[STRUCTURES] ${errorMsg}`);
             continue;
         }
 
@@ -86,7 +86,7 @@ export async function runIngestStructures({ limit, runId }) {
         try {
             data = await response.json();
             // Log keys for diagnosis
-            // console.log(`[STRUCTURES] Data Keys: ${data ? Object.keys(data).join(',') : 'null'}`);
+            // logger.info(`[STRUCTURES] Data Keys: ${data ? Object.keys(data).join(',') : 'null'}`);
         } catch (parseErr) {
             stats.errors.push(`${dataset.id}: JSON Parse Error - ${getErrorMessage(parseErr)}`);
             continue;
@@ -102,12 +102,12 @@ export async function runIngestStructures({ limit, runId }) {
 
         if (items.length === 0) {
             const msg = `[STRUCTURES] 0 items found. status=${response.status} keys=${data ? Object.keys(data).join(',') : 'null'}`;
-            console.warn(msg);
+            logger.warn(msg);
             stats.errors.push(msg);
         }
 
         // Log format: INGEST_<SOURCE>_FETCH_DONE status=<...> ct=<...> fetchMs=<...> items=<...>
-        console.log(`INGEST_STRUCTURES_FETCH_DONE status=${response.status} ct=${response.headers.get('content-type')} fetchMs=${fetchDuration} items=${items.length}`);
+        logger.info(`INGEST_STRUCTURES_FETCH_DONE status=${response.status} ct=${response.headers.get('content-type')} fetchMs=${fetchDuration} items=${items.length}`);
 
         stats.fetched += items.length;
 
@@ -249,7 +249,7 @@ export async function runIngestStructures({ limit, runId }) {
                     stats.created++;
                 }
             } catch (recErr) {
-                console.error("Structure Record Error:", getErrorMessage(recErr));
+                logger.error("Structure Record Error:", getErrorMessage(recErr));
                 stats.errors.push(`Record fail: ${getErrorMessage(recErr)}`);
             }
         }
@@ -268,7 +268,7 @@ export async function runIngestStructures({ limit, runId }) {
                 duration_ms: Date.now() - startTotal
             }
         });
-    } catch (e) { console.error("Log Create Failed", e); }
+    } catch (e) { logger.error("Log Create Failed", e); }
 
     return stats;
 }

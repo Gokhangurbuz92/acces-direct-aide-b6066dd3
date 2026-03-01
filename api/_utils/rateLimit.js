@@ -61,7 +61,9 @@ const CONFIG = {
     ASSISTANT_CHAT: { limit: 10, window: 60 },    // 10 per min
     ASSISTANT_RECOS: { limit: 15, window: 60 },   // 15 per min
     // Diagnostic (OpenFisca)
-    DIAGNOSTIC: { limit: 30, window: 60 }         // 30 per min (was 10; raised to avoid E2E 429)
+    DIAGNOSTIC: { limit: 30, window: 60 },        // 30 per min (was 10; raised to avoid E2E 429)
+    // Admin
+    ADMIN_API: { limit: 60, window: 60 },          // 60 per min per IP
 };
 
 function hashKey(key) {

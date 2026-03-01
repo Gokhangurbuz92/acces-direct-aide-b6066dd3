@@ -6,6 +6,7 @@ import { attachNoStoreOnError } from "./_utils/cache.js";
 import { applyCachePolicy } from "./_utils/cachePolicy.js";
 import { env, getEnv } from './_utils/env.js';
 import { applyNoIndex, isTechnicalNoIndexPath } from './_utils/robots.js';
+import { checkRateLimit, getClientIp, getRateLimitStatus } from './_utils/rateLimit.js';
 
 /** @param {unknown} value */
 function normalizeRequestId(value) {
@@ -114,9 +115,24 @@ export default async function handler(req, res) {
             log = logger;
         }
 
-        // 2. CORS Headers
-        res.setHeader('Access-Control-Allow-Origin', '*');
-        res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
+        // 2. CORS Headers — dynamic whitelist (SEC-01)
+        const origin = req.headers?.origin || '';
+        const isAllowedOrigin =
+            origin === 'https://accesdirectaide.fr' ||
+            origin === 'https://www.accesdirectaide.fr' ||
+            (origin.endsWith('.vercel.app') && origin.startsWith('https://')) ||
+            (env.runtime.nodeEnv !== 'production' && (
+                origin === 'http://localhost:5173' ||
+                origin === 'http://localhost:3000' ||
+                origin === 'http://127.0.0.1:5173' ||
+                origin === 'http://127.0.0.1:3000'
+            ));
+
+        if (isAllowedOrigin) {
+            res.setHeader('Access-Control-Allow-Origin', origin);
+            res.setHeader('Vary', 'Origin');
+        }
+        res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS, PUT, PATCH, DELETE');
         res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, x-cron-secret');
         res.setHeader('x-request-id', requestId);
 
@@ -151,6 +167,16 @@ export default async function handler(req, res) {
             query: redactQueryParams(urlObj.searchParams),
             userAgent: req.headers['user-agent']
         });
+
+        // 3b. Admin Rate Limiting (SEC-01)
+        if (routeGroup === 'admin') {
+            const ip = getClientIp(req);
+            const rl = await checkRateLimit('ADMIN_API', ip);
+            if (!rl.allowed) {
+                log.warn({ msg: 'Admin rate limit exceeded', ip: ip.substring(0, 8) + '...' });
+                return res.status(getRateLimitStatus(rl)).json(rl.error || { error: 'Rate limited' });
+            }
+        }
 
         // 4. Route Matching (Inner Block)
         // Security check for __dev

@@ -18,7 +18,7 @@ function encrypt(text) {
     if (!TOKEN_KEY || TOKEN_KEY.length < 32) return text; // dev fallback: plaintext
     const key = Buffer.from(TOKEN_KEY.slice(0, 32), 'utf8');
     const iv = crypto.randomBytes(12);
-    const cipher = crypto.createCipheriv('aes-256-gcm', key, iv);
+    const cipher = crypto.createCipheriv('aes-256-gcm', key, iv, { authTagLength: 16 });
     const encrypted = Buffer.concat([cipher.update(text, 'utf8'), cipher.final()]);
     const tag = cipher.getAuthTag();
     return `${iv.toString('hex')}:${tag.toString('hex')}:${encrypted.toString('hex')}`;
@@ -29,7 +29,7 @@ function decrypt(data) {
     if (!data.includes(':')) return data; // plaintext fallback
     const [ivHex, tagHex, encHex] = data.split(':');
     const key = Buffer.from(TOKEN_KEY.slice(0, 32), 'utf8');
-    const decipher = crypto.createDecipheriv('aes-256-gcm', key, Buffer.from(ivHex, 'hex'));
+    const decipher = crypto.createDecipheriv('aes-256-gcm', key, Buffer.from(ivHex, 'hex'), { authTagLength: 16 });
     decipher.setAuthTag(Buffer.from(tagHex, 'hex'));
     return decipher.update(Buffer.from(encHex, 'hex'), undefined, 'utf8') + decipher.final('utf8');
 }

@@ -1,9 +1,10 @@
 // @ts-nocheck
 import prisma from '../../_utils/prisma.js';
-import { verifyProToken } from '../../lib/pro-auth.js';
+import { requireProAuth } from '../../_utils/auth.js';
+import logger from '../../_utils/logger.js';
 
 /**
- * Regional Stats API (Pro — Super-Admin / Observer)
+ * Regional Stats API (Pro — authenticated)
  *
  * GET /api/pro/regional-stats
  *
@@ -11,16 +12,10 @@ import { verifyProToken } from '../../lib/pro-auth.js';
  * Used by regional decision-makers for territorial dashboarding.
  * No individual dossier data is ever exposed.
  */
-export default async function handler(req, res) {
+async function handler(req, res) {
     if (req.method !== 'GET') {
         return res.status(405).json({ error: 'Méthode non autorisée' });
     }
-
-    // Auth
-    const token = req.cookies?.pro_token;
-    if (!token) return res.status(401).json({ error: 'Non autorisé.' });
-    const user = verifyProToken(token);
-    if (!user) return res.status(401).json({ error: 'Session invalide.' });
 
     try {
         // 1. Count structures
@@ -103,7 +98,9 @@ export default async function handler(req, res) {
             },
         });
     } catch (error) {
-        console.error('[RegionalStats] Erreur:', error.message);
+        logger.error({ err: error }, '[RegionalStats] Erreur');
         return res.status(500).json({ error: 'Erreur statistiques régionales.' });
     }
 }
+
+export default requireProAuth(handler);

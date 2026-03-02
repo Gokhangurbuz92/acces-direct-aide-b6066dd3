@@ -1,6 +1,7 @@
 // @ts-nocheck
 import prisma from '../../_utils/prisma.js';
-import { verifyProToken } from '../../lib/pro-auth.js';
+import { requireProAuth } from '../../_utils/auth.js';
+import logger from '../../_utils/logger.js';
 
 /**
  * Health Check API (Pro-only)
@@ -13,15 +14,10 @@ import { verifyProToken } from '../../lib/pro-auth.js';
  *   - Pending moderation count
  *   - Environment info
  */
-export default async function handler(req, res) {
+async function handler(req, res) {
     if (req.method !== 'GET') {
         return res.status(405).json({ error: 'Méthode non autorisée' });
     }
-
-    const token = req.cookies?.pro_token;
-    if (!token) return res.status(401).json({ error: 'Non autorisé.' });
-    const user = verifyProToken(token);
-    if (!user) return res.status(401).json({ error: 'Session invalide.' });
 
     try {
         // 1. Database ping latency
@@ -55,6 +51,7 @@ export default async function handler(req, res) {
         });
 
         // 6. Service status inference
+        const siaEnabled = process.env.SIAO_ENABLED === 'true';
         const services = [
             {
                 id: 'db',
@@ -79,7 +76,7 @@ export default async function handler(req, res) {
                 id: 'siao',
                 label: 'Passerelle SIAO',
                 sub: 'Interop National',
-                status: process.env.SIAO_API_URL ? 'operational' : 'not_configured',
+                status: siaEnabled && process.env.SIAO_API_URL ? 'operational' : 'not_configured',
             },
         ];
 
@@ -102,7 +99,7 @@ export default async function handler(req, res) {
             timestamp: new Date().toISOString(),
         });
     } catch (error) {
-        console.error('[HealthCheck] Error:', error.message);
+        logger.error({ err: error }, '[HealthCheck] Error');
         return res.status(500).json({
             status: 'DEGRADED',
             error: error.message,
@@ -110,3 +107,5 @@ export default async function handler(req, res) {
         });
     }
 }
+
+export default requireProAuth(handler);

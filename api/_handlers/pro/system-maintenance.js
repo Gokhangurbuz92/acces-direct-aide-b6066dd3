@@ -1,7 +1,8 @@
 // @ts-nocheck
 import prisma from '../../_utils/prisma.js';
-import { verifyProToken } from '../../lib/pro-auth.js';
+import { requireProRole } from '../../_utils/auth.js';
 import crypto from 'crypto';
+import logger from '../../_utils/logger.js';
 
 /**
  * System Maintenance API (Pro — Admin only)
@@ -12,16 +13,10 @@ import crypto from 'crypto';
  * BACKUP: Counts records, logs audit, returns backup metadata.
  * STRESS_TEST: Runs N rapid DB reads to benchmark latency.
  */
-export default async function handler(req, res) {
+async function handler(req, res) {
     if (req.method !== 'POST') {
         return res.status(405).json({ error: 'Méthode non autorisée' });
     }
-
-    // Auth
-    const token = req.cookies?.pro_token;
-    if (!token) return res.status(401).json({ error: 'Non autorisé.' });
-    const user = verifyProToken(token);
-    if (!user) return res.status(401).json({ error: 'Session invalide.' });
 
     const { action } = req.body || {};
 
@@ -42,7 +37,7 @@ export default async function handler(req, res) {
                     action: 'SYSTEM_BACKUP_GENERATED',
                     entityId: backupId,
                     entityType: 'SYSTEM',
-                    actorId: user.id || user.sub || 'admin',
+                    actorId: req.user?.userId || 'admin',
                     details: JSON.stringify({
                         diagnostics: diagCount,
                         auditEntries: auditCount,
@@ -85,7 +80,10 @@ export default async function handler(req, res) {
 
         return res.status(400).json({ error: 'Action invalide. Utilisez BACKUP ou STRESS_TEST.' });
     } catch (error) {
-        console.error('[Maintenance] Erreur:', error.message);
+        logger.error({ err: error }, '[Maintenance] Erreur');
         return res.status(500).json({ error: 'Échec opération système.' });
     }
 }
+
+// Admin-only: requires STRUCTURE_ADMIN or SUPERADMIN role
+export default requireProRole(handler, ['structure_admin', 'superadmin']);

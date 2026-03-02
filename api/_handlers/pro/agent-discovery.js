@@ -1,6 +1,7 @@
 // @ts-nocheck
-import { requireAuth } from '../../lib/pro-auth.js';
+import { requireProAuth } from '../../_utils/auth.js';
 import prisma from '../../_utils/prisma.js';
+import logger from '../../_utils/logger.js';
 
 /**
  * Agent Discovery API (Pro-only)
@@ -59,7 +60,7 @@ async function handler(req, res) {
 
         if (!response.ok) {
             const errText = await response.text();
-            console.error('[Discovery] Gemini error:', errText);
+            logger.error({ status: response.status, body: errText?.slice(0, 200) }, '[Discovery] Gemini error');
             return res.status(502).json({ error: 'Erreur IA lors du scan.' });
         }
 
@@ -101,7 +102,7 @@ async function handler(req, res) {
                     });
                     submitted++;
                 } catch (dbErr) {
-                    console.error('[Discovery] ReviewQueueItem creation failed:', dbErr.message);
+                    logger.warn({ err: dbErr }, '[Discovery] ReviewQueueItem creation failed');
                 }
             }
         }
@@ -115,10 +116,9 @@ async function handler(req, res) {
             scannedAt: new Date().toISOString(),
         });
     } catch (error) {
-        console.error('[Discovery] Erreur:', error.message);
+        logger.error({ err: error }, '[Discovery] Erreur');
         return res.status(500).json({ error: 'Échec du scan autonome.' });
     }
 }
 
-export default requireAuth(handler);
-
+export default requireProAuth(handler);

@@ -552,6 +552,7 @@ model ProUser {
   availability             Availability[]
   proAppointmentsCreated   ProAppointment[]         @relation("ProAppointmentCreatedBy")
   rdvMessagesSent          RdvConversationMessage[] @relation("RdvMessageSenderPro")
+  notifications            ProNotification[]
   structure                Structure                @relation(fields: [structureId], references: [id])
 
   // --- MFA (TOTP) ---
@@ -1100,4 +1101,21 @@ model SharedDiagnostic {
 
   @@index([createdAt])
   @@index([expiresAt])
+}
+
+// ── Pro Notifications ──
+model ProNotification {
+  id          String    @id @default(uuid())
+  userId      String
+  structureId String
+  type        String    // rdv_new, rdv_cancel, message_new, team_join, team_role_change, system
+  title       String
+  message     String
+  readAt      DateTime?
+  createdAt   DateTime  @default(now())
+  metadata    Json?     // optional structured data (appointmentId, messageId, etc.)
+  user        ProUser   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, readAt])
+  @@index([structureId, createdAt])
 }

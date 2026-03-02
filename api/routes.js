@@ -66,6 +66,7 @@ import proSystemMaint from './_handlers/pro/system-maintenance.js';
 import proAgentDiscovery from './_handlers/pro/agent-discovery.js';
 import proAgentScheduler from './_handlers/pro/agent-scheduler.js';
 import proHealthCheck from './_handlers/pro/health-check.js';
+import proOutlook from './_handlers/pro/outlook.js';
 import tts from './_handlers/tts.js';
 
 // --- Public Content ---
@@ -209,6 +210,7 @@ export const routes = [
     { path: 'pro/agent-discovery', match: 'exact', handler: proAgentDiscovery },
     { path: 'pro/agent-scheduler', match: 'exact', handler: proAgentScheduler },
     { path: 'pro/health-check', match: 'exact', handler: proHealthCheck },
+    { path: 'pro/outlook', match: 'exact', handler: proOutlook },
     { path: 'tts', match: 'exact', handler: tts },
 
     // --- Public Content ---

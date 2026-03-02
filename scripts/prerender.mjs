@@ -81,13 +81,17 @@ async function prerender() {
     console.log("Starting SSG Prerender...");
 
     // 1. Build the server bundle
+    // logLevel 'silent' prevents chunk-size warnings from flooding Vercel logs
+    // (the SSR bundle bundles all node_modules → large chunks are expected)
     await build({
+        logLevel: 'silent',
         build: {
             ssr: 'src/entry-server.jsx',
             outDir: 'dist/server',
-            emptyOutDir: true
+            emptyOutDir: true,
+            chunkSizeWarningLimit: 5000,
         },
-        ssr: { noExternal: true }
+        ssr: { noExternal: true },
     });
 
     // 2. Load the exported render function and seo object

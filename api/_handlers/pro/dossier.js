@@ -2,6 +2,7 @@
 import prisma from '../../_utils/prisma.js';
 import { requireProAuth, requireProStructureContext } from '../../_utils/auth.js';
 import { logProAudit } from '../../lib/pro-auth.js';
+import logger from '../../_utils/logger.js';
 
 /**
  * Pro Dossier Handler
@@ -111,7 +112,7 @@ async function handler(req, res) {
 
         return res.status(405).json({ error: 'Méthode non autorisée' });
     } catch (error) {
-        console.error('[Pro Dossier] Erreur:', error.message);
+        logger.error({ err: error }, '[Pro Dossier] Erreur');
         return res.status(500).json({ error: 'Erreur serveur.' });
     }
 }

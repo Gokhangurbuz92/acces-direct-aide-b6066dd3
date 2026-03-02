@@ -6,7 +6,7 @@
  *   <Skeleton className="h-12 w-12 rounded-full" /> — avatar
  *   <Skeleton variant="card" />               — full card skeleton
  */
-export default function Skeleton({ className = '', variant = 'line' }) {
+function Skeleton({ className = '', variant = 'line' }) {
     if (variant === 'card') {
         return (
             <div className="rounded-2xl border border-slate-100 p-4 space-y-3 animate-pulse">
@@ -55,3 +55,6 @@ export function SkeletonList({ count = 3, variant = 'card' }) {
         </div>
     );
 }
+
+export { Skeleton };
+export default Skeleton;

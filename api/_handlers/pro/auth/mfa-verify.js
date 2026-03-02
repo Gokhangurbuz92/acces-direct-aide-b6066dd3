@@ -1,6 +1,7 @@
 import prisma from '../../../_utils/prisma.js';
 import logger from '../../../_utils/logger.js';
-import { signProToken, checkRateLimit, logProAudit } from '../../../lib/pro-auth.js';
+import { signProToken, logProAudit } from '../../../lib/pro-auth.js';
+import { checkRateLimit, getClientIp } from '../../../_utils/rateLimit.js';
 import { verifyCode } from '../../../lib/totp.js';
 import { verifyJwt } from '../../../lib/pro-auth.js';
 import { env } from '../../../_utils/env.js';
@@ -21,8 +22,7 @@ export default async function handler(req, res) {
     }
 
     const { mfa_token, code } = req.body || {};
-    const rawIp = req.headers['x-forwarded-for'] || req.socket?.remoteAddress;
-    const ip = rawIp ? String(rawIp).split(',')[0].trim() : 'unknown';
+    const ip = getClientIp(req);
 
     if (!mfa_token || !code) {
         return res.status(400).json({ error: 'mfa_token and code are required' });
@@ -33,9 +33,9 @@ export default async function handler(req, res) {
     }
 
     // Rate limit by IP
-    const limit = await checkRateLimit(`mfa:${ip}`);
+    const limit = await checkRateLimit('MFA_VERIFY_PRO', `ip:${ip}`);
     if (!limit.allowed) {
-        return res.status(429).json({ error: 'Too many attempts. Try again later.' });
+        return res.status(429).json(limit.error || { error: 'Too many attempts. Try again later.' });
     }
 
     try {

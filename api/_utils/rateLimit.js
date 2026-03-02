@@ -39,6 +39,10 @@ const CONFIG = {
     FEEDBACK: { limit: 6, window: 600 },    // 6 per 10 min
     // Auth
     LOGIN_PRO: { limit: 5, window: 900 },   // 5 per 15 min
+    REGISTER_PRO: { limit: 5, window: 3600 },  // 5 per hour
+    MFA_VERIFY_PRO: { limit: 5, window: 900 }, // 5 per 15 min
+    REGISTER_INVITE: { limit: 5, window: 3600 }, // 5 per hour
+    REFRESH_PRO: { limit: 10, window: 900 },  // 10 per 15 min
     LOGIN_USER: { limit: 8, window: 900 },  // 8 per 15 min
     SIGNUP_USER: { limit: 5, window: 3600 }, // 5 per hour
     RESEND_VERIFY: { limit: 5, window: 3600 }, // 5 per hour

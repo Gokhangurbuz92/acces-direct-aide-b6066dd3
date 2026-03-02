@@ -1,6 +1,7 @@
 import bcrypt from 'bcryptjs';
 import logger from '../../../_utils/logger.js';
-import { signProToken, checkRateLimit, logProAudit } from '../../../lib/pro-auth.js';
+import { signProToken, logProAudit } from '../../../lib/pro-auth.js';
+import { checkRateLimit, getClientIp } from '../../../_utils/rateLimit.js';
 import prisma from '../../../_utils/prisma.js';
 
 function slugify(text) {
@@ -22,18 +23,16 @@ export default async function handler(req, res) {
     }
 
     const { email, password, structureName } = req.body;
-    // Handle IP for rate limiting - support Vercel/Standard headers
-    const rawIp = req.headers['x-forwarded-for'] || req.socket.remoteAddress;
-    const ip = rawIp ? String(rawIp).split(',')[0].trim() : 'unknown';
+    const ip = getClientIp(req);
 
     if (!email || !password || !structureName) {
         return res.status(400).json({ error: "Tous les champs sont requis" });
     }
 
     // Rate Limit
-    const ipLimit = await checkRateLimit(`ip:${ip}`);
+    const ipLimit = await checkRateLimit('REGISTER_PRO', `ip:${ip}`);
     if (!ipLimit.allowed) {
-        return res.status(429).json({ error: "Trop de tentatives. Réessayez plus tard." });
+        return res.status(429).json(ipLimit.error || { error: 'Trop de tentatives. Réessayez plus tard.' });
     }
 
     try {

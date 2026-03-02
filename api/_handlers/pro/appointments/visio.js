@@ -1,4 +1,5 @@
 import prisma from '../../../_utils/prisma.js';
+import logger from '../../../_utils/logger.js';
 import { logProAudit } from '../../../lib/pro-auth.js';
 import { requireProAuth, requireProStructureContext } from '../../../_utils/auth.js';
 /**
@@ -45,7 +46,7 @@ async function handler(req, res) {
         return res.status(200).json({ success: true, message: "Lien visio mis à jour" });
 
     } catch (e) {
-        console.error('Visio update error:', e);
+        logger.error('Visio update error:', e);
         return res.status(500).json({ error: "Internal Error" });
     }
 }

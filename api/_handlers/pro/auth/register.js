@@ -1,4 +1,5 @@
 import bcrypt from 'bcryptjs';
+import logger from '../../../_utils/logger.js';
 import { signProToken, checkRateLimit, logProAudit } from '../../../lib/pro-auth.js';
 import prisma from '../../../_utils/prisma.js';
 
@@ -98,7 +99,7 @@ export default async function handler(req, res) {
         });
 
     } catch (e) {
-        console.error("Register error", e);
+        logger.error("Register error", e);
         return res.status(500).json({ error: "Erreur lors de l'inscription" });
     }
 }

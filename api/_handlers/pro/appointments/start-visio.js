@@ -1,4 +1,5 @@
 import crypto from 'crypto';
+import logger from '../../../_utils/logger.js';
 import prisma from '../../../_utils/prisma.js';
 import { requireProAuth, requireProStructureContext } from '../../../_utils/auth.js';
 import { logProAudit } from '../../../lib/pro-auth.js';
@@ -113,7 +114,7 @@ async function handler(req, res) {
             visioUrl: `https://meet.jit.si/ADA-${roomId}`,
         });
     } catch (e) {
-        console.error('[start-visio] Error:', e);
+        logger.error('[start-visio] Error:', e);
         return res.status(500).json({ error: 'Échec du lancement de la visio' });
     }
 }

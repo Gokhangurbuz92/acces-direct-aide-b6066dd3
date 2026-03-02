@@ -34,6 +34,7 @@ import proAuthRegister from './_handlers/pro/auth/register.js';
 import proAuthForgotPassword from './_handlers/pro/auth/forgot-password.js';
 import proAuthResetPassword from './_handlers/pro/auth/reset-password.js';
 import proAuthRegisterInvite from './_handlers/pro/auth/register-invite.js';
+import proAuthRefresh from './_handlers/pro/auth/refresh.js';
 import proMe from './_handlers/pro/me.js';
 import proMfaSetup from './_handlers/pro/mfa-setup.js';
 import proMessages from './_handlers/pro/messages.js';
@@ -178,6 +179,7 @@ export const routes = [
     { path: 'pro/auth/forgot-password', match: 'exact', handler: proAuthForgotPassword },
     { path: 'pro/auth/reset-password', match: 'exact', handler: proAuthResetPassword },
     { path: 'pro/auth/register-invite', match: 'exact', handler: proAuthRegisterInvite },
+    { path: 'pro/auth/refresh', match: 'exact', handler: proAuthRefresh },
     { path: 'pro/me', match: 'exact', handler: proMe },
     { path: 'pro/mfa-setup', match: 'exact', handler: proMfaSetup },
     { path: 'pro/services', match: 'exact', handler: proServices },

@@ -1,10 +1,12 @@
 // @ts-nocheck
 import prisma from '../../_utils/prisma.js';
+import { requireProAuth } from '../../_utils/auth.js';
 import { logProAudit } from '../../lib/pro-auth.js';
 import crypto from 'crypto';
+import logger from '../../_utils/logger.js';
 
 /**
- * Consent API
+ * Consent API (Pro-authenticated)
  *
  * POST /api/pro/consent
  *
@@ -16,7 +18,7 @@ import crypto from 'crypto';
  * - shareId: SharedDiagnostic ID
  * - signatureData: base64 canvas data URL
  */
-export default async function handler(req, res) {
+async function handler(req, res) {
     if (req.method !== 'POST') {
         return res.status(405).json({ error: 'Méthode non autorisée' });
     }
@@ -88,7 +90,9 @@ export default async function handler(req, res) {
             signatureHash,
         });
     } catch (error) {
-        console.error('[Consent] Erreur:', error.message);
+        logger.error({ err: error }, '[Consent] Erreur');
         return res.status(500).json({ error: 'Échec de l\'enregistrement du consentement.' });
     }
 }
+
+export default requireProAuth(handler);

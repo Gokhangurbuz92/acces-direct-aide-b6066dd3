@@ -1,7 +1,7 @@
-import logger from '../../_utils/logger.js';
 // @ts-nocheck
+import logger from '../../_utils/logger.js';
 import prisma from '../../_utils/prisma.js';
-import { verifyProToken } from '../../lib/pro-auth.js';
+import { requireProAuth, requireProStructureContext } from '../../_utils/auth.js';
 import crypto from 'crypto';
 
 /**
@@ -12,18 +12,27 @@ import crypto from 'crypto';
  *
  * Formats a SharedDiagnostic into the national SI-SIAO standard
  * and logs the transmission in the audit trail.
- * Production: HTTPS + mutual TLS to api.siao.gouv.fr
+ *
+ * FEATURE FLAG: SIAO_ENABLED must be 'true' for actual network calls.
+ * When disabled, returns { status: 'not_configured' }.
  */
-export default async function handler(req, res) {
+async function handler(req, res) {
     if (req.method !== 'POST') {
         return res.status(405).json({ error: 'Méthode non autorisée' });
     }
 
-    // Auth
-    const token = req.cookies?.pro_token;
-    if (!token) return res.status(401).json({ error: 'Non autorisé.' });
-    const user = verifyProToken(token);
-    if (!user) return res.status(401).json({ error: 'Session invalide.' });
+    const proCtx = requireProStructureContext(req, res);
+    if (!proCtx) return;
+
+    // Feature flag guard — no SIAO calls when disabled
+    const siaoEnabled = process.env.SIAO_ENABLED === 'true';
+    if (!siaoEnabled) {
+        return res.status(200).json({
+            ok: false,
+            status: 'not_configured',
+            message: 'L\'interopérabilité SI-SIAO n\'est pas encore activée. Contactez votre administrateur pour l\'activer.',
+        });
+    }
 
     const { shareId } = req.body || {};
     if (!shareId) {
@@ -47,7 +56,7 @@ export default async function handler(req, res) {
             transmission: {
                 id: transmissionId,
                 date: new Date().toISOString(),
-                emetteur: user.structureName || 'AccesDirectAide',
+                emetteur: proCtx.structureId,
                 version: '2.0',
             },
             demandeur: {
@@ -81,15 +90,15 @@ export default async function handler(req, res) {
                     transmissionStatus = 'TRANSMITTED';
                 } else {
                     const errText = await siaoRes.text().catch(() => '');
-                    console.error(`[SIAO] API error (${siaoRes.status}): ${errText}`);
+                    logger.error({ status: siaoRes.status, body: errText }, '[SIAO] API error');
                     transmissionStatus = 'FAILED';
                 }
             } catch (fetchErr) {
-                console.error(`[SIAO] Network error: ${fetchErr.message}`);
+                logger.error({ err: fetchErr }, '[SIAO] Network error');
                 transmissionStatus = 'NETWORK_ERROR';
             }
         } else {
-            console.warn(`[SIAO] API not configured — transmission ${transmissionId} logged locally`);
+            logger.warn({ transmissionId }, '[SIAO] API not configured — logged locally');
         }
 
         // Audit trail
@@ -98,7 +107,7 @@ export default async function handler(req, res) {
                 action: 'EXTERNAL_TRANSMISSION_SIAO',
                 entityId: shareId,
                 entityType: 'DIAGNOSTIC',
-                actorId: user.id || user.sub || 'system',
+                actorId: proCtx.userId,
                 details: JSON.stringify({
                     transmissionId,
                     destination: 'SI-SIAO National',
@@ -117,7 +126,9 @@ export default async function handler(req, res) {
             destination: 'SI-SIAO National',
         });
     } catch (error) {
-        logger.error('[SIAO] Erreur:', error.message);
+        logger.error({ err: error }, '[SIAO] Erreur');
         return res.status(500).json({ error: 'Échec interopérabilité nationale.' });
     }
 }
+
+export default requireProAuth(handler);

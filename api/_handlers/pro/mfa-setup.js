@@ -1,9 +1,10 @@
 import prisma from '../../_utils/prisma.js';
-import { requireAuth, logProAudit } from '../../lib/pro-auth.js';
+import { requireProAuth } from '../../_utils/auth.js';
+import { logProAudit } from '../../lib/pro-auth.js';
 import { generateSecret, verifyCode, buildOtpauthUrl } from '../../lib/totp.js';
 
 /**
- * MFA Setup handler
+ * MFA Setup handler (Pro-only)
  *
  * GET  → Generate secret + otpauth URL (does NOT enable MFA yet)
  * POST → Verify initial code → enable MFA
@@ -83,4 +84,5 @@ async function handler(req, res) {
     return res.status(405).json({ error: 'Method not allowed' });
 }
 
-export default requireAuth(handler);
+// Strict pro-only auth (not generic requireAuth)
+export default requireProAuth(handler);

@@ -1,9 +1,11 @@
 // @ts-nocheck
 import prisma from '../../../_utils/prisma.js';
+import { requireProAuth, requireProStructureContext } from '../../../_utils/auth.js';
 import { logProAudit } from '../../../lib/pro-auth.js';
+import logger from '../../../_utils/logger.js';
 
 /**
- * Secure File Upload Handler
+ * Secure File Upload Handler (Pro-only)
  *
  * POST /api/pro/dossier/upload-secure
  *
@@ -17,10 +19,13 @@ import { logProAudit } from '../../../lib/pro-auth.js';
  * - originalName: original filename
  * - mimeType: original MIME type
  */
-export default async function handler(req, res) {
+async function handler(req, res) {
     if (req.method !== 'POST') {
         return res.status(405).json({ error: 'Méthode non autorisée' });
     }
+
+    const proCtx = requireProStructureContext(req, res);
+    if (!proCtx) return;
 
     try {
         const { shareId, originalName, mimeType } = req.body || {};
@@ -69,7 +74,7 @@ export default async function handler(req, res) {
 
         // Audit log
         const ip = req.headers?.['x-forwarded-for'] || req.socket?.remoteAddress || 'unknown';
-        await logProAudit('FILE_UPLOADED', 'citizen', '', {
+        await logProAudit('FILE_UPLOADED', proCtx.userId, proCtx.structureId, {
             shareId,
             fileName: originalName,
             encrypted: true,
@@ -81,7 +86,9 @@ export default async function handler(req, res) {
             message: 'Fichier chiffré reçu et enregistré.',
         });
     } catch (error) {
-        console.error('[Upload Secure] Erreur:', error.message);
+        logger.error({ err: error }, '[Upload Secure] Erreur');
         return res.status(500).json({ error: 'Erreur lors de l\'envoi.' });
     }
 }
+
+export default requireProAuth(handler);

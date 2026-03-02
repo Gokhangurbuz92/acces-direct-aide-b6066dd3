@@ -1,6 +1,7 @@
 // @ts-nocheck
 import prisma from '../../_utils/prisma.js';
-import { verifyProToken } from '../../lib/pro-auth.js';
+import { requireProAuth, requireProStructureContext } from '../../_utils/auth.js';
+import logger from '../../_utils/logger.js';
 
 /**
  * Dossier AI Synthesis API (Pro-only)
@@ -23,20 +24,13 @@ Chaque point doit être une phrase courte, factuelle et actionnable pour le bén
 Format ta réponse UNIQUEMENT comme un tableau JSON de 3 chaînes de caractères.
 Exemple: ["Point 1", "Point 2", "Point 3"]`;
 
-export default async function handler(req, res) {
+async function handler(req, res) {
     if (req.method !== 'POST') {
         return res.status(405).json({ error: 'Méthode non autorisée' });
     }
 
-    // Auth: only pro users
-    const token = req.cookies?.pro_token;
-    if (!token) {
-        return res.status(401).json({ error: 'Non autorisé.' });
-    }
-    const user = verifyProToken(token);
-    if (!user) {
-        return res.status(401).json({ error: 'Session invalide.' });
-    }
+    const proCtx = requireProStructureContext(req, res);
+    if (!proCtx) return;
 
     const apiKey = process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY;
     if (!apiKey) {
@@ -83,7 +77,7 @@ export default async function handler(req, res) {
 
         if (!response.ok) {
             const errText = await response.text().catch(() => '');
-            console.error('[Synthesis] Gemini error:', response.status, errText.slice(0, 200));
+            logger.error({ status: response.status, body: errText.slice(0, 200) }, '[Synthesis] Gemini error');
             return res.status(502).json({ error: 'Erreur du service IA.' });
         }
 
@@ -109,7 +103,9 @@ export default async function handler(req, res) {
 
         return res.status(200).json({ ok: true, points });
     } catch (error) {
-        console.error('[Synthesis] Erreur:', error.message);
+        logger.error({ err: error }, '[Synthesis] Erreur');
         return res.status(500).json({ error: 'Échec de la synthèse IA.' });
     }
 }
+
+export default requireProAuth(handler);

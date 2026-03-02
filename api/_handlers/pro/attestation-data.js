@@ -1,7 +1,8 @@
 // @ts-nocheck
 import prisma from '../../_utils/prisma.js';
-import { verifyProToken } from '../../lib/pro-auth.js';
+import { requireProAuth, requireProStructureContext } from '../../_utils/auth.js';
 import crypto from 'crypto';
+import logger from '../../_utils/logger.js';
 
 /**
  * Attestation Data API (Pro-only)
@@ -11,16 +12,13 @@ import crypto from 'crypto';
  * Prepares certified data for the official attestation PDF.
  * Generates a SHA-256 certification hash for tamper-proof verification.
  */
-export default async function handler(req, res) {
+async function handler(req, res) {
     if (req.method !== 'GET') {
         return res.status(405).json({ error: 'Méthode non autorisée' });
     }
 
-    // Auth
-    const token = req.cookies?.pro_token;
-    if (!token) return res.status(401).json({ error: 'Non autorisé.' });
-    const user = verifyProToken(token);
-    if (!user) return res.status(401).json({ error: 'Session invalide.' });
+    const proCtx = requireProStructureContext(req, res);
+    if (!proCtx) return;
 
     const url = new URL(req.url || '/', `https://${req.headers?.host || 'localhost'}`);
     const shareId = url.searchParams.get('shareId');
@@ -53,10 +51,9 @@ export default async function handler(req, res) {
         delete results._files;
         delete results._consent;
 
-        // Agent info from auth token
-        const proName = user.firstName
-            ? `${user.firstName} ${(user.lastName || '')[0]}.`
-            : 'Agent ADA';
+        // Agent info from auth context
+        const user = req.user || {};
+        const proName = user.email ? user.email.split('@')[0] : 'Agent ADA';
 
         return res.status(200).json({
             ok: true,
@@ -70,14 +67,16 @@ export default async function handler(req, res) {
                 professional: {
                     name: proName,
                     role: user.role || 'Agent',
-                    structure: user.structureName || 'AccesDirectAide',
+                    structure: proCtx.structureId,
                 },
                 certHash,
                 verifyUrl: `https://accesdirectaide.fr/verify/${reference}`,
             },
         });
     } catch (error) {
-        console.error('[Attestation] Erreur:', error.message);
+        logger.error({ err: error }, '[Attestation] Erreur');
         return res.status(500).json({ error: 'Erreur attestation.' });
     }
 }
+
+export default requireProAuth(handler);

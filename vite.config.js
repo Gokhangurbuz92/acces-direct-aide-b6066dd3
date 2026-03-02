@@ -130,6 +130,7 @@ export default defineConfig({
 
   build: {
     sourcemap: process.env.SENTRY_AUTH_TOKEN ? "hidden" : true,
+    chunkSizeWarningLimit: 1000,
     rollupOptions: {
       output: {
         manualChunks: (id) => {

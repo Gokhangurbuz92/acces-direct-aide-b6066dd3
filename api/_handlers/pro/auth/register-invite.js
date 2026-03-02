@@ -2,6 +2,7 @@
 import logger from '../../../_utils/logger.js';
 import bcrypt from 'bcryptjs';
 import { signProToken, logProAudit } from '../../../lib/pro-auth.js';
+import { checkRateLimit, getClientIp } from '../../../_utils/rateLimit.js';
 import prisma from '../../../_utils/prisma.js';
 
 /**
@@ -53,6 +54,14 @@ export default async function handler(req, res) {
 
     if (req.method !== 'POST') {
         return res.status(405).json({ error: 'Méthode non autorisée' });
+    }
+
+    const ip = getClientIp(req);
+
+    // Rate limit registration attempts
+    const limit = await checkRateLimit('REGISTER_INVITE', `ip:${ip}`);
+    if (!limit.allowed) {
+        return res.status(429).json(limit.error || { error: 'Trop de tentatives. Réessayez plus tard.' });
     }
 
     const { token, password } = req.body;

@@ -91,8 +91,38 @@ export default async function handler(req, res) {
 
         const message = `Rappel ADA : Votre RDV avec ${proName} est prévu le ${dateStr}. ${mode}.`;
 
-        // In production, replace with: await twilio.messages.create(...)
-        logger.info(`[SMS QUEUED → ${maskPhone(phoneNumber)}]: ${message}`);
+        // Send SMS via Twilio REST API (no SDK dependency)
+        const twilioSid = process.env.TWILIO_SID;
+        const twilioAuth = process.env.TWILIO_AUTH_TOKEN;
+        const twilioFrom = process.env.TWILIO_FROM;
+
+        if (twilioSid && twilioAuth && twilioFrom) {
+            const twilioUrl = `https://api.twilio.com/2010-04-01/Accounts/${twilioSid}/Messages.json`;
+            const twilioBody = new URLSearchParams({
+                To: phoneNumber.replace(/\s/g, ''),
+                From: twilioFrom,
+                Body: message,
+            });
+
+            const twilioRes = await fetch(twilioUrl, {
+                method: 'POST',
+                headers: {
+                    Authorization: `Basic ${Buffer.from(`${twilioSid}:${twilioAuth}`).toString('base64')}`,
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                },
+                body: twilioBody.toString(),
+            });
+
+            if (!twilioRes.ok) {
+                const errBody = await twilioRes.text().catch(() => '');
+                console.error(`[SMS] Twilio error (${twilioRes.status}): ${errBody}`);
+            } else {
+                const smsResult = await twilioRes.json();
+                console.info(`[SMS] Sent to=${maskPhone(phoneNumber)} sid=${smsResult.sid}`);
+            }
+        } else {
+            console.warn(`[SMS] Twilio not configured — message queued locally: ${maskPhone(phoneNumber)}`);
+        }
 
         // Audit
         const ip = req.headers?.['x-forwarded-for'] || req.socket?.remoteAddress || 'unknown';

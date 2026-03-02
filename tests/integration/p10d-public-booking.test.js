@@ -89,6 +89,20 @@ function nextIp() {
 }
 
 /**
+ * Find the next Monday that is at least 2 days in the future.
+ * Returns an ISO date string like '2026-03-09'.
+ */
+function getNextMondayDate() {
+  const now = new Date();
+  // Start from 3 days ahead to be safely in the future
+  const base = new Date(now.getTime() + 3 * 24 * 60 * 60 * 1000);
+  const dayOfWeek = base.getUTCDay(); // 0=Sun … 6=Sat
+  const daysUntilMonday = dayOfWeek === 0 ? 1 : dayOfWeek === 1 ? 0 : 8 - dayOfWeek;
+  const monday = new Date(base.getTime() + daysUntilMonday * 24 * 60 * 60 * 1000);
+  return monday.toISOString().slice(0, 10);
+}
+
+/**
  * @param {string} url
  * @param {{
  *   method?: string,
@@ -183,6 +197,7 @@ afterEach(async () => {
 
 async function createPublicBookingFixture() {
   const suffix = `${Date.now()}-${Math.random().toString(16).slice(2, 8)}`;
+  const testDate = getNextMondayDate();
 
   const structure = await prisma.structure.create({
     data: {
@@ -239,8 +254,8 @@ async function createPublicBookingFixture() {
     data: {
       structureId: structure.id,
       serviceId: service.id,
-      startAt: new Date('2026-03-02T09:30:00.000Z'),
-      endAt: new Date('2026-03-02T10:00:00.000Z'),
+      startAt: new Date(`${testDate}T09:30:00.000Z`),
+      endAt: new Date(`${testDate}T10:00:00.000Z`),
       status: 'confirmed',
       beneficiaryName: 'Occuped Slot',
     },
@@ -250,8 +265,8 @@ async function createPublicBookingFixture() {
   const timeOff = await prisma.proTimeOff.create({
     data: {
       structureId: structure.id,
-      startAt: new Date('2026-03-02T10:30:00.000Z'),
-      endAt: new Date('2026-03-02T11:00:00.000Z'),
+      startAt: new Date(`${testDate}T10:30:00.000Z`),
+      endAt: new Date(`${testDate}T11:00:00.000Z`),
       reason: 'Fermeture',
     },
   });
@@ -280,6 +295,7 @@ async function createPublicBookingFixture() {
     service,
     citizen,
     unverifiedCitizen,
+    testDate,
   };
 }
 
@@ -318,7 +334,7 @@ describe('P10-D public booking flow', () => {
     const authCookie = buildUserCookie(fixture.citizen);
 
     const res = await invokeApi(
-      `/api/rdv/structures/${fixture.structure.slug}/slots?serviceId=${fixture.service.id}&from=2026-03-02&to=2026-03-02`,
+      `/api/rdv/structures/${fixture.structure.slug}/slots?serviceId=${fixture.service.id}&from=${fixture.testDate}&to=${fixture.testDate}`,
       {
         headers: { cookie: authCookie },
       },
@@ -327,10 +343,10 @@ describe('P10-D public booking flow', () => {
     expect(res.statusCode).toBe(200);
     expect(Array.isArray(res.body.slots)).toBe(true);
     const starts = res.body.slots.map((slot) => slot.startAt);
-    expect(starts).toContain('2026-03-02T09:00:00.000Z');
-    expect(starts).toContain('2026-03-02T10:00:00.000Z');
-    expect(starts).not.toContain('2026-03-02T09:30:00.000Z');
-    expect(starts).not.toContain('2026-03-02T10:30:00.000Z');
+    expect(starts).toContain(`${fixture.testDate}T09:00:00.000Z`);
+    expect(starts).toContain(`${fixture.testDate}T10:00:00.000Z`);
+    expect(starts).not.toContain(`${fixture.testDate}T09:30:00.000Z`);
+    expect(starts).not.toContain(`${fixture.testDate}T10:30:00.000Z`);
   });
 
   it('creates appointment idempotently, sends confirmation email with ICS, and enforces owner-only get/cancel', async () => {
@@ -343,7 +359,7 @@ describe('P10-D public booking flow', () => {
       body: {
         structureSlug: fixture.structure.slug,
         serviceId: fixture.service.id,
-        startAt: '2026-03-02T09:00:00.000Z',
+        startAt: `${fixture.testDate}T09:00:00.000Z`,
         idempotencyKey: 'idem-key-1',
       },
     });
@@ -364,7 +380,7 @@ describe('P10-D public booking flow', () => {
       body: {
         structureSlug: fixture.structure.slug,
         serviceId: fixture.service.id,
-        startAt: '2026-03-02T09:00:00.000Z',
+        startAt: `${fixture.testDate}T09:00:00.000Z`,
         idempotencyKey: 'idem-key-1',
       },
     });
@@ -426,7 +442,7 @@ describe('P10-D public booking flow', () => {
       body: {
         structureSlug: fixture.structure.slug,
         serviceId: fixture.service.id,
-        startAt: '2026-03-02T09:00:00.000Z',
+        startAt: `${fixture.testDate}T09:00:00.000Z`,
         idempotencyKey: 'idem-key-unverified',
       },
     });

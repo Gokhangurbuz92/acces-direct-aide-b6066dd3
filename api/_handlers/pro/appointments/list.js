@@ -1,4 +1,5 @@
 import prisma from '../../../_utils/prisma.js';
+import logger from '../../../_utils/logger.js';
 import { requireProAuth, requireProStructureContext } from '../../../_utils/auth.js';
 /**
  * @param {import('../../../_utils/http-types').ApiRequest} req
@@ -75,7 +76,7 @@ async function handler(req, res) {
         });
 
     } catch (e) {
-        console.error('List appointments error:', e);
+        logger.error('List appointments error:', e);
         return res.status(500).json({ error: 'Internal Server Error' });
     }
 }

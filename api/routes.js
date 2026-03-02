@@ -109,6 +109,7 @@ import cronIngestAids from './_handlers/cron/ingest-aids.js';
 import cronPurge from './_handlers/cron/purge.js';
 import cronLinkCheck from './_handlers/cron/link-check.js';
 import cronHiveScan from './_handlers/cron/hive-scan.js';
+import cronRdvReminder from './_handlers/cron/rdv-reminder.js';
 
 // --- Admin ---
 import adminPrivacyExport from './_handlers/admin/privacy/export.js';
@@ -250,6 +251,7 @@ export const routes = [
     { path: 'cron/ingest-aids', match: 'exact', handler: cronIngestAids },
     { path: 'cron/purge', match: 'exact', handler: cronPurge },
     { path: 'cron/link-check', match: 'exact', handler: cronLinkCheck },
+    { path: 'cron/rdv-reminder', match: 'exact', handler: cronRdvReminder },
 
     // --- Admin ---
     { path: 'admin/privacy/export', match: 'exact', handler: adminPrivacyExport },

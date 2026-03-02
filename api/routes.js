@@ -55,6 +55,8 @@ import proNotifications from './_handlers/pro/notifications.js';
 import proAudit from './_handlers/pro/audit.js';
 import proReports from './_handlers/pro/reports.js';
 import proDossierUpload from './_handlers/pro/dossier/upload-secure.js';
+import proDossierExport from './_handlers/pro/dossier/export.js';
+import proDossierViews from './_handlers/pro/dossier/views.js';
 import proConsent from './_handlers/pro/consent.js';
 import proDossierSynthesis from './_handlers/pro/dossier-synthesis.js';
 import proRegionalStats from './_handlers/pro/regional-stats.js';
@@ -196,6 +198,8 @@ export const routes = [
     { path: 'pro/audit', match: 'exact', handler: proAudit },
     { path: 'pro/reports', match: 'exact', handler: proReports },
     { path: 'pro/dossier/upload-secure', match: 'exact', handler: proDossierUpload },
+    { path: 'pro/dossier/export', match: 'exact', handler: proDossierExport },
+    { path: 'pro/dossier/views', match: 'exact', handler: proDossierViews },
     { path: 'pro/consent', match: 'exact', handler: proConsent },
     { path: 'pro/dossier-synthesis', match: 'exact', handler: proDossierSynthesis },
     { path: 'pro/regional-stats', match: 'exact', handler: proRegionalStats },

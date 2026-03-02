@@ -63,6 +63,7 @@ import proInteropSiao from './_handlers/pro/interop-siao.js';
 import proSystemMaint from './_handlers/pro/system-maintenance.js';
 import proAgentDiscovery from './_handlers/pro/agent-discovery.js';
 import proAgentScheduler from './_handlers/pro/agent-scheduler.js';
+import proHealthCheck from './_handlers/pro/health-check.js';
 import tts from './_handlers/tts.js';
 
 // --- Public Content ---
@@ -202,6 +203,7 @@ export const routes = [
     { path: 'pro/system-maintenance', match: 'exact', handler: proSystemMaint },
     { path: 'pro/agent-discovery', match: 'exact', handler: proAgentDiscovery },
     { path: 'pro/agent-scheduler', match: 'exact', handler: proAgentScheduler },
+    { path: 'pro/health-check', match: 'exact', handler: proHealthCheck },
     { path: 'tts', match: 'exact', handler: tts },
 
     // --- Public Content ---

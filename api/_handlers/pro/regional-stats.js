@@ -65,6 +65,32 @@ export default async function handler(req, res) {
             status: s._count.proUsers > 0 ? 'optimal' : 'inactive',
         }));
 
+        // 6. Weekly trend data (last 7 days)
+        const dayLabels = ['Dim', 'Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam'];
+        const trend = [];
+        for (let i = 6; i >= 0; i--) {
+            const dayStart = new Date(now);
+            dayStart.setDate(dayStart.getDate() - i);
+            dayStart.setHours(0, 0, 0, 0);
+            const dayEnd = new Date(dayStart);
+            dayEnd.setHours(23, 59, 59, 999);
+
+            const [rdvCount, diagCount] = await Promise.all([
+                prisma.proAppointment.count({
+                    where: { startAt: { gte: dayStart, lte: dayEnd } },
+                }),
+                prisma.sharedDiagnostic.count({
+                    where: { createdAt: { gte: dayStart, lte: dayEnd } },
+                }),
+            ]);
+
+            trend.push({
+                day: dayLabels[dayStart.getDay()],
+                rdv: rdvCount,
+                diag: diagCount,
+            });
+        }
+
         return res.status(200).json({
             ok: true,
             stats: {
@@ -73,6 +99,7 @@ export default async function handler(req, res) {
                 totalAgents: agentsCount,
                 appointmentsThisMonth,
                 cities,
+                trend,
             },
         });
     } catch (error) {

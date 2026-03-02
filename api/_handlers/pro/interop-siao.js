@@ -60,8 +60,37 @@ export default async function handler(req, res) {
             },
         };
 
-        // Production: POST to https://api.siao.gouv.fr/v2/demande with mTLS
-        logger.info(`[SIAO] Transmission ${transmissionId} → api.siao.gouv.fr`);
+        // Transmit to SI-SIAO national API (if configured)
+        const siaoUrl = process.env.SIAO_API_URL;
+        let transmissionStatus = 'LOCAL_ONLY';
+
+        if (siaoUrl) {
+            try {
+                const siaoRes = await fetch(`${siaoUrl}/v2/demande`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-ADA-Transmission-Id': transmissionId,
+                        ...(process.env.SIAO_API_KEY ? { Authorization: `Bearer ${process.env.SIAO_API_KEY}` } : {}),
+                    },
+                    body: JSON.stringify(siaoPayload),
+                    signal: AbortSignal.timeout(15000),
+                });
+
+                if (siaoRes.ok) {
+                    transmissionStatus = 'TRANSMITTED';
+                } else {
+                    const errText = await siaoRes.text().catch(() => '');
+                    console.error(`[SIAO] API error (${siaoRes.status}): ${errText}`);
+                    transmissionStatus = 'FAILED';
+                }
+            } catch (fetchErr) {
+                console.error(`[SIAO] Network error: ${fetchErr.message}`);
+                transmissionStatus = 'NETWORK_ERROR';
+            }
+        } else {
+            console.warn(`[SIAO] API not configured — transmission ${transmissionId} logged locally`);
+        }
 
         // Audit trail
         await prisma.auditLog.create({
@@ -73,6 +102,7 @@ export default async function handler(req, res) {
                 details: JSON.stringify({
                     transmissionId,
                     destination: 'SI-SIAO National',
+                    transmissionStatus,
                     fieldsExported: Object.keys(siaoPayload.demandeur).length,
                 }),
                 ipHash: 'SYSTEM_GATEWAY',
@@ -82,6 +112,7 @@ export default async function handler(req, res) {
         return res.status(200).json({
             ok: true,
             transmissionId,
+            transmissionStatus,
             timestamp: siaoPayload.transmission.date,
             destination: 'SI-SIAO National',
         });

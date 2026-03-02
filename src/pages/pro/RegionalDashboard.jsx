@@ -36,16 +36,10 @@ export default function RegionalDashboard() {
     const [data, setData] = useState(null);
     const [loading, setLoading] = useState(true);
 
-    // Simulated trend data (production: from /api/pro/regional-stats?trend=7d)
+    // Trend data from API (real 7-day aggregation from regional-stats)
     const trendData = useMemo(
-        () => [
-            { day: 'Lun', rdv: 42, diag: 38 },
-            { day: 'Mar', rdv: 65, diag: 58 },
-            { day: 'Mer', rdv: 51, diag: 48 },
-            { day: 'Jeu', rdv: 78, diag: 72 },
-            { day: 'Ven', rdv: 93, diag: 88 },
-        ],
-        []
+        () => data?.stats?.trend || [],
+        [data]
     );
 
     const fetchStats = useCallback(async () => {

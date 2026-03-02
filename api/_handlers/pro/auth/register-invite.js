@@ -1,4 +1,5 @@
 // @ts-nocheck
+import logger from '../../../_utils/logger.js';
 import bcrypt from 'bcryptjs';
 import { signProToken, logProAudit } from '../../../lib/pro-auth.js';
 import prisma from '../../../_utils/prisma.js';
@@ -139,7 +140,7 @@ export default async function handler(req, res) {
             },
         });
     } catch (error) {
-        console.error('[Register Invite] Erreur:', error.message);
+        logger.error('[Register Invite] Erreur:', error.message);
         return res.status(500).json({ error: "Erreur lors de l'inscription." });
     }
 }

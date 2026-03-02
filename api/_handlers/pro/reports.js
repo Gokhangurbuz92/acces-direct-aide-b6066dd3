@@ -1,4 +1,5 @@
 // @ts-nocheck
+import logger from '../../_utils/logger.js';
 import prisma from '../../_utils/prisma.js';
 import { AUTH_ROLE, requireProRole, requireProStructureContext } from '../../_utils/auth.js';
 
@@ -154,7 +155,7 @@ async function handler(req, res) {
             })),
         });
     } catch (error) {
-        console.error('[Reports] Erreur:', error.message);
+        logger.error('[Reports] Erreur:', error.message);
         return res.status(500).json({ error: 'Impossible de générer le rapport.' });
     }
 }

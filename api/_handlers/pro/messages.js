@@ -1,4 +1,5 @@
 import prisma from '../../_utils/prisma.js';
+import logger from '../../_utils/logger.js';
 import { requireProAuth, requireProStructureContext } from '../../_utils/auth.js';
 import { encrypt, decrypt, generateAttachmentToken } from '../../lib/crypto.js';
 import { storage } from '../../lib/storage.js';
@@ -115,7 +116,7 @@ async function handler(req, res) {
         // Cleanup Storage
         if (message.attachments.length > 0) {
             for (const attachment of message.attachments) {
-                await storage.delete(attachment.storage_key).catch(e => console.error(`Failed to delete storage key ${attachment.storage_key}`, e));
+                await storage.delete(attachment.storage_key).catch(e => logger.error(`Failed to delete storage key ${attachment.storage_key}`, e));
             }
         }
 

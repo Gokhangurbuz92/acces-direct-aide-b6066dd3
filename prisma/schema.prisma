@@ -553,6 +553,7 @@ model ProUser {
   proAppointmentsCreated   ProAppointment[]         @relation("ProAppointmentCreatedBy")
   rdvMessagesSent          RdvConversationMessage[] @relation("RdvMessageSenderPro")
   notifications            ProNotification[]
+  outlookToken             ProOutlookToken?
   structure                Structure                @relation(fields: [structureId], references: [id])
 
   // --- MFA (TOTP) ---
@@ -1118,4 +1119,16 @@ model ProNotification {
 
   @@index([userId, readAt])
   @@index([structureId, createdAt])
+}
+
+model ProOutlookToken {
+  id           String   @id @default(uuid())
+  userId       String   @unique
+  accessToken  String
+  refreshToken String
+  expiresAt    DateTime
+  scope        String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  user         ProUser  @relation(fields: [userId], references: [id], onDelete: Cascade)
 }

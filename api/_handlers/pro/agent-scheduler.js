@@ -1,6 +1,7 @@
 // @ts-nocheck
 import prisma from '../../_utils/prisma.js';
-import { verifyProToken } from '../../lib/pro-auth.js';
+import { requireProAuth } from '../../_utils/auth.js';
+import logger from '../../_utils/logger.js';
 
 /**
  * Agent Scheduler API (Pro-only)
@@ -18,15 +19,10 @@ import { verifyProToken } from '../../lib/pro-auth.js';
 const GEMINI_URL =
     'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent';
 
-export default async function handler(req, res) {
+async function handler(req, res) {
     if (req.method !== 'POST') {
         return res.status(405).json({ error: 'Méthode non autorisée' });
     }
-
-    const token = req.cookies?.pro_token;
-    if (!token) return res.status(401).json({ error: 'Non autorisé.' });
-    const user = verifyProToken(token);
-    if (!user) return res.status(401).json({ error: 'Session invalide.' });
 
     const { poleId, categoryId } = req.body || {};
     if (!poleId) {
@@ -87,7 +83,7 @@ export default async function handler(req, res) {
                             summary: item.summary || '',
                             category,
                             confidence: item.confidence,
-                            scheduledBy: user.sub || user.id || 'system',
+                            scheduledBy: req.user?.userId || 'system',
                         },
                     },
                 });
@@ -126,7 +122,9 @@ export default async function handler(req, res) {
             nextSchedule: 'Prochain cycle automatique',
         });
     } catch (error) {
-        console.error('[Scheduler]', error.message);
+        logger.error({ err: error }, '[Scheduler] Erreur');
         return res.status(500).json({ error: "Échec de l'orchestration." });
     }
 }
+
+export default requireProAuth(handler);

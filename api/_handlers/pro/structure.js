@@ -1,4 +1,5 @@
 
+import logger from '../../_utils/logger.js';
 import prisma from '../../_utils/prisma.js';
 import { logProAudit } from '../../lib/pro-auth.js';
 import { AUTH_ROLE, requireProRole, requireProStructureContext } from '../../_utils/auth.js';
@@ -62,7 +63,7 @@ async function handler(req, res) {
         return res.status(200).json(updated);
 
     } catch (e) {
-        console.error("Structure Settings API Error", e);
+        logger.error("Structure Settings API Error", e);
         return res.status(500).json({ error: "Internal Error" });
     }
 }

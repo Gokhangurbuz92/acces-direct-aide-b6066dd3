@@ -1,4 +1,5 @@
 
+import logger from '../../../_utils/logger.js';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import { signProToken, checkRateLimit, logProAudit } from '../../../lib/pro-auth.js';
@@ -102,7 +103,7 @@ export default async function handler(req, res) {
         });
 
     } catch (e) {
-        console.error("Login error", e);
+        logger.error("Login error", e);
         return res.status(500).json({ error: "Login failed" });
     }
 }

@@ -1,14 +1,38 @@
 // @ts-nocheck
 import { requireProAuth } from '../../_utils/auth.js';
 import logger from '../../_utils/logger.js';
+import prisma from '../../_utils/prisma.js';
+import crypto from 'crypto';
 
 const OUTLOOK_CLIENT_ID = process.env.OUTLOOK_CLIENT_ID || '';
 const OUTLOOK_CLIENT_SECRET = process.env.OUTLOOK_CLIENT_SECRET || '';
 const OUTLOOK_REDIRECT_URI = process.env.OUTLOOK_REDIRECT_URI || '';
 const OUTLOOK_ENABLED = process.env.OUTLOOK_ENABLED === 'true';
+const TOKEN_KEY = process.env.OUTLOOK_TOKEN_ENCRYPTION_KEY || '';
 
 const MICROSOFT_AUTH_URL = 'https://login.microsoftonline.com/common/oauth2/v2.0';
 const SCOPES = 'openid profile email Calendars.ReadWrite offline_access';
+
+// ── AES-256-GCM helpers ──
+function encrypt(text) {
+    if (!TOKEN_KEY || TOKEN_KEY.length < 32) return text; // dev fallback: plaintext
+    const key = Buffer.from(TOKEN_KEY.slice(0, 32), 'utf8');
+    const iv = crypto.randomBytes(12);
+    const cipher = crypto.createCipheriv('aes-256-gcm', key, iv);
+    const encrypted = Buffer.concat([cipher.update(text, 'utf8'), cipher.final()]);
+    const tag = cipher.getAuthTag();
+    return `${iv.toString('hex')}:${tag.toString('hex')}:${encrypted.toString('hex')}`;
+}
+
+function decrypt(data) {
+    if (!TOKEN_KEY || TOKEN_KEY.length < 32) return data; // dev fallback
+    if (!data.includes(':')) return data; // plaintext fallback
+    const [ivHex, tagHex, encHex] = data.split(':');
+    const key = Buffer.from(TOKEN_KEY.slice(0, 32), 'utf8');
+    const decipher = crypto.createDecipheriv('aes-256-gcm', key, Buffer.from(ivHex, 'hex'));
+    decipher.setAuthTag(Buffer.from(tagHex, 'hex'));
+    return decipher.update(Buffer.from(encHex, 'hex'), undefined, 'utf8') + decipher.final('utf8');
+}
 
 /**
  * Outlook OAuth Integration
@@ -38,12 +62,13 @@ async function handler(req, res) {
 
     const url = new URL(req.url || '/', `https://${req.headers?.host || 'localhost'}`);
     const action = url.searchParams.get('action') || '';
+    const userId = req.proUser?.id;
 
     try {
         // ── Authorize: Redirect to Microsoft login ──
         if (action === 'authorize' && req.method === 'GET') {
             const state = Buffer.from(JSON.stringify({
-                userId: req.proUser?.id,
+                userId,
                 ts: Date.now(),
             })).toString('base64url');
 
@@ -100,9 +125,26 @@ async function handler(req, res) {
 
             const tokens = await tokenResponse.json();
 
-            // Store tokens securely (in session or DB)
-            // For now, return success with token metadata
-            logger.info({ userId: req.proUser?.id }, '[Outlook] OAuth connected');
+            // Persist tokens (encrypted at rest)
+            const expiresAt = new Date(Date.now() + (tokens.expires_in || 3600) * 1000);
+            await prisma.proOutlookToken.upsert({
+                where: { userId },
+                update: {
+                    accessToken: encrypt(tokens.access_token),
+                    refreshToken: encrypt(tokens.refresh_token || ''),
+                    expiresAt,
+                    scope: tokens.scope || null,
+                },
+                create: {
+                    userId,
+                    accessToken: encrypt(tokens.access_token),
+                    refreshToken: encrypt(tokens.refresh_token || ''),
+                    expiresAt,
+                    scope: tokens.scope || null,
+                },
+            });
+
+            logger.info({ userId }, '[Outlook] OAuth connected — tokens persisted');
 
             return res.status(200).json({
                 ok: true,
@@ -114,18 +156,34 @@ async function handler(req, res) {
 
         // ── Status: Check if connected ──
         if (action === 'status' && req.method === 'GET') {
-            // TODO: Check stored tokens in DB
+            const stored = await prisma.proOutlookToken.findUnique({
+                where: { userId },
+                select: { expiresAt: true, scope: true, updatedAt: true },
+            });
+
+            if (!stored) {
+                return res.status(200).json({
+                    ok: true,
+                    status: 'not_connected',
+                    outlookEnabled: OUTLOOK_ENABLED,
+                });
+            }
+
+            const isExpired = stored.expiresAt < new Date();
             return res.status(200).json({
                 ok: true,
-                status: 'not_connected',
+                status: isExpired ? 'token_expired' : 'connected',
+                expiresAt: stored.expiresAt.toISOString(),
+                scope: stored.scope,
+                connectedSince: stored.updatedAt.toISOString(),
                 outlookEnabled: OUTLOOK_ENABLED,
             });
         }
 
         // ── Disconnect ──
         if (action === 'disconnect' && req.method === 'POST') {
-            // TODO: Remove stored tokens from DB
-            logger.info({ userId: req.proUser?.id }, '[Outlook] Disconnected');
+            await prisma.proOutlookToken.deleteMany({ where: { userId } });
+            logger.info({ userId }, '[Outlook] Disconnected — tokens removed');
             return res.status(200).json({ ok: true, status: 'disconnected' });
         }
 

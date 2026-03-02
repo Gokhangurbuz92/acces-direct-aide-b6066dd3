@@ -1,4 +1,5 @@
 // @ts-nocheck
+import logger from '../../_utils/logger.js';
 import prisma from '../../_utils/prisma.js';
 import { requireProAuth, requireProStructureContext } from '../../_utils/auth.js';
 
@@ -45,7 +46,7 @@ async function refreshOutlookToken(settings, structureId) {
 
         const tokens = await response.json();
         if (!tokens.access_token) {
-            console.error('[Outlook Availability] Token refresh failed:', tokens.error || 'unknown');
+            logger.error('[Outlook Availability] Token refresh failed:', tokens.error || 'unknown');
             return null;
         }
 
@@ -66,7 +67,7 @@ async function refreshOutlookToken(settings, structureId) {
         console.info('[Outlook Availability] Token refreshed for structure:', structureId);
         return tokens.access_token;
     } catch (err) {
-        console.error('[Outlook Availability] Token refresh error:', err.message);
+        logger.error('[Outlook Availability] Token refresh error:', err.message);
         return null;
     }
 }
@@ -141,7 +142,7 @@ async function handler(req, res) {
 
         if (!graphResponse.ok) {
             const errorData = await graphResponse.json().catch(() => ({}));
-            console.error('[Outlook Availability] Graph API error:', errorData);
+            logger.error('[Outlook Availability] Graph API error:', errorData);
 
             // Token rejected at runtime (maybe revoked externally)
             if (graphResponse.status === 401) {
@@ -202,7 +203,7 @@ async function handler(req, res) {
             end,
         });
     } catch (error) {
-        console.error('[Outlook Availability] Erreur:', error.message);
+        logger.error('[Outlook Availability] Erreur:', error.message);
         return res.status(500).json({ error: 'Erreur serveur interne' });
     }
 }

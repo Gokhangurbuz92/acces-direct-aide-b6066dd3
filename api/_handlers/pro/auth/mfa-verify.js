@@ -1,4 +1,5 @@
 import prisma from '../../../_utils/prisma.js';
+import logger from '../../../_utils/logger.js';
 import { signProToken, checkRateLimit, logProAudit } from '../../../lib/pro-auth.js';
 import { verifyCode } from '../../../lib/totp.js';
 import { verifyJwt } from '../../../lib/pro-auth.js';
@@ -86,7 +87,7 @@ export default async function handler(req, res) {
             },
         });
     } catch (e) {
-        console.error('MFA verify error', e);
+        logger.error('MFA verify error', e);
         return res.status(500).json({ error: 'MFA verification failed' });
     }
 }

@@ -1,4 +1,5 @@
 import { requireProAuth, requireProStructureContext } from '../../_utils/auth.js';
+import logger from '../../_utils/logger.js';
 import prisma from '../../_utils/prisma.js';
 /**
  * @param {import('../../_utils/http-types').ApiRequest} req
@@ -36,7 +37,7 @@ async function handler(req, res) {
         });
 
     } catch (e) {
-        console.error("Me API Error", e);
+        logger.error("Me API Error", e);
         return res.status(500).json({ error: "Internal server error" });
     }
 }

@@ -1,4 +1,5 @@
 import { kv } from '../../../_utils/kv.js';
+import logger from '../../../_utils/logger.js';
 import bcrypt from 'bcryptjs';
 import { checkRateLimit } from '../../../_utils/rateLimit.js';
 import { logProAudit } from '../../../lib/pro-auth.js';
@@ -54,7 +55,7 @@ export default async function handler(req, res) {
         return res.status(200).json({ message: "Mot de passe modifié avec succès." });
 
     } catch (e) {
-        console.error("Reset Password Error", e);
+        logger.error("Reset Password Error", e);
         return res.status(500).json({ error: "Internal Error" });
     }
 }

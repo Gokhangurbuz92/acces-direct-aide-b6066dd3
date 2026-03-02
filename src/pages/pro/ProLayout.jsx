@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import SEO from '@/components/SEO';
 import NotificationCenter from '@/components/NotificationCenter';
 import OnboardingTour from '@/components/OnboardingTour';
+import ProBreadcrumb from '@/components/ProBreadcrumb';
 
 export default function ProLayout() {
     const navigate = useNavigate();
@@ -116,9 +117,13 @@ export default function ProLayout() {
             <main className="flex-1 overflow-auto">
                 <header className="bg-white border-b border-slate-200 p-4 sticky top-0 md:hidden flex justify-between items-center">
                     <h1 className="font-bold text-lg text-blue-800">AccesDirect Pro</h1>
-                    <Button size="sm" variant="ghost" onClick={handleLogout}><LogOut className="h-5 w-5" /></Button>
+                    <div className="flex items-center gap-2">
+                        {user && <NotificationCenter />}
+                        <Button size="sm" variant="ghost" onClick={handleLogout}><LogOut className="h-5 w-5" /></Button>
+                    </div>
                 </header>
                 <div className="p-8">
+                    <ProBreadcrumb />
                     <Outlet context={{ user }} />
                 </div>
             </main>

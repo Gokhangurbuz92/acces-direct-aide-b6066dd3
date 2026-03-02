@@ -4,7 +4,9 @@
  * Vercel build entrypoint (safe).
  *
  * Goals:
- * - Keep `npm run build` unchanged (still runs `vite build`).
+ * - Keep `npm run build` unchanged for local dev (vite build + prerender + sitemap).
+ * - On Vercel: run `vite build` always. Only run prerender + sitemap on PRODUCTION
+ *   (preview/branch deployments skip SSR prerender to avoid build timeouts).
  * - Run Prisma migrations automatically in **production only**.
  * - Never print environment values (DB URLs, tokens, DSNs, etc).
  *
@@ -36,7 +38,26 @@ if (isProduction) {
   console.log('[vercel-build] skipping prisma migrate deploy (not production)');
 }
 
-// Build the frontend bundle.
-run('npm run build');
+// Step 1: Build the frontend bundle (always).
+run('npx vite build');
+
+// Step 2: SSR prerender + sitemap (production only).
+// Preview/branch deployments skip these to avoid build timeouts
+// (the SSR prerender bundles all node_modules and can exceed Vercel's memory/time limits).
+if (isProduction) {
+  console.log('[vercel-build] production -> running SSR prerender + sitemap');
+  try {
+    run('node scripts/prerender.mjs');
+  } catch (err) {
+    console.warn('[vercel-build] prerender failed (non-fatal):', err.message);
+  }
+  try {
+    run('node scripts/generate-sitemap.mjs');
+  } catch (err) {
+    console.warn('[vercel-build] sitemap generation failed (non-fatal):', err.message);
+  }
+} else {
+  console.log('[vercel-build] preview -> skipping prerender + sitemap');
+}
 
 console.log('[vercel-build] done');

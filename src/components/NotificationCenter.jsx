@@ -18,20 +18,13 @@ import {
  * les agents des événements de leur structure.
  *
  * Props:
- * - proId: ID de l'agent connecté
  * - className: classes CSS additionnelles
  */
-export default function NotificationCenter({ proId, className = '' }) {
+export default function NotificationCenter({ className = '' }) {
     const [notifications, setNotifications] = useState([]);
+    const [unreadCount, setUnreadCount] = useState(0);
     const [isOpen, setIsOpen] = useState(false);
-    const [readIds, setReadIds] = useState(() => {
-        try {
-            const stored = localStorage.getItem('ada_notif_read');
-            return stored ? JSON.parse(stored) : {};
-        } catch {
-            return {};
-        }
-    });
+    const [loading, setLoading] = useState(false);
     const panelRef = useRef(null);
 
     const token =
@@ -42,12 +35,13 @@ export default function NotificationCenter({ proId, className = '' }) {
     const fetchNotifications = useCallback(async () => {
         if (!token) return;
         try {
-            const res = await fetch('/api/pro/notifications', {
+            const res = await fetch('/api/pro/notifications?limit=20', {
                 headers: { Authorization: `Bearer ${token}` },
             });
             if (!res.ok) return;
             const data = await res.json();
             setNotifications(data.notifications || []);
+            setUnreadCount(data.unreadCount || 0);
         } catch {
             // Silently handle
         }
@@ -71,31 +65,59 @@ export default function NotificationCenter({ proId, className = '' }) {
         return () => document.removeEventListener('mousedown', handleClick);
     }, [isOpen]);
 
-    // Compute unread count (exclude own actions)
-    const unreadCount = notifications.filter(
-        (n) => !n.isOwn && !readIds[n.id]
-    ).length;
+    // Mark notification as read via API
+    const markAsRead = async (id) => {
+        if (!token) return;
+        // Optimistic update
+        setNotifications((prev) =>
+            prev.map((n) => (n.id === id ? { ...n, readAt: new Date().toISOString() } : n))
+        );
+        setUnreadCount((prev) => Math.max(0, prev - 1));
 
-    const markAsRead = (id) => {
-        const nextRead = { ...readIds, [id]: true };
-        setReadIds(nextRead);
         try {
-            localStorage.setItem('ada_notif_read', JSON.stringify(nextRead));
+            await fetch('/api/pro/notifications', {
+                method: 'PATCH',
+                headers: {
+                    Authorization: `Bearer ${token}`,
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ ids: [id], action: 'read' }),
+            });
         } catch {
-            // Quota exceeded
+            // Revert on failure
+            fetchNotifications();
         }
     };
 
-    const markAllRead = () => {
-        const nextRead = { ...readIds };
-        notifications.forEach((n) => {
-            nextRead[n.id] = true;
-        });
-        setReadIds(nextRead);
+    const markAllRead = async () => {
+        if (!token || loading) return;
+        setLoading(true);
+
+        const unreadIds = notifications.filter((n) => !n.readAt).map((n) => n.id);
+        if (unreadIds.length === 0) {
+            setLoading(false);
+            return;
+        }
+
+        // Optimistic update
+        setNotifications((prev) =>
+            prev.map((n) => ({ ...n, readAt: n.readAt || new Date().toISOString() }))
+        );
+        setUnreadCount(0);
+
         try {
-            localStorage.setItem('ada_notif_read', JSON.stringify(nextRead));
+            await fetch('/api/pro/notifications', {
+                method: 'PATCH',
+                headers: {
+                    Authorization: `Bearer ${token}`,
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ ids: unreadIds, action: 'read' }),
+            });
         } catch {
-            // Quota exceeded
+            fetchNotifications();
+        } finally {
+            setLoading(false);
         }
     };
 
@@ -130,7 +152,8 @@ export default function NotificationCenter({ proId, className = '' }) {
                             {unreadCount > 0 && (
                                 <button
                                     onClick={markAllRead}
-                                    className="text-[10px] font-bold text-slate-400 hover:text-white transition-colors"
+                                    disabled={loading}
+                                    className="text-[10px] font-bold text-slate-400 hover:text-white transition-colors disabled:opacity-50"
                                 >
                                     Tout lire
                                 </button>
@@ -150,15 +173,15 @@ export default function NotificationCenter({ proId, className = '' }) {
                         {notifications.length === 0 ? (
                             <div className="p-8 text-center text-slate-400">
                                 <Bell size={24} className="mx-auto mb-2 opacity-20" />
-                                <p className="text-xs">Aucune notification</p>
+                                <p className="text-xs">Vous êtes à jour ! Aucune nouvelle notification.</p>
                             </div>
                         ) : (
                             notifications.map((notif) => {
-                                const isRead = notif.isOwn || readIds[notif.id];
+                                const isRead = Boolean(notif.readAt);
                                 return (
                                     <button
                                         key={notif.id}
-                                        onClick={() => markAsRead(notif.id)}
+                                        onClick={() => !isRead && markAsRead(notif.id)}
                                         className={`w-full text-left px-4 py-3 flex gap-3 hover:bg-slate-50 transition-colors ${isRead ? 'opacity-60' : ''
                                             }`}
                                     >
@@ -178,7 +201,7 @@ export default function NotificationCenter({ proId, className = '' }) {
                                             </p>
                                             <p className="text-[9px] text-slate-400 mt-1 flex items-center gap-1">
                                                 <Clock size={8} />
-                                                {formatTime(notif.timestamp)}
+                                                {formatTime(notif.createdAt)}
                                             </p>
                                         </div>
                                         {!isRead && (
@@ -198,12 +221,17 @@ export default function NotificationCenter({ proId, className = '' }) {
 function getIcon(type) {
     const size = 14;
     switch (type) {
+        case 'message_new':
         case 'message':
             return <MessageSquare size={size} className="text-blue-600" />;
+        case 'rdv_new':
+        case 'rdv_cancel':
         case 'appointment':
             return <Calendar size={size} className="text-indigo-600" />;
         case 'dossier':
             return <FileText size={size} className="text-amber-600" />;
+        case 'team_join':
+        case 'team_role_change':
         case 'auth':
             return <UserPlus size={size} className="text-emerald-600" />;
         case 'team':
@@ -215,12 +243,17 @@ function getIcon(type) {
 
 function getIconBg(type) {
     switch (type) {
+        case 'message_new':
         case 'message':
             return 'bg-blue-50';
+        case 'rdv_new':
+        case 'rdv_cancel':
         case 'appointment':
             return 'bg-indigo-50';
         case 'dossier':
             return 'bg-amber-50';
+        case 'team_join':
+        case 'team_role_change':
         case 'auth':
             return 'bg-emerald-50';
         case 'team':

@@ -55,6 +55,8 @@ import proNotifications from './_handlers/pro/notifications.js';
 import proAudit from './_handlers/pro/audit.js';
 import proReports from './_handlers/pro/reports.js';
 import proDossierUpload from './_handlers/pro/dossier/upload-secure.js';
+import proDossierExport from './_handlers/pro/dossier/export.js';
+import proDossierViews from './_handlers/pro/dossier/views.js';
 import proConsent from './_handlers/pro/consent.js';
 import proDossierSynthesis from './_handlers/pro/dossier-synthesis.js';
 import proRegionalStats from './_handlers/pro/regional-stats.js';
@@ -64,6 +66,7 @@ import proSystemMaint from './_handlers/pro/system-maintenance.js';
 import proAgentDiscovery from './_handlers/pro/agent-discovery.js';
 import proAgentScheduler from './_handlers/pro/agent-scheduler.js';
 import proHealthCheck from './_handlers/pro/health-check.js';
+import proOutlook from './_handlers/pro/outlook.js';
 import tts from './_handlers/tts.js';
 
 // --- Public Content ---
@@ -109,6 +112,7 @@ import cronIngestAids from './_handlers/cron/ingest-aids.js';
 import cronPurge from './_handlers/cron/purge.js';
 import cronLinkCheck from './_handlers/cron/link-check.js';
 import cronHiveScan from './_handlers/cron/hive-scan.js';
+import cronRdvReminder from './_handlers/cron/rdv-reminder.js';
 
 // --- Admin ---
 import adminPrivacyExport from './_handlers/admin/privacy/export.js';
@@ -195,6 +199,8 @@ export const routes = [
     { path: 'pro/audit', match: 'exact', handler: proAudit },
     { path: 'pro/reports', match: 'exact', handler: proReports },
     { path: 'pro/dossier/upload-secure', match: 'exact', handler: proDossierUpload },
+    { path: 'pro/dossier/export', match: 'exact', handler: proDossierExport },
+    { path: 'pro/dossier/views', match: 'exact', handler: proDossierViews },
     { path: 'pro/consent', match: 'exact', handler: proConsent },
     { path: 'pro/dossier-synthesis', match: 'exact', handler: proDossierSynthesis },
     { path: 'pro/regional-stats', match: 'exact', handler: proRegionalStats },
@@ -204,6 +210,7 @@ export const routes = [
     { path: 'pro/agent-discovery', match: 'exact', handler: proAgentDiscovery },
     { path: 'pro/agent-scheduler', match: 'exact', handler: proAgentScheduler },
     { path: 'pro/health-check', match: 'exact', handler: proHealthCheck },
+    { path: 'pro/outlook', match: 'exact', handler: proOutlook },
     { path: 'tts', match: 'exact', handler: tts },
 
     // --- Public Content ---
@@ -250,6 +257,7 @@ export const routes = [
     { path: 'cron/ingest-aids', match: 'exact', handler: cronIngestAids },
     { path: 'cron/purge', match: 'exact', handler: cronPurge },
     { path: 'cron/link-check', match: 'exact', handler: cronLinkCheck },
+    { path: 'cron/rdv-reminder', match: 'exact', handler: cronRdvReminder },
 
     // --- Admin ---
     { path: 'admin/privacy/export', match: 'exact', handler: adminPrivacyExport },

@@ -87,7 +87,7 @@ export default function AccessibilityPanel() {
             <Minus className="h-3 w-3" />
           </div>
         </Button>
-        <span className="text-xs font-semibold px-1 min-w-[36px] text-center text-slate-500">
+        <span className="text-xs font-semibold px-1 min-w-[36px] text-center text-slate-600">
           {settings.fontSize}%
         </span>
         <Button

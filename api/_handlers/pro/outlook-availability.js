@@ -1,6 +1,7 @@
 // @ts-nocheck
 import logger from '../../_utils/logger.js';
 import prisma from '../../_utils/prisma.js';
+import { env } from '../../_utils/env.js';
 import { requireProAuth, requireProStructureContext } from '../../_utils/auth.js';
 
 /**
@@ -21,8 +22,8 @@ import { requireProAuth, requireProStructureContext } from '../../_utils/auth.js
  * @returns {Promise<string|null>} fresh access_token or null if refresh failed
  */
 async function refreshOutlookToken(settings, structureId) {
-    const clientId = process.env.OUTLOOK_CLIENT_ID;
-    const clientSecret = process.env.OUTLOOK_CLIENT_SECRET;
+    const clientId = env.outlook.clientId;
+    const clientSecret = env.outlook.clientSecret;
     const refreshToken = settings.outlookRefreshToken;
 
     if (!clientId || !clientSecret || !refreshToken) {
@@ -64,7 +65,7 @@ async function refreshOutlookToken(settings, structureId) {
             },
         });
 
-        console.info('[Outlook Availability] Token refreshed for structure:', structureId);
+        logger.info('[Outlook Availability] Token refreshed for structure:', structureId);
         return tokens.access_token;
     } catch (err) {
         logger.error('[Outlook Availability] Token refresh error:', err.message);
@@ -111,7 +112,7 @@ async function handler(req, res) {
         let currentToken = settings.outlookToken;
         const expiresAt = settings.outlookTokenExpiresAt;
         if (expiresAt && new Date(expiresAt) <= new Date()) {
-            console.info('[Outlook Availability] Token expiré, tentative de refresh...');
+            logger.info('[Outlook Availability] Token expiré, tentative de refresh...');
             const refreshed = await refreshOutlookToken(settings, proCtx.structureId);
             if (!refreshed) {
                 return res.status(401).json({

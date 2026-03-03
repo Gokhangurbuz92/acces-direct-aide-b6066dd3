@@ -1,5 +1,6 @@
 // @ts-nocheck
 import prisma from '../../_utils/prisma.js';
+import { env } from '../../_utils/env.js';
 import { requireProAuth } from '../../_utils/auth.js';
 import logger from '../../_utils/logger.js';
 
@@ -51,7 +52,7 @@ async function handler(req, res) {
         });
 
         // 6. Service status inference
-        const siaEnabled = process.env.SIAO_ENABLED === 'true';
+        const siaEnabled = env.siao.enabled;
         const services = [
             {
                 id: 'db',
@@ -64,7 +65,7 @@ async function handler(req, res) {
                 id: 'ai',
                 label: 'Moteur IA',
                 sub: 'Gemini 2.0 Flash',
-                status: process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY ? 'operational' : 'not_configured',
+                status: env.ai.geminiKey ? 'operational' : 'not_configured',
             },
             {
                 id: 'storage',
@@ -76,7 +77,7 @@ async function handler(req, res) {
                 id: 'siao',
                 label: 'Passerelle SIAO',
                 sub: 'Interop National',
-                status: siaEnabled && process.env.SIAO_API_URL ? 'operational' : 'not_configured',
+                status: siaEnabled && env.siao.apiUrl ? 'operational' : 'not_configured',
             },
         ];
 
@@ -94,7 +95,7 @@ async function handler(req, res) {
                 structuresCount,
                 appointmentsThisMonth,
             },
-            env: process.env.NODE_ENV || 'development',
+            env: env.runtime.nodeEnv,
             nodeVersion: process.version,
             timestamp: new Date().toISOString(),
         });

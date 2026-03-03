@@ -1,6 +1,7 @@
 import logger from '../../_utils/logger.js';
 // @ts-nocheck
 import prisma from '../../_utils/prisma.js';
+import crypto from 'crypto';
 import { env } from '../../_utils/env.js';
 import { requireProAuth, requireProStructureContext } from '../../_utils/auth.js';
 
@@ -9,22 +10,51 @@ import { requireProAuth, requireProStructureContext } from '../../_utils/auth.js
  *
  * Queries Microsoft Graph API for free/busy slots.
  * Policy: ZERO STORAGE of calendar details — only availability status.
- * Includes automatic token refresh when the access_token has expired.
+ * Tokens are persisted in ProOutlookToken (encrypted at rest via AES-256-GCM).
  *
  * GET /api/pro/outlook-availability?start=...&end=...
  */
 
+const TOKEN_KEY = env.outlook.tokenEncryptionKey || '';
+
+// ── AES-256-GCM helpers (same as outlook.js) ──
+function decryptToken(data) {
+    if (!TOKEN_KEY || TOKEN_KEY.length < 32) return data; // dev fallback
+    if (!data.includes(':')) return data; // plaintext fallback
+    const [ivHex, tagHex, encHex] = data.split(':');
+    const key = Buffer.from(TOKEN_KEY.slice(0, 32), 'utf8');
+    const decipher = crypto.createDecipheriv('aes-256-gcm', key, Buffer.from(ivHex, 'hex'), { authTagLength: 16 });
+    decipher.setAuthTag(Buffer.from(tagHex, 'hex'));
+    return decipher.update(Buffer.from(encHex, 'hex'), undefined, 'utf8') + decipher.final('utf8');
+}
+
+function encryptToken(text) {
+    if (!TOKEN_KEY || TOKEN_KEY.length < 32) return text; // dev fallback
+    const key = Buffer.from(TOKEN_KEY.slice(0, 32), 'utf8');
+    const iv = crypto.randomBytes(12);
+    const cipher = crypto.createCipheriv('aes-256-gcm', key, iv, { authTagLength: 16 });
+    const encrypted = Buffer.concat([cipher.update(text, 'utf8'), cipher.final()]);
+    const tag = cipher.getAuthTag();
+    return `${iv.toString('hex')}:${tag.toString('hex')}:${encrypted.toString('hex')}`;
+}
+
 /**
  * Attempts to refresh an expired Outlook access_token using the stored refresh_token.
  *
- * @param {Record<string, any>} settings - current Structure.settings_json
- * @param {string} structureId - id to update
- * @returns {Promise<string|null>} fresh access_token or null if refresh failed
+ * @param {Record<string, any>} storedToken - ProOutlookToken record
+ * @param {string} userId - ProUser ID
+ * @returns {Promise<string|null>} fresh access_token (plaintext) or null if refresh failed
  */
-async function refreshOutlookToken(settings, structureId) {
+async function refreshOutlookToken(storedToken, userId) {
     const clientId = env.outlook.clientId;
     const clientSecret = env.outlook.clientSecret;
-    const refreshToken = settings.outlookRefreshToken;
+
+    let refreshToken;
+    try {
+        refreshToken = decryptToken(storedToken.refreshToken);
+    } catch {
+        return null;
+    }
 
     if (!clientId || !clientSecret || !refreshToken) {
         return null;
@@ -51,21 +81,19 @@ async function refreshOutlookToken(settings, structureId) {
             return null;
         }
 
-        const newExpiresAt = new Date(Date.now() + (tokens.expires_in || 3600) * 1000).toISOString();
+        const newExpiresAt = new Date(Date.now() + (tokens.expires_in || 3600) * 1000);
 
-        await prisma.structure.update({
-            where: { id: structureId },
+        // Persist refreshed tokens back to ProOutlookToken (encrypted)
+        await prisma.proOutlookToken.update({
+            where: { userId },
             data: {
-                settings_json: {
-                    ...settings,
-                    outlookToken: tokens.access_token,
-                    outlookRefreshToken: tokens.refresh_token || refreshToken,
-                    outlookTokenExpiresAt: newExpiresAt,
-                },
+                accessToken: encryptToken(tokens.access_token),
+                refreshToken: encryptToken(tokens.refresh_token || refreshToken),
+                expiresAt: newExpiresAt,
             },
         });
 
-        logger.info('[Outlook Availability] Token refreshed for structure:', structureId);
+        logger.info('[Outlook Availability] Token refreshed for user:', userId);
         return tokens.access_token;
     } catch (err) {
         logger.error('[Outlook Availability] Token refresh error:', err.message);
@@ -90,30 +118,32 @@ async function handler(req, res) {
     }
 
     try {
-        const structure = await prisma.structure.findUnique({
-            where: { id: proCtx.structureId },
-            select: { id: true, nom: true, settings_json: true },
+        // Read tokens from ProOutlookToken (encrypted at rest)
+        const storedToken = await prisma.proOutlookToken.findUnique({
+            where: { userId: proCtx.userId },
         });
 
-        if (!structure) {
-            return res.status(404).json({ error: 'Structure introuvable' });
-        }
-
-        const settings = structure.settings_json || {};
-
-        if (!settings.outlookToken) {
+        if (!storedToken) {
             return res.status(404).json({
                 error: 'Outlook non synchronisé',
                 message: 'Connectez votre compte Outlook via le tableau de bord pour activer la synchronisation.',
             });
         }
 
-        // Auto-refresh token if expired
-        let currentToken = settings.outlookToken;
-        const expiresAt = settings.outlookTokenExpiresAt;
-        if (expiresAt && new Date(expiresAt) <= new Date()) {
+        // Decrypt and check expiry
+        let currentToken;
+        try {
+            currentToken = decryptToken(storedToken.accessToken);
+        } catch {
+            return res.status(401).json({
+                error: 'Token Outlook corrompu',
+                message: 'Veuillez re-synchroniser votre compte Outlook.',
+            });
+        }
+
+        if (storedToken.expiresAt <= new Date()) {
             logger.info('[Outlook Availability] Token expiré, tentative de refresh...');
-            const refreshed = await refreshOutlookToken(settings, proCtx.structureId);
+            const refreshed = await refreshOutlookToken(storedToken, proCtx.userId);
             if (!refreshed) {
                 return res.status(401).json({
                     error: 'Session Outlook expirée',
@@ -147,7 +177,7 @@ async function handler(req, res) {
 
             // Token rejected at runtime (maybe revoked externally)
             if (graphResponse.status === 401) {
-                const refreshed = await refreshOutlookToken(settings, proCtx.structureId);
+                const refreshed = await refreshOutlookToken(storedToken, proCtx.userId);
                 if (!refreshed) {
                     return res.status(401).json({
                         error: 'Token Outlook expiré',
@@ -225,4 +255,3 @@ function parseAvailabilityView(view) {
 }
 
 export default requireProAuth(handler);
-

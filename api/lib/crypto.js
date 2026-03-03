@@ -1,7 +1,7 @@
 
-
 import crypto from 'crypto';
 import { env } from '../_utils/env.js';
+import logger from '../_utils/logger.js';
 
 // Encryption Algorithm
 // Encryption Algorithm
@@ -87,7 +87,7 @@ export function decrypt(encryptedText) {
 
         return decrypted;
     } catch (e) {
-        console.error("Decryption failed", e.message);
+        logger.error("Decryption failed", e.message);
         return null; // Tampered or wrong key
     }
 }
@@ -138,7 +138,7 @@ export function decryptBuffer(encryptedBuffer) {
 
         return Buffer.concat([decipher.update(text), decipher.final()]);
     } catch (e) {
-        console.error("Buffer Decryption failed", e.message);
+        logger.error("Buffer Decryption failed", e.message);
         return null;
     }
 }

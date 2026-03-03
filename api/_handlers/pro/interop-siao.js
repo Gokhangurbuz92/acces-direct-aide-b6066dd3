@@ -1,6 +1,7 @@
 // @ts-nocheck
 import logger from '../../_utils/logger.js';
 import prisma from '../../_utils/prisma.js';
+import { env } from '../../_utils/env.js';
 import { requireProAuth, requireProStructureContext } from '../../_utils/auth.js';
 import crypto from 'crypto';
 
@@ -25,7 +26,7 @@ async function handler(req, res) {
     if (!proCtx) return;
 
     // Feature flag guard — no SIAO calls when disabled
-    const siaoEnabled = process.env.SIAO_ENABLED === 'true';
+    const siaoEnabled = env.siao.enabled;
     if (!siaoEnabled) {
         return res.status(200).json({
             ok: false,
@@ -70,7 +71,7 @@ async function handler(req, res) {
         };
 
         // Transmit to SI-SIAO national API (if configured)
-        const siaoUrl = process.env.SIAO_API_URL;
+        const siaoUrl = env.siao.apiUrl;
         let transmissionStatus = 'LOCAL_ONLY';
 
         if (siaoUrl) {
@@ -80,7 +81,7 @@ async function handler(req, res) {
                     headers: {
                         'Content-Type': 'application/json',
                         'X-ADA-Transmission-Id': transmissionId,
-                        ...(process.env.SIAO_API_KEY ? { Authorization: `Bearer ${process.env.SIAO_API_KEY}` } : {}),
+                        ...(env.siao.apiKey ? { Authorization: `Bearer ${env.siao.apiKey}` } : {}),
                     },
                     body: JSON.stringify(siaoPayload),
                     signal: AbortSignal.timeout(15000),

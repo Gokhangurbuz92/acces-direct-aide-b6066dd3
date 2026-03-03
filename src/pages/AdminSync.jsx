@@ -1,3 +1,4 @@
+import { SkeletonList } from '@/components/ui/skeleton';
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { createPageUrl } from '@/utils';
@@ -277,11 +278,7 @@ export default function AdminSync() {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            {isLoading ? (
-              <div className="flex items-center justify-center py-8">
-                <Loader2 className="h-6 w-6 animate-spin text-slate-400" />
-              </div>
-            ) : logs.length > 0 ? (
+            {isLoading ? <div className="p-6"><SkeletonList count={3} variant="card" /></div> : logs.length > 0 ? (
               <div className="space-y-3">
                 {logs.map((log) => {
                   const StatusIcon = STATUS_CONFIG[log.status]?.icon || Clock;

@@ -1,3 +1,4 @@
+import { SkeletonList } from '@/components/ui/skeleton';
 import { useQuery } from '@tanstack/react-query';
 import { adminClient as client } from '@/api/client';
 import { Card, CardContent } from '@/components/ui/card';
@@ -33,9 +34,7 @@ export default function AdminDashboard() {
 
     if (isLoading) {
         return (
-            <div className="flex justify-center items-center py-24">
-                <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
-            </div>
+            <div className="w-full p-4"><SkeletonList count={3} variant="card" /></div>
         );
     }
 

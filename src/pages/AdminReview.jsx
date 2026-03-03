@@ -1,3 +1,4 @@
+import { SkeletonList } from '@/components/ui/skeleton';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { apiClient } from '@/api/client';
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
@@ -43,7 +44,7 @@ export default function AdminReview() {
         }
     });
 
-    if (isLoading) return <div className="p-8 flex justify-center"><Loader2 className="animate-spin" /></div>;
+    if (isLoading) return <div className="p-6"><SkeletonList count={4} variant="card" /></div>;
 
     return (
         <div className="container mx-auto p-4 space-y-6">

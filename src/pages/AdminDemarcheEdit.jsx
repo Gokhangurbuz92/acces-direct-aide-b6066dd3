@@ -1,3 +1,4 @@
+import { SkeletonList } from '@/components/ui/skeleton';
 
 import { useState, useEffect } from 'react';
 import { adminClient as client } from '@/api/client';
@@ -85,7 +86,7 @@ export default function AdminDemarcheEdit() {
         setFormData({ ...formData, documents_necessaires: newDocs });
     };
 
-    if (isFetching) return <div className="p-12 flex justify-center"><Loader2 className="animate-spin" /></div>;
+    if (isFetching) return <div className="p-6"><SkeletonList count={4} variant="card" /></div>;
 
     return (
         <div className="min-h-screen bg-slate-50 p-6">

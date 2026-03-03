@@ -1,3 +1,4 @@
+import { SkeletonList } from '@/components/ui/skeleton';
 import { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { Helmet } from 'react-helmet-async';
@@ -81,7 +82,7 @@ export default function SharedDiagnostic() {
     if (loading) {
         return (
             <div className="flex min-h-screen flex-col items-center justify-center bg-slate-50">
-                <Loader2 className="h-10 w-10 animate-spin text-indigo-500 mb-4" />
+                <SkeletonList count={3} variant="card" />
                 <p className="text-xs font-bold uppercase tracking-widest text-slate-400 animate-pulse">
                     Accès sécurisé au dossier…
                 </p>

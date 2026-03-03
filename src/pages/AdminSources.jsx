@@ -1,3 +1,4 @@
+import { SkeletonList } from '@/components/ui/skeleton';
 import { useState } from 'react';
 import { adminClient as client } from '@/api/client';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
@@ -231,11 +232,7 @@ export default function AdminSources() {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            {isLoading ? (
-              <div className="flex items-center justify-center py-8">
-                <Loader2 className="h-6 w-6 animate-spin text-slate-400" />
-              </div>
-            ) : sources.length > 0 ? (
+            {isLoading ? <div className="p-6"><SkeletonList count={3} variant="card" /></div> : sources.length > 0 ? (
               <div className="space-y-3">
                 {sources.map((source) => (
                   <div

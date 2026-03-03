@@ -1,3 +1,4 @@
+import { SkeletonList } from '@/components/ui/skeleton';
 import { useState, useEffect, useCallback } from 'react';
 import { useOutletContext } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -111,9 +112,7 @@ export default function ProTeam() {
 
     if (loading) {
         return (
-            <div className="flex items-center justify-center py-20">
-                <Loader2 className="animate-spin text-slate-400" size={28} />
-            </div>
+            <div className="w-full p-4"><SkeletonList count={3} variant="card" /></div>
         );
     }
 

@@ -1,3 +1,4 @@
+import { SkeletonList } from '@/components/ui/skeleton';
 // @ts-nocheck
 import { useEffect, useState } from 'react';
 import { useNavigate, useLocation, Link, Outlet } from 'react-router-dom';
@@ -58,7 +59,7 @@ export default function ProLayout() {
     };
 
     if (loading) {
-        return <div className="h-screen flex items-center justify-center"><Loader2 className="animate-spin" /></div>;
+        return <div className="p-6"><SkeletonList count={4} variant="card" /></div>;
     }
 
     // If on public auth pages, just render Outlet

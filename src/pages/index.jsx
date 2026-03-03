@@ -1,5 +1,6 @@
 import { Suspense, lazy, Component } from "react";
 import { BrowserRouter, MemoryRouter, Route, Routes, useLocation, Navigate, useParams } from 'react-router-dom';
+import { AnimatePresence, motion } from 'framer-motion';
 import { frontendEnv } from "@/config/env";
 
 /**
@@ -243,47 +244,58 @@ function PagesContent() {
     if (location.pathname.startsWith('/pro')) {
         return (
             <Suspense fallback={<PageLoader />}>
-                <Routes>
-                    <Route path="/pro" element={<ProLayout />}>
-                        <Route index element={<Navigate to="dashboard" replace />} />
-                        <Route path="login" element={<ProLogin />} />
-                        <Route path="register" element={<ProRegister />} />
-                        <Route path="register-invite" element={<RegisterPro />} />
-                        <Route path="forgot-password" element={<ProForgotPassword />} />
-                        <Route path="reset-password" element={<ProResetPassword />} />
-                        <Route path="dashboard" element={<ProGuard><ProDashboard /></ProGuard>} />
-                        <Route path="rdv" element={<ProGuard><ProRdvLayout /></ProGuard>}>
-                            <Route index element={<Navigate to="agenda" replace />} />
-                            <Route path="services" element={<ProServices />} />
-                            <Route path="disponibilites" element={<ProAvailability />} />
-                            <Route path="agenda" element={<ProAppointments />} />
-                            <Route path="new" element={<ProRdvNew />} />
-                            <Route path="absences" element={<ProRdvAbsences />} />
-                        </Route>
-                        <Route path="messages" element={<ProGuard><ProMessages /></ProGuard>} />
-                        <Route path="messages/:conversationId" element={<ProGuard><ProMessageThread /></ProGuard>} />
-                        <Route path="visio/:roomId" element={<ProGuard><ProVisio /></ProGuard>} />
-                        <Route path="visio" element={<ProGuard><ProVisio /></ProGuard>} />
-                        <Route path="services" element={<Navigate to="/pro/rdv/services" replace />} />
-                        <Route path="availability" element={<Navigate to="/pro/rdv/disponibilites" replace />} />
-                        <Route path="appointments" element={<Navigate to="/pro/rdv/agenda" replace />} />
-                        <Route path="team" element={<ProGuard><ProTeam /></ProGuard>} />
-                        <Route path="structure" element={<ProGuard><ProStructure /></ProGuard>} />
-                        <Route path="appointments/:id" element={<ProGuard><ProAppointmentDetail /></ProGuard>} />
-                        <Route path="dossier/:shareId" element={<ProGuard><SharedDossier /></ProGuard>} />
-                        <Route path="audit" element={<ProGuard><ProAuditLog /></ProGuard>} />
-                        <Route path="reports" element={<ProGuard><ImpactReports /></ProGuard>} />
-                        <Route path="regional" element={<ProGuard><RegionalDashboard /></ProGuard>} />
-                        <Route path="attestation/:shareId" element={<ProGuard><OfficialAttestation /></ProGuard>} />
-                        <Route path="health" element={<ProGuard><SystemHealth /></ProGuard>} />
-                        <Route path="simulation" element={<ProGuard><FullSimulation /></ProGuard>} />
-                        <Route path="orchestrator" element={<ProGuard><AiOrchestrator /></ProGuard>} />
-                        <Route path="hive" element={<ProGuard><HiveOrchestrator /></ProGuard>} />
-                        <Route path="content-factory" element={<ProGuard><ContentFactory /></ProGuard>} />
-                        <Route path="rehearsal" element={<ProGuard><ProRehearsal /></ProGuard>} />
-                        <Route path="mfa-settings" element={<ProGuard><ProMfaSettings /></ProGuard>} />
-                    </Route>
-                </Routes>
+                <AnimatePresence mode="wait">
+                    <motion.div
+                        key={location.pathname}
+                        initial={{ opacity: 0, scale: 0.98 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        exit={{ opacity: 0, scale: 0.98 }}
+                        transition={{ duration: 0.25, ease: 'easeInOut' }}
+                        className="w-full h-full min-h-screen"
+                    >
+                        <Routes location={location}>
+                            <Route path="/pro" element={<ProLayout />}>
+                                <Route index element={<Navigate to="dashboard" replace />} />
+                                <Route path="login" element={<ProLogin />} />
+                                <Route path="register" element={<ProRegister />} />
+                                <Route path="register-invite" element={<RegisterPro />} />
+                                <Route path="forgot-password" element={<ProForgotPassword />} />
+                                <Route path="reset-password" element={<ProResetPassword />} />
+                                <Route path="dashboard" element={<ProGuard><ProDashboard /></ProGuard>} />
+                                <Route path="rdv" element={<ProGuard><ProRdvLayout /></ProGuard>}>
+                                    <Route index element={<Navigate to="agenda" replace />} />
+                                    <Route path="services" element={<ProServices />} />
+                                    <Route path="disponibilites" element={<ProAvailability />} />
+                                    <Route path="agenda" element={<ProAppointments />} />
+                                    <Route path="new" element={<ProRdvNew />} />
+                                    <Route path="absences" element={<ProRdvAbsences />} />
+                                </Route>
+                                <Route path="messages" element={<ProGuard><ProMessages /></ProGuard>} />
+                                <Route path="messages/:conversationId" element={<ProGuard><ProMessageThread /></ProGuard>} />
+                                <Route path="visio/:roomId" element={<ProGuard><ProVisio /></ProGuard>} />
+                                <Route path="visio" element={<ProGuard><ProVisio /></ProGuard>} />
+                                <Route path="services" element={<Navigate to="/pro/rdv/services" replace />} />
+                                <Route path="availability" element={<Navigate to="/pro/rdv/disponibilites" replace />} />
+                                <Route path="appointments" element={<Navigate to="/pro/rdv/agenda" replace />} />
+                                <Route path="team" element={<ProGuard><ProTeam /></ProGuard>} />
+                                <Route path="structure" element={<ProGuard><ProStructure /></ProGuard>} />
+                                <Route path="appointments/:id" element={<ProGuard><ProAppointmentDetail /></ProGuard>} />
+                                <Route path="dossier/:shareId" element={<ProGuard><SharedDossier /></ProGuard>} />
+                                <Route path="audit" element={<ProGuard><ProAuditLog /></ProGuard>} />
+                                <Route path="reports" element={<ProGuard><ImpactReports /></ProGuard>} />
+                                <Route path="regional" element={<ProGuard><RegionalDashboard /></ProGuard>} />
+                                <Route path="attestation/:shareId" element={<ProGuard><OfficialAttestation /></ProGuard>} />
+                                <Route path="health" element={<ProGuard><SystemHealth /></ProGuard>} />
+                                <Route path="simulation" element={<ProGuard><FullSimulation /></ProGuard>} />
+                                <Route path="orchestrator" element={<ProGuard><AiOrchestrator /></ProGuard>} />
+                                <Route path="hive" element={<ProGuard><HiveOrchestrator /></ProGuard>} />
+                                <Route path="content-factory" element={<ProGuard><ContentFactory /></ProGuard>} />
+                                <Route path="rehearsal" element={<ProGuard><ProRehearsal /></ProGuard>} />
+                                <Route path="mfa-settings" element={<ProGuard><ProMfaSettings /></ProGuard>} />
+                            </Route>
+                        </Routes>
+                    </motion.div>
+                </AnimatePresence>
             </Suspense>
         );
     }
@@ -291,143 +303,154 @@ function PagesContent() {
     return (
         <Suspense fallback={<PageLoader />}>
             <Layout currentPageName={currentPage}>
-                <Routes>
-                    <Route path="/" element={<Home />} />
-                    <Route path="/login" element={<Login />} />
-                    <Route path="/auth/login" element={<RouteErrorBoundary><AuthRdvAccess mode="login" /></RouteErrorBoundary>} />
-                    <Route path="/auth/signup" element={<RouteErrorBoundary><AuthRdvAccess mode="signup" /></RouteErrorBoundary>} />
-                    <Route path="/auth/verify-email" element={<AuthVerifyEmail />} />
-                    <Route path="/auth/forgot" element={<AuthForgotPassword />} />
-                    <Route path="/auth/reset" element={<AuthResetPassword />} />
-                    <Route path="/compte/messages" element={<CompteMessages />} />
-                    <Route path="/compte/messages/:conversationId" element={<CompteMessageThread />} />
-                    <Route path="/a-propos" element={<APropos />} />
-                    <Route path="/accessibilite" element={<Accessibilite />} />
-                    <Route path="/actualites" element={<Actualites />} />
-                    <Route path="/actualites/view" element={<LegacyViewRedirect basePath="/actualites" />} />
-                    <Route path="/actualites/:slug" element={<ActualiteDetail />} />
-                    <Route path="/share/:id" element={<SharedDiagnostic />} />
+                <AnimatePresence mode="wait">
+                    <motion.div
+                        key={location.pathname}
+                        initial={{ opacity: 0, y: 15 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: -15 }}
+                        transition={{ duration: 0.3, ease: 'easeOut' }}
+                        className="w-full h-full"
+                    >
+                        <Routes location={location}>
+                            <Route path="/" element={<Home />} />
+                            <Route path="/login" element={<Login />} />
+                            <Route path="/auth/login" element={<RouteErrorBoundary><AuthRdvAccess mode="login" /></RouteErrorBoundary>} />
+                            <Route path="/auth/signup" element={<RouteErrorBoundary><AuthRdvAccess mode="signup" /></RouteErrorBoundary>} />
+                            <Route path="/auth/verify-email" element={<AuthVerifyEmail />} />
+                            <Route path="/auth/forgot" element={<AuthForgotPassword />} />
+                            <Route path="/auth/reset" element={<AuthResetPassword />} />
+                            <Route path="/compte/messages" element={<CompteMessages />} />
+                            <Route path="/compte/messages/:conversationId" element={<CompteMessageThread />} />
+                            <Route path="/a-propos" element={<APropos />} />
+                            <Route path="/accessibilite" element={<Accessibilite />} />
+                            <Route path="/actualites" element={<Actualites />} />
+                            <Route path="/actualites/view" element={<LegacyViewRedirect basePath="/actualites" />} />
+                            <Route path="/actualites/:slug" element={<ActualiteDetail />} />
+                            <Route path="/share/:id" element={<SharedDiagnostic />} />
 
-                    <Route path="/admin/login" element={<AdminLogin />} />
-                    <Route path="/admin/health" element={<AdminGuard><AdminHealth /></AdminGuard>} />
-                    <Route path="/admin/observability" element={<AdminGuard><AdminObservability /></AdminGuard>} />
-                    <Route path="/admin/review-queue" element={<AdminGuard><AdminReviewQueue /></AdminGuard>} />
-                    <Route path="/admin/inbox" element={<AdminGuard><AdminInbox /></AdminGuard>} />
-                    <Route path="/admin/runs" element={<AdminGuard><AdminRuns /></AdminGuard>} />
-                    <Route path="/admin/aides/:id" element={<AdminGuard><AdminAideEdit /></AdminGuard>} />
-                    <Route path="/admin/aides" element={<AdminGuard><AdminAides /></AdminGuard>} />
-                    <Route path="/admin" element={<Navigate to="/admin/dashboard" replace />} />
-                    <Route path="/admin/dashboard" element={<AdminGuard><AdminDashboard /></AdminGuard>} />
-                    <Route path="/admin/national" element={<AdminGuard><AdminNationalDashboard /></AdminGuard>} />
-                    <Route path="/admin/features" element={<AdminGuard><AdminFeatures /></AdminGuard>} />
-                    <Route path="/admin/conversations" element={<AdminGuard><AdminConversations /></AdminGuard>} />
-                    <Route path="/admin/audit" element={<AdminGuard><AdminAudit /></AdminGuard>} />
-                    <Route path="/admin/guides/sync" element={<AdminGuard><AdminGuideSync /></AdminGuard>} />
-                    <Route path="/admin/messages" element={<AdminGuard><AdminMessages /></AdminGuard>} />
-                    <Route path="/admin/review" element={<AdminGuard><AdminReview /></AdminGuard>} />
-                    <Route path="/admin/sync/recent" element={<AdminGuard><AdminRecentSyncs /></AdminGuard>} />
-                    <Route path="/admin/sources" element={<AdminGuard><AdminSources /></AdminGuard>} />
-                    <Route path="/admin/sync" element={<AdminGuard><AdminSync /></AdminGuard>} />
-                    <Route path="/admin/sync/test" element={<AdminGuard><AdminTestSync /></AdminGuard>} />
-                    <Route path="/appointments/request" element={<AppointmentRequest />} />
-                    <Route path="/appointments/cancel/:token" element={<AppointmentCancel />} />
-                    <Route path="/passport/:shareId" element={<UserPassport />} />
-                    <Route path="/appointments/reschedule/:token" element={<AppointmentReschedule />} />
-                    <Route path="/rdv/:structureSlug" element={<PublicRdvEntry view="landing" />} />
-                    <Route path="/rdv/:structureSlug/services" element={<PublicRdvEntry view="services" />} />
-                    <Route path="/rdv/:structureSlug/creneaux" element={<PublicRdvEntry view="creneaux" />} />
-                    <Route path="/rdv/:structureSlug/booking" element={<PublicBooking />} />
-                    <Route path="/admin/appointments" element={<AdminGuard><AdminAppointments /></AdminGuard>} />
-                    <Route path="/admin/structures" element={<AdminGuard><AdminStructures /></AdminGuard>} />
-                    <Route path="/admin/demarches" element={<AdminGuard><AdminDemarches /></AdminGuard>} />
-                    <Route path="/admin/demarches/:id" element={<AdminGuard><AdminDemarcheEdit /></AdminGuard>} />
+                            <Route path="/admin/login" element={<AdminLogin />} />
+                            <Route path="/admin/health" element={<AdminGuard><AdminHealth /></AdminGuard>} />
+                            <Route path="/admin/observability" element={<AdminGuard><AdminObservability /></AdminGuard>} />
+                            <Route path="/admin/review-queue" element={<AdminGuard><AdminReviewQueue /></AdminGuard>} />
+                            <Route path="/admin/inbox" element={<AdminGuard><AdminInbox /></AdminGuard>} />
+                            <Route path="/admin/runs" element={<AdminGuard><AdminRuns /></AdminGuard>} />
+                            <Route path="/admin/aides/:id" element={<AdminGuard><AdminAideEdit /></AdminGuard>} />
+                            <Route path="/admin/aides" element={<AdminGuard><AdminAides /></AdminGuard>} />
+                            <Route path="/admin" element={<Navigate to="/admin/dashboard" replace />} />
+                            <Route path="/admin/dashboard" element={<AdminGuard><AdminDashboard /></AdminGuard>} />
+                            <Route path="/admin/national" element={<AdminGuard><AdminNationalDashboard /></AdminGuard>} />
+                            <Route path="/admin/features" element={<AdminGuard><AdminFeatures /></AdminGuard>} />
+                            <Route path="/admin/conversations" element={<AdminGuard><AdminConversations /></AdminGuard>} />
+                            <Route path="/admin/audit" element={<AdminGuard><AdminAudit /></AdminGuard>} />
+                            <Route path="/admin/guides/sync" element={<AdminGuard><AdminGuideSync /></AdminGuard>} />
+                            <Route path="/admin/messages" element={<AdminGuard><AdminMessages /></AdminGuard>} />
+                            <Route path="/admin/review" element={<AdminGuard><AdminReview /></AdminGuard>} />
+                            <Route path="/admin/sync/recent" element={<AdminGuard><AdminRecentSyncs /></AdminGuard>} />
+                            <Route path="/admin/sources" element={<AdminGuard><AdminSources /></AdminGuard>} />
+                            <Route path="/admin/sync" element={<AdminGuard><AdminSync /></AdminGuard>} />
+                            <Route path="/admin/sync/test" element={<AdminGuard><AdminTestSync /></AdminGuard>} />
+                            <Route path="/appointments/request" element={<AppointmentRequest />} />
+                            <Route path="/appointments/cancel/:token" element={<AppointmentCancel />} />
+                            <Route path="/passport/:shareId" element={<UserPassport />} />
+                            <Route path="/appointments/reschedule/:token" element={<AppointmentReschedule />} />
+                            <Route path="/rdv/:structureSlug" element={<PublicRdvEntry view="landing" />} />
+                            <Route path="/rdv/:structureSlug/services" element={<PublicRdvEntry view="services" />} />
+                            <Route path="/rdv/:structureSlug/creneaux" element={<PublicRdvEntry view="creneaux" />} />
+                            <Route path="/rdv/:structureSlug/booking" element={<PublicBooking />} />
+                            <Route path="/admin/appointments" element={<AdminGuard><AdminAppointments /></AdminGuard>} />
+                            <Route path="/admin/structures" element={<AdminGuard><AdminStructures /></AdminGuard>} />
+                            <Route path="/admin/demarches" element={<AdminGuard><AdminDemarches /></AdminGuard>} />
+                            <Route path="/admin/demarches/:id" element={<AdminGuard><AdminDemarcheEdit /></AdminGuard>} />
 
-                    {/* Legacy Admin Redirects */}
-                    <Route path="/adminaides" element={<Navigate to="/admin/aides" replace />} />
-                    <Route path="/adminstructures" element={<Navigate to="/admin/structures" replace />} />
-                    <Route path="/adminappointments" element={<Navigate to="/admin/appointments" replace />} />
-                    <Route path="/admindemarches" element={<Navigate to="/admin/demarches" replace />} />
+                            {/* Legacy Admin Redirects */}
+                            <Route path="/adminaides" element={<Navigate to="/admin/aides" replace />} />
+                            <Route path="/adminstructures" element={<Navigate to="/admin/structures" replace />} />
+                            <Route path="/adminappointments" element={<Navigate to="/admin/appointments" replace />} />
+                            <Route path="/admindemarches" element={<Navigate to="/admin/demarches" replace />} />
 
-                    <Route path="/aidedetail" element={<AideDetail />} />
-                    <Route path="/aide/view" element={<AideDetail />} />
-                    <Route path="/aides/view" element={<LegacyViewRedirect basePath="/aides" />} />
-                    <Route path="/aide/:slug" element={<LegacyAideRedirect />} />
-                    <Route path="/aides/:slug" element={<AideDetail />} />
-                    <Route path="/aides" element={<Aides />} />
-                    <Route path="/recherche" element={<Recherche />} />
-                    <Route path="/categories/:slug" element={<Aides />} />
-                    <Route path="/situations/:slug" element={<Aides />} />
+                            <Route path="/aidedetail" element={<AideDetail />} />
+                            <Route path="/aide/view" element={<AideDetail />} />
+                            <Route path="/aides/view" element={<LegacyViewRedirect basePath="/aides" />} />
+                            <Route path="/aide/:slug" element={<LegacyAideRedirect />} />
+                            <Route path="/aides/:slug" element={<AideDetail />} />
+                            <Route path="/aides" element={<Aides />} />
+                            <Route path="/recherche" element={<Recherche />} />
+                            <Route path="/categories/:slug" element={<Aides />} />
+                            <Route path="/situations/:slug" element={<Aides />} />
 
-                    <Route path="/structures" element={<Annuaire />} />
-                    <Route path="/annuaire" element={<Navigate to="/structures" replace />} />
-                    <Route path="/structures/view" element={<LegacyViewRedirect basePath="/structures" />} />
-                    <Route path="/structures/:slug" element={<StructureDetail />} />
+                            <Route path="/structures" element={<Annuaire />} />
+                            <Route path="/annuaire" element={<Navigate to="/structures" replace />} />
+                            <Route path="/structures/view" element={<LegacyViewRedirect basePath="/structures" />} />
+                            <Route path="/structures/:slug" element={<StructureDetail />} />
 
-                    <Route path="/politique-confidentialite" element={<Confidentialite />} />
-                    <Route path="/confidentialite" element={<Navigate to="/politique-confidentialite" replace />} />
-                    <Route path="/contact" element={<Contact />} />
-                    <Route path="/cookies" element={<Cookies />} />
-                    <Route path="/demarches/view" element={<LegacyViewRedirect basePath="/demarches" />} />
-                    <Route path="/demarches/:slug" element={<DemarcheDetail />} />
+                            <Route path="/politique-confidentialite" element={<Confidentialite />} />
+                            <Route path="/confidentialite" element={<Navigate to="/politique-confidentialite" replace />} />
+                            <Route path="/contact" element={<Contact />} />
+                            <Route path="/cookies" element={<Cookies />} />
+                            <Route path="/demarches/view" element={<LegacyViewRedirect basePath="/demarches" />} />
+                            <Route path="/demarches/:slug" element={<DemarcheDetail />} />
 
-                    {/* Legacy alias — canonical route is /pro/login */}
-                    <Route path="/login/pro" element={<Navigate to="/pro/login" replace />} />
+                            {/* Legacy alias — canonical route is /pro/login */}
+                            <Route path="/login/pro" element={<Navigate to="/pro/login" replace />} />
 
-                    <Route path="/orientation" element={<Orientation />} />
-                    <Route path="/demarches" element={<Demarches />} />
-                    <Route path="/home" element={<Navigate to="/" replace />} />
-                    <Route path="/mentions-legales" element={<MentionsLegales />} />
-                    <Route path="/sourcesmethode" element={<SourcesMethode />} />
-                    <Route path="/sentry-test" element={<SentryTest />} />
-                    <Route path="/r/:token/messages" element={<BeneficiaryMessages />} />
-                    <Route path="/bonnes-pratiques" element={<Guides />} />
-                    <Route path="/bonnes-pratiques/:slug" element={<GuideDetail />} />
-                    <Route path="/outils" element={<Tools />} />
-                    <Route path="/outils/:slug" element={<ToolDetail />} />
-                    <Route path="/dispositifs" element={<Dispositifs />} />
-                    <Route path="/dispositifs/:slug" element={<DispositifDetail />} />
-                    <Route path="/dispositifs/view" element={<DispositifDetail />} />
+                            <Route path="/orientation" element={<Orientation />} />
+                            <Route path="/demarches" element={<Demarches />} />
+                            <Route path="/home" element={<Navigate to="/" replace />} />
+                            <Route path="/mentions-legales" element={<MentionsLegales />} />
+                            <Route path="/sourcesmethode" element={<SourcesMethode />} />
+                            <Route path="/sentry-test" element={<SentryTest />} />
+                            <Route path="/r/:token/messages" element={<BeneficiaryMessages />} />
+                            <Route path="/bonnes-pratiques" element={<Guides />} />
+                            <Route path="/bonnes-pratiques/:slug" element={<GuideDetail />} />
+                            <Route path="/outils" element={<Tools />} />
+                            <Route path="/outils/:slug" element={<ToolDetail />} />
+                            <Route path="/dispositifs" element={<Dispositifs />} />
+                            <Route path="/dispositifs/:slug" element={<DispositifDetail />} />
+                            <Route path="/dispositifs/view" element={<DispositifDetail />} />
 
-                    <Route path="/ressources" element={<Ressources />} />
-                    <Route path="/ressources/:slug" element={<RessourceDetail />} />
-                    <Route path="/ressources/view" element={<RessourceDetail />} />
+                            <Route path="/ressources" element={<Ressources />} />
+                            <Route path="/ressources/:slug" element={<RessourceDetail />} />
+                            <Route path="/ressources/view" element={<RessourceDetail />} />
 
-                    <Route path="/impact" element={<Impact />} />
-                    <Route path="/notre-mission" element={<Mission />} />
-                    <Route path="/notre-methode" element={<Method />} />
-                    <Route path="/sources" element={<Sources />} />
-                    <Route path="/securite-et-rgpd" element={<Security />} />
-                    <Route path="/partenaires" element={<Partners />} />
-                    <Route path="/proposer-une-structure" element={<SuggestStructure />} />
-                    <Route path="/dossier-subventions" element={<SubventionDossier />} />
-                    <Route path="/status" element={<Status />} />
-                    <Route path="/diagnostic" element={<DiagnosticPage />} />
+                            <Route path="/impact" element={<Impact />} />
+                            <Route path="/notre-mission" element={<Mission />} />
+                            <Route path="/notre-methode" element={<Method />} />
+                            <Route path="/sources" element={<Sources />} />
+                            <Route path="/securite-et-rgpd" element={<Security />} />
+                            <Route path="/partenaires" element={<Partners />} />
+                            <Route path="/proposer-une-structure" element={<SuggestStructure />} />
+                            <Route path="/dossier-subventions" element={<SubventionDossier />} />
+                            <Route path="/status" element={<Status />} />
+                            <Route path="/diagnostic" element={<DiagnosticPage />} />
 
-                    {/* Styleguide */}
-                    <Route path="/styleguide/branding" element={<StyleguideBranding />} />
+                            {/* Styleguide */}
+                            <Route path="/styleguide/branding" element={<StyleguideBranding />} />
 
-                    <Route path="/AideDetail" element={<Navigate to="/aidedetail" replace />} />
-                    <Route path="/StructureDetail" element={<Navigate to="/annuaire" replace />} />
-                    <Route path="/structuredetail" element={<Navigate to="/annuaire" replace />} />
-                    <Route path="/DemarcheDetail" element={<Navigate to="/demarches" replace />} />
-                    <Route path="/demarchedetail" element={<Navigate to="/demarches" replace />} />
-                    <Route path="/Annuaire" element={<Navigate to="/annuaire" replace />} />
-                    <Route path="/Aides" element={<Navigate to="/aides" replace />} />
+                            <Route path="/AideDetail" element={<Navigate to="/aidedetail" replace />} />
+                            <Route path="/StructureDetail" element={<Navigate to="/annuaire" replace />} />
+                            <Route path="/structuredetail" element={<Navigate to="/annuaire" replace />} />
+                            <Route path="/DemarcheDetail" element={<Navigate to="/demarches" replace />} />
+                            <Route path="/demarchedetail" element={<Navigate to="/demarches" replace />} />
+                            <Route path="/Annuaire" element={<Navigate to="/annuaire" replace />} />
+                            <Route path="/Aides" element={<Navigate to="/aides" replace />} />
 
-                    {/* Phase 1: /assistant redirect → /orientation */}
-                    <Route path="/assistant" element={<Navigate to="/orientation" replace />} />
+                            {/* Phase 1: /assistant redirect → /orientation */}
+                            <Route path="/assistant" element={<Navigate to="/orientation" replace />} />
 
-                    {/* Mon assistant "bientôt disponible" page */}
-                    <Route path="/mon-assistant" element={
-                        <div className="p-8 text-center">
-                            <h1 className="text-2xl font-bold mb-4">Mon Assistant</h1>
-                            <p>Bientôt disponible</p>
-                        </div>
-                    } />
+                            {/* Mon assistant "bientôt disponible" page */}
+                            <Route path="/mon-assistant" element={
+                                <div className="p-8 text-center">
+                                    <h1 className="text-2xl font-bold mb-4">Mon Assistant</h1>
+                                    <p>Bientôt disponible</p>
+                                </div>
+                            } />
 
 
-                    <Route path="*" element={<ServiceError code={404} />} />
-                </Routes>
+                            <Route path="*" element={<ServiceError code={404} />} />
+                        </Routes>
+                    </motion.div>
+                </AnimatePresence>
             </Layout>
         </Suspense>
     );

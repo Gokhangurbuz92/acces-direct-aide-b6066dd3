@@ -20,7 +20,7 @@ import {
   UserPlus
 } from 'lucide-react';
 import { Button, buttonVariants } from "@/components/ui/button";
-import AccessibilityToolbar from '@/components/ui/AccessibilityToolbar';
+import AccessibilityPanel from '@/components/ui/AccessibilityPanel';
 import ChatAssistant from '@/components/chat/ChatAssistant';
 import { adminClient as client } from '@/api/client';
 import PropTypes from 'prop-types';
@@ -314,7 +314,7 @@ export default function Layout({ children, currentPageName }) {
 
             {/* Actions */}
             <div className="flex items-center gap-2">
-              <AccessibilityToolbar />
+              <AccessibilityPanel />
 
               {/* Menu mobile */}
               <Button

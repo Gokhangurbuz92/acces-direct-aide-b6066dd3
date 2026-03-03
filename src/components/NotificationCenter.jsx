@@ -23,6 +23,7 @@ import {
 export default function NotificationCenter({ className = '' }) {
     const [notifications, setNotifications] = useState([]);
     const [unreadCount, setUnreadCount] = useState(0);
+    const [unreadMessages, setUnreadMessages] = useState(0);
     const [isOpen, setIsOpen] = useState(false);
     const [loading, setLoading] = useState(false);
     const panelRef = useRef(null);
@@ -35,17 +36,32 @@ export default function NotificationCenter({ className = '' }) {
     const fetchNotifications = useCallback(async () => {
         if (!token) return;
         try {
-            const res = await fetch('/api/pro/notifications?limit=20', {
-                headers: { Authorization: `Bearer ${token}` },
-            });
-            if (!res.ok) return;
-            const data = await res.json();
-            setNotifications(data.notifications || []);
-            setUnreadCount(data.unreadCount || 0);
+            const [notifRes, countRes] = await Promise.all([
+                fetch('/api/pro/notifications?limit=20', {
+                    headers: { Authorization: `Bearer ${token}` },
+                }),
+                fetch('/api/pro/notifications/unread-count', {
+                    headers: { Authorization: `Bearer ${token}` },
+                }),
+            ]);
+
+            if (notifRes.ok) {
+                const data = await notifRes.json();
+                setNotifications(data.notifications || []);
+                setUnreadCount(data.unreadCount || 0);
+            }
+
+            if (countRes.ok) {
+                const countData = await countRes.json();
+                setUnreadMessages(countData.messages || 0);
+            }
         } catch {
             // Silently handle
         }
     }, [token]);
+
+    // Total badge = notifications + unread messages
+    const totalBadge = unreadCount + unreadMessages;
 
     // Initial fetch + polling every 30s
     useEffect(() => {
@@ -127,15 +143,15 @@ export default function NotificationCenter({ className = '' }) {
             <button
                 onClick={() => setIsOpen((v) => !v)}
                 className="relative p-2 rounded-xl hover:bg-slate-100 transition-colors focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                aria-label={`Notifications${unreadCount > 0 ? `, ${unreadCount} non lues` : ''}`}
+                aria-label={`Notifications${totalBadge > 0 ? `, ${totalBadge} non lues` : ''}`}
             >
                 <Bell
-                    className={unreadCount > 0 ? 'text-indigo-600' : 'text-slate-400'}
+                    className={totalBadge > 0 ? 'text-indigo-600' : 'text-slate-400'}
                     size={20}
                 />
-                {unreadCount > 0 && (
+                {totalBadge > 0 && (
                     <span className="absolute -top-0.5 -right-0.5 w-4.5 h-4.5 bg-red-500 text-white text-[9px] font-bold rounded-full flex items-center justify-center border-2 border-white min-w-[18px]">
-                        {unreadCount > 9 ? '9+' : unreadCount}
+                        {totalBadge > 9 ? '9+' : totalBadge}
                     </span>
                 )}
             </button>

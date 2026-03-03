@@ -29,6 +29,7 @@ import FalcToggle from '@/components/FalcToggle';
 import FalcContent from '@/components/FalcContent';
 import { getProvenance } from '@/lib/provenance';
 import { buildPublicRdvPath } from '@/lib/rdvRouting';
+import { useFalc } from '@/contexts/FalcContext';
 
 const TYPE_LABELS = {
   association: 'Association',
@@ -53,8 +54,8 @@ export default function StructureDetail() {
   const navigate = useNavigate();
   const structureId = searchParams.get('id');
 
-  // FALC mode state
-  const [isFalcMode, setIsFalcMode] = useState(false);
+  // FALC mode — use global context
+  const { isFalcEnabled: isFalcMode } = useFalc();
 
   const { data: queryData, isLoading } = useQuery({
     queryKey: ['structure', slug || structureId],
@@ -164,7 +165,7 @@ export default function StructureDetail() {
             <div className="mb-4">
               <FalcToggle
                 hasFalcContent={!!(structure?.resume_falc || structure?.summary_falc || structure?.description_falc)}
-                onChange={setIsFalcMode}
+                onChange={() => { }}
               />
             </div>
 

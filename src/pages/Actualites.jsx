@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
-import { Search, SlidersHorizontal, Calendar, ExternalLink, AlertTriangle, Info, RefreshCw, Star, ArrowRight } from 'lucide-react';
+import { Search, SlidersHorizontal, Calendar, ExternalLink, AlertTriangle, Info, RefreshCw, Star, ArrowRight, Brain } from 'lucide-react';
 import SEO from '@/components/SEO';
 import { client } from '@/api/client';
 import CategoryChip from '@/components/ui/CategoryChip';
@@ -15,6 +15,7 @@ import NewsFallback from '@/components/news/NewsFallback';
 import { generateBreadcrumbSchema } from '@/utils/schema';
 import { formatProvenanceDate, getProvenance } from '@/lib/provenance';
 import { htmlToPlainText } from '@/lib/htmlText';
+import { useFalc } from '@/contexts/FalcContext';
 
 /**
  * @typedef {object} ActualiteListItem
@@ -87,6 +88,7 @@ function getSourceUrl(actu) {
 export default function Actualites() {
   const [searchParams, setSearchParams] = useSearchParams();
   const [isFiltersOpen, setIsFiltersOpen] = useState(false);
+  const { isFalcEnabled } = useFalc();
 
   const q = (searchParams.get('q') || '').trim();
   const categorie = (searchParams.get('categorie') || '').trim();
@@ -391,8 +393,18 @@ export default function Actualites() {
                       </h2>
 
                       <p className="text-slate-600 mb-4 leading-relaxed line-clamp-3">
-                        {excerpt}
+                        {isFalcEnabled && actu.summary_falc ? actu.summary_falc : excerpt}
                       </p>
+
+                      {/* FALC badge */}
+                      {isFalcEnabled && actu.summary_falc && (
+                        <div className="mb-4">
+                          <Badge className="bg-teal-100 text-teal-700 border-teal-200 flex items-center gap-1 w-fit">
+                            <Brain className="h-3 w-3" />
+                            Simplifié
+                          </Badge>
+                        </div>
+                      )}
 
                       <div className="flex flex-wrap items-center justify-between gap-4 pt-4 border-t border-slate-100 relative z-20">
                         <div className="flex items-center gap-4 text-sm text-slate-500">

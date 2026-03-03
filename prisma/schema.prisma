@@ -1123,15 +1123,17 @@ model ProNotification {
 }
 
 model ProOutlookToken {
-  id           String   @id @default(uuid())
-  userId       String   @unique
-  accessToken  String
-  refreshToken String
-  expiresAt    DateTime
-  scope        String?
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
-  user         ProUser  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  id              String   @id @default(uuid())
+  userId          String   @unique
+  email           String?  // Email du compte Outlook lié
+  accessTokenEnc  String   @db.Text // Chiffré AES-256-GCM
+  refreshTokenEnc String   @db.Text // Chiffré AES-256-GCM
+  iv              String   // Vecteur d'initialisation (hex)
+  expiresAt       DateTime
+  scope           String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  user            ProUser  @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
 // -----------------------------------------------------------------------------

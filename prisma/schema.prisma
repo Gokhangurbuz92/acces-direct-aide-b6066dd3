@@ -68,12 +68,12 @@ model Aide {
   title         String?
   description   String?
   content       String?
-  category_code AidCategoryCode             @default(AUTRE)
-  status_code   AidStatus                   @default(DRAFT)
+  category_code AidCategoryCode              @default(AUTRE)
+  status_code   AidStatus                    @default(DRAFT)
   eligibility   Json?
   financials    Json?
   citations     Json?
-  qa_score      Int                         @default(0)
+  qa_score      Int                          @default(0)
   qa_report     Json?
   source_org    String?
   source_hash   String?
@@ -98,11 +98,11 @@ model Aide {
   fetched_at           DateTime?
 
   // Cahier des charges — Architecture Data Universelle
-  montant_max           String?   // Montant max de l'aide (ex: "1500€")
-  echelon_territorial   String?   // "NATIONAL" | "REGIONAL" | "DEPARTEMENTAL" | "COMMUNAL"
-  code_insee_territoire String?   // vide si national, "44" Grand Est, "67000" Strasbourg
-  lien_demarche         String?   // URL directe pour candidater
-  source_donnee         String?   // "Aides-Territoires", "Scraping GrandEst", "OpenFisca", "DREES"
+  montant_max           String? // Montant max de l'aide (ex: "1500€")
+  echelon_territorial   String? // "NATIONAL" | "REGIONAL" | "DEPARTEMENTAL" | "COMMUNAL"
+  code_insee_territoire String? // vide si national, "44" Grand Est, "67000" Strasbourg
+  lien_demarche         String? // URL directe pour candidater
+  source_donnee         String? // "Aides-Territoires", "Scraping GrandEst", "OpenFisca", "DREES"
 
   // Traceability Fields (P1)
   retrieved_at    DateTime?
@@ -223,10 +223,10 @@ model Structure {
   content_hash       String?
 
   // Cahier des charges — Annuaire Universel
-  type_finess      String?   // Type FINESS (EHPAD, Hôpital, CMS, CCAS…)
-  numero_finess    String?   @unique // Identifiant national FINESS
-  rna_id           String?   @unique // Identifiant RNA pour les associations
-  source_annuaire  String?   // "FINESS", "RNA", "OPENDATA_ALSACE", "ADMINISTRATION"
+  type_finess     String? // Type FINESS (EHPAD, Hôpital, CMS, CCAS…)
+  numero_finess   String? @unique // Identifiant national FINESS
+  rna_id          String? @unique // Identifiant RNA pour les associations
+  source_annuaire String? // "FINESS", "RNA", "OPENDATA_ALSACE", "ADMINISTRATION"
 
   // Traceability Fields (P1)
   retrieved_at         DateTime?
@@ -292,9 +292,9 @@ model Demarche {
   situations            LifeSituation[] @relation("DemarcheToSituation")
 
   // Cahier des charges — Démarches enrichies
-  public_cible       String?          // Public cible de la démarche
-  contenu_detaille   String?  @db.Text // Contenu aspiré via Service-Public.fr
-  lien_teleservice   String?          // Lien vers le téléservice en ligne
+  public_cible     String? // Public cible de la démarche
+  contenu_detaille String? @db.Text // Contenu aspiré via Service-Public.fr
+  lien_teleservice String? // Lien vers le téléservice en ligne
 
   // Ingestion Fields
   source_url_exact String?
@@ -554,11 +554,12 @@ model ProUser {
   rdvMessagesSent          RdvConversationMessage[] @relation("RdvMessageSenderPro")
   notifications            ProNotification[]
   outlookToken             ProOutlookToken?
+  proAuditLogs             ProAuditLog[]
   structure                Structure                @relation(fields: [structureId], references: [id])
 
   // --- MFA (TOTP) ---
-  mfa_enabled              Boolean                  @default(false)
-  mfa_secret               String?
+  mfa_enabled Boolean @default(false)
+  mfa_secret  String?
 
   @@unique([structureId, email])
 }
@@ -639,9 +640,9 @@ model ProAppointment {
   conversation         RdvConversation?
 
   // --- Visio (Jitsi) ---
-  visioRoomId          String?
-  visioEnabled         Boolean          @default(false)
-  visioStartedAt       DateTime?
+  visioRoomId    String?
+  visioEnabled   Boolean   @default(false)
+  visioStartedAt DateTime?
 
   @@unique([citizenUserId, idempotencyKey])
   @@index([structureId, startAt])
@@ -1043,8 +1044,8 @@ model ContentReport {
 /// referenced prisma.syncRun but had no backing model.
 model SyncRun {
   id         String    @id @default(uuid())
-  source_id  String?   // "FINESS", "RNA", "STRUCTURES", etc.
-  status     String    // "running" | "success" | "partial" | "failed" | "skipped"
+  source_id  String? // "FINESS", "RNA", "STRUCTURES", etc.
+  status     String // "running" | "success" | "partial" | "failed" | "skipped"
   started_at DateTime  @default(now())
   ended_at   DateTime?
   error      String?   @db.Text
@@ -1061,23 +1062,23 @@ model SyncRun {
 // ---------------------------------------------------------
 
 model ConversationLog {
-  id          String   @id @default(cuid())
-  createdAt   DateTime @default(now())
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
 
   // Contenu de l'échange (anonymisé)
-  message     String   @db.Text
-  intent      String?  // Intention détectée (ex: "logement", "rsa")
+  message String  @db.Text
+  intent  String? // Intention détectée (ex: "logement", "rsa")
 
   // Métadonnées de performance RAG
-  searchMode  String   @default("rag") // "rag" | "lexical" | "static"
-  sourceCount Int      @default(0)     // Nombre d'aides trouvées
+  searchMode  String @default("rag") // "rag" | "lexical" | "static"
+  sourceCount Int    @default(0) // Nombre d'aides trouvées
 
   // Session anonyme (optionnel)
-  sessionId   String?
+  sessionId String?
 
   // Feedback usager (amélioration continue)
-  rating      Int?     // 1 (positif) ou -1 (négatif)
-  userComment String?  @db.Text // Commentaire optionnel sur la réponse
+  rating      Int? // 1 (positif) ou -1 (négatif)
+  userComment String? @db.Text // Commentaire optionnel sur la réponse
 
   @@index([createdAt])
   @@index([searchMode])
@@ -1089,16 +1090,16 @@ model ConversationLog {
 // ---------------------------------------------------------
 
 model SharedDiagnostic {
-  id          String   @id @default(cuid())
-  createdAt   DateTime @default(now())
-  expiresAt   DateTime // Expiration automatique (7 jours par défaut)
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+  expiresAt DateTime // Expiration automatique (7 jours par défaut)
 
   // Instantané du diagnostic (stocké en JSON natif PostgreSQL)
-  situation   Json     // { birthDate, salary, rent, housingStatus, ... }
-  results     Json     // { rights: [...], period, meta }
+  situation Json // { birthDate, salary, rent, housingStatus, ... }
+  results   Json // { rights: [...], period, meta }
 
   // Métadonnées de partage
-  viewCount   Int      @default(0)
+  viewCount Int @default(0)
 
   @@index([createdAt])
   @@index([expiresAt])
@@ -1109,12 +1110,12 @@ model ProNotification {
   id          String    @id @default(uuid())
   userId      String
   structureId String
-  type        String    // rdv_new, rdv_cancel, message_new, team_join, team_role_change, system
+  type        String // rdv_new, rdv_cancel, message_new, team_join, team_role_change, system
   title       String
   message     String
   readAt      DateTime?
   createdAt   DateTime  @default(now())
-  metadata    Json?     // optional structured data (appointmentId, messageId, etc.)
+  metadata    Json? // optional structured data (appointmentId, messageId, etc.)
   user        ProUser   @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId, readAt])
@@ -1131,4 +1132,53 @@ model ProOutlookToken {
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
   user         ProUser  @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+// -----------------------------------------------------------------------------
+// EXTENSION FINALE PHASE 2 — G2, G3/G4, G5
+// -----------------------------------------------------------------------------
+
+/// Traçabilité totale (G2) : Journal d'audit Pro par structure
+model ProAuditLog {
+  id          String   @id @default(uuid())
+  createdAt   DateTime @default(now())
+  proUserId   String
+  action      String // ex: "EXPORT_CSV", "INVITE_MEMBER", "DELETE_APPOINTMENT"
+  entityType  String?
+  entityId    String?
+  metadata    Json? // Détails de l'action
+  structureId String
+
+  proUser ProUser @relation(fields: [proUserId], references: [id])
+
+  @@index([structureId])
+  @@index([proUserId, createdAt])
+}
+
+/// Messagerie persistante & chiffrée (G3/G4) : Messages chiffrés AES-256-GCM
+model ProMessage {
+  id               String    @id @default(uuid())
+  createdAt        DateTime  @default(now())
+  conversationId   String
+  senderId         String // ID du Pro ou "CITIZEN"
+  contentEncrypted String    @db.Text
+  iv               String // Vecteur d'initialisation pour AES
+  readAt           DateTime?
+
+  @@index([conversationId])
+  @@index([senderId, createdAt])
+}
+
+/// Consentement & Transparence (G5) : Accord RGPD avant consultation dossier
+model UserConsent {
+  id          String   @id @default(uuid())
+  createdAt   DateTime @default(now())
+  citizenId   String
+  structureId String
+  purpose     String // ex: "DOSSIER_CONSULTATION"
+  expiresAt   DateTime
+  ipAddress   String?
+
+  @@index([citizenId, structureId])
+  @@index([expiresAt])
 }

@@ -68,6 +68,9 @@ import proAgentDiscovery from './_handlers/pro/agent-discovery.js';
 import proAgentScheduler from './_handlers/pro/agent-scheduler.js';
 import proHealthCheck from './_handlers/pro/health-check.js';
 import proOutlook from './_handlers/pro/outlook.js';
+import proNotificationsUnreadCount from './_handlers/pro/notifications/unread-count.js';
+import proAuditList from './_handlers/pro/audit/list.js';
+import proMessagesSend from './_handlers/pro/messages/send.js';
 import tts from './_handlers/tts.js';
 
 // --- Public Content ---
@@ -186,6 +189,7 @@ export const routes = [
     { path: 'pro/services', match: 'exact', handler: proServices },
     { path: 'pro/slots', match: 'exact', handler: proSlots },
     { path: 'pro/messages', match: 'exact', handler: proMessages },
+    { path: 'pro/messages/send', match: 'exact', handler: proMessagesSend },
     { path: 'pro/messages/conversations', match: 'prefix', handler: proMessagesConversations },
     { path: 'pro/appointments', match: 'exact', handler: proAppointmentsIndex },
     { path: 'pro/appointments/cancel', match: 'exact', handler: proAppointmentsCancel },
@@ -198,7 +202,9 @@ export const routes = [
     { path: 'pro/team', match: 'exact', handler: proTeam },
     { path: 'pro/invite', match: 'exact', handler: proInvite },
     { path: 'pro/dossier', match: 'exact', handler: proDossier },
+    { path: 'pro/notifications/unread-count', match: 'exact', handler: proNotificationsUnreadCount },
     { path: 'pro/notifications', match: 'exact', handler: proNotifications },
+    { path: 'pro/audit/list', match: 'exact', handler: proAuditList },
     { path: 'pro/audit', match: 'exact', handler: proAudit },
     { path: 'pro/reports', match: 'exact', handler: proReports },
     { path: 'pro/dossier/upload-secure', match: 'exact', handler: proDossierUpload },

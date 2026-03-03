@@ -3,7 +3,34 @@ import { env } from '../../_utils/env.js';
 // @ts-nocheck
 import prisma from '../../_utils/prisma.js';
 import { logProAudit } from '../../lib/pro-auth.js';
+import { sendMail } from '../../_utils/mailer.js';
 
+/**
+ * sendEmailFallback — envoie un email de secours quand le SMS échoue.
+ * Ne crash jamais — absorbe les erreurs silencieusement.
+ */
+async function sendEmailFallback(appointment, phoneNumber, smsMessage) {
+    try {
+        const beneficiaryEmail = appointment.beneficiaryEmail;
+        if (!beneficiaryEmail) {
+            logger.warn('[SMS-FALLBACK] Pas d\'email bénéficiaire pour le fallback');
+            return;
+        }
+
+        await sendMail({
+            to: beneficiaryEmail,
+            subject: 'Rappel de votre rendez-vous — AccesDirectAide',
+            text: `${smsMessage}\n\n(Ce message vous est envoyé car le rappel SMS n'a pas pu être délivré.)`,
+            html: `<p>${smsMessage}</p><p style="color:#666;font-size:12px"><em>Ce message vous est envoyé car le rappel SMS n'a pas pu être délivré.</em></p>`,
+            category: 'sms_fallback',
+        });
+
+        logger.info(`[SMS-FALLBACK] Email de secours envoyé à ${beneficiaryEmail}`);
+    } catch (emailErr) {
+        // Ne jamais crash le handler principal
+        logger.error('[SMS-FALLBACK] Erreur email de secours:', emailErr.message);
+    }
+}
 /**
  * SMS Notification API (Public)
  *
@@ -105,21 +132,40 @@ export default async function handler(req, res) {
                 Body: message,
             });
 
-            const twilioRes = await fetch(twilioUrl, {
-                method: 'POST',
-                headers: {
-                    Authorization: `Basic ${Buffer.from(`${twilioSid}:${twilioAuth}`).toString('base64')}`,
-                    'Content-Type': 'application/x-www-form-urlencoded',
-                },
-                body: twilioBody.toString(),
-            });
+            try {
+                const twilioRes = await fetch(twilioUrl, {
+                    method: 'POST',
+                    headers: {
+                        Authorization: `Basic ${Buffer.from(`${twilioSid}:${twilioAuth}`).toString('base64')}`,
+                        'Content-Type': 'application/x-www-form-urlencoded',
+                    },
+                    body: twilioBody.toString(),
+                });
 
-            if (!twilioRes.ok) {
-                const errBody = await twilioRes.text().catch(() => '');
-                logger.error(`[SMS] Twilio error (${twilioRes.status}): ${errBody}`);
-            } else {
-                const smsResult = await twilioRes.json();
-                logger.info(`[SMS] Sent to=${maskPhone(phoneNumber)} sid=${smsResult.sid}`);
+                if (!twilioRes.ok) {
+                    const errBody = await twilioRes.text().catch(() => '');
+                    let errCode = null;
+                    try { errCode = JSON.parse(errBody)?.code; } catch { /* ignore */ }
+
+                    // Graceful fallback for known Twilio errors
+                    if (errCode === 20404) {
+                        logger.error('[SMS] Twilio HORS CRÉDIT (20404) — bascule sur email de secours');
+                    } else if (errCode === 21614 || errCode === 21211) {
+                        logger.error(`[SMS] Numéro invalide Twilio (${errCode}): ${maskPhone(phoneNumber)}`);
+                    } else {
+                        logger.error(`[SMS] Twilio error (${twilioRes.status}, code=${errCode}): ${errBody.slice(0, 200)}`);
+                    }
+
+                    // Attempt email fallback
+                    await sendEmailFallback(appointment, phoneNumber, message);
+                } else {
+                    const smsResult = await twilioRes.json();
+                    logger.info(`[SMS] Sent to=${maskPhone(phoneNumber)} sid=${smsResult.sid}`);
+                }
+            } catch (twilioErr) {
+                logger.error('[SMS] Twilio network error:', twilioErr.message);
+                // Email fallback on network failure
+                await sendEmailFallback(appointment, phoneNumber, message);
             }
         } else {
             logger.warn(`[SMS] Twilio not configured — message queued locally: ${maskPhone(phoneNumber)}`);

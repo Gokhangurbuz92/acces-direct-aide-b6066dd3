@@ -1,9 +1,10 @@
 import { useState } from "react";
 import { NavLink } from "react-router-dom";
-import { Menu, X, LogIn, UserPlus } from "lucide-react";
+import { Menu, X, LogIn, UserPlus, Brain } from "lucide-react";
 import { buttonVariants } from "@/components/ui/button";
 import ADALogo from "@/components/Brand/ADALogo";
 import brand from "@/lib/brand-config";
+import { useFalc } from "@/contexts/FalcContext";
 
 const NAV_ITEMS = [
   { label: "Accueil", to: "/" },
@@ -22,6 +23,7 @@ function navClassName(isActive) {
 
 export function Header() {
   const [mobileOpen, setMobileOpen] = useState(false);
+  const { isFalcEnabled, toggleFalc } = useFalc();
 
   return (
     <>
@@ -76,8 +78,21 @@ export function Header() {
               ))}
             </nav>
 
-            {/* Auth action links — desktop */}
+            {/* Auth action links + FALC toggle — desktop */}
             <div className="hidden items-center gap-2 lg:flex">
+              <button
+                type="button"
+                onClick={toggleFalc}
+                className={`rounded-lg p-2 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-400 ${isFalcEnabled
+                    ? 'bg-teal-100 text-teal-700 hover:bg-teal-200'
+                    : 'text-slate-500 hover:bg-slate-100 hover:text-slate-700'
+                  }`}
+                aria-label={isFalcEnabled ? 'Désactiver le mode lecture simplifiée (FALC)' : 'Activer le mode lecture simplifiée (FALC)'}
+                aria-pressed={isFalcEnabled}
+                title="Mode lecture simplifiée (FALC)"
+              >
+                <Brain className="h-5 w-5" aria-hidden="true" />
+              </button>
               <NavLink
                 to="/login"
                 className={buttonVariants({ variant: "ghost", size: "sm" })}
@@ -123,8 +138,21 @@ export function Header() {
                 </NavLink>
               ))}
 
-              {/* Auth section — mobile */}
+              {/* Auth + FALC section — mobile */}
               <hr className="my-2 border-slate-200" />
+              <button
+                type="button"
+                onClick={() => { toggleFalc(); setMobileOpen(false); }}
+                className={`rounded-lg px-3 py-2 text-sm font-medium transition-colors flex items-center gap-2 ${isFalcEnabled
+                    ? 'bg-teal-100 text-teal-700'
+                    : 'text-slate-600 hover:bg-slate-50'
+                  }`}
+                aria-label={isFalcEnabled ? 'Désactiver le mode FALC' : 'Activer le mode FALC'}
+                aria-pressed={isFalcEnabled}
+              >
+                <Brain className="h-4 w-4" aria-hidden="true" />
+                {isFalcEnabled ? 'Mode simplifié ✓' : 'Lecture simplifiée'}
+              </button>
               <NavLink
                 to="/login"
                 className={buttonVariants({ variant: "ghost" })}

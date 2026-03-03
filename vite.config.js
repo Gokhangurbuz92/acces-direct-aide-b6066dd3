@@ -201,6 +201,11 @@ export default defineConfig({
             return 'charts-vendor';
           }
 
+          // PDF libraries (very heavy, lazy load or split)
+          if (id.includes('node_modules/jspdf') || id.includes('node_modules/html2canvas') || id.includes('node_modules/dompurify')) {
+            return 'pdf-vendor';
+          }
+
           // Other node_modules (catch-all for remaining dependencies)
           if (id.includes('node_modules/')) {
             return 'vendor';

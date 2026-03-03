@@ -1,3 +1,4 @@
+import { SkeletonList } from '@/components/ui/skeleton';
 import { useState, useEffect, useCallback } from 'react';
 import { useOutletContext } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -150,11 +151,7 @@ export default function ProAuditLog() {
             </Card>
 
             {/* Entries */}
-            {loading ? (
-                <div className="flex items-center justify-center py-16">
-                    <Loader2 className="animate-spin text-slate-400" size={24} />
-                </div>
-            ) : entries.length === 0 ? (
+            {loading ? <div className="p-6"><SkeletonList count={3} variant="card" /></div> : entries.length === 0 ? (
                 <Card>
                     <CardContent className="py-12 text-center text-slate-400">
                         <Shield size={32} className="mx-auto mb-3 opacity-20" />

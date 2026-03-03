@@ -20,6 +20,7 @@ import {
     Check,
     Link as LinkIcon,
 } from 'lucide-react';
+import QRCode from 'react-qr-code';
 import { generateSocialPassport } from '@/lib/pdf-generator';
 import { Button } from '@/components/ui/button';
 import { useSituation } from '@/hooks/useSituation';
@@ -510,20 +511,31 @@ function ResultsDisplay({ results, situation }) {
 
             {/* Share URL Display */}
             {shareState.url && (
-                <div className="flex items-center gap-2 rounded-xl border border-slate-200 bg-slate-50 px-4 py-3">
-                    <LinkIcon className="h-4 w-4 flex-shrink-0 text-indigo-500" />
-                    <code className="flex-1 truncate text-xs text-slate-600">{shareState.url}</code>
-                    <button
-                        type="button"
-                        onClick={() => {
-                            navigator.clipboard.writeText(shareState.url);
-                            setShareState((s) => ({ ...s, copied: true }));
-                            setTimeout(() => setShareState((s) => ({ ...s, copied: false })), 3000);
-                        }}
-                        className="rounded-lg border border-slate-200 bg-white px-3 py-1 text-xs font-bold text-slate-600 transition-colors hover:bg-indigo-50 hover:text-indigo-700"
-                    >
-                        Copier
-                    </button>
+                <div className="flex flex-col gap-4 rounded-xl border border-slate-200 bg-slate-50 p-4">
+                    <div className="flex items-center gap-2">
+                        <LinkIcon className="h-4 w-4 flex-shrink-0 text-indigo-500" />
+                        <code className="flex-1 truncate text-xs text-slate-600">{shareState.url}</code>
+                        <button
+                            type="button"
+                            onClick={() => {
+                                navigator.clipboard.writeText(shareState.url);
+                                setShareState((s) => ({ ...s, copied: true }));
+                                setTimeout(() => setShareState((s) => ({ ...s, copied: false })), 3000);
+                            }}
+                            className="rounded-lg border border-slate-200 bg-white px-3 py-1 text-xs font-bold text-slate-600 transition-colors hover:bg-indigo-50 hover:text-indigo-700"
+                        >
+                            Copier
+                        </button>
+                    </div>
+                    <div className="flex flex-col items-center justify-center gap-3 pt-2">
+                        <div className="text-center">
+                            <p className="text-sm font-bold text-slate-700">Continuité diagnostic</p>
+                            <p className="text-xs text-slate-500">Scannez ce QR Code pour reprendre sur votre mobile</p>
+                        </div>
+                        <div className="rounded-xl bg-white p-3 shadow-sm border border-slate-200">
+                            <QRCode value={shareState.url} size={160} level="M" fgColor="#312e81" />
+                        </div>
+                    </div>
                 </div>
             )}
 

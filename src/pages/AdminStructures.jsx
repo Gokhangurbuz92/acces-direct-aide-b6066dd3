@@ -1,3 +1,4 @@
+import { SkeletonList } from '@/components/ui/skeleton';
 
 import { useState } from 'react';
 import { adminClient as client } from '@/api/client';
@@ -42,7 +43,7 @@ export default function AdminStructures() {
         !searchQuery || s.nom?.toLowerCase().includes(searchQuery.toLowerCase()) || s.ville?.toLowerCase().includes(searchQuery.toLowerCase())
     );
 
-    if (isLoading) return <div className="p-12 flex justify-center"><Loader2 className="animate-spin" /></div>;
+    if (isLoading) return <div className="p-6"><SkeletonList count={4} variant="table-row" /></div>;
 
     return (
         <div className="min-h-screen bg-slate-50 p-6">

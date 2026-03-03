@@ -1,4 +1,5 @@
 import logger from '../../_utils/logger.js';
+import { env } from '../../_utils/env.js';
 // @ts-nocheck
 import prisma from '../../_utils/prisma.js';
 import { logProAudit } from '../../lib/pro-auth.js';
@@ -92,9 +93,9 @@ export default async function handler(req, res) {
         const message = `Rappel ADA : Votre RDV avec ${proName} est prévu le ${dateStr}. ${mode}.`;
 
         // Send SMS via Twilio REST API (no SDK dependency)
-        const twilioSid = process.env.TWILIO_SID;
-        const twilioAuth = process.env.TWILIO_AUTH_TOKEN;
-        const twilioFrom = process.env.TWILIO_FROM;
+        const twilioSid = env.twilio.sid;
+        const twilioAuth = env.twilio.authToken;
+        const twilioFrom = env.twilio.from;
 
         if (twilioSid && twilioAuth && twilioFrom) {
             const twilioUrl = `https://api.twilio.com/2010-04-01/Accounts/${twilioSid}/Messages.json`;

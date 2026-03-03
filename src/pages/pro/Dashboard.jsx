@@ -1,3 +1,4 @@
+import { SkeletonList } from '@/components/ui/skeleton';
 import { useState, useEffect, useCallback } from 'react';
 import { useOutletContext, useNavigate, useSearchParams, Link } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -203,11 +204,7 @@ export default function ProDashboard() {
                         </Link>
                     </div>
 
-                    {loading ? (
-                        <div className="flex items-center justify-center py-12">
-                            <Loader2 className="animate-spin text-slate-400" size={24} />
-                        </div>
-                    ) : appointments.length === 0 ? (
+                    {loading ? <div className="p-6"><SkeletonList count={3} variant="card" /></div> : appointments.length === 0 ? (
                         <Card className="border-dashed">
                             <CardContent className="flex flex-col items-center justify-center py-12 text-center">
                                 <Calendar className="text-slate-300 mb-4" size={40} />

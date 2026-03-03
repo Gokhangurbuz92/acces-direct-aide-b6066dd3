@@ -1,3 +1,4 @@
+import { checkRateLimit, getClientIp, getRateLimitStatus } from '../../_utils/rateLimit.js';
 import logger from '../../_utils/logger.js';
 import prisma from '../../_utils/prisma.js';
 import { verifyAdmin, resolveAuthContext } from '../../_utils/auth.js';
@@ -8,6 +9,12 @@ import { restoreVersion } from '../../_utils/snapshot.js';
  */
 
 export default async function handler(req, res) {
+    const ip = getClientIp(req);
+    const rateLimit = await checkRateLimit('ADMIN_API', ip);
+    if (!rateLimit.allowed) {
+        return res.status(getRateLimitStatus(rateLimit)).json(rateLimit.error);
+    }
+
     if (!verifyAdmin(req)) return res.status(401).json({ error: "Unauthorized" });
 
     const { entity_type, entity_id } = req.query;

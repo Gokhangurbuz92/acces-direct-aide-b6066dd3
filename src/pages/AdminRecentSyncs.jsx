@@ -1,3 +1,4 @@
+import { SkeletonList } from '@/components/ui/skeleton';
 
 import { Link } from 'react-router-dom';
 import { createPageUrl } from '@/utils';
@@ -53,11 +54,7 @@ export default function AdminRecentSyncs() {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            {isLoading ? (
-              <div className="flex items-center justify-center py-12">
-                <Loader2 className="h-8 w-8 animate-spin text-slate-400" />
-              </div>
-            ) : recentAides.length > 0 ? (
+            {isLoading ? <div className="p-6"><SkeletonList count={3} variant="card" /></div> : recentAides.length > 0 ? (
               <div className="space-y-3">
                 {recentAides.map((aide) => (
                   <div

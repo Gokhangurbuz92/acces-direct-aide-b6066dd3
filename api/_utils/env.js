@@ -261,6 +261,18 @@ export const env = {
     },
   },
 
+  twilio: {
+    get sid() {
+      return getEnv('TWILIO_SID');
+    },
+    get authToken() {
+      return getEnv('TWILIO_AUTH_TOKEN');
+    },
+    get from() {
+      return getEnv('TWILIO_FROM');
+    },
+  },
+
   cron: {
     get actualitesStaleMinutes() {
       return toPositiveInt(getEnv('CRON_ACTUALITES_STALE_MINUTES', { default: '540' }), 540);

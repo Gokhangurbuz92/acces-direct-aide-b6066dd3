@@ -1,3 +1,4 @@
+import { SkeletonList } from '@/components/ui/skeleton';
 import { useState, useEffect } from 'react';
 import { adminClient as client } from '@/api/client';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
@@ -77,9 +78,7 @@ export default function AdminAideEdit() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
-      </div>
+      <div className="w-full p-4"><SkeletonList count={3} variant="card" /></div>
     );
   }
 

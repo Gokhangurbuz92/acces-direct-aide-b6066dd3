@@ -331,6 +331,36 @@ export const env = {
     },
   },
 
+  outlook: {
+    get enabled() {
+      return getEnv('OUTLOOK_ENABLED') === 'true';
+    },
+    get clientId() {
+      return getEnv('OUTLOOK_CLIENT_ID');
+    },
+    get clientSecret() {
+      return getEnv('OUTLOOK_CLIENT_SECRET');
+    },
+    get redirectUri() {
+      return getEnv('OUTLOOK_REDIRECT_URI');
+    },
+    get tokenEncryptionKey() {
+      return getEnv('OUTLOOK_TOKEN_ENCRYPTION_KEY');
+    },
+  },
+
+  siao: {
+    get enabled() {
+      return getEnv('SIAO_ENABLED') === 'true';
+    },
+    get apiUrl() {
+      return getEnv('SIAO_API_URL');
+    },
+    get apiKey() {
+      return getEnv('SIAO_API_KEY');
+    },
+  },
+
   flags: {
     get devLoginEnabled() {
       return getEnv('VITE_DEV_LOGIN_ENABLED') === 'true';

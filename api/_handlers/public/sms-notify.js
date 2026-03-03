@@ -115,13 +115,13 @@ export default async function handler(req, res) {
 
             if (!twilioRes.ok) {
                 const errBody = await twilioRes.text().catch(() => '');
-                console.error(`[SMS] Twilio error (${twilioRes.status}): ${errBody}`);
+                logger.error(`[SMS] Twilio error (${twilioRes.status}): ${errBody}`);
             } else {
                 const smsResult = await twilioRes.json();
-                console.info(`[SMS] Sent to=${maskPhone(phoneNumber)} sid=${smsResult.sid}`);
+                logger.info(`[SMS] Sent to=${maskPhone(phoneNumber)} sid=${smsResult.sid}`);
             }
         } else {
-            console.warn(`[SMS] Twilio not configured — message queued locally: ${maskPhone(phoneNumber)}`);
+            logger.warn(`[SMS] Twilio not configured — message queued locally: ${maskPhone(phoneNumber)}`);
         }
 
         // Audit

@@ -3,6 +3,7 @@ import { readFileSync } from 'fs';
 import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
 import { env } from '../_utils/env.js';
+import logger from '../_utils/logger.js';
 import prisma from '../_utils/prisma.js';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -45,7 +46,7 @@ function loadRulePack(id) {
         const path = join(__dirname, '../../src/data/rulepacks', `${id}.json`);
         return JSON.parse(readFileSync(path, 'utf8'));
     } catch (e) {
-        console.error(`Failed to load RulePack ${id}:`, e);
+        logger.error(`Failed to load RulePack ${id}:`, e);
         return null;
     }
 }
@@ -79,7 +80,7 @@ async function fetchRagContext(message, limit = 5) {
         return results || [];
     } catch (err) {
         // Graceful fallback: pgvector not enabled, no embeddings, or Gemini quota exceeded
-        console.warn('[RAG] Vector search unavailable, will try lexical fallback:', err.message);
+        logger.warn('[RAG] Vector search unavailable, will try lexical fallback:', err.message);
         return [];
     }
 }
@@ -142,10 +143,10 @@ async function fetchLexicalContext(message, limit = 5) {
             take: limit,
         });
 
-        console.info(`[Lexical] Found ${results.length} aides for keywords: ${keywords.join(', ')}`);
+        logger.info(`[Lexical] Found ${results.length} aides for keywords: ${keywords.join(', ')}`);
         return results;
     } catch (err) {
-        console.error('[Lexical] Fallback search failed:', err.message);
+        logger.error('[Lexical] Fallback search failed:', err.message);
         return [];
     }
 }
@@ -247,7 +248,7 @@ export async function chatWithRulePack(message, history = []) {
         return { answer: response.text(), meta };
     } catch (geminiError) {
         // ── 3. Static fallback when Gemini is down (429, network, etc.) ──
-        console.warn('[Gemini] Chat generation failed, using static fallback:', geminiError.message);
+        logger.warn('[Gemini] Chat generation failed, using static fallback:', geminiError.message);
 
         meta.searchMode = 'static';
 

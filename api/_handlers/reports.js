@@ -1,6 +1,6 @@
+import logger from '../_utils/logger.js';
 import { PrismaClient } from '@prisma/client';
 import Sentry from '../_utils/sentry.js';
-import logger from '../_utils/logger.js';
 import { env } from '../_utils/env.js';
 
 const prisma = new PrismaClient();

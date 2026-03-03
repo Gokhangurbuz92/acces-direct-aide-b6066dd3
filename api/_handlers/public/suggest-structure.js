@@ -1,4 +1,4 @@
-
+import logger from '../../_utils/logger.js';
 import prisma from '../../_utils/prisma.js';
 import crypto from 'crypto';
 
@@ -76,7 +76,7 @@ export default async function handler(req, res) {
 
         return res.status(200).json({ success: true, id: request.id });
     } catch (e) {
-        console.error("Error creating partnership request", e);
+        logger.error("Error creating partnership request", e);
         return res.status(500).json({ error: "Internal server error" });
     }
 }

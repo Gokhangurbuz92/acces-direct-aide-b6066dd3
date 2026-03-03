@@ -1,6 +1,6 @@
+import logger from '../_utils/logger.js';
 import { randomUUID } from 'crypto';
 import prisma from '../_utils/prisma.js';
-import logger from '../_utils/logger.js';
 import { getCanonicalOrigin } from '../_utils/site-origin.js';
 
 const CACHE_CONTROL = 'public, max-age=0, s-maxage=3600, stale-while-revalidate=86400';

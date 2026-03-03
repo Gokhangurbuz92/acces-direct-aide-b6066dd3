@@ -1,3 +1,4 @@
+import logger from '../../_utils/logger.js';
 import prisma from '../../_utils/prisma.js';
 /**
  * @param {import('../../_utils/http-types').ApiRequest} req
@@ -56,7 +57,7 @@ export default async function handler(req, res) {
 
         return res.status(200).json(dispositifs);
     } catch (error) {
-        console.error("Dispositifs API Error", error);
+        logger.error("Dispositifs API Error", error);
         return res.status(500).json({ error: 'Failed to fetch dispositifs' });
     }
 }

@@ -1,4 +1,4 @@
-
+import logger from '../../../_utils/logger.js';
 import prisma from '../../../_utils/prisma.js';
 import { hash } from '../../../lib/crypto.js';
 /**
@@ -33,7 +33,7 @@ export default async function handler(req, res) {
         return res.status(200).json({ success: true });
 
     } catch (e) {
-        console.error("Cancel Error", e);
+        logger.error("Cancel Error", e);
         return res.status(500).json({ error: "Internal Error" });
     }
 }

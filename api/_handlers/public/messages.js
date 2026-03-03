@@ -1,4 +1,4 @@
-
+import logger from '../../_utils/logger.js';
 import prisma from '../../_utils/prisma.js';
 import { hash, encrypt, decrypt, generateAttachmentToken } from '../../lib/crypto.js';
 /**
@@ -106,7 +106,7 @@ export default async function handler(req, res) {
 
         return res.status(405).json({ error: "Method not allowed" });
     } catch (error) {
-        console.error("Public Message Error:", error);
+        logger.error("Public Message Error:", error);
         return res.status(500).json({ error: "Internal Server Error", details: error.message });
     }
 }

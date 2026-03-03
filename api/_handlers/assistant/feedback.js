@@ -1,3 +1,4 @@
+import logger from '../../_utils/logger.js';
 import prisma from '../../_utils/prisma.js';
 
 /**
@@ -34,7 +35,7 @@ export default async function handler(req, res) {
 
         return res.status(200).json({ success: true });
     } catch (error) {
-        console.error('[Feedback Error]:', error);
+        logger.error('[Feedback Error]:', error);
 
         // If the log doesn't exist, return a soft error
         if (error.code === 'P2025') {

@@ -25,7 +25,7 @@ export default function Dispositifs() {
                     setDispositifs(data);
                 }
             } catch (err) {
-                console.error(err);
+                if (import.meta.env.DEV) console.error(err);
             } finally {
                 setLoading(false);
             }

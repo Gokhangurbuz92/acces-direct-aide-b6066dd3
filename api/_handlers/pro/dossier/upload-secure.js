@@ -1,9 +1,8 @@
+import logger from '../../../_utils/logger.js';
 // @ts-nocheck
 import prisma from '../../../_utils/prisma.js';
 import { requireProAuth, requireProStructureContext } from '../../../_utils/auth.js';
 import { logProAudit } from '../../../lib/pro-auth.js';
-import logger from '../../../_utils/logger.js';
-
 /**
  * Secure File Upload Handler (Pro-only)
  *

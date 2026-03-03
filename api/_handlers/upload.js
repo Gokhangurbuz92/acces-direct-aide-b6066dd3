@@ -1,5 +1,4 @@
-
-
+import logger from '../_utils/logger.js';
 import busboy from 'busboy';
 import { encryptBuffer, encrypt, hash } from '../lib/crypto.js';
 import { storage } from '../lib/storage.js';
@@ -120,7 +119,7 @@ export default async function handler(req, res) {
                 return resolve(res.status(201).json({ success: true, messageId: message.id, attachment: message.attachments[0] }));
 
             } catch (e) {
-                console.error("Upload Error:", e);
+                logger.error("Upload Error:", e);
                 return resolve(res.status(500).json({ error: "Server Error" }));
             }
         });

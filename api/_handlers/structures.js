@@ -1,3 +1,4 @@
+import logger from '../_utils/logger.js';
 import prisma from '../_utils/prisma.js';
 import { checkRateLimit, getClientIp } from '../_utils/rateLimit.js';
 import { searchStructuresSchema } from '../_utils/validators.js';
@@ -200,7 +201,7 @@ async function handler(req, res) {
       }
     });
   } catch (error) {
-    console.error('Structures handler error:', error);
+    logger.error('Structures handler error:', error);
     return res.status(500).json({ error: 'Internal server error' });
   }
 }

@@ -18,7 +18,7 @@ export default function Guides() {
         fetch('/api/guides/facets')
             .then(res => res.json())
             .then(data => setFacets(data))
-            .catch(e => console.error("Facets error", e));
+            .catch(e => { if (import.meta.env.DEV) console.error("Facets error", e); });
     }, []);
 
     useEffect(() => {
@@ -37,7 +37,7 @@ export default function Guides() {
                     setGuides(data);
                 }
             } catch (e) {
-                console.error("Error fetching guides", e);
+                if (import.meta.env.DEV) console.error("Error fetching guides", e);
             } finally {
                 setLoading(false);
             }

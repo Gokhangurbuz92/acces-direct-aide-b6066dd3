@@ -1,3 +1,4 @@
+import logger from '../../_utils/logger.js';
 // @ts-nocheck
 import prisma from '../../_utils/prisma.js';
 import { logProAudit } from '../../lib/pro-auth.js';
@@ -51,7 +52,7 @@ export default async function handler(req, res) {
             message: 'Accès révoqué. Vos données chiffrées sont désormais inaccessibles.',
         });
     } catch (error) {
-        console.error('[Revoke] Erreur:', error.message);
+        logger.error('[Revoke] Erreur:', error.message);
         return res.status(500).json({ error: 'Échec de la révocation.' });
     }
 }

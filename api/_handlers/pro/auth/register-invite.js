@@ -1,5 +1,5 @@
-// @ts-nocheck
 import logger from '../../../_utils/logger.js';
+// @ts-nocheck
 import bcrypt from 'bcryptjs';
 import { signProToken, logProAudit } from '../../../lib/pro-auth.js';
 import { checkRateLimit, getClientIp } from '../../../_utils/rateLimit.js';

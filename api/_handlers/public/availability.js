@@ -1,4 +1,4 @@
-
+import logger from '../../_utils/logger.js';
 import prisma from '../../_utils/prisma.js';
 import { addDays, format, startOfDay, endOfDay } from 'date-fns';
 /**
@@ -110,7 +110,7 @@ export default async function handler(req, res) {
         return res.status(200).json(slots);
 
     } catch (e) {
-        console.error("Availability Error", e);
+        logger.error("Availability Error", e);
         return res.status(500).json({ error: "Internal Error" });
     }
 }

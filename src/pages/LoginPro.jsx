@@ -37,7 +37,7 @@ export default function LoginPro() {
             await adminClient.auth.login(email, password);
             navigate('/adminaides');
         } catch (err) {
-            console.error("Login failed", err);
+            if (import.meta.env.DEV) console.error("Login failed", err);
             // Generic error message for security
             setError("Identifiants invalides.");
         } finally {

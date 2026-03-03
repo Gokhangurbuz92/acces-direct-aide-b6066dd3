@@ -1,3 +1,4 @@
+import logger from '../../_utils/logger.js';
 import crypto from 'crypto';
 import { getCronAuth, getHeader } from '../../_utils/cronAuth.js';
 import { withLock } from '../../_utils/pipelineLock.js';
@@ -5,7 +6,6 @@ import prisma from '../../_utils/prisma.js';
 import { env } from '../../_utils/env.js';
 import Sentry from '../../_utils/sentry.js';
 import { kv } from '../../_utils/kv.js';
-import logger from '../../_utils/logger.js';
 import { runIngestActualitesRss } from './ingest-actualites-rss.js';
 
 const CRON_LOCK_KEY = 'cron:actualites:lock';

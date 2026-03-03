@@ -17,7 +17,7 @@ export default function Tools() {
         fetch('/api/tools/facets')
             .then(res => res.json())
             .then(data => setFacets(data))
-            .catch(e => console.error("Facets error", e));
+            .catch(e => { if (import.meta.env.DEV) console.error("Facets error", e); });
     }, []);
 
     useEffect(() => {
@@ -36,7 +36,7 @@ export default function Tools() {
                     setTools(data);
                 }
             } catch (e) {
-                console.error("Error fetching tools", e);
+                if (import.meta.env.DEV) console.error("Error fetching tools", e);
             } finally {
                 setLoading(false);
             }

@@ -1,10 +1,9 @@
+import logger from '../../_utils/logger.js';
 // @ts-nocheck
 import prisma from '../../_utils/prisma.js';
 import { logProAudit } from '../../lib/pro-auth.js';
 import { AUTH_ROLE, requireProRole, requireProStructureContext } from '../../_utils/auth.js';
 import { createNotification } from './notifications.js';
-import logger from '../../_utils/logger.js';
-
 const VALID_ROLES = ['PRO', 'STRUCTURE_ADMIN', 'SUPERADMIN'];
 
 /**

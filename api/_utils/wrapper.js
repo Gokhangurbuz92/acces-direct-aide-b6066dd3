@@ -4,6 +4,7 @@ import SentryClient from './sentry.js';
 import { AppError, errorCodes } from './errors.js';
 import crypto from 'crypto';
 import { env } from './env.js';
+import logger from './logger.js';
 
 export function createHandler(handler, schemas = {}) {
   return async (req, res) => {
@@ -58,7 +59,7 @@ export function createHandler(handler, schemas = {}) {
       return res.status(200).json(response);
 
     } catch (err) {
-      console.error(`[${requestId}] Error:`, err);
+      logger.error(`[${requestId}] Error:`, err);
 
       let statusCode = 500;
       let errorResponse = {
@@ -98,19 +99,19 @@ export function createHandler(handler, schemas = {}) {
           errorResponse.code = errorCodes.NOT_FOUND;
           errorResponse.message = "Ressource non trouvée.";
         } else {
-             // Other Prisma errors
-             if (env.runtime.vercelEnv !== 'production') {
-                 errorResponse.details = err.code;
-             }
+          // Other Prisma errors
+          if (env.runtime.vercelEnv !== 'production') {
+            errorResponse.details = err.code;
+          }
         }
       }
       // 4. Fallback
       else {
-         // Report to Sentry
-         SentryClient.captureException(err);
-         if (env.runtime.vercelEnv !== 'production') {
-             errorResponse.details = err.message;
-         }
+        // Report to Sentry
+        SentryClient.captureException(err);
+        if (env.runtime.vercelEnv !== 'production') {
+          errorResponse.details = err.message;
+        }
       }
 
       return res.status(statusCode).json({

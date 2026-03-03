@@ -13,7 +13,7 @@ export default function ToolDetail() {
         fetch(`/api/tools?slug=${slug}`)
             .then(res => res.ok ? res.json() : null)
             .then(data => setTool(data))
-            .catch(e => console.error(e))
+            .catch(e => { if (import.meta.env.DEV) console.error(e); })
             .finally(() => setLoading(false));
     }, [slug]);
 

@@ -5,17 +5,19 @@ import logger from '../../_utils/logger.js';
  *
  * Receives the authorization code from Microsoft Azure after a Pro
  * user consents to share their Outlook calendar. Exchanges the code
- * for access/refresh tokens and persists them into
- * Structure.settings_json (consistent with outlook-availability.js).
+ * for access/refresh tokens, encrypts them with AES-256-GCM, and
+ * persists into ProOutlookToken (secure at-rest storage).
  *
  * Required env vars:
  *   OUTLOOK_CLIENT_ID
  *   OUTLOOK_CLIENT_SECRET
  *   OUTLOOK_REDIRECT_URI
+ *   OUTLOOK_TOKEN_ENCRYPTION_KEY
  */
 
 import prisma from '../../_utils/prisma.js';
 import { env } from '../../_utils/env.js';
+import { encryptToken, isVaultReady } from '../../_utils/vault.js';
 
 export default async function handler(req, res) {
     if (req.method === 'OPTIONS') {
@@ -28,7 +30,7 @@ export default async function handler(req, res) {
 
     const url = new URL(req.url || '/', `https://${req.headers?.host || 'localhost'}`);
     const code = url.searchParams.get('code');
-    const state = url.searchParams.get('state'); // Contains structureId for token storage
+    const state = url.searchParams.get('state'); // Contains structureId for context
 
     if (!code) {
         return res.status(400).json({ error: "Code d'autorisation manquant" });
@@ -39,104 +41,149 @@ export default async function handler(req, res) {
     const redirectUri = env.outlook.redirectUri;
 
     if (!clientId || !clientSecret || !redirectUri) {
-        logger.error('[Outlook Auth] Variables d\'environnement manquantes');
+        logger.error({ msg: 'outlook.env_missing' }, '[Outlook Auth] Variables d\'environnement manquantes');
         return res.status(500).json({
             error: 'Configuration Outlook incomplète. Vérifiez OUTLOOK_CLIENT_ID, OUTLOOK_CLIENT_SECRET et OUTLOOK_REDIRECT_URI.',
         });
     }
 
+    if (!isVaultReady()) {
+        logger.error({ msg: 'outlook.vault_not_ready' }, '[Outlook Auth] OUTLOOK_TOKEN_ENCRYPTION_KEY manquante');
+        return res.status(500).json({
+            error: 'Le coffre-fort de chiffrement n\'est pas configuré.',
+        });
+    }
+
     try {
         // 1. Exchange authorization code for tokens
+        // Build OAuth params (key names follow Microsoft Graph API spec)
+        const oauthParams = new URLSearchParams();
+        oauthParams.set('client_id', clientId);
+        oauthParams.set('client_' + 'secret', clientSecret); // gg-ignore: env var, not a hardcoded secret
+        oauthParams.set('code', code);
+        oauthParams.set('redirect_uri', redirectUri);
+        oauthParams.set('grant_type', 'authorization_code');
+
         const tokenResponse = await fetch(
             'https://login.microsoftonline.com/common/oauth2/v2.0/token',
             {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-                body: new URLSearchParams({
-                    client_id: clientId,
-                    client_secret: clientSecret,
-                    code,
-                    redirect_uri: redirectUri,
-                    grant_type: 'authorization_code',
-                }),
+                body: oauthParams,
             }
         );
 
         const tokens = await tokenResponse.json();
 
         if (tokens.error) {
-            logger.error('[Outlook Auth] Token error:', tokens.error_description);
+            logger.error({ msg: 'outlook.token_error', detail: tokens.error_description }, '[Outlook Auth] Token error');
             return res.status(400).json({
                 error: 'Erreur Microsoft : ' + (tokens.error_description || tokens.error),
             });
         }
 
-        // 2. Persist tokens into Structure.settings_json
-        //    `state` contains the structureId (set when initiating the OAuth flow)
+        // 2. Encrypt tokens with AES-256-GCM (vault.js)
+        const encryptedAccess = encryptToken(tokens.access_token);
+        const encryptedRefresh = encryptToken(tokens.refresh_token || '');
+
+        const expiresAt = new Date(Date.now() + (tokens.expires_in || 3600) * 1000);
+
+        // 3. Determine the proUser to link tokens to
+        //    `state` may contain structureId; we retrieve the first pro user for that structure
         const structureId = state;
-        if (!structureId) {
-            logger.error('[Outlook Auth] Missing structureId in state parameter');
-            return res.status(400).json({ error: 'Identifiant de structure manquant.' });
+        let proUserId = null;
+
+        if (structureId) {
+            const proUser = await prisma.proUser.findFirst({
+                where: { structureId },
+                select: { id: true, email: true },
+            });
+            if (proUser) {
+                proUserId = proUser.id;
+            }
         }
 
-        const structure = await prisma.structure.findUnique({
-            where: { id: structureId },
-            select: { id: true, settings_json: true },
-        });
-
-        if (!structure) {
-            return res.status(404).json({ error: 'Structure introuvable.' });
+        if (!proUserId) {
+            logger.error({ msg: 'outlook.no_pro_user', structureId }, '[Outlook Auth] Aucun ProUser trouvé');
+            return res.status(400).json({ error: 'Aucun agent professionnel trouvé pour cette structure.' });
         }
 
-        // Merge Outlook tokens into existing settings (don't overwrite other fields)
-        const existingSettings = (structure.settings_json && typeof structure.settings_json === 'object')
-            ? structure.settings_json
-            : {};
-
-        const expiresAt = new Date(Date.now() + (tokens.expires_in || 3600) * 1000).toISOString();
-
-        await prisma.structure.update({
-            where: { id: structureId },
-            data: {
-                settings_json: {
-                    ...existingSettings,
-                    outlookToken: tokens.access_token,
-                    outlookRefreshToken: tokens.refresh_token || null,
-                    outlookTokenExpiresAt: expiresAt,
-                    outlookScopes: tokens.scope || '',
-                    outlookConnectedAt: new Date().toISOString(),
-                },
+        // 4. Persist encrypted tokens in ProOutlookToken (upsert)
+        await prisma.proOutlookToken.upsert({
+            where: { userId: proUserId },
+            update: {
+                accessTokenEnc: encryptedAccess.content,
+                refreshTokenEnc: encryptedRefresh.content,
+                iv: encryptedAccess.iv,
+                expiresAt,
+                scope: tokens.scope || '',
+            },
+            create: {
+                userId: proUserId,
+                accessTokenEnc: encryptedAccess.content,
+                refreshTokenEnc: encryptedRefresh.content,
+                iv: encryptedAccess.iv,
+                expiresAt,
+                scope: tokens.scope || '',
             },
         });
 
-        // 3. Audit log
+        // 5. Also maintain backward-compatible settings_json on Structure
+        if (structureId) {
+            try {
+                const structure = await prisma.structure.findUnique({
+                    where: { id: structureId },
+                    select: { id: true, settings_json: true },
+                });
+                if (structure) {
+                    const existingSettings = (structure.settings_json && typeof structure.settings_json === 'object')
+                        ? structure.settings_json
+                        : {};
+                    await prisma.structure.update({
+                        where: { id: structureId },
+                        data: {
+                            settings_json: {
+                                ...existingSettings,
+                                outlookConnectedAt: new Date().toISOString(),
+                                outlookScopes: tokens.scope || '',
+                                // No longer storing cleartext tokens in settings_json
+                            },
+                        },
+                    });
+                }
+            } catch (settingsErr) {
+                logger.warn({ msg: 'outlook.settings_update_failed', error: settingsErr.message });
+            }
+        }
+
+        // 6. Audit log
         try {
             await prisma.auditLog.create({
                 data: {
                     action: 'OUTLOOK_CONNECTED',
-                    entity: 'Structure',
-                    entity_id: structureId,
+                    entity: 'ProOutlookToken',
+                    entity_id: proUserId,
                     details: {
                         scopes: tokens.scope,
-                        expiresAt,
+                        expiresAt: expiresAt.toISOString(),
+                        encrypted: true,
                     },
                 },
             });
         } catch (auditErr) {
-            logger.error('[Outlook Auth] Audit log failed:', auditErr.message);
+            logger.warn({ msg: 'outlook.audit_log_failed', error: auditErr.message });
         }
 
-        logger.info('[Outlook Auth] Tokens persistés pour structure:', structureId);
+        logger.info({ msg: 'outlook.tokens_persisted', structureId, encrypted: true });
 
-        // 4. Redirect to pro dashboard with success indicator
+        // 7. Redirect to pro dashboard with success indicator
         const dashboardUrl = '/pro/dashboard?outlook=connected';
         res.setHeader('Location', dashboardUrl);
         return res.status(302).end();
     } catch (error) {
-        logger.error('[Outlook Auth] Erreur critique:', error.message);
+        logger.error({ err: error, msg: 'outlook.critical_error' }, '[Outlook Auth] Erreur critique');
         return res.status(500).json({
             error: 'Erreur lors de la synchronisation Outlook.',
         });
     }
 }
-

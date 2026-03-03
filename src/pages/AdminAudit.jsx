@@ -1,3 +1,4 @@
+import { SkeletonList } from '@/components/ui/skeleton';
 import { useState, useEffect, useCallback } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { adminClient as client } from '@/api/client';
@@ -109,11 +110,7 @@ export default function AdminAudit() {
                 </div>
 
                 {/* Content */}
-                {isLoading ? (
-                    <div className="flex justify-center py-16">
-                        <Loader2 className="h-8 w-8 animate-spin text-slate-400" />
-                    </div>
-                ) : error ? (
+                {isLoading ? <div className="p-6"><SkeletonList count={3} variant="card" /></div> : error ? (
                     <Card>
                         <CardContent className="p-8 text-center">
                             <AlertCircle className="mx-auto mb-3 h-10 w-10 text-red-400" />

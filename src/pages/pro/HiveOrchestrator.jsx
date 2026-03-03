@@ -1,3 +1,4 @@
+import { SkeletonList } from '@/components/ui/skeleton';
 import { useState, useEffect, useCallback } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -211,9 +212,7 @@ export default function HiveOrchestrator() {
                             </CardHeader>
                             <CardContent className="space-y-2">
                                 {queueLoading && (
-                                    <div className="flex justify-center py-4">
-                                        <Loader2 className="animate-spin text-slate-400" size={20} />
-                                    </div>
+                                    <div className="w-full p-4"><SkeletonList count={3} variant="card" /></div>
                                 )}
                                 {!queueLoading && queueItems.length === 0 && (
                                     <p className="text-xs text-slate-400 text-center py-4">

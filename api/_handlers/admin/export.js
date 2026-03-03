@@ -1,3 +1,4 @@
+import { checkRateLimit, getClientIp, getRateLimitStatus } from '../../_utils/rateLimit.js';
 import prisma from '../../_utils/prisma.js';
 import { verifyAdmin } from '../../_utils/auth.js';
 /**
@@ -6,6 +7,12 @@ import { verifyAdmin } from '../../_utils/auth.js';
  */
 
 export default async function handler(req, res) {
+    const ip = getClientIp(req);
+    const rateLimit = await checkRateLimit('ADMIN_API', ip);
+    if (!rateLimit.allowed) {
+        return res.status(getRateLimitStatus(rateLimit)).json(rateLimit.error);
+    }
+
     if (req.method !== 'GET') return res.status(405).json({ error: 'Method not allowed' });
     if (!verifyAdmin(req)) return res.status(401).json({ error: 'Unauthorized' });
 

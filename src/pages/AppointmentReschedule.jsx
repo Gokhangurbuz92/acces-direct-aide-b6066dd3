@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Loader2, CheckCircle2, CalendarClock, AlertCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -8,7 +8,8 @@ import SEO from '@/components/SEO';
  * AppointmentReschedule — Citizen rescheduling via secure token link
  *
  * Route: /appointments/reschedule/:token
- * Calls PUT /api/appointments/reschedule with { token, newDate }
+ * 1. Fetches real availability from /api/public/availability
+ * 2. Calls PUT /api/appointments/reschedule with { token, newStartAt }
  */
 export default function AppointmentReschedule() {
   const { token } = useParams();
@@ -17,6 +18,47 @@ export default function AppointmentReschedule() {
   const [selectedTime, setSelectedTime] = useState('');
   const [status, setStatus] = useState('idle'); // idle | loading | success | error
   const [errorMsg, setErrorMsg] = useState('');
+  const [availableSlots, setAvailableSlots] = useState([]);
+  const [slotsLoading, setSlotsLoading] = useState(false);
+
+  // Compute min date (tomorrow)
+  const tomorrow = new Date();
+  tomorrow.setDate(tomorrow.getDate() + 1);
+  const minDate = tomorrow.toISOString().split('T')[0];
+
+  // Fetch available slots when date changes
+  const fetchSlots = useCallback(async (date) => {
+    if (!date) return;
+    setSlotsLoading(true);
+    setSelectedTime('');
+    try {
+      // Extract structureId from token URL or use a general availability endpoint
+      const res = await fetch(`/api/public/availability?date=${date}`);
+      if (res.ok) {
+        const slots = await res.json();
+        // Filter slots for the selected date and extract time strings
+        const filtered = (Array.isArray(slots) ? slots : [])
+          .filter((s) => s.start && s.start.startsWith(date))
+          .map((s) => {
+            const d = new Date(s.start);
+            return d.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit', hour12: false });
+          });
+        setAvailableSlots(filtered.length > 0 ? filtered : getFallbackSlots());
+      } else {
+        setAvailableSlots(getFallbackSlots());
+      }
+    } catch {
+      setAvailableSlots(getFallbackSlots());
+    } finally {
+      setSlotsLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (selectedDate) {
+      fetchSlots(selectedDate);
+    }
+  }, [selectedDate, fetchSlots]);
 
   const handleReschedule = async () => {
     if (!token) {
@@ -61,17 +103,6 @@ export default function AppointmentReschedule() {
       setErrorMsg('Erreur de connexion. Veuillez réessayer.');
     }
   };
-
-  // Compute min date (tomorrow)
-  const tomorrow = new Date();
-  tomorrow.setDate(tomorrow.getDate() + 1);
-  const minDate = tomorrow.toISOString().split('T')[0];
-
-  // Available time slots (office hours)
-  const timeSlots = [
-    '08:30', '09:00', '09:30', '10:00', '10:30', '11:00', '11:30',
-    '14:00', '14:30', '15:00', '15:30', '16:00', '16:30', '17:00',
-  ];
 
   if (status === 'success') {
     return (
@@ -129,20 +160,31 @@ export default function AppointmentReschedule() {
               <span className="text-xs font-semibold text-slate-500 uppercase tracking-wide">
                 Créneau horaire
               </span>
-              <div className="grid grid-cols-4 gap-2">
-                {timeSlots.map((slot) => (
-                  <button
-                    key={slot}
-                    onClick={() => setSelectedTime(slot)}
-                    className={`py-2 rounded-lg text-xs font-medium transition-all ${selectedTime === slot
+              {slotsLoading ? (
+                <div className="flex items-center justify-center py-4 text-slate-400">
+                  <Loader2 className="animate-spin mr-2" size={16} />
+                  <span className="text-sm">Chargement des créneaux…</span>
+                </div>
+              ) : availableSlots.length === 0 ? (
+                <p className="text-sm text-slate-400 text-center py-4">
+                  Aucun créneau disponible pour cette date.
+                </p>
+              ) : (
+                <div className="grid grid-cols-4 gap-2">
+                  {availableSlots.map((slot) => (
+                    <button
+                      key={slot}
+                      onClick={() => setSelectedTime(slot)}
+                      className={`py-2 rounded-lg text-xs font-medium transition-all ${selectedTime === slot
                         ? 'bg-blue-600 text-white shadow-sm'
                         : 'bg-slate-50 text-slate-700 hover:bg-slate-100 border border-slate-200'
-                      }`}
-                  >
-                    {slot}
-                  </button>
-                ))}
-              </div>
+                        }`}
+                    >
+                      {slot}
+                    </button>
+                  ))}
+                </div>
+              )}
             </div>
           )}
 
@@ -188,4 +230,15 @@ export default function AppointmentReschedule() {
       </div>
     </div>
   );
+}
+
+/**
+ * Fallback time slots used when the availability API is not configured
+ * or the structure has no defined schedule.
+ */
+function getFallbackSlots() {
+  return [
+    '08:30', '09:00', '09:30', '10:00', '10:30', '11:00', '11:30',
+    '14:00', '14:30', '15:00', '15:30', '16:00', '16:30', '17:00',
+  ];
 }

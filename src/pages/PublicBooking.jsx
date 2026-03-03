@@ -1,3 +1,4 @@
+import { SkeletonList } from '@/components/ui/skeleton';
 import { useState, useCallback } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import {
@@ -208,11 +209,7 @@ export default function PublicBooking() {
                             Choisissez un service
                         </h2>
 
-                        {loading ? (
-                            <div className="flex items-center justify-center py-12">
-                                <Loader2 className="animate-spin text-slate-400" size={24} />
-                            </div>
-                        ) : services.length === 0 ? (
+                        {loading ? <div className="p-6"><SkeletonList count={3} variant="card" /></div> : services.length === 0 ? (
                             <div className="bg-white p-8 rounded-2xl border border-slate-200 text-center">
                                 <CalendarIcon className="mx-auto text-slate-300 mb-3" size={40} />
                                 <p className="text-sm text-slate-500">
@@ -282,11 +279,7 @@ export default function PublicBooking() {
                             Créneaux disponibles
                         </h3>
 
-                        {loading ? (
-                            <div className="flex items-center justify-center py-12">
-                                <Loader2 className="animate-spin text-slate-400" size={24} />
-                            </div>
-                        ) : slots.length === 0 ? (
+                        {loading ? <div className="p-6"><SkeletonList count={3} variant="card" /></div> : slots.length === 0 ? (
                             <p className="text-sm text-slate-500 py-8 text-center">
                                 Aucun créneau disponible sur les 14 prochains jours.
                             </p>

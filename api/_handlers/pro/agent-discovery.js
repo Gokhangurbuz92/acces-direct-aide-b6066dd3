@@ -1,8 +1,7 @@
+import logger from '../../_utils/logger.js';
 // @ts-nocheck
 import { requireProAuth } from '../../_utils/auth.js';
 import prisma from '../../_utils/prisma.js';
-import logger from '../../_utils/logger.js';
-
 /**
  * Agent Discovery API (Pro-only)
  *

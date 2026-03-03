@@ -1,4 +1,4 @@
-import logger from "../../_utils/logger.js";
+import logger from '../../_utils/logger.js';
 import prisma from '../../_utils/prisma.js';
 import { checkRateLimit } from '../_utils/rateLimit.js';
 import { encrypt, hash } from '../../lib/crypto.js';

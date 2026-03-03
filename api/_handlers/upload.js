@@ -1,6 +1,4 @@
-import logger from "../../_utils/logger.js";
-
-
+import logger from '../_utils/logger.js';
 import busboy from 'busboy';
 import { encryptBuffer, encrypt, hash } from '../lib/crypto.js';
 import { storage } from '../lib/storage.js';

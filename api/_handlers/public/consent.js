@@ -1,4 +1,4 @@
-import logger from "../../_utils/logger.js";
+import logger from '../../_utils/logger.js';
 import prisma from '../../_utils/prisma.js';
 /**
  * @param {import('../../_utils/http-types').ApiRequest} req

@@ -1,6 +1,6 @@
+import logger from '../../_utils/logger.js';
 // @ts-nocheck
 import { requireProAuth } from '../../_utils/auth.js';
-import logger from '../../_utils/logger.js';
 import prisma from '../../_utils/prisma.js';
 import crypto from 'crypto';
 

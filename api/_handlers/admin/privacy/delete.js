@@ -1,4 +1,3 @@
-
 import prisma from '../../../_utils/prisma.js';
 import { verifyAdmin } from '../../../_utils/auth.js';
 import { hash } from '../../../lib/crypto.js';

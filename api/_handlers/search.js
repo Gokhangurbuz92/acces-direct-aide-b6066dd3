@@ -1,4 +1,4 @@
-import logger from "../../_utils/logger.js";
+import logger from '../_utils/logger.js';
 import prisma from '../_utils/prisma.js';
 import { checkRateLimit, getClientIp } from '../_utils/rateLimit.js';
 import { hybridSearchSchema } from '../_utils/validators.js';

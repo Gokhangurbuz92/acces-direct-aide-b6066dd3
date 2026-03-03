@@ -1,4 +1,4 @@
-import logger from "../../_utils/logger.js";
+import logger from '../_utils/logger.js';
 /**
  * @param {import('../_utils/http-types').ApiRequest} req
  * @param {import('../_utils/http-types').ApiResponse} res

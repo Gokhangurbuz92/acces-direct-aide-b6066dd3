@@ -1,5 +1,5 @@
-// @ts-nocheck
 import logger from '../../../_utils/logger.js';
+// @ts-nocheck
 import jwt from 'jsonwebtoken';
 import { signProToken, verifyProToken } from '../../../lib/pro-auth.js';
 import prisma from '../../../_utils/prisma.js';

@@ -1,9 +1,9 @@
+import logger from '../../_utils/logger.js';
 import { getCronAuth } from '../../_utils/cronAuth.js';
 import prisma from '../../_utils/prisma.js';
 import crypto from 'crypto';
 import { geocodeAddress } from '../../_utils/geocoder.js';
 import { withLock } from '../../_utils/pipelineLock.js';
-import logger from '../../_utils/logger.js';
 import { computeContentHash } from '../../_utils/contentHash.js';
 import { ensureSlugOrNull } from '../../_utils/slug.js';
 import { upsertSourceDocument } from '../../_utils/sourceDocument.js';

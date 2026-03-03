@@ -1,4 +1,4 @@
-import logger from "../../_utils/logger.js";
+import logger from '../_utils/logger.js';
 import { checkRateLimit } from '../_utils/rateLimit.js';
 import { env } from '../_utils/env.js';
 /**

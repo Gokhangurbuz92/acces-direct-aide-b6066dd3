@@ -1,5 +1,5 @@
-// @ts-nocheck
 import logger from '../../_utils/logger.js';
+// @ts-nocheck
 import prisma from '../../_utils/prisma.js';
 import { AUTH_ROLE, requireProRole, requireProStructureContext } from '../../_utils/auth.js';
 

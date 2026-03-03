@@ -1,9 +1,8 @@
+import logger from '../../_utils/logger.js';
 // @ts-nocheck
 import prisma from '../../_utils/prisma.js';
 import { requireProAuth, requireProStructureContext } from '../../_utils/auth.js';
 import crypto from 'crypto';
-import logger from '../../_utils/logger.js';
-
 /**
  * Attestation Data API (Pro-only)
  *

@@ -1,5 +1,4 @@
-import logger from "../../_utils/logger.js";
-
+import logger from '../../_utils/logger.js';
 import prisma from '../../_utils/prisma.js';
 import { startOfDay, endOfDay, addDays, format, parse, addMinutes, isBefore, isAfter } from 'date-fns';
 /**

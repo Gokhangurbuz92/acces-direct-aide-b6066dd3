@@ -78,6 +78,7 @@ import publicMessages from './_handlers/public/messages.js';
 import publicDossierRevoke from './_handlers/public/dossier-revoke.js';
 import publicPassport from './_handlers/public/passport.js';
 import publicSmsNotify from './_handlers/public/sms-notify.js';
+import publicFalcSummarize from './_handlers/public/falc/summarize.js';
 import publicSuggestStructure from './_handlers/public/suggest-structure.js';
 import publicStats from './_handlers/public/stats.js';
 import publicAvailability from './_handlers/public/availability.js';
@@ -227,6 +228,7 @@ export const routes = [
     { path: 'public/dossier-revoke', match: 'exact', handler: publicDossierRevoke },
     { path: 'public/passport', match: 'exact', handler: publicPassport },
     { path: 'public/sms-notify', match: 'exact', handler: publicSmsNotify },
+    { path: 'public/falc/summarize', match: 'exact', handler: publicFalcSummarize },
     { path: 'messages', match: 'prefix', handler: rdvMessages },
     { path: 'public/suggest-structure', match: 'exact', handler: publicSuggestStructure },
     { path: 'public/stats', match: 'exact', handler: publicStats },

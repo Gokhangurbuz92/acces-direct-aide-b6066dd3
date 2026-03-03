@@ -15,6 +15,7 @@ import logger from '../../_utils/logger.js';
  */
 
 import prisma from '../../_utils/prisma.js';
+import { env } from '../../_utils/env.js';
 
 export default async function handler(req, res) {
     if (req.method === 'OPTIONS') {
@@ -33,9 +34,9 @@ export default async function handler(req, res) {
         return res.status(400).json({ error: "Code d'autorisation manquant" });
     }
 
-    const clientId = process.env.OUTLOOK_CLIENT_ID;
-    const clientSecret = process.env.OUTLOOK_CLIENT_SECRET;
-    const redirectUri = process.env.OUTLOOK_REDIRECT_URI;
+    const clientId = env.outlook.clientId;
+    const clientSecret = env.outlook.clientSecret;
+    const redirectUri = env.outlook.redirectUri;
 
     if (!clientId || !clientSecret || !redirectUri) {
         logger.error('[Outlook Auth] Variables d\'environnement manquantes');

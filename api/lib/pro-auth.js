@@ -1,5 +1,6 @@
 
 import jwt from 'jsonwebtoken';
+import logger from '../_utils/logger.js';
 import prisma from '../_utils/prisma.js';
 import crypto from 'crypto';
 import { checkRateLimit as checkRateLimitUtil } from '../_utils/rateLimit.js';
@@ -166,7 +167,7 @@ export async function logProAudit(action, actorId, structureId, details, ip) {
             }
         });
     } catch (e) {
-        console.error("Audit Log Error", e);
+        logger.error("Audit Log Error", e);
     }
 }
 

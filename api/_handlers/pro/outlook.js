@@ -4,11 +4,12 @@ import logger from '../../_utils/logger.js';
 import prisma from '../../_utils/prisma.js';
 import crypto from 'crypto';
 
-const OUTLOOK_CLIENT_ID = process.env.OUTLOOK_CLIENT_ID || '';
-const OUTLOOK_CLIENT_SECRET = process.env.OUTLOOK_CLIENT_SECRET || '';
-const OUTLOOK_REDIRECT_URI = process.env.OUTLOOK_REDIRECT_URI || '';
-const OUTLOOK_ENABLED = process.env.OUTLOOK_ENABLED === 'true';
-const TOKEN_KEY = process.env.OUTLOOK_TOKEN_ENCRYPTION_KEY || '';
+import { env } from '../../_utils/env.js';
+const OUTLOOK_CLIENT_ID = env.outlook.clientId || '';
+const OUTLOOK_CLIENT_SECRET = env.outlook.clientSecret || '';
+const OUTLOOK_REDIRECT_URI = env.outlook.redirectUri || '';
+const OUTLOOK_ENABLED = env.outlook.enabled;
+const TOKEN_KEY = env.outlook.tokenEncryptionKey || '';
 
 const MICROSOFT_AUTH_URL = 'https://login.microsoftonline.com/common/oauth2/v2.0';
 const SCOPES = 'openid profile email Calendars.ReadWrite offline_access';

@@ -4,6 +4,7 @@
  */
 
 import slugify from '@sindresorhus/slugify';
+import logger from '../_utils/logger.js';
 
 /**
  * Generate a unique slug for a given text and Prisma model
@@ -83,14 +84,14 @@ export async function ensureSlug(prisma, modelName, item, titleField = 'titre') 
     const baseText = item[titleField];
 
     if (!baseText || typeof baseText !== 'string' || baseText.trim() === '') {
-        console.warn(`[Slug] Cannot generate slug for ${modelName} - missing ${titleField}`);
+        logger.warn(`[Slug] Cannot generate slug for ${modelName} - missing ${titleField}`);
         return null;
     }
 
     try {
         return await generateUniqueSlug(prisma, modelName, baseText, item.id || null);
     } catch (error) {
-        console.error(`[Slug] Error generating slug for ${modelName}:`, error.message);
+        logger.error(`[Slug] Error generating slug for ${modelName}:`, error.message);
         return null;
     }
 }

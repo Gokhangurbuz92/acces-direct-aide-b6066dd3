@@ -4,12 +4,14 @@ import {
   Clock,
   CheckCircle2,
   Calendar,
-  ArrowRight
+  ArrowRight,
+  Brain
 } from 'lucide-react';
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import CategoryChip from "@/components/ui/CategoryChip";
 import { formatProvenanceDate, getFreshnessBadge, getProvenance } from '@/lib/provenance';
+import { useFalc } from '@/contexts/FalcContext';
 
 const FRESHNESS_BADGE_CLASS = {
   up_to_date: 'bg-emerald-100 text-emerald-800 border-emerald-200',
@@ -19,6 +21,7 @@ const FRESHNESS_BADGE_CLASS = {
 };
 
 export default function DemarcheCard({ demarche }) {
+  const { isFalcEnabled } = useFalc();
   const provenance = getProvenance(demarche);
   const verifiedAt = formatProvenanceDate(provenance.verifiedAt);
   const sourceHost = provenance.sourceHost;
@@ -59,9 +62,18 @@ export default function DemarcheCard({ demarche }) {
           <h3 className="text-lg font-bold text-slate-900 group-hover:text-blue-700 transition-colors mb-2" data-testid="demarche-title">
             {demarche.titre}
           </h3>
-          <p className="text-slate-600 text-sm line-clamp-2 mb-6">
-            {demarche.summary_falc || demarche.description_courte}
+          <p className="text-slate-600 text-sm line-clamp-2 mb-4">
+            {isFalcEnabled && demarche.summary_falc ? demarche.summary_falc : (demarche.summary_falc || demarche.description_courte)}
           </p>
+          {/* FALC badge */}
+          {isFalcEnabled && demarche.summary_falc && (
+            <div className="mb-4">
+              <Badge className="bg-teal-100 text-teal-700 border-teal-200 flex items-center gap-1 w-fit">
+                <Brain className="h-3 w-3" />
+                Simplifié
+              </Badge>
+            </div>
+          )}
           <div className="flex flex-wrap gap-4 text-xs text-slate-500">
             {demarche.delai && (
               <span className="flex items-center gap-1.5">

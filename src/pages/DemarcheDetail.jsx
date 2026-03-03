@@ -32,6 +32,7 @@ import FalcContent from '@/components/FalcContent';
 import FeedbackButton from '@/components/FeedbackButton';
 import { getProvenance } from '@/lib/provenance';
 import CategoryChip, { resolveCategory } from '@/components/ui/CategoryChip';
+import { useFalc } from '@/contexts/FalcContext';
 
 /** @typedef {Error & { status?: number, payload?: unknown }} ApiError */
 /** @typedef {{ numero?: number, titre?: string, title?: string, nom?: string, description?: string, contenu?: string, text?: string, conseils?: string }} DemarcheStep */
@@ -69,8 +70,9 @@ export default function DemarcheDetail() {
   const id = searchParams.get('id');
   const identifier = slug || id;
 
-  // FALC mode state
-  const [isFalcMode, setIsFalcMode] = useState(false);
+  // FALC mode — use global context
+  const { isFalcEnabled: isFalcMode } = useFalc();
+  const [isGeneratingFalc, setIsGeneratingFalc] = useState(false);
 
   const {
     data: queryData,
@@ -248,12 +250,47 @@ export default function DemarcheDetail() {
           </CardContent>
         </Card>
 
-        {/* FALC Toggle */}
+        {/* FALC Toggle + On-demand AI generation */}
         <div className="mb-6">
           <FalcToggle
             hasFalcContent={!!(demarche?.summary_falc || demarche?.description_falc || demarche?.resume_falc)}
-            onChange={setIsFalcMode}
+            onChange={() => { }}
           />
+          {isFalcMode && !(demarche?.summary_falc || demarche?.description_falc || demarche?.resume_falc) && (
+            <button
+              type="button"
+              disabled={isGeneratingFalc}
+              onClick={async () => {
+                setIsGeneratingFalc(true);
+                try {
+                  const res = await fetch('/api/public/falc/summarize', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ entityId: demarche.id, type: 'demarche' }),
+                  });
+                  if (res.ok) {
+                    refetch();
+                  }
+                } catch {
+                  // Silently handle
+                } finally {
+                  setIsGeneratingFalc(false);
+                }
+              }}
+              className="mt-3 inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-teal-600 text-white text-sm font-medium hover:bg-teal-700 transition-colors disabled:opacity-50"
+            >
+              {isGeneratingFalc ? (
+                <>
+                  <span className="animate-spin">⏳</span>
+                  Simplification en cours...
+                </>
+              ) : (
+                <>
+                  🧠 Simplifier avec l'IA
+                </>
+              )}
+            </button>
+          )}
         </div>
 
         <div className="grid lg:grid-cols-3 gap-6">

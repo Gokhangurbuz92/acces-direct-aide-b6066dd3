@@ -3,61 +3,97 @@ import logger from '../../../_utils/logger.js';
 import { generateText } from '../../../lib/gemini.js';
 
 /**
- * FALC Summarize API (Public)
+ * FALC Summarize API (Public) — Multi-Entity
  *
  * POST /api/public/falc/summarize
- * Body: { aideId: string }
+ * Body: { aideId?: string, entityId?: string, type?: 'aide' | 'demarche' | 'actualite' }
  *
- * Generates a FALC (Facile À Lire et à Comprendre) version of an aide
- * using Gemini 2.0 Flash. Caches the result in DB columns for cost optimization.
+ * Generates a FALC version using Gemini 2.0 Flash.
+ * Caches the result in DB columns for cost optimization.
+ * Supports: Aides, Démarches, and Actualités.
  */
+
+/** Entity configuration map */
+const ENTITY_CONFIG = {
+    aide: {
+        model: () => prisma.aide,
+        titleField: 'titre',
+        sourceFields: ['cest_quoi', 'pour_qui', 'ce_que_ca_aide', 'description'],
+        cacheFields: ['summary_falc', 'conditions_falc'],
+        contextLabel: "une aide sociale",
+    },
+    demarche: {
+        model: () => prisma.demarche,
+        titleField: 'titre',
+        sourceFields: ['description_courte', 'pour_qui', 'contenu_detaille', 'ou_faire'],
+        cacheFields: ['summary_falc'],
+        contextLabel: "une démarche administrative",
+    },
+    actualite: {
+        model: () => prisma.actualite,
+        titleField: 'titre',
+        sourceFields: ['contenu', 'resume'],
+        cacheFields: ['summary_falc'],
+        contextLabel: "une actualité d'aide sociale",
+    },
+};
+
 export default async function handler(req, res) {
     if (req.method !== 'POST') {
         return res.status(405).json({ error: 'Méthode non autorisée' });
     }
 
-    const { aideId } = req.body || {};
-    if (!aideId) {
-        return res.status(400).json({ error: 'aideId requis' });
+    const body = req.body || {};
+    // Support both { aideId } (backward compat) and { entityId, type }
+    const type = body.type || 'aide';
+    const entityId = body.entityId || body.aideId;
+
+    if (!entityId) {
+        return res.status(400).json({ error: 'entityId (ou aideId) requis' });
+    }
+
+    const config = ENTITY_CONFIG[type];
+    if (!config) {
+        return res.status(400).json({ error: `Type inconnu : ${type}. Types valides : aide, demarche, actualite` });
     }
 
     try {
-        // 1. Fetch the aide
-        const aide = await prisma.aide.findUnique({ where: { id: aideId } });
-        if (!aide) {
-            return res.status(404).json({ error: 'Aide introuvable' });
+        // 1. Fetch the entity
+        const entity = await config.model().findUnique({ where: { id: entityId } });
+        if (!entity) {
+            return res.status(404).json({ error: `${type} introuvable` });
         }
 
         // 2. Return cached FALC if available (cost optimization)
-        if (aide.summary_falc && aide.conditions_falc) {
-            logger.info(`[FALC] Cache hit pour aide=${aideId}`);
+        const hasCachedFalc = config.cacheFields.every(f => !!entity[f]);
+        if (hasCachedFalc) {
+            logger.info(`[FALC] Cache hit pour ${type}=${entityId}`);
             return res.status(200).json({
                 cached: true,
-                titre_simple: aide.titre,
-                summary_falc: aide.summary_falc,
-                conditions_simples: aide.conditions_falc,
-                montant_falc: aide.montant_falc || null,
-                points_cles: aide.metadata?.falc_points_cles || [],
-                action: aide.metadata?.falc_action || 'En savoir plus',
+                type,
+                titre_simple: entity[config.titleField],
+                summary_falc: entity.summary_falc,
+                conditions_simples: entity.conditions_falc || null,
+                montant_falc: entity.montant_falc || null,
+                points_cles: entity.key_points_falc || [],
+                action: 'En savoir plus',
             });
         }
 
         // 3. Build source text for FALC generation
-        const sourceText = [
-            aide.cest_quoi,
-            aide.pour_qui,
-            aide.ce_que_ca_aide,
-            aide.description,
-        ].filter(Boolean).join('\n\n');
+        const sourceText = config.sourceFields
+            .map(f => entity[f])
+            .filter(Boolean)
+            .join('\n\n');
 
         if (!sourceText) {
-            return res.status(422).json({ error: 'Aucun contenu à simplifier pour cette aide' });
+            return res.status(422).json({ error: `Aucun contenu à simplifier pour ${type}` });
         }
 
-        // 4. FALC prompt engineering
+        // 4. FALC prompt engineering (entity-aware)
         const prompt = `Tu es un expert en accessibilité cognitive certifié FALC (Facile À Lire et à Comprendre).
 
-MISSION : Traduis le texte administratif suivant en langage FALC.
+MISSION : Simplifie ${config.contextLabel} en langage FALC.
 
 RÈGLES STRICTES :
 - Phrases très courtes : Sujet + Verbe + Complément
@@ -69,20 +105,20 @@ RÈGLES STRICTES :
 - Mots de 3 syllabes maximum quand possible
 
 TEXTE À SIMPLIFIER :
-Titre : "${aide.titre}"
+Titre : "${entity[config.titleField]}"
 ${sourceText}
 
 RÉPONDS UNIQUEMENT en JSON valide avec cette structure exacte :
 {
-  "titre_simple": "Le titre simplifié de l'aide",
-  "summary_falc": "1-2 phrases très simples expliquant l'aide",
+  "titre_simple": "Le titre simplifié",
+  "summary_falc": "1-2 phrases très simples expliquant le contenu",
   "points_cles": ["Point simple 1", "Point simple 2", "Point simple 3"],
-  "conditions_simples": "Qui peut avoir cette aide (1-2 phrases simples)",
-  "action": "Texte du bouton d'action (ex: Demander cette aide)"
+  "conditions_simples": "Qui est concerné (1-2 phrases simples)",
+  "action": "Texte du bouton d'action"
 }`;
 
         // 5. Call Gemini 2.0 Flash
-        logger.info(`[FALC] Generating for aide=${aideId} titre="${aide.titre}"`);
+        logger.info(`[FALC] Generating for ${type}=${entityId} titre="${entity[config.titleField]}"`);
         const responseText = await generateText(prompt);
 
         // 6. Parse JSON response (handle markdown code fences)
@@ -105,44 +141,49 @@ RÉPONDS UNIQUEMENT en JSON valide avec cette structure exacte :
         }
 
         // 8. Cache in DB (permanent — avoids re-paying Gemini)
-        const updateData = {
-            summary_falc: falcData.summary_falc,
-            conditions_falc: falcData.conditions_simples || null,
-        };
+        const updateData = { summary_falc: falcData.summary_falc };
 
-        // Handle montant_falc if column exists
-        if ('montant_falc' in aide) {
-            updateData.montant_falc = falcData.montant_falc || null;
+        // Entity-specific caching
+        if (type === 'aide') {
+            if (falcData.conditions_simples) updateData.conditions_falc = falcData.conditions_simples;
+            if ('montant_falc' in entity && falcData.montant_falc) updateData.montant_falc = falcData.montant_falc;
+        }
+        if (type === 'actualite') {
+            if (falcData.points_cles) updateData.key_points_falc = falcData.points_cles;
+            updateData.falc_status = 'done';
         }
 
-        await prisma.aide.update({
-            where: { id: aideId },
+        await config.model().update({
+            where: { id: entityId },
             data: updateData,
         });
 
-        logger.info(`[FALC] Generated and cached for aide=${aideId}`);
+        logger.info(`[FALC] Generated and cached for ${type}=${entityId}`);
 
         return res.status(200).json({
             cached: false,
-            titre_simple: falcData.titre_simple || aide.titre,
+            type,
+            titre_simple: falcData.titre_simple || entity[config.titleField],
             summary_falc: falcData.summary_falc,
-            conditions_simples: falcData.conditions_simples,
+            conditions_simples: falcData.conditions_simples || null,
             points_cles: falcData.points_cles,
             action: falcData.action || 'En savoir plus',
         });
     } catch (error) {
-        logger.error({ err: error }, '[FALC] Erreur critique');
+        logger.error({ err: error }, `[FALC] Erreur critique (${type})`);
 
-        // Graceful fallback — return rules-based simplification
+        // Graceful fallback — rules-based simplification
         try {
             const { summarizeFALC } = await import('../../../lib/falc-summarizer.js');
-            const aide = await prisma.aide.findUnique({ where: { id: aideId } });
-            if (aide) {
-                const fallbackText = summarizeFALC(aide.cest_quoi || aide.description || '', 4);
+            const entity = await config.model().findUnique({ where: { id: entityId } });
+            if (entity) {
+                const fallbackSource = config.sourceFields.map(f => entity[f]).filter(Boolean).join(' ');
+                const fallbackText = summarizeFALC(fallbackSource, 4);
                 return res.status(200).json({
                     cached: false,
                     fallback: true,
-                    titre_simple: aide.titre,
+                    type,
+                    titre_simple: entity[config.titleField],
                     summary_falc: fallbackText,
                     points_cles: [],
                     conditions_simples: null,
@@ -150,7 +191,7 @@ RÉPONDS UNIQUEMENT en JSON valide avec cette structure exacte :
                 });
             }
         } catch {
-            // Double fault — just return error
+            // Double fault — return error
         }
 
         return res.status(500).json({ error: 'Échec de la simplification IA' });

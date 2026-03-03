@@ -4,12 +4,14 @@ import {
   MapPin,
   Calendar,
   CheckCircle2,
-  AlertTriangle
+  AlertTriangle,
+  Brain
 } from 'lucide-react';
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import CategoryChip, { resolveCategory } from "@/components/ui/CategoryChip";
 import { formatProvenanceDate, getFreshnessBadge, getProvenance } from '@/lib/provenance';
+import { useFalc } from '@/contexts/FalcContext';
 
 const FRESHNESS_BADGE_CLASS = {
   up_to_date: 'bg-emerald-100 text-emerald-800 border-emerald-200',
@@ -19,6 +21,7 @@ const FRESHNESS_BADGE_CLASS = {
 };
 
 export default function AideCard({ aide, compact = false }) {
+  const { isFalcEnabled } = useFalc();
   const provenance = getProvenance(aide);
   const verifiedAt = formatProvenanceDate(provenance.verifiedAt);
   const sourceHost = provenance.sourceHost;
@@ -95,8 +98,16 @@ export default function AideCard({ aide, compact = false }) {
 
           {/* Description courte */}
           <p className="text-slate-600 text-sm line-clamp-2">
-            {aide.cest_quoi}
+            {isFalcEnabled && aide.summary_falc ? aide.summary_falc : aide.cest_quoi}
           </p>
+
+          {/* FALC badge */}
+          {isFalcEnabled && aide.summary_falc && (
+            <Badge className="bg-teal-100 text-teal-700 border-teal-200 flex items-center gap-1 w-fit">
+              <Brain className="h-3 w-3" />
+              Simplifié
+            </Badge>
+          )}
 
           {/* Métadonnées */}
           <div className="flex flex-wrap gap-4 text-sm text-slate-500 mt-1">

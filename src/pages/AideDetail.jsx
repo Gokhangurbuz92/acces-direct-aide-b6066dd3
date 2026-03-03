@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState, useCallback } from 'react';
 import { Link, useParams, useNavigate } from 'react-router-dom';
 import { createPageUrl } from '@/utils';
 import { client } from '@/api/client';
@@ -32,6 +32,7 @@ import FeedbackButton from '@/components/FeedbackButton';
 import { formatProvenanceDate, getProvenance } from '@/lib/provenance';
 import { useAideDetail } from '@/lib/hooks/useAideDetail';
 import CategoryChip, { resolveCategory } from '@/components/ui/CategoryChip';
+import { useFalc } from '@/contexts/FalcContext';
 
 
 
@@ -44,8 +45,9 @@ export default function AideDetail() {
   // ------------------------------------------------------------------
   const { status, data, raw: aide, errorMessage, refetch } = useAideDetail(slug);
 
-  // FALC mode state
-  const [isFalcMode, setIsFalcMode] = useState(false);
+  // FALC mode — use global context
+  const { isFalcEnabled: isFalcMode } = useFalc();
+  const [isGeneratingFalc, setIsGeneratingFalc] = useState(false);
   const hasFalcContent = !!(aide?.summary_falc || aide?.conditions_falc || aide?.montant_falc);
 
   // Canonical Redirect: If accessed via query ?id= but slug exists, redirect
@@ -281,12 +283,47 @@ export default function AideDetail() {
           </div>
         </div>
 
-        {/* FALC Toggle */}
+        {/* FALC Toggle + On-demand AI generation */}
         <div className="mb-6">
           <FalcToggle
             hasFalcContent={hasFalcContent}
-            onChange={setIsFalcMode}
+            onChange={() => { }}
           />
+          {isFalcMode && !hasFalcContent && (
+            <button
+              type="button"
+              disabled={isGeneratingFalc}
+              onClick={async () => {
+                setIsGeneratingFalc(true);
+                try {
+                  const res = await fetch('/api/public/falc/summarize', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ aideId: aide.id }),
+                  });
+                  if (res.ok) {
+                    refetch();
+                  }
+                } catch {
+                  // Silently handle
+                } finally {
+                  setIsGeneratingFalc(false);
+                }
+              }}
+              className="mt-3 inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-teal-600 text-white text-sm font-medium hover:bg-teal-700 transition-colors disabled:opacity-50"
+            >
+              {isGeneratingFalc ? (
+                <>
+                  <span className="animate-spin">⏳</span>
+                  Simplification en cours...
+                </>
+              ) : (
+                <>
+                  🧠 Simplifier avec l'IA
+                </>
+              )}
+            </button>
+          )}
         </div>
 
         <div className="grid lg:grid-cols-3 gap-6">

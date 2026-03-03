@@ -107,7 +107,7 @@ test.describe('Keyboard — Interactive elements tab order', () => {
         // Check that focus moves to diverse elements (not stuck on one)
         // Use unique focus targets — if fewer than 3 unique, might be a trap
         const uniqueTargets = new Set(focusHistory);
-        expect(uniqueTargets.size).toBeGreaterThan(3);
+        expect(uniqueTargets.size).toBeGreaterThanOrEqual(3);
     });
 });
 

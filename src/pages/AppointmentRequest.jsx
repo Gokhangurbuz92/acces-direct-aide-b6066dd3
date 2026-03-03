@@ -1,3 +1,4 @@
+import { SkeletonList } from '@/components/ui/skeleton';
 
 import { useState } from 'react';
 import { useSearchParams, Link } from 'react-router-dom';
@@ -69,7 +70,7 @@ export default function AppointmentRequest() {
         });
     };
 
-    if (loadingStructure) return <div className="p-12 flex justify-center"><Loader2 className="animate-spin" /></div>;
+    if (loadingStructure) return <div className="p-6"><SkeletonList count={4} variant="card" /></div>;
     if (!structure) return <div className="p-12 text-center">Cette structure n&apos;existe pas.</div>;
 
     // Success View

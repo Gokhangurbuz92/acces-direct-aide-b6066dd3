@@ -1,3 +1,4 @@
+import { checkRateLimit, getClientIp, getRateLimitStatus } from '../../_utils/rateLimit.js';
 import logger from '../../_utils/logger.js';
 import prisma from '../../_utils/prisma.js';
 import { validateForPublication, generateValidationReport } from '../../lib/publication-validator.js';
@@ -30,6 +31,12 @@ const ENTITY_MODELS = {
  * @param {import('../../_utils/http-types').ApiResponse} res
  */
 export default async function handler(req, res) {
+    const ip = getClientIp(req);
+    const rateLimit = await checkRateLimit('ADMIN_API', ip);
+    if (!rateLimit.allowed) {
+        return res.status(getRateLimitStatus(rateLimit)).json(rateLimit.error);
+    }
+
   const log = logger.child({ handler: 'validate-publication' });
 
   try {

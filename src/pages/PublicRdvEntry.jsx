@@ -1,3 +1,4 @@
+import { SkeletonList } from '@/components/ui/skeleton';
 // @ts-nocheck
 import { useMemo, useState } from 'react';
 import { Link, Navigate, useLocation, useNavigate, useParams, useSearchParams } from 'react-router-dom';
@@ -395,9 +396,7 @@ export default function PublicRdvEntry({ view = 'landing' }) {
 
   if (structureLoading || authLoading) {
     return (
-      <div className="min-h-screen bg-slate-50 flex items-center justify-center p-6">
-        <Loader2 className="h-7 w-7 animate-spin text-indigo-600" />
-      </div>
+      <div className="w-full p-4"><SkeletonList count={3} variant="card" /></div>
     );
   }
 

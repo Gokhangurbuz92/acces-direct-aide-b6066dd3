@@ -1,3 +1,4 @@
+import { SkeletonList } from '@/components/ui/skeleton';
 import { useState, useEffect } from 'react';
 import SEO from '@/components/SEO';
 import { Card, CardContent } from '@/components/ui/card';
@@ -59,11 +60,7 @@ export default function Ressources() {
                 </select>
             </div>
 
-            {loading ? (
-                <div className="flex items-center justify-center min-h-[50vh]">
-                    <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
-                </div>
-            ) : (
+            {loading ? <div className="p-6"><SkeletonList count={3} variant="card" /></div> : (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                     {ressources.map((r) => (
                         <Link key={r.id} to={`/ressources/${r.slug}`} data-testid="ressource-card">

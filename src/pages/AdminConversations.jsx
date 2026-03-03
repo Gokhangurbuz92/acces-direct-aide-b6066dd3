@@ -1,3 +1,4 @@
+import { SkeletonList } from '@/components/ui/skeleton';
 import { useQuery } from '@tanstack/react-query';
 import { adminClient as client } from '@/api/client';
 import { Card, CardContent } from '@/components/ui/card';
@@ -186,11 +187,7 @@ export default function AdminConversations() {
                 </div>
 
                 {/* Log List */}
-                {isLoading ? (
-                    <div className="flex justify-center py-12">
-                        <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
-                    </div>
-                ) : logs.length > 0 ? (
+                {isLoading ? <div className="p-6"><SkeletonList count={3} variant="card" /></div> : logs.length > 0 ? (
                     <div className="space-y-3">
                         {logs.map(log => {
                             const modeConf = MODE_CONFIG[log.searchMode] || MODE_CONFIG.static;

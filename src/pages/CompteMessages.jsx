@@ -1,3 +1,4 @@
+import { SkeletonList } from '@/components/ui/skeleton';
 // @ts-nocheck
 import { useMemo } from 'react';
 import { Link, Navigate, useLocation } from 'react-router-dom';
@@ -42,9 +43,7 @@ export default function CompteMessages() {
 
   if (authQuery.isLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center p-6">
-        <Loader2 className="h-6 w-6 animate-spin text-slate-600" />
-      </div>
+      <div className="w-full p-4"><SkeletonList count={3} variant="card" /></div>
     );
   }
 

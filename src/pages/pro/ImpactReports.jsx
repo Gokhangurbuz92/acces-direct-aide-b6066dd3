@@ -1,3 +1,4 @@
+import { SkeletonList } from '@/components/ui/skeleton';
 import { useState, useEffect, useCallback } from 'react';
 import { useOutletContext } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -122,11 +123,7 @@ export default function ImpactReports() {
                 </div>
             </div>
 
-            {loading ? (
-                <div className="flex items-center justify-center py-20">
-                    <Loader2 className="animate-spin text-slate-400" size={28} />
-                </div>
-            ) : (
+            {loading ? <div className="p-6"><SkeletonList count={3} variant="card" /></div> : (
                 <>
                     {/* KPI Cards */}
                     <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">

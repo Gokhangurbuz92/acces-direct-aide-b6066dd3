@@ -1,3 +1,4 @@
+import { SkeletonList } from '@/components/ui/skeleton';
 
 import { Link, useParams, useSearchParams } from 'react-router-dom';
 import SEO from '@/components/SEO';
@@ -47,9 +48,7 @@ export default function DispositifDetail() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-slate-50 flex items-center justify-center">
-        <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
-      </div>
+      <div className="w-full p-4"><SkeletonList count={3} variant="card" /></div>
     );
   }
 

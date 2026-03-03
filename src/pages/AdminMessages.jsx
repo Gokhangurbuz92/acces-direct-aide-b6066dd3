@@ -1,3 +1,4 @@
+import { SkeletonList } from '@/components/ui/skeleton';
 import { useState } from 'react';
 import { adminClient as client } from '@/api/client';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
@@ -93,11 +94,7 @@ export default function AdminMessages() {
         </div>
 
         {/* Messages */}
-        {isLoading ? (
-          <div className="flex justify-center py-12">
-            <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
-          </div>
-        ) : messages.length > 0 ? (
+        {isLoading ? <div className="p-6"><SkeletonList count={3} variant="card" /></div> : messages.length > 0 ? (
           <div className="space-y-3">
             {messages.map((message) => {
               const statusInfo = STATUS_LABELS[message.statut] || STATUS_LABELS.nouveau;

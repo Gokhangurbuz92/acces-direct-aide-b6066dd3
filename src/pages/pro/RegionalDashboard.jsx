@@ -1,3 +1,4 @@
+import { SkeletonList } from '@/components/ui/skeleton';
 import { useState, useEffect, useMemo, useCallback } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -72,9 +73,7 @@ export default function RegionalDashboard() {
 
     if (loading) {
         return (
-            <div className="min-h-screen bg-slate-50 flex items-center justify-center">
-                <Loader2 className="animate-spin text-slate-400" size={28} />
-            </div>
+            <div className="w-full p-4"><SkeletonList count={3} variant="card" /></div>
         );
     }
 

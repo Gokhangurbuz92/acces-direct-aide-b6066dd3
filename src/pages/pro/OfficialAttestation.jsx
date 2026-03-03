@@ -1,3 +1,4 @@
+import { SkeletonList } from '@/components/ui/skeleton';
 import { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Card, CardContent } from '@/components/ui/card';
@@ -92,9 +93,7 @@ export default function OfficialAttestation() {
 
     if (loading) {
         return (
-            <div className="min-h-screen bg-slate-50 flex items-center justify-center">
-                <Loader2 className="animate-spin text-slate-400" size={28} />
-            </div>
+            <div className="w-full p-4"><SkeletonList count={3} variant="card" /></div>
         );
     }
 

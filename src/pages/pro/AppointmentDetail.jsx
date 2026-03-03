@@ -1,3 +1,4 @@
+import { SkeletonList } from '@/components/ui/skeleton';
 // @ts-nocheck
 import { useEffect, useState, useCallback } from 'react';
 import { useParams, Link } from 'react-router-dom';
@@ -111,7 +112,7 @@ export default function ProAppointmentDetail() {
         }
     };
 
-    if (loadingAppt) return <Loader2 className="animate-spin h-8 w-8 mx-auto" />;
+    if (loadingAppt) return <SkeletonList count={3} variant="card" />;
     if (!appointment) return <div className="text-center p-10">Rendez-vous introuvable</div>;
 
     return (

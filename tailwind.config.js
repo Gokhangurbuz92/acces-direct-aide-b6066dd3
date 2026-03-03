@@ -95,17 +95,17 @@ module.exports = {
 
 				// ✅ Blueprint Trust tokens (namespaced to avoid collisions)
 				bt: {
-					ink: '#0B1220',
-					background: '#F7FAFF',
+					ink: '#0F172A',      // Slate-900
+					background: '#F8FAFC', // Slate-50
 					surface: '#FFFFFF',
-					border: '#E6EDF7',
-					primary: '#0B3A6A',
-					primaryHover: '#082E55',
-					accent: '#2BC4D7',
-					muted: '#475569',
-					success: '#157F3D',
-					warning: '#B45309',
-					danger: '#B42318',
+					border: '#E2E8F0',   // Slate-200
+					primary: '#4F46E5',  // Indigo-600
+					primaryHover: '#4338CA', // Indigo-700
+					accent: '#6366F1',   // Indigo-500
+					muted: '#64748B',    // Slate-500
+					success: '#10B981',  // Emerald-500
+					warning: '#F59E0B',  // Amber-500
+					danger: '#EF4444',   // Red-500
 				}
 			},
 			keyframes: {

@@ -1,4 +1,5 @@
 import logger from '../../_utils/logger.js';
+import { env } from '../../_utils/env.js';
 // @ts-nocheck
 import { getCronAuth } from '../../_utils/cronAuth.js';
 import prisma from '../../_utils/prisma.js';
@@ -70,6 +71,7 @@ export default async function handler(req, res) {
         }
 
         let emailsSent = 0;
+        let smsSent = 0;
         let notificationsCreated = 0;
         const errors = [];
 
@@ -134,6 +136,35 @@ export default async function handler(req, res) {
             } catch (err) {
                 errors.push({ rdvId: rdv.id, type: 'notification', error: err.message });
             }
+
+            // 3. Send SMS reminder to beneficiary (if phone available)
+            if (rdv.beneficiaryPhone && env.twilio.sid && env.twilio.authToken && env.twilio.from) {
+                try {
+                    const smsBody = `Rappel ADA : Votre RDV est prévu demain ${dateStr} à ${timeStr}. Pour annuler ou reporter, consultez votre email de confirmation.`;
+                    const twilioUrl = `https://api.twilio.com/2010-04-01/Accounts/${env.twilio.sid}/Messages.json`;
+                    const twilioBody = new URLSearchParams({
+                        To: rdv.beneficiaryPhone.replace(/\s/g, ''),
+                        From: env.twilio.from,
+                        Body: smsBody,
+                    });
+                    const smsRes = await fetch(twilioUrl, {
+                        method: 'POST',
+                        headers: {
+                            Authorization: `Basic ${Buffer.from(`${env.twilio.sid}:${env.twilio.authToken}`).toString('base64')}`,
+                            'Content-Type': 'application/x-www-form-urlencoded',
+                        },
+                        body: twilioBody.toString(),
+                    });
+                    if (smsRes.ok) {
+                        smsSent++;
+                    } else {
+                        const errBody = await smsRes.text().catch(() => '');
+                        errors.push({ rdvId: rdv.id, type: 'sms', error: `Twilio ${smsRes.status}: ${errBody.slice(0, 100)}` });
+                    }
+                } catch (err) {
+                    errors.push({ rdvId: rdv.id, type: 'sms', error: err.message });
+                }
+            }
         }
 
         // Audit log
@@ -155,6 +186,7 @@ export default async function handler(req, res) {
         logger.info({
             appointmentsFound: appointments.length,
             emailsSent,
+            smsSent,
             notificationsCreated,
             errors: errors.length,
         }, '[Cron] RDV J-1 reminder completed');
@@ -163,6 +195,7 @@ export default async function handler(req, res) {
             ok: true,
             appointmentsFound: appointments.length,
             emailsSent,
+            smsSent,
             notificationsCreated,
             errors: errors.length > 0 ? errors.slice(0, 5) : undefined,
         });

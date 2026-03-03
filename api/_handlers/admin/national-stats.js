@@ -1,3 +1,4 @@
+import { checkRateLimit, getClientIp, getRateLimitStatus } from '../../_utils/rateLimit.js';
 import logger from '../../_utils/logger.js';
 import prisma from '../../_utils/prisma.js';
 import { verifyAdmin } from '../../_utils/auth.js';
@@ -16,6 +17,12 @@ import { verifyAdmin } from '../../_utils/auth.js';
  * @param {import('../../_utils/http-types').ApiResponse} res
  */
 export default async function handler(req, res) {
+    const ip = getClientIp(req);
+    const rateLimit = await checkRateLimit('ADMIN_API', ip);
+    if (!rateLimit.allowed) {
+        return res.status(getRateLimitStatus(rateLimit)).json(rateLimit.error);
+    }
+
     if (req.method !== 'GET') {
         return res.status(405).json({ error: 'Method Not Allowed' });
     }

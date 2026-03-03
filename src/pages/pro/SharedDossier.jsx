@@ -1,3 +1,4 @@
+import { SkeletonList } from '@/components/ui/skeleton';
 import { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate, useOutletContext } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -112,7 +113,7 @@ export default function SharedDossier() {
     if (loading) {
         return (
             <div className="flex flex-col items-center justify-center py-20">
-                <Loader2 className="animate-spin text-indigo-600 mb-4" size={32} />
+                <SkeletonList count={3} variant="card" />
                 <p className="text-xs font-bold text-slate-400 uppercase tracking-wider">
                     Chargement sécurisé...
                 </p>

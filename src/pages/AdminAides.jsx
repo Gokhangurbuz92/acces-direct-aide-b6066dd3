@@ -1,3 +1,4 @@
+import { SkeletonList } from '@/components/ui/skeleton';
 import { useState } from 'react';
 import { adminClient as client } from '@/api/client';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
@@ -161,11 +162,7 @@ export default function AdminAides() {
         </Card>
 
         {/* List */}
-        {isLoading ? (
-          <div className="flex justify-center py-12">
-            <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
-          </div>
-        ) : filteredAides.length > 0 ? (
+        {isLoading ? <div className="p-6"><SkeletonList count={3} variant="card" /></div> : filteredAides.length > 0 ? (
           <div className="space-y-3">
             {filteredAides.map((aide) => {
               const statusInfo = STATUS_LABELS[aide.status] || STATUS_LABELS.draft;

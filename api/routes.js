@@ -80,6 +80,7 @@ import publicStats from './_handlers/public/stats.js';
 import publicAvailability from './_handlers/public/availability.js';
 import publicAppointmentsCreate from './_handlers/public/appointments/create.js';
 import publicAppointmentsCancel from './_handlers/public/appointments/cancel.js';
+import publicAppointmentsReschedule from './_handlers/public/appointments/reschedule.js';
 import rdvMessages from './_handlers/messages.js';
 
 // --- Core Data ---
@@ -226,6 +227,7 @@ export const routes = [
     { path: 'public/availability', match: 'exact', handler: publicAvailability },
     { path: 'appointments', match: 'exact', handler: publicAppointmentsCreate },
     { path: 'appointments/cancel', match: 'exact', handler: publicAppointmentsCancel },
+    { path: 'appointments/reschedule', match: 'exact', handler: publicAppointmentsReschedule },
 
     // --- Core Data ---
     { path: 'aides', match: 'prefix', handler: aides },

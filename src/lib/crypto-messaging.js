@@ -78,7 +78,7 @@ export const cryptoE2EE = {
 
             return btoa(String.fromCharCode.apply(null, combined));
         } catch (error) {
-            console.error('[E2EE] Erreur encrypt:', error);
+            if (import.meta.env.DEV) console.error('[E2EE] Erreur encrypt:', error);
             throw error;
         }
     },
@@ -109,7 +109,7 @@ export const cryptoE2EE = {
 
             return new TextDecoder().decode(decryptedContent);
         } catch (error) {
-            console.error('[E2EE] Erreur decrypt:', error);
+            if (import.meta.env.DEV) console.error('[E2EE] Erreur decrypt:', error);
             return '🔒 [Contenu chiffré - Clé invalide]';
         }
     },

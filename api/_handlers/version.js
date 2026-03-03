@@ -1,3 +1,4 @@
+import logger from "../../_utils/logger.js";
 /**
  * @param {import('../_utils/http-types').ApiRequest} req
  * @param {import('../_utils/http-types').ApiResponse} res
@@ -10,7 +11,7 @@ export default async function handler(req, res) {
 
     // Strict security: if DEBUG_TOKEN is not set, disable the endpoint
     if (!debugToken) {
-         console.warn("DEBUG_TOKEN not set in environment.");
+         logger.warn("DEBUG_TOKEN not set in environment.");
          return res.status(503).json({ error: 'Debug token not configured on server' });
     }
 
@@ -40,7 +41,7 @@ export default async function handler(req, res) {
         }
     } catch {
         // Fallback to runtime time if build info missing
-        console.warn("Could not load build-info.js");
+        logger.warn("Could not load build-info.js");
     }
 
     const info = {

@@ -46,7 +46,7 @@ export default function SecureChat({ shareId, senderId, receiverId }) {
 
             setMessages(decrypted);
         } catch (err) {
-            console.error('[SecureChat] Erreur:', err.message);
+            if (import.meta.env.DEV) console.error('[SecureChat] Erreur:', err.message);
         }
     }, [shareId]);
 
@@ -145,8 +145,8 @@ export default function SecureChat({ shareId, senderId, receiverId }) {
                         >
                             <div
                                 className={`max-w-[85%] p-4 rounded-2xl shadow-sm ${msg.senderId === senderId
-                                        ? 'bg-indigo-600 text-white rounded-tr-none shadow-indigo-200'
-                                        : 'bg-white text-slate-800 rounded-tl-none border border-slate-100'
+                                    ? 'bg-indigo-600 text-white rounded-tr-none shadow-indigo-200'
+                                    : 'bg-white text-slate-800 rounded-tl-none border border-slate-100'
                                     }`}
                             >
                                 <p className="text-sm leading-relaxed whitespace-pre-wrap">

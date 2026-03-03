@@ -1,3 +1,4 @@
+import logger from "../../_utils/logger.js";
 // @ts-nocheck
 
 /**
@@ -92,7 +93,7 @@ export default async function handler(req, res) {
 
         if (!response.ok) {
             const errorText = await response.text().catch(() => '');
-            console.error('[TTS] Gemini error:', response.status, errorText.slice(0, 200));
+            logger.error('[TTS] Gemini error:', response.status, errorText.slice(0, 200));
             return res.status(502).json({ error: 'Erreur du service de synthèse vocale.' });
         }
 
@@ -123,7 +124,7 @@ export default async function handler(req, res) {
         res.setHeader('Cache-Control', 'private, max-age=3600');
         return res.end(wavBuffer);
     } catch (error) {
-        console.error('[TTS] Erreur:', error.message);
+        logger.error('[TTS] Erreur:', error.message);
         return res.status(500).json({ error: 'Erreur interne TTS.' });
     }
 }

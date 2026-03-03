@@ -1,3 +1,4 @@
+import logger from "../../_utils/logger.js";
 import prisma from '../../_utils/prisma.js';
 
 /**
@@ -62,7 +63,7 @@ export default async function handler(req, res) {
             },
         });
     } catch (error) {
-        console.error('[Share Get Error]:', error);
+        logger.error('[Share Get Error]:', error);
         return res.status(500).json({
             error: 'fetch_failed',
             message: 'Impossible de récupérer le dossier.',

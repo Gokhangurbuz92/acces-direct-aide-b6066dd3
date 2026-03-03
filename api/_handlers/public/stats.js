@@ -1,3 +1,4 @@
+import logger from "../../_utils/logger.js";
 
 import prisma from '../../_utils/prisma.js';
 /**
@@ -28,7 +29,7 @@ export default async function handler(req, res) {
             appointments: rdvCount
         });
     } catch (e) {
-        console.error("Error fetching stats", e);
+        logger.error("Error fetching stats", e);
         return res.status(500).json({ error: "Internal error" });
     }
 }

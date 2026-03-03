@@ -1,3 +1,4 @@
+import logger from "../../_utils/logger.js";
 import prisma from '../_utils/prisma.js';
 import { checkRateLimit, getClientIp } from '../_utils/rateLimit.js';
 import { z } from 'zod';
@@ -79,7 +80,7 @@ async function handler(req, res) {
             }
         });
     } catch (error) {
-        console.error('Ressources handler error:', error);
+        logger.error('Ressources handler error:', error);
         return res.status(500).json({ error: 'Internal server error' });
     }
 }

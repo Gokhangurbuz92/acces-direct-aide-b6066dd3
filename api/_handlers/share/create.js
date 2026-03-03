@@ -1,3 +1,4 @@
+import logger from "../../_utils/logger.js";
 import prisma from '../../_utils/prisma.js';
 
 /**
@@ -42,7 +43,7 @@ export default async function handler(req, res) {
             expiresAt: shared.expiresAt,
         });
     } catch (error) {
-        console.error('[Share Create Error]:', error);
+        logger.error('[Share Create Error]:', error);
         return res.status(500).json({
             error: 'create_failed',
             message: 'Impossible de créer le lien de partage.',

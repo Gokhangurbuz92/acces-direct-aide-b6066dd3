@@ -1,3 +1,4 @@
+import logger from "../../_utils/logger.js";
 
 
 import prisma from '../_utils/prisma.js';
@@ -40,7 +41,7 @@ export default async function handler(req, res) {
         return res.send(fileBuffer);
 
     } catch (e) {
-        console.error("Download Error:", e);
+        logger.error("Download Error:", e);
         // Don't leak internal errors to user, but 404/500 is fine
         if (e.message.includes('File not found')) return res.status(404).json({ error: "File not found on server" });
         return res.status(500).json({ error: "Internal Server Error" });

@@ -73,7 +73,7 @@ export default function SharedDiagnostic() {
             const { generateSocialPassport } = await import('@/lib/pdf-generator');
             generateSocialPassport(data.situation || {}, data.results || {});
         } catch (err) {
-            console.error('[PDF] Generation failed:', err);
+            if (import.meta.env.DEV) console.error('[PDF] Generation failed:', err);
         }
     };
 

@@ -2,6 +2,7 @@ import { PrismaClient } from '@prisma/client';
 import fs from 'node:fs';
 import path from 'node:path';
 import { config as dotenvConfig, parse as dotenvParse } from 'dotenv';
+import logger from './logger.js';
 
 const isTestRuntime = process.env.NODE_ENV === 'test' || process.env.VITEST === 'true' || process.env.VITEST === '1';
 const isDevRuntime = !isTestRuntime && process.env.NODE_ENV !== 'production' && process.env.VERCEL_ENV !== 'production';
@@ -31,7 +32,7 @@ function loadDevEnvFiles() {
         if (!localValue) continue;
         if (isPlaceholderDbUrl(currentValue) && !isPlaceholderDbUrl(localValue)) {
             process.env[key] = localValue;
-            console.info(`[prisma][dev] promoted ${key} from .env.local (placeholder was detected).`);
+            logger.info(`[prisma][dev] promoted ${key} from .env.local (placeholder was detected).`);
         }
     }
 }
@@ -110,14 +111,14 @@ if (isDevRuntime) {
     const target = parseDbTarget();
     if (target) {
         // Never print env-derived connection details (user/host/db). Names-only for safety.
-        console.info(`[prisma][dev] datasource=${target.source} (connection details redacted)`);
+        logger.info(`[prisma][dev] datasource=${target.source} (connection details redacted)`);
         if (isPlaceholderConnection(target)) {
-            console.warn(
+            logger.warn(
                 '[prisma][dev] placeholder-like DB target detected. Verify DATABASE_URL/POSTGRES_URL_NON_POOLING in .env.local.',
             );
         }
     } else {
-        console.warn('[prisma][dev] no DB URL found in environment variables.');
+        logger.warn('[prisma][dev] no DB URL found in environment variables.');
     }
 }
 

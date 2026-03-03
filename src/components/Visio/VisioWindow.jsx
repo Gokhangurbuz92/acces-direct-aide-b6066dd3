@@ -43,7 +43,7 @@ export default function VisioWindow({ roomName, displayName, onClose }) {
 
         script.onerror = () => {
             if (disposed) return;
-            console.error('[VisioWindow] Impossible de charger Jitsi Meet');
+            if (import.meta.env.DEV) console.error('[VisioWindow] Impossible de charger Jitsi Meet');
             setStatus('error');
         };
 
@@ -88,7 +88,7 @@ export default function VisioWindow({ roomName, displayName, onClose }) {
                     handleClose();
                 });
             } catch (err) {
-                console.error('[VisioWindow] Erreur d\'initialisation:', err);
+                if (import.meta.env.DEV) console.error('[VisioWindow] Erreur d\'initialisation:', err);
                 setStatus('error');
             }
         }

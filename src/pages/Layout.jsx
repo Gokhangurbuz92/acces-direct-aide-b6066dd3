@@ -81,7 +81,7 @@ export default function Layout({ children, currentPageName }) {
           setIsAdmin(true);
         }
       } catch (error) {
-        console.error('Error checking admin status:', error);
+        if (import.meta.env.DEV) console.error('Error checking admin status:', error);
       }
     };
     checkAdmin();

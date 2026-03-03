@@ -1,3 +1,4 @@
+import logger from "../../_utils/logger.js";
 
 import prisma from '../../_utils/prisma.js';
 import { startOfDay, endOfDay, addDays, format, parse, addMinutes, isBefore, isAfter } from 'date-fns';
@@ -149,7 +150,7 @@ export default async function handler(req, res) {
         return res.status(200).json({ slots: availabilityMap });
 
     } catch (e) {
-        console.error("Slots API Error", e);
+        logger.error("Slots API Error", e);
         return res.status(500).json({ error: "Internal Error" });
     }
 }

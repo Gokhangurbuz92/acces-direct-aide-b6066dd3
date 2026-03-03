@@ -1,3 +1,4 @@
+import logger from "../../_utils/logger.js";
 import prisma from '../../_utils/prisma.js';
 import { verifyAdmin, resolveAuthContext } from '../../_utils/auth.js';
 import { restoreVersion } from '../../_utils/snapshot.js';
@@ -40,7 +41,7 @@ export default async function handler(req, res) {
 
         return res.status(405).json({ error: "Method not allowed" });
     } catch (e) {
-        console.error('Versions API Error:', e);
+        logger.error('Versions API Error:', e);
         return res.status(500).json({ error: e.message });
     }
 }

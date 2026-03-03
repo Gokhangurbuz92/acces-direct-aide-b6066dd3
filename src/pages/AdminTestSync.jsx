@@ -188,15 +188,15 @@ function DiagnosticPingCard() {
 
   const pingMutation = useMutation({
     mutationFn: async () => {
-      void('Invoking debug_ping...');
+      void ('Invoking debug_ping...');
       return await client.functions.invoke('debug_ping', { hello: 'world' });
     },
     onSuccess: (data) => {
-      void('Ping success:', data);
+      void ('Ping success:', data);
       setResult({ success: true, data });
     },
     onError: (error) => {
-      console.error('Ping failed:', error);
+      if (import.meta.env.DEV) console.error('Ping failed:', error);
       setResult({ success: false, error });
     }
   });

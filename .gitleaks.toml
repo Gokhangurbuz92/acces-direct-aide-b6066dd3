@@ -16,3 +16,15 @@ id = "generic-api-key"
   paths = [
     '''data/demarches-alsace\.csv$''',
   ]
+
+  [[rules.allowlists]]
+  description = "False-positive: vault unit tests use deterministic test keys (not real secrets)"
+  paths = [
+    '''tests/unit/vault.*\.test\.(js|ts)$''',
+  ]
+
+  [[rules.allowlists]]
+  description = "False-positive: OAuth callback references env vars, not hardcoded secrets"
+  paths = [
+    '''api/_handlers/auth/outlook-callback\.js$''',
+  ]

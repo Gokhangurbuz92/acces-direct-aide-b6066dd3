@@ -82,8 +82,8 @@ test.describe('Accessibility — keyboard navigation', () => {
     test('Chat widget — focus trap and Esc close', async ({ page }) => {
         await page.goto('/');
 
-        // Find and click the chat FAB
-        const chatFab = page.locator('button[aria-label*="assistant"]');
+        // Find and click the chat FAB (Boussole Sociale)
+        const chatFab = page.locator('button[aria-label*="Boussole"]');
         await chatFab.click();
 
         // Chat dialog should open with role="dialog"

@@ -108,6 +108,7 @@ import diagnostic from './_handlers/diagnostic.js';
 // --- Assistant (AI) ---
 import assistantChat from './_handlers/assistant/chat.js';
 import assistantRecommendations from './_handlers/assistant/recommendations.js';
+import publicAssistantOrient from './_handlers/public/assistant/orient.js';
 
 // --- Cron ---
 import cronPipeline from './_handlers/cron/pipeline.js';
@@ -229,6 +230,7 @@ export const routes = [
     { path: 'public/passport', match: 'exact', handler: publicPassport },
     { path: 'public/sms-notify', match: 'exact', handler: publicSmsNotify },
     { path: 'public/falc/summarize', match: 'exact', handler: publicFalcSummarize },
+    { path: 'public/assistant/orient', match: 'exact', handler: publicAssistantOrient },
     { path: 'messages', match: 'prefix', handler: rdvMessages },
     { path: 'public/suggest-structure', match: 'exact', handler: publicSuggestStructure },
     { path: 'public/stats', match: 'exact', handler: publicStats },

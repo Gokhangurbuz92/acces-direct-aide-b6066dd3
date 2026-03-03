@@ -1,5 +1,4 @@
-import logger from "../../_utils/logger.js";
-
+import logger from '../../_utils/logger.js';
 import prisma from '../../_utils/prisma.js';
 import { verifyAdmin } from '../../_utils/auth.js';
 

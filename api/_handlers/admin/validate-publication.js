@@ -1,6 +1,6 @@
+import logger from '../../_utils/logger.js';
 import prisma from '../../_utils/prisma.js';
 import { validateForPublication, generateValidationReport } from '../../lib/publication-validator.js';
-import logger from '../../_utils/logger.js';
 import Sentry from '../../_utils/sentry.js';
 import { env } from '../../_utils/env.js';
 import { verifyAdmin } from '../../_utils/auth.js';

@@ -1,6 +1,4 @@
-import logger from "../../_utils/logger.js";
-
-
+import logger from '../_utils/logger.js';
 import prisma from '../_utils/prisma.js';
 import { verifyAttachmentToken, decrypt, decryptBuffer } from '../lib/crypto.js';
 import { storage } from '../lib/storage.js';

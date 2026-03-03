@@ -1,7 +1,7 @@
+import logger from '../../_utils/logger.js';
 import { randomUUID } from 'crypto';
 import prisma from '../../_utils/prisma.js';
 import { env } from '../../_utils/env.js';
-import logger from '../../_utils/logger.js';
 import { applyNoIndex } from '../../_utils/robots.js';
 import Sentry from '../../_utils/sentry.js';
 import { getProRdvReadiness, REQUIRED_PRO_RDV_MIGRATIONS, REQUIRED_PRO_RDV_TABLES } from '../../_utils/pro-rdv-readiness.js';

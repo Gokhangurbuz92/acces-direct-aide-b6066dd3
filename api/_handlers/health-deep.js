@@ -1,3 +1,4 @@
+import logger from '../_utils/logger.js';
 import { randomUUID } from 'crypto';
 import { HeadBucketCommand, S3Client } from '@aws-sdk/client-s3';
 import prisma from '../_utils/prisma.js';
@@ -6,7 +7,6 @@ import { verifyAdmin } from '../_utils/auth.js';
 import { getCronAuth } from '../_utils/cronAuth.js';
 import { getActualitesCronFreshness } from '../_utils/cron-freshness.js';
 import { kv } from '../_utils/kv.js';
-import logger from '../_utils/logger.js';
 import Sentry from '../_utils/sentry.js';
 
 const TIMEOUT_MS = 2000;

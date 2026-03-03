@@ -1,5 +1,4 @@
-import logger from "../../_utils/logger.js";
-
+import logger from '../../../_utils/logger.js';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 
 const mocks = vi.hoisted(() => ({

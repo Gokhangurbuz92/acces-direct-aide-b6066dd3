@@ -394,7 +394,7 @@ function ResultsDisplay({ results, situation }) {
         try {
             generateSocialPassport(situation || {}, results);
         } catch (err) {
-            console.error('[PDF] Generation failed:', err);
+            if (import.meta.env.DEV) console.error('[PDF] Generation failed:', err);
         }
     };
 
@@ -417,7 +417,7 @@ function ResultsDisplay({ results, situation }) {
 
             setTimeout(() => setShareState((s) => ({ ...s, copied: false })), 4000);
         } catch (err) {
-            console.error('[Share] Error:', err);
+            if (import.meta.env.DEV) console.error('[Share] Error:', err);
             setShareState({ loading: false, url: null, copied: false });
         }
     };
@@ -494,8 +494,8 @@ function ResultsDisplay({ results, situation }) {
                     onClick={handleShare}
                     disabled={shareState.loading}
                     className={`flex items-center justify-center gap-3 rounded-2xl border-2 px-5 py-4 text-sm font-bold transition-all active:scale-[0.98] ${shareState.copied
-                            ? 'border-emerald-300 bg-emerald-50 text-emerald-700'
-                            : 'border-slate-200 bg-white text-slate-700 hover:border-indigo-300 hover:bg-indigo-50 hover:text-indigo-700 hover:shadow-md'
+                        ? 'border-emerald-300 bg-emerald-50 text-emerald-700'
+                        : 'border-slate-200 bg-white text-slate-700 hover:border-indigo-300 hover:bg-indigo-50 hover:text-indigo-700 hover:shadow-md'
                         }`}
                 >
                     {shareState.loading ? (

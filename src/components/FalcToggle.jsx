@@ -22,7 +22,7 @@ export default function FalcToggle({ hasFalcContent, onChange, className = '' })
       }
     } catch (error) {
       // localStorage might be unavailable (private browsing, etc.)
-      console.warn('localStorage unavailable:', error);
+      if (import.meta.env.DEV) console.warn('localStorage unavailable:', error);
     }
   }, [hasFalcContent, onChange]);
 
@@ -36,7 +36,7 @@ export default function FalcToggle({ hasFalcContent, onChange, className = '' })
     try {
       localStorage.setItem('falc-mode-preference', String(newValue));
     } catch (error) {
-      console.warn('Failed to save preference:', error);
+      if (import.meta.env.DEV) console.warn('Failed to save preference:', error);
     }
   };
 

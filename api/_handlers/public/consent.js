@@ -1,3 +1,4 @@
+import logger from "../../_utils/logger.js";
 import prisma from '../../_utils/prisma.js';
 /**
  * @param {import('../../_utils/http-types').ApiRequest} req
@@ -37,7 +38,7 @@ export default async function handler(req, res) {
 
         return res.status(200).json({ success: true, message: "Consent logged" });
     } catch (e) {
-        console.error('Consent Log Error:', e);
+        logger.error('Consent Log Error:', e);
         return res.status(500).json({ error: "Internal Error" });
     }
 }

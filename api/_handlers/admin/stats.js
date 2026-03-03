@@ -1,3 +1,4 @@
+import logger from "../../_utils/logger.js";
 import prisma from '../../_utils/prisma.js';
 import { verifyAdmin } from '../../_utils/auth.js';
 import { getAllFlags } from '@ada/shared/features';
@@ -105,7 +106,7 @@ export default async function handler(req, res) {
             },
         });
     } catch (error) {
-        console.error('[Admin Stats Error]:', error);
+        logger.error('[Admin Stats Error]:', error);
         return res.status(500).json({ success: false, error: 'Erreur lors de la récupération des stats' });
     }
 }

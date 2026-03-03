@@ -26,7 +26,7 @@ export default function Ressources() {
                     setRessources(data.items || []);
                 }
             } catch (err) {
-                console.error(err);
+                if (import.meta.env.DEV) console.error(err);
             } finally {
                 setLoading(false);
             }

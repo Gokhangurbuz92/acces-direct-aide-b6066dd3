@@ -1,6 +1,7 @@
 
 import { createClient } from '@vercel/kv';
 import { env } from './env.js';
+import logger from './logger.js';
 
 
 
@@ -14,7 +15,7 @@ if (env.kv.url && env.kv.token) {
         token: env.kv.token
     });
 } else {
-    console.warn("[KV] Missing Credentials - Using Memory Store (Dev Mode)");
+    logger.warn("[KV] Missing Credentials - Using Memory Store (Dev Mode)");
 }
 
 export const kv = {

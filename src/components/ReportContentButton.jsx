@@ -95,7 +95,7 @@ export default function ReportContentButton({
       setFormData({ reason: '', message: '', reporterEmail: '' });
       setIsOpen(false);
     } catch (error) {
-      console.error('Report submission error:', error);
+      if (import.meta.env.DEV) console.error('Report submission error:', error);
       toast.error('Erreur lors de l\'envoi', {
         description: error.message || 'Veuillez réessayer plus tard.',
       });

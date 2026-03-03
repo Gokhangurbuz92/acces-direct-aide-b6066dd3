@@ -15,7 +15,7 @@ export default function GuideDetail() {
         fetch(`/api/guides?slug=${slug}`)
             .then(res => res.ok ? res.json() : null)
             .then(data => setGuide(data))
-            .catch(e => console.error(e))
+            .catch(e => { if (import.meta.env.DEV) console.error(e); })
             .finally(() => setLoading(false));
     }, [slug]);
 

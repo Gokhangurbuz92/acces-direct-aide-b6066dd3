@@ -32,7 +32,7 @@ export default function ProStructure() {
                 setIsProEnabled(data.structure.is_pro_enabled || false);
             }
         } catch (e) {
-            console.error(e);
+            if (import.meta.env.DEV) console.error(e);
         } finally {
             setLoading(false);
         }
@@ -75,7 +75,7 @@ export default function ProStructure() {
                 alert("Erreur lors de la sauvegarde");
             }
         } catch (e) {
-            console.error(e);
+            if (import.meta.env.DEV) console.error(e);
         } finally {
             setSaving(false);
         }

@@ -1,3 +1,4 @@
+import logger from "../../_utils/logger.js";
 
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 
@@ -135,10 +136,6 @@ describe('GDPR Endpoints', () => {
             mocks.prisma.auditLog.create.mockResolvedValue({ id: 'audit1' });
 
             await deleteHandler(req, res);
-
-            if (mocks.logger.error.mock.calls.length > 0) {
-                console.log("Logger Error Calls (Delete):", JSON.stringify(mocks.logger.error.mock.calls, null, 2));
-            }
 
             expect(mocks.prisma.proUser.deleteMany).toHaveBeenCalledWith({ where: { email: 'test@example.com' } });
             expect(mocks.prisma.beneficiary.updateMany).toHaveBeenCalledWith({

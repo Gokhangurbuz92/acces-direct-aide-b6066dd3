@@ -64,7 +64,7 @@ export default function ProDashboard() {
                 setTeamMembers(data.users || []);
             }
         } catch (e) {
-            console.error('[ProDashboard] Erreur:', e);
+            if (import.meta.env.DEV) console.error('[ProDashboard] Erreur:', e);
         } finally {
             setLoading(false);
         }

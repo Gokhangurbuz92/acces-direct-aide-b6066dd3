@@ -1,3 +1,4 @@
+import logger from "../../_utils/logger.js";
 // @ts-nocheck
 import prisma from '../../_utils/prisma.js';
 
@@ -80,7 +81,7 @@ export default async function handler(req, res) {
             },
         });
     } catch (error) {
-        console.error('[Passport] Erreur:', error.message);
+        logger.error('[Passport] Erreur:', error.message);
         return res.status(500).json({ error: 'Erreur interne.' });
     }
 }

@@ -1,3 +1,4 @@
+import logger from "../../_utils/logger.js";
 import { checkRateLimit } from '../_utils/rateLimit.js';
 import { env } from '../_utils/env.js';
 /**
@@ -24,7 +25,7 @@ export default async function handler(req, res) {
             backend_hint: env.kv.url && env.kv.token ? 'KV_REST_API' : 'MEMORY'
         });
     } catch (error) {
-        console.error("Rate Limit Test Error:", error);
+        logger.error("Rate Limit Test Error:", error);
         return res.status(500).json({ error: error.message });
     }
 }

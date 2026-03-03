@@ -22,7 +22,7 @@ function save(key, data) {
         };
         localStorage.setItem(key, JSON.stringify(payload));
     } catch (error) {
-        console.error('[Storage] Erreur lors de la sauvegarde :', error);
+        if (import.meta.env.DEV) console.error('[Storage] Erreur lors de la sauvegarde :', error);
     }
 }
 

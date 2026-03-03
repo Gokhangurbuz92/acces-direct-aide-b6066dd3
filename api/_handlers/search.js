@@ -1,3 +1,4 @@
+import logger from "../../_utils/logger.js";
 import prisma from '../_utils/prisma.js';
 import { checkRateLimit, getClientIp } from '../_utils/rateLimit.js';
 import { hybridSearchSchema } from '../_utils/validators.js';
@@ -34,7 +35,7 @@ export default async function handler(req, res) {
     try {
       embedding = await generateEmbedding(payload.query);
     } catch (embeddingError) {
-      console.warn('[search] embedding generation failed, continuing lexical-only', embeddingError.message);
+      logger.warn('[search] embedding generation failed, continuing lexical-only', embeddingError.message);
     }
 
     const { items, total, weakResult } = await searchAidesHybrid(prisma, {
@@ -60,7 +61,7 @@ export default async function handler(req, res) {
       message: null,
     });
   } catch (error) {
-    console.error('Search handler error:', error);
+    logger.error('Search handler error:', error);
     return res.status(500).json({
       error: 'Internal server error',
     });

@@ -1,3 +1,4 @@
+import logger from "../../_utils/logger.js";
 // @ts-nocheck
 import prisma from '../_utils/prisma.js';
 
@@ -101,7 +102,7 @@ export default async function handler(req, res) {
 
         return res.status(405).json({ error: 'Méthode non autorisée' });
     } catch (error) {
-        console.error('[API Secure Messages] Erreur:', error);
+        logger.error('[API Secure Messages] Erreur:', error);
         return res.status(500).json({ error: 'Erreur serveur interne' });
     }
 }

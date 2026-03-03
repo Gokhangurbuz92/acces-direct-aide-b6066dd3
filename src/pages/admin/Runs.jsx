@@ -11,7 +11,7 @@ export default function AdminRuns() {
     const [runs, setRuns] = useState([]);
 
     useEffect(() => {
-        apiClient.admin.getRuns().then(res => setRuns(res.data)).catch(console.error);
+        apiClient.admin.getRuns().then(res => setRuns(res.data)).catch(e => { if (import.meta.env.DEV) console.error(e); });
     }, []);
 
     return (

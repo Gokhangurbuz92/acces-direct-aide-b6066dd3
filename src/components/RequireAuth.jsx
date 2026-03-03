@@ -24,7 +24,7 @@ export default function RequireAuth({ children }) {
                     setIsAuthorized(false);
                 }
             } catch (err) {
-                console.error("Auth check failed", err);
+                if (import.meta.env.DEV) console.error("Auth check failed", err);
                 setIsAuthorized(false);
             }
         };

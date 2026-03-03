@@ -11,7 +11,7 @@ export default function Impact() {
         fetch('/api/public/stats')
             .then(res => res.json())
             .then(data => setStats(data))
-            .catch(e => console.error(e))
+            .catch(e => { if (import.meta.env.DEV) console.error(e); })
             .finally(() => setLoading(false));
     }, []);
 

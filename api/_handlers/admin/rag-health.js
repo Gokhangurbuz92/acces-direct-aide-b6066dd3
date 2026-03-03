@@ -1,3 +1,4 @@
+import logger from '../../_utils/logger.js';
 import prisma from '../../_utils/prisma.js';
 import { verifyAdmin } from '../../_utils/auth.js';
 
@@ -46,7 +47,7 @@ export default async function handler(req, res) {
             })),
         });
     } catch (error) {
-        console.error('[Admin RAG Health Error]:', error);
+        logger.error('[Admin RAG Health Error]:', error);
         return res.status(500).json({ success: false, error: 'Erreur lors de la récupération du statut RAG' });
     }
 }

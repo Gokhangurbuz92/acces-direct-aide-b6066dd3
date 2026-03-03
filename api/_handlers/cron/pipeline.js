@@ -1,5 +1,4 @@
 import logger from '../../_utils/logger.js';
-
 import { getCronAuth } from '../../_utils/cronAuth.js';
 import prisma from '../../_utils/prisma.js';
 import crypto from 'crypto';

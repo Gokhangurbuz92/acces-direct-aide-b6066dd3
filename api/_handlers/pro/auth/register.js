@@ -1,5 +1,5 @@
-import bcrypt from 'bcryptjs';
 import logger from '../../../_utils/logger.js';
+import bcrypt from 'bcryptjs';
 import { signProToken, logProAudit } from '../../../lib/pro-auth.js';
 import { checkRateLimit, getClientIp } from '../../../_utils/rateLimit.js';
 import prisma from '../../../_utils/prisma.js';

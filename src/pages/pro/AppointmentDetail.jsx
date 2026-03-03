@@ -31,7 +31,7 @@ export default function ProAppointmentDetail() {
                     setAppointment(data[0]);
                 }
             })
-            .catch(console.error)
+            .catch(e => { if (import.meta.env.DEV) console.error(e); })
             .finally(() => setLoadingAppt(false));
     }, [id, token]);
 
@@ -49,7 +49,7 @@ export default function ProAppointmentDetail() {
         })
             .then(res => res.json())
             .then(data => setMessages(data.messages || []))
-            .catch(console.error)
+            .catch(e => { if (import.meta.env.DEV) console.error(e); })
             .finally(() => setLoadingMsgs(false));
     }, [id, token]);
 

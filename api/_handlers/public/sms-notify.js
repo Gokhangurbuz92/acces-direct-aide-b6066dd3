@@ -9,7 +9,7 @@ import { logProAudit } from '../../lib/pro-auth.js';
  * POST /api/public/sms-notify
  *
  * Registers an SMS reminder for an appointment. In production,
- * this connects to Twilio/Vonage. Currently logs to console.
+ * this connects to Twilio/Vonage. Currently logs via structured logger.
  *
  * Body:
  * - appointmentId: string

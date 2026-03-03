@@ -1,4 +1,5 @@
 import prisma from './prisma.js';
+import logger from './logger.js';
 
 /**
  * Creates a version snapshot of an entity before update.
@@ -25,7 +26,7 @@ export async function createSnapshot(type, id, actorEmail) {
             }
         });
     } catch (e) {
-        console.error(`Failed to create snapshot for ${type}:${id}`, e);
+        logger.error(`Failed to create snapshot for ${type}:${id}`, e);
     }
 }
 

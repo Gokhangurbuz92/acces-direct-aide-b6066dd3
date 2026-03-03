@@ -1,3 +1,4 @@
+import logger from '../../_utils/logger.js';
 import prisma from '../../_utils/prisma.js';
 import { verifyAdmin } from '../../_utils/auth.js';
 
@@ -103,7 +104,7 @@ export default async function handler(req, res) {
             data: { logs, stats: { ...modeStats, positive, negative } },
         });
     } catch (error) {
-        console.error('[Admin Conversations Error]:', error);
+        logger.error('[Admin Conversations Error]:', error);
         return res.status(200).json({
             success: true,
             data: { logs: [], stats: { total: 0, rag: 0, lexical: 0, static: 0 } },

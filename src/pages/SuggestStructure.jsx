@@ -47,7 +47,7 @@ export default function SuggestStructure() {
             setStatus('success');
             setForm({ structureName: '', city: '', type: 'Association', website: '', email: '', message: '', consent: false, honeypot: '' });
         } catch (err) {
-            console.error(err);
+            if (import.meta.env.DEV) console.error(err);
             setStatus('error');
             setErrorMsg(err.message);
         }

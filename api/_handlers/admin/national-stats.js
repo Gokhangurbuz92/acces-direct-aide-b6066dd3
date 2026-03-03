@@ -1,3 +1,4 @@
+import logger from '../../_utils/logger.js';
 import prisma from '../../_utils/prisma.js';
 import { verifyAdmin } from '../../_utils/auth.js';
 
@@ -83,7 +84,7 @@ export default async function handler(req, res) {
             },
         });
     } catch (error) {
-        console.error('[National Stats Error]:', error.message);
+        logger.error('[National Stats Error]:', error.message);
         return res.status(500).json({
             success: false,
             error: 'Échec de la récupération des statistiques nationales',

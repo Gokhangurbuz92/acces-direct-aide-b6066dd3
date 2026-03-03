@@ -59,7 +59,7 @@ export default function BeneficiaryMessages() {
             setMessages(data.messages || []);
             setError(null);
         } catch (e) {
-            console.error(e);
+            if (import.meta.env.DEV) console.error(e);
             setError('SERVER');
         } finally {
             setLoading(false);

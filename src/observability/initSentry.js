@@ -18,7 +18,7 @@ export async function initSentry() {
       dsn,
       release: frontendEnv.runtime.gitCommitSha,
       environment: DEPLOY_ENV,
-      
+
       integrations: [
         Sentry.browserTracingIntegration(),
         Sentry.replayIntegration(),
@@ -37,6 +37,6 @@ export async function initSentry() {
 
     sentryRef.current = Sentry;
   } catch (error) {
-    console.error("Failed to load Sentry", error);
+    if (import.meta.env.DEV) console.error("Failed to load Sentry", error);
   }
 }

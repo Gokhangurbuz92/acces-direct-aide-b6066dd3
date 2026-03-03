@@ -1,9 +1,8 @@
+import logger from '../../_utils/logger.js';
 // @ts-nocheck
 import prisma from '../../_utils/prisma.js';
 import { requireProRole } from '../../_utils/auth.js';
 import crypto from 'crypto';
-import logger from '../../_utils/logger.js';
-
 /**
  * System Maintenance API (Pro — Admin only)
  *

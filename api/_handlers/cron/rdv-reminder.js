@@ -1,8 +1,8 @@
+import logger from '../../_utils/logger.js';
 // @ts-nocheck
 import { getCronAuth } from '../../_utils/cronAuth.js';
 import prisma from '../../_utils/prisma.js';
 import { sendMail } from '../../_utils/mailer.js';
-import logger from '../../_utils/logger.js';
 import { createNotification } from '../../_handlers/pro/notifications.js';
 
 /**

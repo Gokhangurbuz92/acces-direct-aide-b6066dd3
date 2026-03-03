@@ -68,7 +68,7 @@ export default function ProTeam() {
                 setStats(await statsRes.value.json());
             }
         } catch (e) {
-            console.error('[ProTeam] Erreur:', e);
+            if (import.meta.env.DEV) console.error('[ProTeam] Erreur:', e);
         } finally {
             setLoading(false);
         }
@@ -96,7 +96,7 @@ export default function ProTeam() {
                 alert('Erreur: ' + err.error);
             }
         } catch (e) {
-            console.error(e);
+            if (import.meta.env.DEV) console.error(e);
         }
     };
 

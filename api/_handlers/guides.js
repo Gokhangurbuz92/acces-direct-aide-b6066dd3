@@ -1,4 +1,4 @@
-
+import logger from '../_utils/logger.js';
 import prisma from '../_utils/prisma.js';
 import jwt from 'jsonwebtoken';
 import { env } from '../_utils/env.js';
@@ -158,7 +158,7 @@ export default async function handler(req, res) {
         res.status(405).json({ error: "Method not allowed" });
 
     } catch (e) {
-        console.error(e);
+        logger.error(e);
         res.status(500).json({ error: e.message });
     }
 }

@@ -1,4 +1,5 @@
 import { env } from './env.js';
+import logger from './logger.js';
 
 /**
  * @typedef {{
@@ -27,7 +28,7 @@ function getProvider() {
 function warnProviderOnce(provider) {
   if (warnedProviders.has(provider)) return;
   warnedProviders.add(provider);
-  console.warn(`[mailer] Provider "${provider}" is not configured for runtime delivery; using safe no-op.`);
+  logger.warn(`[mailer] Provider "${provider}" is not configured for runtime delivery; using safe no-op.`);
 }
 
 /**
@@ -81,7 +82,7 @@ export async function sendMail(payload) {
     const apiKey = String(env.mailer.apiKey || '').trim();
     if (!apiKey || !apiKey.includes(':')) {
       warnProviderOnce('mailjet_missing_key');
-      console.error('[mailer] MAILER_API_KEY must be in "publicKey:secretKey" format for Mailjet.');
+      logger.error('[mailer] MAILER_API_KEY must be in "publicKey:secretKey" format for Mailjet.');
       return { accepted: true, delivered: false, provider };
     }
     if (!from) {
@@ -113,17 +114,17 @@ export async function sendMail(payload) {
 
       if (!mjResponse.ok) {
         const errBody = await mjResponse.text().catch(() => '');
-        console.error(`[mailer] Mailjet API error (${mjResponse.status}): ${errBody}`);
+        logger.error(`[mailer] Mailjet API error (${mjResponse.status}): ${errBody}`);
         return { accepted: true, delivered: false, provider };
       }
 
       const mjResult = await mjResponse.json();
       const firstMessage = mjResult?.Messages?.[0];
       const status = firstMessage?.Status;
-      console.info(`[mailer] Mailjet sent to=${payload.to} status=${status} id=${firstMessage?.To?.[0]?.MessageID || 'n/a'}`);
+      logger.info(`[mailer] Mailjet sent to=${payload.to} status=${status} id=${firstMessage?.To?.[0]?.MessageID || 'n/a'}`);
       return { accepted: true, delivered: status === 'success', provider };
     } catch (err) {
-      console.error('[mailer] Mailjet fetch error:', err.message);
+      logger.error('[mailer] Mailjet fetch error:', err.message);
       return { accepted: true, delivered: false, provider };
     }
   }
@@ -152,13 +153,13 @@ export async function sendMail(payload) {
       });
       if (!resendResponse.ok) {
         const errBody = await resendResponse.text().catch(() => '');
-        console.error(`[mailer] Resend error (${resendResponse.status}): ${errBody}`);
+        logger.error(`[mailer] Resend error (${resendResponse.status}): ${errBody}`);
         return { accepted: true, delivered: false, provider };
       }
-      console.info(`[mailer] Resend sent to=${payload.to}`);
+      logger.info(`[mailer] Resend sent to=${payload.to}`);
       return { accepted: true, delivered: true, provider };
     } catch (err) {
-      console.error('[mailer] Resend fetch error:', err.message);
+      logger.error('[mailer] Resend fetch error:', err.message);
       return { accepted: true, delivered: false, provider };
     }
   }

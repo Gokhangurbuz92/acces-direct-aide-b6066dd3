@@ -24,7 +24,7 @@ export default function FeedbackButtons({ logId }) {
                 body: JSON.stringify({ logId, rating, comment: text || undefined }),
             });
         } catch (err) {
-            console.error('[Feedback] Send error:', err);
+            if (import.meta.env.DEV) console.error('[Feedback] Send error:', err);
         }
     };
 

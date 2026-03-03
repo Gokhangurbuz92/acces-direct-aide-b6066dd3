@@ -1,4 +1,5 @@
 // Native fetch used
+import logger from './logger.js';
 
 /**
  * Geocode an address string using the official French "API Adresse" (BAN).
@@ -13,7 +14,7 @@ export async function geocodeAddress(address) {
         const res = await fetch(url);
 
         if (!res.ok) {
-            console.error(`Geocoding error: ${res.status} ${res.statusText}`);
+            logger.error(`Geocoding error: ${res.status} ${res.statusText}`);
             return null;
         }
 
@@ -33,7 +34,7 @@ export async function geocodeAddress(address) {
 
         return null;
     } catch (error) {
-        console.error(`Geocoding failed for "${address}":`, error.message);
+        logger.error(`Geocoding failed for "${address}":`, error.message);
         return null;
     }
 }

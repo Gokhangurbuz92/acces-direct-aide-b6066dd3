@@ -1,9 +1,8 @@
+import logger from '../../_utils/logger.js';
 // @ts-nocheck
 import prisma from '../../_utils/prisma.js';
 import { env } from '../../_utils/env.js';
 import { requireProAuth } from '../../_utils/auth.js';
-import logger from '../../_utils/logger.js';
-
 /**
  * Health Check API (Pro-only)
  *

@@ -1,7 +1,7 @@
+import logger from '../../_utils/logger.js';
 import { randomUUID } from 'crypto';
 import prisma from '../../_utils/prisma.js';
 import { env } from '../../_utils/env.js';
-import logger from '../../_utils/logger.js';
 import { applyNoIndex } from '../../_utils/robots.js';
 
 const TIMEOUT_MS = 2000;

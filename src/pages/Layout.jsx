@@ -215,7 +215,7 @@ export default function Layout({ children, currentPageName }) {
       </a>
 
       {/* Header */}
-      <header className="bg-surface border-b border-border sticky top-0 z-40 shadow-sm">
+      <header role="banner" className="bg-surface border-b border-border sticky top-0 z-40 shadow-sm">
         <div className="max-w-7xl mx-auto px-4 sm:px-6">
           <div className="flex items-center justify-between h-16">
             {/* Logo */}
@@ -420,7 +420,7 @@ export default function Layout({ children, currentPageName }) {
       </main>
 
       {/* Footer */}
-      <footer className="bg-brand-primary text-white">
+      <footer role="contentinfo" className="bg-brand-primary text-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 py-12">
           <div className="grid grid-cols-1 gap-8 sm:grid-cols-2 md:grid-cols-4">
             {/* Logo et description */}

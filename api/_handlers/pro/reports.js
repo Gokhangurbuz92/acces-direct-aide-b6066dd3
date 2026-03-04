@@ -132,6 +132,25 @@ async function handler(req, res) {
         const cancelledCount = byStatus.find((s) => s.status === 'cancelled')?._count?.id || 0;
         const completedCount = totalAppointments - cancelledCount;
 
+        // 9. SMS Notification Impact (Phase 3 — No-show prevention)
+        const smsNotifications = await prisma.rdvNotificationLog.count({
+            where: {
+                conversation: { structureId },
+                sentAt: { gte: startDate },
+            },
+        });
+        // DITP estimation: SMS reminders reduce no-shows by ~35%
+        const noShowCount = byStatus.find((s) => s.status === 'noshow' || s.status === 'NOSHOW')?._count?.id || 0;
+        const avoidedNoShows = Math.round(smsNotifications * 0.35);
+
+        // 10. Boussole Sociale — Orientation sessions
+        const compassSessions = await prisma.conversationLog.count({
+            where: {
+                searchMode: 'compass',
+                createdAt: { gte: startDate },
+            },
+        });
+
         return res.status(200).json({
             ok: true,
             period,
@@ -146,6 +165,15 @@ async function handler(req, res) {
                 conversations: conversationsCount,
                 diagnosticsShared: diagnosticsCount,
                 teamSize,
+                // Phase 3 — SMS Impact
+                smsNotifications,
+                noShowCount,
+                avoidedNoShows,
+                smsImpactRate: totalAppointments > 0
+                    ? Math.round((smsNotifications / totalAppointments) * 100)
+                    : 0,
+                // Phase 3 — Boussole Sociale
+                compassSessions,
             },
             dailyActivity,
             themes,

@@ -45,7 +45,7 @@ export default function StepDiagnostic({ onNext, onBack }) {
                 Vos informations pour le calcul
             </h2>
             <div className="flex items-center justify-between mb-5">
-                <p className="text-sm text-slate-500">
+                <p className="text-sm text-slate-600">
                     Ces données sont envoyées de manière anonyme au moteur de calcul. Rien n&apos;est enregistré.
                 </p>
                 <VoiceAssistant

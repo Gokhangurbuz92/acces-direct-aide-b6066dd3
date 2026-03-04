@@ -26,7 +26,7 @@ export default function StepUrgency({ onNext, onBack }) {
     return (
         <div>
             <h2 className="mb-1 text-lg font-semibold text-slate-900">Niveau d&apos;urgence</h2>
-            <p className="mb-4 text-sm text-slate-500">Pour prioriser les recommandations.</p>
+            <p className="mb-4 text-sm text-slate-600">Pour prioriser les recommandations.</p>
 
             <fieldset className="mb-5">
                 <legend className="sr-only">Urgence</legend>

@@ -24,7 +24,7 @@ export default function StepProfile({ onNext, onBack }) {
     return (
         <div>
             <h2 className="mb-1 text-lg font-semibold text-slate-900">Votre situation</h2>
-            <p className="mb-4 text-sm text-slate-500">Ces informations restent anonymes et ne sont pas enregistrées.</p>
+            <p className="mb-4 text-sm text-slate-600">Ces informations restent anonymes et ne sont pas enregistrées.</p>
 
             <fieldset className="mb-4">
                 <legend className="mb-2 text-sm font-medium text-slate-700">Situation familiale</legend>

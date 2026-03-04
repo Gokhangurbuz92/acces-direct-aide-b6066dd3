@@ -70,12 +70,14 @@ export function signAdminSessionToken(payload = {}) {
 
   const role = payload.role || AUTH_ROLE.ADMIN;
   const email = payload.email || env.secrets.adminEmail || 'admin@accesdirectaide.fr';
+  const mfa_verified = payload.mfa_verified === true;
 
   return signJwt(
     {
       scope: 'admin',
       role,
       email,
+      mfa_verified,
     },
     secret,
     {
@@ -112,6 +114,7 @@ export function verifyAdminSessionToken(token) {
       scope: decoded.scope,
       role: decoded.role,
       email: typeof decoded.email === 'string' ? decoded.email : undefined,
+      mfa_verified: decoded.mfa_verified === true,
     };
   } catch {
     return null;
@@ -181,17 +184,18 @@ export function resolveAuthContext(req) {
       role: normalizeRole(adminSession.role),
       authType: 'admin_jwt',
       email: adminSession.email || env.secrets.adminEmail || 'admin@accesdirectaide.fr',
+      mfa_verified: adminSession.mfa_verified === true,
     };
   }
 
   const proClaims = verifyProToken(token);
   if (proClaims && typeof proClaims === 'object') {
     return {
-      role: normalizeRole(/** @type {any} */ (proClaims).role),
+      role: normalizeRole(/** @type {any} */(proClaims).role),
       authType: 'pro_jwt',
       email: /** @type {any} */ (proClaims).email,
-      userId: String(/** @type {any} */ (proClaims).userId || ''),
-      structureId: String(/** @type {any} */ (proClaims).structureId || ''),
+      userId: String(/** @type {any} */(proClaims).userId || ''),
+      structureId: String(/** @type {any} */(proClaims).structureId || ''),
     };
   }
 
@@ -293,9 +297,25 @@ export function requireAdminAuth(handler) {
     req.auth = {
       ...auth,
       role: normalizeRole(auth.role),
+      mfa_verified: auth.mfa_verified === true,
     };
     return handler(req, res);
   };
+}
+
+/**
+ * Strict admin auth guard that ALSO requires MFA verification.
+ * Returns 403 with { error: 'MFA required' } if mfa_verified claim missing.
+ *
+ * @param {(req: import('./http-types').ApiRequest, res: import('./http-types').ApiResponse) => any} handler
+ */
+export function requireAdminMfa(handler) {
+  return requireAdminAuth(async function mfaWrapped(req, res) {
+    if (!req.auth?.mfa_verified) {
+      return res.status(403).json({ error: 'MFA required', mfa_required: true });
+    }
+    return handler(req, res);
+  });
 }
 
 /**

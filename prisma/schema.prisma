@@ -493,6 +493,10 @@ model AdminUser {
   failedLoginAttempts Int       @default(0)
   lastLogin           DateTime?
   lockoutUntil        DateTime?
+  // MFA TOTP (RFC 6238) — secret encrypted with AES-256-GCM via vault.js
+  mfaSecret           String?   // Encrypted TOTP seed (ciphertext:authTag)
+  mfaIv               String?   // Initialization vector (hex)
+  mfaEnabled          Boolean   @default(false)
 }
 
 model CitizenUser {

@@ -140,6 +140,8 @@ import adminConversations from './_handlers/admin/conversations.js';
 import adminAnalytics from './_handlers/admin/analytics.js';
 import adminHiveRepair from './_handlers/admin/hive-repair.js';
 import adminBulkRepair from './_handlers/admin/bulk-repair.js';
+import adminMfaSetup from './_handlers/admin/mfa-setup.js';
+import adminMfaVerify from './_handlers/admin/mfa-verify.js';
 import shareCreate from './_handlers/share/create.js';
 import shareGet from './_handlers/share/get.js';
 import assistantFeedback from './_handlers/assistant/feedback.js';
@@ -292,6 +294,8 @@ export const routes = [
     { path: 'admin/analytics', match: 'exact', handler: adminAnalytics },
     { path: 'admin/hive-repair', match: 'exact', handler: adminHiveRepair },
     { path: 'admin/bulk-repair', match: 'exact', handler: adminBulkRepair },
+    { path: 'admin/mfa-setup', match: 'exact', handler: adminMfaSetup },
+    { path: 'admin/mfa-verify', match: 'exact', handler: adminMfaVerify },
 
     // --- Share ---
     { path: 'share/create', match: 'exact', handler: shareCreate },

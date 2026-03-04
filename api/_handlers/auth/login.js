@@ -36,11 +36,20 @@ export default async function handler(req, res) {
     const adminCredentialsValid = Boolean(validPassword) && email === validEmail && password === validPassword;
 
     if (adminCredentialsValid) {
+        // Check if MFA is enabled for this admin
+        let adminUser = null;
+        try {
+            adminUser = await prisma.adminUser.findUnique({ where: { email } });
+        } catch {
+            // If DB unavailable, fall through to token-based auth
+        }
+
         let token = '';
 
         if (authMode === 'jwt') {
             try {
-                token = signAdminSessionToken({ email, role: 'admin' });
+                // Issue JWT WITHOUT mfa_verified — MFA step required separately
+                token = signAdminSessionToken({ email, role: 'admin', mfa_verified: false });
             } catch {
                 return res.status(500).json({ error: 'Server misconfiguration: AUTH_SECRET missing for jwt mode' });
             }
@@ -49,6 +58,18 @@ export default async function handler(req, res) {
             if (!token) {
                 return res.status(500).json({ error: 'Server misconfiguration: ADMIN_TOKEN missing' });
             }
+        }
+
+        // If MFA is enabled, return partial auth — client must complete MFA
+        if (adminUser?.mfaEnabled) {
+            return res.status(200).json({
+                success: true,
+                token, // Pre-MFA token (no mfa_verified claim)
+                authMode,
+                mfa_required: true,
+                step: 'MFA_VERIFY',
+                user: { email, role: 'admin' },
+            });
         }
 
         return res.status(200).json({

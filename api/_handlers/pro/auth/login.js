@@ -1,7 +1,8 @@
 import logger from '../../../_utils/logger.js';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
-import { signProToken, checkRateLimit, logProAudit } from '../../../lib/pro-auth.js';
+import { signProToken, logProAudit } from '../../../lib/pro-auth.js';
+import { checkRateLimit, getClientIp, getRateLimitStatus } from '../../../_utils/rateLimit.js';
 import prisma from '../../../_utils/prisma.js';
 import { env } from '../../../_utils/env.js';
 /**
@@ -15,24 +16,28 @@ export default async function handler(req, res) {
     }
 
     const { email, password } = req.body;
-    const rawIp = req.headers['x-forwarded-for'] || req.socket.remoteAddress;
-    const ip = rawIp ? String(rawIp).split(',')[0].trim() : 'unknown';
+    const ip = getClientIp(req);
 
     if (!email || !password) {
         return res.status(400).json({ error: "Email and password required" });
     }
 
-    // Rate Limit (Check IP and Email)
-    const ipLimit = await checkRateLimit(`ip:${ip}`);
+    // Rate Limit — Dual-key: IP + Email (P2 Bouclier Anti-Brute-Force)
+    // LOGIN_PRO: 5 attempts per 15 minutes (configured in rateLimit.js)
+    const ipLimit = await checkRateLimit('LOGIN_PRO', `ip:${ip}`);
     if (!ipLimit.allowed) {
-        return res.status(429).json({ error: "Too many attempts. Try again later." });
+        res.setHeader('Retry-After', '900');
+        return res.status(getRateLimitStatus(ipLimit)).json(
+            ipLimit.error || { error: "Trop de tentatives de connexion. Veuillez patienter 15 minutes." }
+        );
     }
 
-    // We don't rate limit email before checking existence to avoid DoS on specific accounts?
-    // But we need to prevent brute force.
-    const emailLimit = await checkRateLimit(`email:${email}`);
+    const emailLimit = await checkRateLimit('LOGIN_PRO', `email:${email}`);
     if (!emailLimit.allowed) {
-        return res.status(429).json({ error: "Too many attempts for this account." });
+        res.setHeader('Retry-After', '900');
+        return res.status(getRateLimitStatus(emailLimit)).json(
+            emailLimit.error || { error: "Trop de tentatives pour ce compte. Veuillez patienter 15 minutes." }
+        );
     }
 
     try {

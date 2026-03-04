@@ -121,7 +121,8 @@ export default function AppointmentRequest() {
                             Choisir un créneau
                         </h2>
                         {loadingSlots ? (
-                            <div className="p-4 bg-white rounded shadow text-center"><Loader2 className="animate-spin inline mr-2" /> Chargement des disponibilités...</div>
+                            <SkeletonList count={3} variant="card" />
+
                         ) : (
                             <div className="space-y-4">
                                 {Object.keys(slotsByDay).length === 0 && <p>Aucun créneau disponible pour le moment.</p>}

@@ -21,6 +21,7 @@ import {
 } from 'lucide-react';
 import { Button, buttonVariants } from "@/components/ui/button";
 import AccessibilityPanel from '@/components/ui/AccessibilityPanel';
+import HideScreenButton from '@/components/ui/HideScreenButton';
 import ChatAssistant from '@/components/chat/ChatAssistant';
 import { adminClient as client } from '@/api/client';
 import PropTypes from 'prop-types';
@@ -483,6 +484,9 @@ export default function Layout({ children, currentPageName }) {
 
       {/* Chat Assistant */}
       <ChatAssistant />
+
+      {/* Privacy Screen — Bouton "Cacher mon écran" */}
+      <HideScreenButton />
 
     </div>
   );

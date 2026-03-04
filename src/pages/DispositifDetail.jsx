@@ -12,7 +12,6 @@ import { Card, CardContent } from "@/components/ui/card";
 import {
   ArrowLeft,
   ChevronRight,
-  Loader2,
   ExternalLink,
   MapPin,
   Banknote,
@@ -28,16 +27,16 @@ export default function DispositifDetail() {
   const identifier = slug || id;
 
   const fetchDispositif = async () => {
-     let url = `/api/dispositifs?`;
-     if (slug) url += `slug=${slug}`;
-     else if (id) url += `id=${id}`;
+    let url = `/api/dispositifs?`;
+    if (slug) url += `slug=${slug}`;
+    else if (id) url += `id=${id}`;
 
-     const res = await fetch(url);
-     if (!res.ok) {
-         if (res.status === 404) return null;
-         throw new Error('Failed to fetch');
-     }
-     return res.json();
+    const res = await fetch(url);
+    if (!res.ok) {
+      if (res.status === 404) return null;
+      throw new Error('Failed to fetch');
+    }
+    return res.json();
   };
 
   const { data: dispositif, isLoading } = useQuery({
@@ -100,98 +99,98 @@ export default function DispositifDetail() {
 
         {/* Header */}
         <div className="bg-white rounded-2xl p-6 md:p-8 border border-slate-200 mb-6">
-            <div className="flex flex-wrap gap-2 mb-4">
-                 {dispositif.departement && (
-                    <Badge variant="outline" className="flex items-center gap-1">
-                        <MapPin className="h-3 w-3" />
-                        {dispositif.departement === '67' ? 'Bas-Rhin (67)' :
-                         dispositif.departement === '68' ? 'Haut-Rhin (68)' : dispositif.departement}
-                    </Badge>
-                 )}
-                 {dispositif.public && dispositif.public.map((p, i) => (
-                     <Badge key={i} className="bg-blue-100 text-blue-800">
-                         {p}
-                     </Badge>
-                 ))}
-            </div>
-
-            <h1 className="text-2xl md:text-3xl font-bold text-slate-900 mb-4">
-                {dispositif.titre}
-            </h1>
-
-            {dispositif.montant && (
-                <div className="flex items-center gap-2 text-green-700 font-medium bg-green-50 px-4 py-2 rounded-lg inline-flex mb-4">
-                    <Banknote className="h-5 w-5" />
-                    <span>{dispositif.montant}</span>
-                </div>
+          <div className="flex flex-wrap gap-2 mb-4">
+            {dispositif.departement && (
+              <Badge variant="outline" className="flex items-center gap-1">
+                <MapPin className="h-3 w-3" />
+                {dispositif.departement === '67' ? 'Bas-Rhin (67)' :
+                  dispositif.departement === '68' ? 'Haut-Rhin (68)' : dispositif.departement}
+              </Badge>
             )}
+            {dispositif.public && dispositif.public.map((p, i) => (
+              <Badge key={i} className="bg-blue-100 text-blue-800">
+                {p}
+              </Badge>
+            ))}
+          </div>
 
-            {/* Metadata / Source Info */}
-            <div className="text-xs text-slate-400 mt-4 border-t pt-4">
-                Source : {dispositif.source_url_exact ? 'Officielle' : 'Interne'} • Mis à jour le {new Date(dispositif.updatedAt).toLocaleDateString()}
+          <h1 className="text-2xl md:text-3xl font-bold text-slate-900 mb-4">
+            {dispositif.titre}
+          </h1>
+
+          {dispositif.montant && (
+            <div className="flex items-center gap-2 text-green-700 font-medium bg-green-50 px-4 py-2 rounded-lg inline-flex mb-4">
+              <Banknote className="h-5 w-5" />
+              <span>{dispositif.montant}</span>
             </div>
+          )}
+
+          {/* Metadata / Source Info */}
+          <div className="text-xs text-slate-400 mt-4 border-t pt-4">
+            Source : {dispositif.source_url_exact ? 'Officielle' : 'Interne'} • Mis à jour le {new Date(dispositif.updatedAt).toLocaleDateString()}
+          </div>
         </div>
 
         <div className="grid lg:grid-cols-3 gap-6">
-            <div className="lg:col-span-2 space-y-6">
-                {/* FALC Summary */}
-                <FalcSummary text={dispositif?.description_falc || dispositif?.summary_falc} />
+          <div className="lg:col-span-2 space-y-6">
+            {/* FALC Summary */}
+            <FalcSummary text={dispositif?.description_falc || dispositif?.summary_falc} />
 
-                <Card>
-                    <CardContent className="p-6">
-                        <h2 className="text-lg font-bold text-slate-900 mb-3">Description</h2>
-                        <div className="prose prose-slate max-w-none text-slate-700 whitespace-pre-wrap">
-                            {dispositif.description || "Aucune description disponible."}
-                        </div>
-                    </CardContent>
-                </Card>
+            <Card>
+              <CardContent className="p-6">
+                <h2 className="text-lg font-bold text-slate-900 mb-3">Description</h2>
+                <div className="prose prose-slate max-w-none text-slate-700 whitespace-pre-wrap">
+                  {dispositif.description || "Aucune description disponible."}
+                </div>
+              </CardContent>
+            </Card>
 
-                {/* Liens */}
-                {dispositif.liens && Array.isArray(dispositif.liens) && dispositif.liens.length > 0 && (
-                    <Card>
-                        <CardContent className="p-6">
-                            <h2 className="text-lg font-bold text-slate-900 mb-4">Liens utiles</h2>
-                            <ul className="space-y-3">
-                                {dispositif.liens.map((link, idx) => (
-                                    <li key={idx}>
-                                        <a
-                                            href={link.url}
-                                            target="_blank"
-                                            rel="noopener noreferrer"
-                                            className="flex items-center gap-2 text-blue-600 hover:underline font-medium"
-                                        >
-                                            <ExternalLink className="h-4 w-4" />
-                                            {link.nom || "Voir le lien"}
-                                        </a>
-                                    </li>
-                                ))}
-                            </ul>
-                        </CardContent>
-                    </Card>
-                )}
-            </div>
+            {/* Liens */}
+            {dispositif.liens && Array.isArray(dispositif.liens) && dispositif.liens.length > 0 && (
+              <Card>
+                <CardContent className="p-6">
+                  <h2 className="text-lg font-bold text-slate-900 mb-4">Liens utiles</h2>
+                  <ul className="space-y-3">
+                    {dispositif.liens.map((link, idx) => (
+                      <li key={idx}>
+                        <a
+                          href={link.url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="flex items-center gap-2 text-blue-600 hover:underline font-medium"
+                        >
+                          <ExternalLink className="h-4 w-4" />
+                          {link.nom || "Voir le lien"}
+                        </a>
+                      </li>
+                    ))}
+                  </ul>
+                </CardContent>
+              </Card>
+            )}
+          </div>
 
-            {/* Sidebar */}
-            <div className="space-y-6">
-                {/* Source Traceability */}
-                <SourceTraceability 
-                  source_url={dispositif.source_url || dispositif.source_url_exact}
-                  retrieved_at={dispositif.retrieved_at}
-                  last_checked_at={dispositif.last_checked_at}
-                  source_last_modified={dispositif.source_last_modified}
-                />
+          {/* Sidebar */}
+          <div className="space-y-6">
+            {/* Source Traceability */}
+            <SourceTraceability
+              source_url={dispositif.source_url || dispositif.source_url_exact}
+              retrieved_at={dispositif.retrieved_at}
+              last_checked_at={dispositif.last_checked_at}
+              source_last_modified={dispositif.source_last_modified}
+            />
 
-                <Card>
-                    <CardContent className="p-6 space-y-3">
-                        <Link to={createPageUrl('Contact') + `?page=${encodeURIComponent(window.location.href)}&sujet=signalement_erreur`}>
-                            <Button variant="ghost" className="w-full text-slate-600">
-                                <Flag className="mr-2 h-4 w-4" />
-                                Signaler une erreur
-                            </Button>
-                        </Link>
-                    </CardContent>
-                </Card>
-            </div>
+            <Card>
+              <CardContent className="p-6 space-y-3">
+                <Link to={createPageUrl('Contact') + `?page=${encodeURIComponent(window.location.href)}&sujet=signalement_erreur`}>
+                  <Button variant="ghost" className="w-full text-slate-600">
+                    <Flag className="mr-2 h-4 w-4" />
+                    Signaler une erreur
+                  </Button>
+                </Link>
+              </CardContent>
+            </Card>
+          </div>
         </div>
       </div>
     </div>

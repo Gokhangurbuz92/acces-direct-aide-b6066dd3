@@ -4,7 +4,7 @@ import SEO from '@/components/SEO';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Link } from 'react-router-dom';
-import { Loader2, FileText, ExternalLink } from 'lucide-react';
+import { FileText, ExternalLink } from 'lucide-react';
 
 export default function Ressources() {
     const [ressources, setRessources] = useState([]);

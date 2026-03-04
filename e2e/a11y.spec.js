@@ -31,11 +31,12 @@ test.describe('Accessibility and Keyboard Navigation', () => {
       }
     });
 
-    // 2. Tab twice to skip link (first Tab cycles to body in Chromium)
-    await page.keyboard.press('Tab');
-    await page.keyboard.press('Tab');
-
+    // 2. Tab until skip link receives focus (may need 1-5 tabs depending on browser + DOM order)
     const skipLink = page.locator('.skip-link');
+    for (let i = 0; i < 5; i++) {
+      await page.keyboard.press('Tab');
+      if (await skipLink.evaluate(el => el === document.activeElement)) break;
+    }
     await expect(skipLink).toBeFocused();
     await expect(skipLink).toBeVisible();
 

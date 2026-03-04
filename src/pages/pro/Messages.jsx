@@ -1,7 +1,8 @@
 // @ts-nocheck
 import { Link } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
-import { Loader2, MessageCircle } from 'lucide-react';
+import { MessageCircle } from 'lucide-react';
+import { ListSkeleton } from '@/components/pro/ProPageSkeletons';
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { rdvMessagingClient, messagingErrorText } from '@/api/rdv-messaging-client';
@@ -39,9 +40,7 @@ export default function ProMessages() {
 
         <CardContent className="space-y-3">
           {conversationsQuery.isLoading ? (
-            <div className="flex items-center gap-2 text-sm text-slate-600">
-              <Loader2 className="h-4 w-4 animate-spin" /> Chargement des conversations...
-            </div>
+            <ListSkeleton count={3} />
           ) : null}
 
           {conversationsQuery.error ? (

@@ -1,6 +1,7 @@
 // @ts-nocheck
 import { useCallback, useEffect, useState } from 'react';
 import { Loader2, Pencil, Trash2 } from 'lucide-react';
+import { ListSkeleton } from '@/components/pro/ProPageSkeletons';
 
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -175,9 +176,7 @@ export default function ProRdvAbsences() {
         </CardHeader>
         <CardContent>
           {loading ? (
-            <div className="flex items-center gap-2 text-sm text-slate-600">
-              <Loader2 className="h-4 w-4 animate-spin" /> Chargement...
-            </div>
+            <ListSkeleton count={3} />
           ) : items.length === 0 ? (
             <p className="text-sm text-slate-600">Aucune absence configuree.</p>
           ) : (

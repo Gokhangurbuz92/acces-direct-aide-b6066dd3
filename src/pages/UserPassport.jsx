@@ -18,7 +18,6 @@ import {
     Lock,
     Video,
     MapPin,
-    Loader2,
     ArrowLeft,
     File,
 } from 'lucide-react';

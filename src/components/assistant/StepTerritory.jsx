@@ -13,7 +13,7 @@ export default function StepTerritory({ onNext, onBack }) {
     return (
         <div>
             <h2 className="mb-1 text-lg font-semibold text-slate-900">Où habitez-vous ?</h2>
-            <p className="mb-5 text-sm text-slate-500">Ville ou code postal (optionnel — permet d&apos;affiner les résultats).</p>
+            <p className="mb-5 text-sm text-slate-600">Ville ou code postal (optionnel — permet d&apos;affiner les résultats).</p>
             <form onSubmit={handleSubmit} className="space-y-4">
                 <div className="relative">
                     <MapPin className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" aria-hidden="true" />

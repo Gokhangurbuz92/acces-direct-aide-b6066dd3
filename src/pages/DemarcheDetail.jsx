@@ -20,7 +20,7 @@ import {
   Download,
   CheckCircle2,
   ChevronRight,
-  Loader2,
+  AlertCircle,
   Euro,
   Lightbulb
 } from 'lucide-react';
@@ -119,7 +119,7 @@ export default function DemarcheDetail() {
         <EmptyState
           title="Impossible de charger la démarche"
           description="Vérifiez votre connexion puis réessayez."
-          icon={<Loader2 className="h-6 w-6" />}
+          icon={<AlertCircle className="h-6 w-6" />}
           actions={
             <div className="flex flex-wrap gap-3">
               <Button type="button" variant="outline" onClick={() => refetch()}>

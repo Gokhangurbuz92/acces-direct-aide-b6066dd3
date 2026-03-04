@@ -36,7 +36,7 @@ export default function NewsSection() {
 
             return (
               <article key={item.id} className="rounded-2xl border border-slate-200 bg-white p-5">
-                <p className="text-xs font-semibold uppercase tracking-wide text-blue-600">
+                <p className="text-xs font-semibold uppercase tracking-wide text-blue-700">
                   {new Date(item.date_publication || item.published_at || Date.now()).toLocaleDateString('fr-FR')}
                 </p>
                 <h3 className="mt-2 text-lg font-bold text-slate-900 line-clamp-2">

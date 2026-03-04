@@ -2,7 +2,7 @@
 import { useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { Loader2 } from 'lucide-react';
+import { MessageThreadSkeleton } from '@/components/pro/ProPageSkeletons';
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -62,9 +62,7 @@ export default function ProMessageThread() {
 
         <CardContent className="space-y-4">
           {conversationQuery.isLoading ? (
-            <div className="flex items-center gap-2 text-sm text-slate-600">
-              <Loader2 className="h-4 w-4 animate-spin" /> Chargement...
-            </div>
+            <MessageThreadSkeleton />
           ) : null}
 
           {conversationQuery.error ? (

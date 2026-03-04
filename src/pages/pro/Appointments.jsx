@@ -2,6 +2,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Calendar, CheckCircle, Loader2, RefreshCw, XCircle } from 'lucide-react';
+import { ListSkeleton } from '@/components/pro/ProPageSkeletons';
 
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -178,9 +179,7 @@ export default function ProAppointments() {
       ) : null}
 
       {loading ? (
-        <div className="flex items-center gap-2 text-sm text-slate-600">
-          <Loader2 className="h-4 w-4 animate-spin" /> Chargement...
-        </div>
+        <ListSkeleton count={4} />
       ) : appointments.length === 0 ? (
         <Card>
           <CardContent className="flex flex-col items-center gap-2 py-8 text-sm text-slate-600">

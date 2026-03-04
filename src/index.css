@@ -69,6 +69,19 @@
     --input: 214.3 31.8% 91.4%;
     --ring: 222.2 84% 4.9%;
     --radius: 0.5rem;
+
+    /* Chart Palette — Indigo/Emerald/Amber institutional triad */
+    --chart-1: 243 75% 59%;   /* Indigo-600 */
+    --chart-2: 161 94% 30%;   /* Emerald-600 */
+    --chart-3: 38 92% 50%;    /* Amber-500 */
+    --chart-4: 199 89% 48%;   /* Sky-500 */
+    --chart-5: 271 81% 56%;   /* Violet-500 */
+
+    /* Brand Semantic Tokens */
+    --color-brand-primary: 79 70 229;    /* Indigo-600 #4F46E5 */
+    --color-brand-secondary: 5 150 105;  /* Emerald-600 #059669 */
+    --color-brand-highlight: 245 158 11; /* Amber-500 #F59E0B */
+    --color-brand-background: 248 250 252; /* Slate-50 #F8FAFC */
   }
 
   .dark {

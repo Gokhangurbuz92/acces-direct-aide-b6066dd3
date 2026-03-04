@@ -1,10 +1,11 @@
 import { describe, it, expect } from 'vitest';
 
 /**
- * Boussole Sociale — Unit Tests (Sprint 3)
+ * Boussole Sociale — Unit Tests (Phase 3 — Intelligence Souveraine)
  *
- * Tests keyword extraction, territory detection,
- * sensitive data blocking, and response structure.
+ * Tests keyword extraction, territory detection, FTS query building,
+ * sensitive data blocking, démarche context, metadata validation,
+ * and anti-hallucination response structure.
  */
 
 // ── Keyword extraction (mirrors orient.js logic) ──
@@ -46,6 +47,15 @@ function detectTerritory(message) {
     return null;
 }
 
+// ── FTS Query Builder (Phase 3) ──
+function buildTsQuery(keywords) {
+    if (!keywords || keywords.length === 0) return '';
+    return keywords
+        .map((k) => k.replace(/[^\w\u00C0-\u024F]/g, ''))
+        .filter((k) => k.length > 0)
+        .join(' | ');
+}
+
 // ── Sensitive data patterns ──
 const NIR_RE = /\b[12]\s?\d{2}\s?\d{2}\s?\d{2}\s?\d{3}\s?\d{3}\s?\d{2}\b/;
 const IBAN_FR_RE = /\bFR\s?\d{2}\s?[\dA-Z]{4}\s?[\dA-Z]{4}\s?[\dA-Z]{4}\s?[\dA-Z]{4}\s?[\dA-Z]{4}\s?[\dA-Z]{3}\b/i;
@@ -64,6 +74,32 @@ function validateOrientResponse(data) {
     if (!Array.isArray(data.links)) return false;
     return true;
 }
+
+// ── Anti-hallucination: validate links reference real slugs ──
+function validateLinksIntegrity(links, knownSlugs) {
+    if (!Array.isArray(links)) return false;
+    return links.every((link) => {
+        if (!link.url || typeof link.url !== 'string') return false;
+        // Extract slug from URL
+        const match = link.url.match(/^\/(aides|structures|demarches)\/(.+)$/);
+        if (!match) return true; // Non-slug URLs (e.g. /annuaire?q=...) are OK
+        return knownSlugs.includes(match[2]);
+    });
+}
+
+// ── Metadata structure validation ──
+function validateMetadata(metadata) {
+    if (!metadata || typeof metadata !== 'object') return false;
+    if (typeof metadata.links_count !== 'number') return false;
+    if (typeof metadata.territory !== 'string') return false;
+    if (!Array.isArray(metadata.keywords)) return false;
+    if (typeof metadata.model !== 'string') return false;
+    return true;
+}
+
+// ==========================================================================
+// TESTS — Sprint 1-2 (Original 16 tests)
+// ==========================================================================
 
 describe('Boussole Sociale — Keyword Extraction', () => {
     it('should extract meaningful keywords from a citizen question', () => {
@@ -191,5 +227,92 @@ describe('Boussole Sociale — Response Validation', () => {
             suggestions: ['Quelles sont les aides au logement ?'],
             links: [],
         })).toBe(true);
+    });
+});
+
+// ==========================================================================
+// TESTS — Phase 3 (10 new tests for FTS, Démarches, metadata, anti-hallucination)
+// ==========================================================================
+
+describe('Boussole Sociale — FTS Query Builder', () => {
+    it('should build OR-joined tsquery from keywords', () => {
+        const query = buildTsQuery(['logement', 'rsa', 'caf']);
+        expect(query).toBe('logement | rsa | caf');
+    });
+
+    it('should return empty string for no keywords', () => {
+        expect(buildTsQuery([])).toBe('');
+        expect(buildTsQuery(null)).toBe('');
+    });
+
+    it('should strip special characters from keywords', () => {
+        const query = buildTsQuery(['l\'aide', 'RSA-socle']);
+        expect(query).toBe('laide | RSAsocle');
+    });
+});
+
+describe('Boussole Sociale — Démarche Context', () => {
+    it('should extract keywords relevant to démarches', () => {
+        const keywords = extractKeywords("comment renouveler ma carte vitale ?");
+        expect(keywords).toContain('renouveler');
+        expect(keywords).toContain('carte');
+        expect(keywords).toContain('vitale');
+    });
+
+    it('should handle multi-word démarche queries', () => {
+        const keywords = extractKeywords("demande allocation logement familiale");
+        expect(keywords).toContain('demande');
+        expect(keywords).toContain('allocation');
+        expect(keywords).toContain('logement');
+        expect(keywords).toContain('familiale');
+    });
+});
+
+describe('Boussole Sociale — Anti-Hallucination (Links Integrity)', () => {
+    it('should validate links that reference known slugs', () => {
+        const knownSlugs = ['apl-aide-logement', 'rsa-revenu-solidarite', 'caf-strasbourg'];
+        const links = [
+            { title: 'APL', url: '/aides/apl-aide-logement', type: 'aide' },
+            { title: 'CAF Strasbourg', url: '/structures/caf-strasbourg', type: 'structure' },
+        ];
+        expect(validateLinksIntegrity(links, knownSlugs)).toBe(true);
+    });
+
+    it('should reject links with fabricated slugs', () => {
+        const knownSlugs = ['apl-aide-logement'];
+        const links = [
+            { title: 'Fake Aid', url: '/aides/fake-aide-inventee', type: 'aide' },
+        ];
+        expect(validateLinksIntegrity(links, knownSlugs)).toBe(false);
+    });
+
+    it('should accept non-slug URLs (annuaire, view?id=)', () => {
+        const knownSlugs = [];
+        const links = [
+            { title: 'CAF', url: '/annuaire?q=CAF', type: 'structure' },
+        ];
+        expect(validateLinksIntegrity(links, knownSlugs)).toBe(true);
+    });
+});
+
+describe('Boussole Sociale — Metadata Validation', () => {
+    it('should validate enriched metadata structure', () => {
+        expect(validateMetadata({
+            links_count: 3,
+            territory: '67',
+            keywords: ['logement', 'strasbourg'],
+            model: 'gemini-2.5-flash-preview-05-20',
+            aides_count: 2,
+            structures_count: 1,
+            demarches_count: 0,
+        })).toBe(true);
+    });
+
+    it('should reject metadata without model string', () => {
+        expect(validateMetadata({
+            links_count: 0,
+            territory: 'national',
+            keywords: [],
+        })).toBe(false);
     });
 });

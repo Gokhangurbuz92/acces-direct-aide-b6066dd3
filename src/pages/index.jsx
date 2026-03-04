@@ -1,6 +1,6 @@
 import { Suspense, lazy, Component } from "react";
 import { BrowserRouter, MemoryRouter, Route, Routes, useLocation, Navigate, useParams } from 'react-router-dom';
-import { AnimatePresence, motion } from 'framer-motion';
+import { AnimatePresence, motion, useReducedMotion } from 'framer-motion';
 import { frontendEnv } from "@/config/env";
 
 /**
@@ -224,6 +224,7 @@ function _getCurrentPage(url) {
 // Create a wrapper component that uses useLocation inside the Router context
 function PagesContent() {
     const location = useLocation();
+    const shouldReduceMotion = useReducedMotion();
 
 
     // LOT SENTRY: Special standalone route that bypasses Layout (and thus Base44 auth imports)
@@ -247,10 +248,10 @@ function PagesContent() {
                 <AnimatePresence mode="wait">
                     <motion.div
                         key={location.pathname}
-                        initial={{ opacity: 0, scale: 0.98 }}
+                        initial={shouldReduceMotion ? false : { opacity: 0, scale: 0.98 }}
                         animate={{ opacity: 1, scale: 1 }}
-                        exit={{ opacity: 0, scale: 0.98 }}
-                        transition={{ duration: 0.25, ease: 'easeInOut' }}
+                        exit={shouldReduceMotion ? undefined : { opacity: 0, scale: 0.98 }}
+                        transition={shouldReduceMotion ? { duration: 0 } : { duration: 0.25, ease: 'easeInOut' }}
                         className="w-full h-full min-h-screen"
                     >
                         <Routes location={location}>
@@ -306,10 +307,10 @@ function PagesContent() {
                 <AnimatePresence mode="wait">
                     <motion.div
                         key={location.pathname}
-                        initial={{ opacity: 0, y: 15 }}
+                        initial={shouldReduceMotion ? false : { opacity: 0, y: 15 }}
                         animate={{ opacity: 1, y: 0 }}
-                        exit={{ opacity: 0, y: -15 }}
-                        transition={{ duration: 0.3, ease: 'easeOut' }}
+                        exit={shouldReduceMotion ? undefined : { opacity: 0, y: -15 }}
+                        transition={shouldReduceMotion ? { duration: 0 } : { duration: 0.3, ease: 'easeOut' }}
                         className="w-full h-full"
                     >
                         <Routes location={location}>

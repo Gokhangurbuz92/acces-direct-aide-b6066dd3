@@ -1,19 +1,19 @@
 import logger from '../../../_utils/logger.js';
-// @ts-nocheck
 import jwt from 'jsonwebtoken';
-import { signProToken, verifyProToken } from '../../../lib/pro-auth.js';
-import prisma from '../../../_utils/prisma.js';
-import { checkRateLimit, getClientIp } from '../../../_utils/rateLimit.js';
+import { signProToken, verifyProToken, logProAudit } from '../../../lib/pro-auth.js';
+import { checkRateLimit, getClientIp, getRateLimitStatus } from '../../../_utils/rateLimit.js';
 import { env } from '../../../_utils/env.js';
 
 /**
  * POST /api/pro/auth/refresh
  *
- * Accepts a valid OR recently-expired JWT (< 24h) and issues a fresh 8h token.
- * This avoids forcing re-login for active users whose session just expired.
+ * Renouvelle le jeton de session JWT si le jeton actuel est valide
+ * ou récemment expiré (grâce de 1h max).
  *
- * Body: { token }  (the current/expired JWT)
- * Returns: { token, user }
+ * Garantit la continuité de service pour les agents Pro (Requirement H).
+ *
+ * @param {import('../../../_utils/http-types').ApiRequest} req
+ * @param {import('../../../_utils/http-types').ApiResponse} res
  */
 export default async function handler(req, res) {
     if (req.method !== 'POST') {
@@ -22,86 +22,107 @@ export default async function handler(req, res) {
 
     const ip = getClientIp(req);
 
-    // Rate limit refresh attempts
-    const limit = await checkRateLimit('REFRESH_PRO', `refresh:${ip}`);
+    // Rate Limit — REFRESH_PRO: 10 per 15 min
+    const limit = await checkRateLimit('REFRESH_PRO', `ip:${ip}`);
     if (!limit.allowed) {
-        return res.status(429).json({ error: 'Trop de tentatives. Réessayez plus tard.' });
+        res.setHeader('Retry-After', '900');
+        return res.status(getRateLimitStatus(limit)).json(
+            limit.error || { error: 'Trop de tentatives de rafraîchissement.' }
+        );
     }
 
-    const { token } = req.body || {};
-    if (!token) {
-        return res.status(400).json({ error: 'Token requis.' });
+    // Extract Bearer token
+    const authHeader = req.headers?.authorization || '';
+    const match = authHeader.match(/^Bearer\s+(.+)$/i);
+    if (!match) {
+        return res.status(401).json({ error: 'Token manquant' });
     }
+    const token = match[1];
 
-    const JWT_SECRET = env.secrets.jwtSecret;
-    if (!JWT_SECRET) {
+    const jwtSecret = env.secrets.jwtSecret;
+    if (!jwtSecret) {
         return res.status(500).json({ error: 'Server configuration error' });
     }
 
     try {
-        // 1. Try verifying normally (still valid)
-        const validUser = verifyProToken(token);
-        if (validUser) {
-            // Token still valid — re-issue
-            const user = await prisma.proUser.findUnique({
-                where: { id: validUser.userId },
-                select: { id: true, email: true, role: true, structureId: true, status: true },
+        // 1. Try standard verification first (token still valid)
+        const validClaims = verifyProToken(token);
+        if (validClaims) {
+            // Token still valid — re-issue fresh token
+            const newToken = signProToken({
+                id: validClaims.userId,
+                email: validClaims.email,
+                structureId: validClaims.structureId,
+                role: validClaims.role,
             });
 
-            if (!user || user.status === 'disabled') {
-                return res.status(401).json({ error: 'Compte désactivé.' });
-            }
+            await logProAudit('TOKEN_REFRESH', validClaims.userId, validClaims.structureId, { method: 'valid' }, ip);
 
-            const newToken = signProToken(user);
             return res.status(200).json({
+                success: true,
                 token: newToken,
-                user: { id: user.id, email: user.email, role: user.role, structureId: user.structureId },
             });
         }
 
-        // 2. Token expired — check if < 24h old
+        // 2. Token might be expired — try with ignoreExpiration (1h grace)
         let decoded;
         try {
-            decoded = jwt.verify(token, JWT_SECRET, {
+            decoded = jwt.verify(token, jwtSecret, {
                 algorithms: ['HS256'],
-                ignoreExpiration: true, // Allow expired tokens
+                ignoreExpiration: true,
             });
         } catch {
-            return res.status(401).json({ error: 'Token invalide.' });
+            return res.status(401).json({ error: 'Token invalide' });
         }
 
-        if (!decoded || !decoded.userId || !decoded.structureId) {
-            return res.status(401).json({ error: 'Token invalide.' });
+        if (!decoded || typeof decoded !== 'object') {
+            return res.status(401).json({ error: 'Token invalide' });
         }
 
-        // Check expiration window (max 24h grace period)
-        const expiredAt = (decoded.exp || 0) * 1000;
-        const gracePeriod = 24 * 60 * 60 * 1000; // 24 hours
-        if (Date.now() - expiredAt > gracePeriod) {
-            return res.status(401).json({ error: 'Session expirée. Veuillez vous reconnecter.' });
+        // 3. Check expiration grace period (max 1 hour after expiry)
+        const MAX_GRACE_SECONDS = 3600; // 1 hour
+        const now = Math.floor(Date.now() / 1000);
+        const expiredAt = decoded.exp || 0;
+
+        if (now - expiredAt > MAX_GRACE_SECONDS) {
+            return res.status(401).json({
+                error: 'Session expirée depuis trop longtemps. Veuillez vous reconnecter.',
+                code: 'TOKEN_EXPIRED_BEYOND_GRACE',
+            });
         }
 
-        // 3. Verify user still exists and is active
-        const user = await prisma.proUser.findUnique({
-            where: { id: decoded.userId },
-            select: { id: true, email: true, role: true, structureId: true, status: true },
+        // 4. Validate pro claims from expired token
+        const userId = String(decoded.userId || '').trim();
+        const structureId = String(decoded.structureId || '').trim();
+        const role = String(decoded.role || '').toUpperCase();
+        const scope = String(decoded.scope || '');
+
+        if (!userId || !structureId) {
+            return res.status(401).json({ error: 'Claims invalides' });
+        }
+
+        if (scope && scope !== 'pro') {
+            return res.status(401).json({ error: 'Token scope invalide' });
+        }
+
+        // 5. Re-issue fresh token
+        const newToken = signProToken({
+            id: userId,
+            email: typeof decoded.email === 'string' ? decoded.email : undefined,
+            structureId,
+            role,
         });
 
-        if (!user || user.status === 'disabled') {
-            return res.status(401).json({ error: 'Compte désactivé ou introuvable.' });
-        }
+        await logProAudit('TOKEN_REFRESH', userId, structureId, { method: 'grace_period' }, ip);
 
-        // 4. Issue fresh token
-        const newToken = signProToken(user);
-
-        logger.info({ userId: user.id }, '[Auth] Token refreshed');
+        logger.info({ msg: 'pro.auth.refresh', userId, method: 'grace_period' }, '[Pro Auth] Token refreshed within grace period');
 
         return res.status(200).json({
+            success: true,
             token: newToken,
-            user: { id: user.id, email: user.email, role: user.role, structureId: user.structureId },
         });
     } catch (error) {
-        logger.error({ err: error }, '[Auth] Refresh error');
-        return res.status(500).json({ error: 'Erreur lors du rafraîchissement.' });
+        logger.error({ err: error, msg: 'pro.auth.refresh_error' }, '[Pro Auth] Refresh failed');
+        return res.status(401).json({ error: 'Rafraîchissement échoué' });
     }
 }

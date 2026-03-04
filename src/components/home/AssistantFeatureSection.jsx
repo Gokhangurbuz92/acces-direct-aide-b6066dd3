@@ -16,7 +16,7 @@ export default function AssistantFeatureSection() {
           <div className="mt-8 flex flex-wrap gap-3">
             <Link
               to="/orientation"
-              className="rounded-xl bg-blue-600 px-5 py-3 text-sm font-semibold text-white transition hover:bg-blue-700"
+              className="rounded-xl bg-blue-700 px-5 py-3 text-sm font-semibold text-white transition hover:bg-blue-700"
             >
               Lancer le diagnostic
             </Link>
@@ -37,7 +37,7 @@ export default function AssistantFeatureSection() {
             <div className="max-w-[85%] rounded-2xl rounded-bl-sm bg-slate-700 px-4 py-3 text-slate-100">
               Bonjour, je peux vous aider à clarifier votre situation.
             </div>
-            <div className="ml-auto max-w-[85%] rounded-2xl rounded-br-sm bg-blue-600 px-4 py-3 text-white">
+            <div className="ml-auto max-w-[85%] rounded-2xl rounded-br-sm bg-blue-700 px-4 py-3 text-white">
               Je cherche des aides pour le logement.
             </div>
             <div className="max-w-[85%] rounded-2xl rounded-bl-sm bg-slate-700 px-4 py-3 text-slate-100">

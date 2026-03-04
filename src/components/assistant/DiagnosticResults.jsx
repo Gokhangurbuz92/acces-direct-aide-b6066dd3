@@ -70,7 +70,7 @@ export default function DiagnosticResults({
             <div className="mb-4 flex items-center justify-between">
                 <div>
                     <h2 className="text-lg font-semibold text-slate-900">Vos droits estimés</h2>
-                    <p className="text-xs text-slate-500">Période : {period} • Source : OpenFisca</p>
+                    <p className="text-xs text-slate-600">Période : {period} • Source : OpenFisca</p>
                 </div>
                 <Button type="button" variant="outline" size="sm" onClick={onRestart} className="gap-2">
                     <RotateCcw className="h-4 w-4" /> Recommencer
@@ -97,7 +97,7 @@ export default function DiagnosticResults({
             {/* Non-eligible rights */}
             {nonEligibleRights.length > 0 && (
                 <div className="mb-4 space-y-3">
-                    <h3 className="text-sm font-medium text-slate-500">
+                    <h3 className="text-sm font-medium text-slate-600">
                         Droits probablement non applicables ({nonEligibleRights.length})
                     </h3>
                     {nonEligibleRights.map((right) => (
@@ -175,7 +175,7 @@ function RightCard({ right, showFalc, onToggleFalc, collapsed = false }) {
                     <button
                         type="button"
                         onClick={() => setIsExpanded(!isExpanded)}
-                        className="text-xs text-slate-500 hover:text-slate-700"
+                        className="text-xs text-slate-600 hover:text-slate-700"
                         aria-expanded={isExpanded}
                     >
                         {isExpanded ? 'Masquer' : 'Détails'}

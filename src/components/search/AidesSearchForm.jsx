@@ -96,7 +96,7 @@ export default function AidesSearchForm(props) {
         </div>
       </div>
 
-      <p id="aides-search-help" className="mt-3 text-sm text-slate-500">
+      <p id="aides-search-help" className="mt-3 text-sm text-slate-600">
         Recherchez par mots-clés, puis affinez avec la catégorie.
       </p>
     </form>

@@ -123,7 +123,21 @@ export default function RegisterPro() {
                     description="Rejoignez votre structure sur ADA"
                     noindex
                 />
-                <Loader2 className="animate-spin text-indigo-600" size={28} />
+                <div className="w-full max-w-md space-y-4" role="status" aria-label="Vérification de l'invitation">
+                    <div className="animate-pulse space-y-4">
+                        <div className="flex justify-center">
+                            <div className="h-14 w-14 rounded-2xl bg-indigo-100" />
+                        </div>
+                        <div className="h-6 w-48 mx-auto bg-slate-200 rounded-lg" />
+                        <div className="h-4 w-32 mx-auto bg-slate-100 rounded" />
+                        <div className="border border-slate-200 rounded-xl p-6 space-y-3">
+                            <div className="h-4 w-full bg-slate-100 rounded" />
+                            <div className="h-4 w-2/3 bg-slate-100 rounded" />
+                            <div className="h-10 w-full bg-slate-100 rounded-lg" />
+                        </div>
+                    </div>
+                    <span className="sr-only">Vérification de votre invitation en cours…</span>
+                </div>
             </div>
         );
     }

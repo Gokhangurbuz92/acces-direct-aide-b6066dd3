@@ -1080,6 +1080,9 @@ model ConversationLog {
   // Session anonyme (optionnel)
   sessionId String?
 
+  // Métadonnées enrichies (Phase 3 — analytics d'impact)
+  metadata Json? // { links_count, territory, keywords, model }
+
   // Feedback usager (amélioration continue)
   rating      Int? // 1 (positif) ou -1 (négatif)
   userComment String? @db.Text // Commentaire optionnel sur la réponse

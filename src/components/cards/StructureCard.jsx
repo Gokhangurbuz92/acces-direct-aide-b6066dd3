@@ -12,6 +12,7 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { formatProvenanceDate, getProvenance } from '@/lib/provenance';
+import AnimatedCard from '@/components/ui/AnimatedCard';
 
 const TYPE_LABELS = {
   association: 'Association',
@@ -36,7 +37,7 @@ const TYPE_COLORS = {
   cpam: 'bg-teal-100 text-teal-800',
 };
 
-export default function StructureCard({ structure, compact = false }) {
+export default function StructureCard({ structure, compact = false, index = 0 }) {
   const provenance = getProvenance(structure);
   const verifiedAt = formatProvenanceDate(provenance.verifiedAt);
   const sourceHost = provenance.sourceHost;
@@ -44,132 +45,134 @@ export default function StructureCard({ structure, compact = false }) {
   const isPmrAccessible = Boolean(structure.accessibilite_pmr || structure.accessibility_info?.pmr);
 
   return (
-    <Card className="group hover:shadow-lg transition-all duration-300 border-slate-200 hover:border-blue-300 bg-white relative" data-testid="structure-card">
-      {/* Overlay Link */}
-      <Link
-        to={targetUrl}
-        className="absolute inset-0 z-10 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 rounded-xl"
-        aria-label={`Voir la fiche de ${structure.nom}`}
-      >
-        <span className="sr-only">Voir la fiche de {structure.nom}</span>
-      </Link>
+    <AnimatedCard index={index}>
+      <Card className="group hover:shadow-lg transition-all duration-300 border-slate-200 hover:border-blue-300 bg-white relative" data-testid="structure-card">
+        {/* Overlay Link */}
+        <Link
+          to={targetUrl}
+          className="absolute inset-0 z-10 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 rounded-xl"
+          aria-label={`Voir la fiche de ${structure.nom}`}
+        >
+          <span className="sr-only">Voir la fiche de {structure.nom}</span>
+        </Link>
 
-      <CardContent className={compact ? 'p-4' : 'p-6'}>
-        <div className="flex flex-col gap-3">
-          {/* En-tête */}
-          <div className="flex flex-wrap gap-2 items-start justify-between">
-            <div className="flex flex-wrap gap-2">
-              <Badge className={TYPE_COLORS[structure.type_structure] || 'bg-slate-100 text-slate-800'}>
-                {TYPE_LABELS[structure.type_structure] || structure.type_structure}
-              </Badge>
-              {structure.coverage === 'OFFICIAL' && (
-                <Badge variant="outline" className="text-green-700 border-green-300">
-                  Source officielle
+        <CardContent className={compact ? 'p-4' : 'p-6'}>
+          <div className="flex flex-col gap-3">
+            {/* En-tête */}
+            <div className="flex flex-wrap gap-2 items-start justify-between">
+              <div className="flex flex-wrap gap-2">
+                <Badge className={TYPE_COLORS[structure.type_structure] || 'bg-slate-100 text-slate-800'}>
+                  {TYPE_LABELS[structure.type_structure] || structure.type_structure}
                 </Badge>
-              )}
-              {structure.coverage === 'LOCAL_OPEN_DATA' && (
-                <Badge variant="outline" className="text-blue-700 border-blue-300">
-                  Open data local
-                </Badge>
-              )}
-              {structure.coverage === 'SUGGESTED_NEEDS_REVIEW' && (
-                <Badge variant="outline" className="text-orange-700 border-orange-300">
-                  Contribution
+                {structure.coverage === 'OFFICIAL' && (
+                  <Badge variant="outline" className="text-green-700 border-green-300">
+                    Source officielle
+                  </Badge>
+                )}
+                {structure.coverage === 'LOCAL_OPEN_DATA' && (
+                  <Badge variant="outline" className="text-blue-700 border-blue-300">
+                    Open data local
+                  </Badge>
+                )}
+                {structure.coverage === 'SUGGESTED_NEEDS_REVIEW' && (
+                  <Badge variant="outline" className="text-orange-700 border-orange-300">
+                    Contribution
+                  </Badge>
+                )}
+              </div>
+              {isPmrAccessible && (
+                <Badge variant="outline" className="text-blue-700 border-blue-300 flex items-center gap-1">
+                  <Accessibility className="h-3 w-3" />
+                  Accessible PMR
                 </Badge>
               )}
             </div>
-            {isPmrAccessible && (
-              <Badge variant="outline" className="text-blue-700 border-blue-300 flex items-center gap-1">
-                <Accessibility className="h-3 w-3" />
-                Accessible PMR
-              </Badge>
+
+            {/* Nom */}
+            <h3 className={`font-semibold text-slate-900 group-hover:text-blue-700 transition-colors ${compact ? 'text-base' : 'text-lg'}`} data-testid="structure-title">
+              {structure.nom}
+            </h3>
+
+            {/* Description */}
+            {structure.description_courte && (
+              <p className="text-slate-600 text-sm line-clamp-2">
+                {structure.description_courte}
+              </p>
             )}
-          </div>
 
-          {/* Nom */}
-          <h3 className={`font-semibold text-slate-900 group-hover:text-blue-700 transition-colors ${compact ? 'text-base' : 'text-lg'}`} data-testid="structure-title">
-            {structure.nom}
-          </h3>
-
-          {/* Description */}
-          {structure.description_courte && (
-            <p className="text-slate-600 text-sm line-clamp-2">
-              {structure.description_courte}
-            </p>
-          )}
-
-          {/* Infos de contact */}
-          <div className="space-y-2 text-sm text-slate-600 relative z-20">
-            {/* Note: Links inside here like telephone/email must be z-20 to be clickable. */}
-            {structure.adresse && (
-              <div className="flex items-start gap-2">
-                <MapPin className="h-4 w-4 text-slate-400 mt-0.5 flex-shrink-0" />
-                <span>
-                  {structure.adresse}, {structure.code_postal} {structure.ville}
-                </span>
+            {/* Infos de contact */}
+            <div className="space-y-2 text-sm text-slate-600 relative z-20">
+              {/* Note: Links inside here like telephone/email must be z-20 to be clickable. */}
+              {structure.adresse && (
+                <div className="flex items-start gap-2">
+                  <MapPin className="h-4 w-4 text-slate-400 mt-0.5 flex-shrink-0" />
+                  <span>
+                    {structure.adresse}, {structure.code_postal} {structure.ville}
+                  </span>
+                </div>
+              )}
+              {structure.telephone && (
+                <div className="flex items-center gap-2">
+                  <Phone className="h-4 w-4 text-slate-400" />
+                  {/* Ensure telephone link is clickable */}
+                  <a
+                    href={`tel:${structure.telephone}`}
+                    className="text-blue-600 hover:underline relative z-20"
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    {structure.telephone}
+                  </a>
+                </div>
+              )}
+              {structure.horaires && (
+                <div className="flex items-start gap-2">
+                  <Clock className="h-4 w-4 text-slate-400 mt-0.5" />
+                  <span>{structure.horaires}</span>
+                </div>
+              )}
+            </div>
+            {(verifiedAt || sourceHost) && (
+              <div className="mt-1 flex flex-wrap gap-4 text-xs text-slate-500">
+                {verifiedAt && (
+                  <span className="flex items-center gap-1.5">
+                    <Calendar className="h-3.5 w-3.5" />
+                    Vérifié: {verifiedAt}
+                  </span>
+                )}
+                {sourceHost && (
+                  <span className="flex items-center gap-1.5">
+                    <Globe className="h-3.5 w-3.5" />
+                    Source: {sourceHost}
+                  </span>
+                )}
               </div>
             )}
-            {structure.telephone && (
-              <div className="flex items-center gap-2">
-                <Phone className="h-4 w-4 text-slate-400" />
-                {/* Ensure telephone link is clickable */}
-                <a
-                  href={`tel:${structure.telephone}`}
-                  className="text-blue-600 hover:underline relative z-20"
-                  onClick={(e) => e.stopPropagation()}
+
+            {/* Actions */}
+            <div className="flex flex-wrap gap-2 mt-2">
+              {structure.site_web && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  asChild
+                  className="relative z-20"
                 >
-                  {structure.telephone}
-                </a>
-              </div>
-            )}
-            {structure.horaires && (
-              <div className="flex items-start gap-2">
-                <Clock className="h-4 w-4 text-slate-400 mt-0.5" />
-                <span>{structure.horaires}</span>
-              </div>
-            )}
-          </div>
-          {(verifiedAt || sourceHost) && (
-            <div className="mt-1 flex flex-wrap gap-4 text-xs text-slate-500">
-              {verifiedAt && (
-                <span className="flex items-center gap-1.5">
-                  <Calendar className="h-3.5 w-3.5" />
-                  Vérifié: {verifiedAt}
-                </span>
+                  <a href={structure.site_web} target="_blank" rel="noopener noreferrer" onClick={(e) => e.stopPropagation()}>
+                    <Globe className="h-4 w-4 mr-1" />
+                    Site web
+                  </a>
+                </Button>
               )}
-              {sourceHost && (
-                <span className="flex items-center gap-1.5">
-                  <Globe className="h-3.5 w-3.5" />
-                  Source: {sourceHost}
-                </span>
-              )}
-            </div>
-          )}
-
-          {/* Actions */}
-          <div className="flex flex-wrap gap-2 mt-2">
-            {structure.site_web && (
-              <Button
-                variant="outline"
-                size="sm"
-                asChild
-                className="relative z-20"
+              <div
+                className="inline-flex items-center gap-1 text-blue-600 font-medium text-sm group-hover:text-blue-800 transition-colors"
               >
-                <a href={structure.site_web} target="_blank" rel="noopener noreferrer" onClick={(e) => e.stopPropagation()}>
-                  <Globe className="h-4 w-4 mr-1" />
-                  Site web
-                </a>
-              </Button>
-            )}
-            <div
-              className="inline-flex items-center gap-1 text-blue-600 font-medium text-sm group-hover:text-blue-800 transition-colors"
-            >
-              Plus d'infos
-              <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
+                Plus d'infos
+                <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
+              </div>
             </div>
           </div>
-        </div>
-      </CardContent>
-    </Card>
+        </CardContent>
+      </Card>
+    </AnimatedCard>
   );
 }

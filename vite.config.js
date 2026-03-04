@@ -196,14 +196,32 @@ export default defineConfig({
             return 'utils-vendor';
           }
 
-          // Charts and visualization
-          if (id.includes('node_modules/recharts')) {
+          // Charts and visualization (recharts + d3 transitive deps)
+          if (id.includes('node_modules/recharts') ||
+            id.includes('node_modules/d3-') ||
+            id.includes('node_modules/victory') ||
+            id.includes('node_modules/internmap') ||
+            id.includes('node_modules/delaunator')) {
             return 'charts-vendor';
           }
 
           // PDF libraries (very heavy, lazy load or split)
           if (id.includes('node_modules/jspdf') || id.includes('node_modules/html2canvas') || id.includes('node_modules/dompurify')) {
             return 'pdf-vendor';
+          }
+
+          // Crypto / E2EE (tweetnacl, crypto-js, nacl-util)
+          if (id.includes('node_modules/tweetnacl') ||
+            id.includes('node_modules/crypto-js') ||
+            id.includes('node_modules/nacl')) {
+            return 'crypto-vendor';
+          }
+
+          // QR code rendering
+          if (id.includes('node_modules/qrcode') ||
+            id.includes('node_modules/react-qr-code') ||
+            id.includes('node_modules/qr.js')) {
+            return 'qr-vendor';
           }
 
           // Other node_modules (catch-all for remaining dependencies)

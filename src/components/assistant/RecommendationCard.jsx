@@ -39,7 +39,7 @@ export default function RecommendationCard({ item }) {
                 {title}
             </h3>
             {excerpt && (
-                <p className="mb-2 text-xs leading-relaxed text-slate-500">{truncate(excerpt)}</p>
+                <p className="mb-2 text-xs leading-relaxed text-slate-600">{truncate(excerpt)}</p>
             )}
             <div className="flex items-center gap-2 text-xs text-slate-400">
                 {sourceLabel && <span>{sourceLabel}</span>}

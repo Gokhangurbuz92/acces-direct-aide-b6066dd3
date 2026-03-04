@@ -12,7 +12,7 @@ export default function StepNeed({ onNext }) {
     return (
         <div>
             <h2 className="mb-1 text-lg font-semibold text-slate-900">Quel est votre besoin principal ?</h2>
-            <p className="mb-5 text-sm text-slate-500">Choisissez la catégorie qui correspond le mieux.</p>
+            <p className="mb-5 text-sm text-slate-600">Choisissez la catégorie qui correspond le mieux.</p>
             <div className="grid grid-cols-1 gap-3 sm:grid-cols-2" role="group" aria-label="Catégorie de besoin">
                 {NEEDS.map(({ key, label, icon: Icon, color }) => (
                     <button

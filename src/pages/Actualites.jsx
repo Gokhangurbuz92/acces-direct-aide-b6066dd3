@@ -16,6 +16,7 @@ import { generateBreadcrumbSchema } from '@/utils/schema';
 import { formatProvenanceDate, getProvenance } from '@/lib/provenance';
 import { htmlToPlainText } from '@/lib/htmlText';
 import { useFalc } from '@/contexts/FalcContext';
+import AnimatedCard from '@/components/ui/AnimatedCard';
 
 /**
  * @typedef {object} ActualiteListItem
@@ -343,7 +344,7 @@ export default function Actualites() {
         ) : actualites.length > 0 ? (
           <>
             <div className="space-y-6" data-testid="actualites-results-list">
-              {actualites.map((actu) => {
+              {actualites.map((actu, idx) => {
                 const typeKey = actu.type_actu || 'info';
                 const TypeIcon = TYPE_ICONS[typeKey] || Info;
                 const linkUrl = actu.slug ? `/actualites/${actu.slug}` : `/actualites/view?id=${actu.id}`;
@@ -355,99 +356,100 @@ export default function Actualites() {
                 const excerpt = htmlToPlainText(actu.summary_falc || actu.resume || '', { maxLength: 220 });
 
                 return (
-                  <Card
-                    key={actu.id}
-                    className={`group hover:shadow-lg transition-all relative ${actu.est_important ? 'border-l-4 border-l-blue-500' : ''}`}
-                    data-testid="actualite-card"
-                  >
-                    {/* Overlay Link */}
-                    <Link
-                      to={linkUrl}
-                      className="absolute inset-0 z-10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 rounded-xl"
-                      aria-label={`Lire l'actualité ${actu.titre}`}
+                  <AnimatedCard index={idx} key={actu.id}>
+                    <Card
+                      className={`group hover:shadow-lg transition-all relative ${actu.est_important ? 'border-l-4 border-l-blue-500' : ''}`}
+                      data-testid="actualite-card"
                     >
-                      <span className="sr-only">Lire l'actualité {actu.titre}</span>
-                    </Link>
+                      {/* Overlay Link */}
+                      <Link
+                        to={linkUrl}
+                        className="absolute inset-0 z-10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 rounded-xl"
+                        aria-label={`Lire l'actualité ${actu.titre}`}
+                      >
+                        <span className="sr-only">Lire l'actualité {actu.titre}</span>
+                      </Link>
 
-                    <CardContent className="p-6">
-                      <div className="flex flex-wrap gap-2 mb-3">
-                        <Badge className={TYPE_COLORS[typeKey] || 'bg-slate-100 text-slate-800'}>
-                          <TypeIcon className="h-3 w-3 mr-1" />
-                          {typeKey === 'nouveaute' ? 'Nouveauté'
-                            : typeKey === 'modification' ? 'Modification'
-                              : typeKey === 'alerte' ? 'Alerte'
-                                : 'Information'}
-                        </Badge>
-                        {actu.categorie && (
-                          <CategoryChip slug={actu.categorie} />
-                        )}
-                        {actu.est_important && (
-                          <Badge className="bg-amber-100 text-amber-800">
-                            Important
+                      <CardContent className="p-6">
+                        <div className="flex flex-wrap gap-2 mb-3">
+                          <Badge className={TYPE_COLORS[typeKey] || 'bg-slate-100 text-slate-800'}>
+                            <TypeIcon className="h-3 w-3 mr-1" />
+                            {typeKey === 'nouveaute' ? 'Nouveauté'
+                              : typeKey === 'modification' ? 'Modification'
+                                : typeKey === 'alerte' ? 'Alerte'
+                                  : 'Information'}
                           </Badge>
+                          {actu.categorie && (
+                            <CategoryChip slug={actu.categorie} />
+                          )}
+                          {actu.est_important && (
+                            <Badge className="bg-amber-100 text-amber-800">
+                              Important
+                            </Badge>
+                          )}
+                        </div>
+
+                        <h2 className="text-xl font-bold text-slate-900 group-hover:text-blue-700 transition-colors mb-3" data-testid="actualite-title">
+                          {actu.titre}
+                        </h2>
+
+                        <p className="text-slate-600 mb-4 leading-relaxed line-clamp-3">
+                          {isFalcEnabled && actu.summary_falc ? actu.summary_falc : excerpt}
+                        </p>
+
+                        {/* FALC badge */}
+                        {isFalcEnabled && actu.summary_falc && (
+                          <div className="mb-4">
+                            <Badge className="bg-teal-100 text-teal-700 border-teal-200 flex items-center gap-1 w-fit">
+                              <Brain className="h-3 w-3" />
+                              Simplifié
+                            </Badge>
+                          </div>
                         )}
-                      </div>
 
-                      <h2 className="text-xl font-bold text-slate-900 group-hover:text-blue-700 transition-colors mb-3" data-testid="actualite-title">
-                        {actu.titre}
-                      </h2>
+                        <div className="flex flex-wrap items-center justify-between gap-4 pt-4 border-t border-slate-100 relative z-20">
+                          <div className="flex items-center gap-4 text-sm text-slate-500">
+                            <span className="flex items-center gap-1">
+                              <Calendar className="h-4 w-4" />
+                              {new Date(actu.date_publication).toLocaleDateString('fr-FR', {
+                                day: 'numeric',
+                                month: 'long',
+                                year: 'numeric',
+                              })}
+                            </span>
+                            {verifiedAt && (
+                              <span>Vérifié: {verifiedAt}</span>
+                            )}
+                            {sourceHost && (
+                              <span>Source: {sourceHost}</span>
+                            )}
+                            {!sourceHost && sourceName && (
+                              <span>Source: {sourceName}</span>
+                            )}
+                          </div>
 
-                      <p className="text-slate-600 mb-4 leading-relaxed line-clamp-3">
-                        {isFalcEnabled && actu.summary_falc ? actu.summary_falc : excerpt}
-                      </p>
-
-                      {/* FALC badge */}
-                      {isFalcEnabled && actu.summary_falc && (
-                        <div className="mb-4">
-                          <Badge className="bg-teal-100 text-teal-700 border-teal-200 flex items-center gap-1 w-fit">
-                            <Brain className="h-3 w-3" />
-                            Simplifié
-                          </Badge>
+                          <div className="flex items-center gap-4">
+                            {sourceUrl && (
+                              <a
+                                href={sourceUrl}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="text-slate-500 hover:text-blue-600 text-sm font-medium flex items-center gap-1"
+                                onClick={(e) => e.stopPropagation()}
+                              >
+                                Source
+                                <ExternalLink className="h-3 w-3" />
+                              </a>
+                            )}
+                            <span className="text-blue-600 group-hover:text-blue-800 text-sm font-bold flex items-center gap-1 transition-colors">
+                              Lire la suite
+                              <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
+                            </span>
+                          </div>
                         </div>
-                      )}
-
-                      <div className="flex flex-wrap items-center justify-between gap-4 pt-4 border-t border-slate-100 relative z-20">
-                        <div className="flex items-center gap-4 text-sm text-slate-500">
-                          <span className="flex items-center gap-1">
-                            <Calendar className="h-4 w-4" />
-                            {new Date(actu.date_publication).toLocaleDateString('fr-FR', {
-                              day: 'numeric',
-                              month: 'long',
-                              year: 'numeric',
-                            })}
-                          </span>
-                          {verifiedAt && (
-                            <span>Vérifié: {verifiedAt}</span>
-                          )}
-                          {sourceHost && (
-                            <span>Source: {sourceHost}</span>
-                          )}
-                          {!sourceHost && sourceName && (
-                            <span>Source: {sourceName}</span>
-                          )}
-                        </div>
-
-                        <div className="flex items-center gap-4">
-                          {sourceUrl && (
-                            <a
-                              href={sourceUrl}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="text-slate-500 hover:text-blue-600 text-sm font-medium flex items-center gap-1"
-                              onClick={(e) => e.stopPropagation()}
-                            >
-                              Source
-                              <ExternalLink className="h-3 w-3" />
-                            </a>
-                          )}
-                          <span className="text-blue-600 group-hover:text-blue-800 text-sm font-bold flex items-center gap-1 transition-colors">
-                            Lire la suite
-                            <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
-                          </span>
-                        </div>
-                      </div>
-                    </CardContent>
-                  </Card>
+                      </CardContent>
+                    </Card>
+                  </AnimatedCard>
                 );
               })}
             </div>

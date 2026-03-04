@@ -7,6 +7,7 @@ import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Loader2 } from 'lucide-react';
+import { FormSkeleton } from '@/components/pro/ProPageSkeletons';
 
 export default function ProStructure() {
     useOutletContext();
@@ -81,7 +82,7 @@ export default function ProStructure() {
         }
     };
 
-    if (loading) return <Loader2 className="animate-spin" />;
+    if (loading) return <FormSkeleton fields={3} />;
 
     return (
         <div className="space-y-6">

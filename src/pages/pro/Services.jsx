@@ -2,6 +2,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useOutletContext } from 'react-router-dom';
 import { AlertTriangle, Edit, ExternalLink, Loader2, Plus, Power, Save, Trash2 } from 'lucide-react';
+import { FormSkeleton, ListSkeleton } from '@/components/pro/ProPageSkeletons';
 
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -255,9 +256,7 @@ export default function ProServices() {
           ) : null}
 
           {settingsLoading ? (
-            <div className="flex items-center gap-2 text-sm text-slate-600">
-              <Loader2 className="h-4 w-4 animate-spin" /> Chargement des parametres RDV...
-            </div>
+            <FormSkeleton fields={3} />
           ) : (
             <form className="space-y-4" onSubmit={saveSettings}>
               <label className="flex items-center gap-2 text-sm text-slate-700">
@@ -360,9 +359,7 @@ export default function ProServices() {
       ) : null}
 
       {loading ? (
-        <div className="flex items-center gap-2 text-sm text-slate-600">
-          <Loader2 className="h-4 w-4 animate-spin" /> Chargement...
-        </div>
+        <ListSkeleton count={3} />
       ) : services.length === 0 ? (
         <Card>
           <CardContent className="py-6 text-sm text-slate-600">Aucun service configure.</CardContent>
@@ -375,9 +372,8 @@ export default function ProServices() {
                 <CardTitle className="flex items-center justify-between gap-2">
                   <span>{service.name}</span>
                   <span
-                    className={`rounded-full px-2 py-1 text-xs ${
-                      service.isActive ? 'bg-emerald-100 text-emerald-800' : 'bg-slate-100 text-slate-700'
-                    }`}
+                    className={`rounded-full px-2 py-1 text-xs ${service.isActive ? 'bg-emerald-100 text-emerald-800' : 'bg-slate-100 text-slate-700'
+                      }`}
                   >
                     {service.isActive ? 'Actif' : 'Inactif'}
                   </span>

@@ -2,6 +2,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Loader2 } from 'lucide-react';
+import { ListSkeleton } from '@/components/pro/ProPageSkeletons';
 
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -225,9 +226,7 @@ export default function ProRdvNew() {
         </CardHeader>
         <CardContent className="space-y-3">
           {loadingSlots ? (
-            <div className="flex items-center gap-2 text-sm text-slate-600">
-              <Loader2 className="h-4 w-4 animate-spin" /> Chargement...
-            </div>
+            <ListSkeleton count={4} title={false} />
           ) : slots.length === 0 ? (
             <p className="text-sm text-slate-600">Aucun creneau charge.</p>
           ) : (
@@ -239,9 +238,8 @@ export default function ProRdvNew() {
                     key={slot.startAt}
                     type="button"
                     onClick={() => setSelectedSlot(slot)}
-                    className={`rounded-md border px-3 py-2 text-left text-sm ${
-                      active ? 'border-blue-300 bg-blue-50 text-blue-900' : 'border-slate-200 bg-white text-slate-700'
-                    }`}
+                    className={`rounded-md border px-3 py-2 text-left text-sm ${active ? 'border-blue-300 bg-blue-50 text-blue-900' : 'border-slate-200 bg-white text-slate-700'
+                      }`}
                   >
                     <div className="font-medium">{formatSlot(slot.startAt)}</div>
                     <div className="text-xs text-slate-500">Fin: {formatSlot(slot.endAt)}</div>

@@ -1,6 +1,7 @@
 // @ts-nocheck
 import { useEffect, useState } from 'react';
 import { Clock, Loader2, Plus, Save, Trash2 } from 'lucide-react';
+import { GridSkeleton } from '@/components/pro/ProPageSkeletons';
 
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -94,11 +95,7 @@ export default function ProAvailability() {
   };
 
   if (loading) {
-    return (
-      <div className="flex items-center gap-2 text-sm text-slate-600">
-        <Loader2 className="h-4 w-4 animate-spin" /> Chargement...
-      </div>
-    );
+    return <GridSkeleton cols={4} rows={7} />;
   }
 
   return (

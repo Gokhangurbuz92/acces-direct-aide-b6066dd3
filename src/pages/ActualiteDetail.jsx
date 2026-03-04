@@ -18,7 +18,6 @@ import EmptyState from '@/components/ui/EmptyState';
 import {
   ArrowLeft,
   Calendar,
-  Loader2,
   Star,
   RefreshCw,
   AlertTriangle,

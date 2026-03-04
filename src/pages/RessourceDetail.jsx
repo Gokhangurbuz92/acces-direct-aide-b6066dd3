@@ -13,7 +13,6 @@ import { Card, CardContent } from "@/components/ui/card";
 import {
   ArrowLeft,
   ChevronRight,
-  Loader2,
   FileText
 } from 'lucide-react';
 
@@ -24,16 +23,16 @@ export default function RessourceDetail() {
   const identifier = slug || id;
 
   const fetchRessource = async () => {
-     let url = `/api/ressources?`;
-     if (slug) url += `slug=${slug}`;
-     else if (id) url += `id=${id}`;
+    let url = `/api/ressources?`;
+    if (slug) url += `slug=${slug}`;
+    else if (id) url += `id=${id}`;
 
-     const res = await fetch(url);
-     if (!res.ok) {
-         if (res.status === 404) return null;
-         throw new Error('Failed to fetch');
-     }
-     return res.json();
+    const res = await fetch(url);
+    if (!res.ok) {
+      if (res.status === 404) return null;
+      throw new Error('Failed to fetch');
+    }
+    return res.json();
   };
 
   const { data: ressource, isLoading } = useQuery({
@@ -96,22 +95,22 @@ export default function RessourceDetail() {
 
         {/* Header */}
         <div className="bg-white rounded-2xl p-6 md:p-8 border border-slate-200 mb-6">
-            <div className="flex flex-wrap gap-2 mb-4">
-                 {ressource.type && (
-                     <Badge className="bg-blue-100 text-blue-800">
-                         {ressource.type}
-                     </Badge>
-                 )}
-                 {ressource.territory_scope && (
-                    <Badge variant="outline">
-                        {ressource.territory_scope}
-                    </Badge>
-                 )}
-            </div>
+          <div className="flex flex-wrap gap-2 mb-4">
+            {ressource.type && (
+              <Badge className="bg-blue-100 text-blue-800">
+                {ressource.type}
+              </Badge>
+            )}
+            {ressource.territory_scope && (
+              <Badge variant="outline">
+                {ressource.territory_scope}
+              </Badge>
+            )}
+          </div>
 
-            <h1 className="text-3xl md:text-4xl font-bold text-slate-900 mb-4">
-                {ressource.title}
-            </h1>
+          <h1 className="text-3xl md:text-4xl font-bold text-slate-900 mb-4">
+            {ressource.title}
+          </h1>
         </div>
 
         {/* FALC Summary */}
@@ -119,17 +118,17 @@ export default function RessourceDetail() {
 
         {/* Content */}
         {ressource.content && (
-            <Card className="mb-6">
-                <CardContent className="p-6">
-                    <h2 className="text-xl font-semibold mb-4 flex items-center gap-2">
-                        <FileText className="h-5 w-5 text-blue-600" />
-                        Contenu
-                    </h2>
-                    <div className="prose max-w-none text-slate-700">
-                        {ressource.content}
-                    </div>
-                </CardContent>
-            </Card>
+          <Card className="mb-6">
+            <CardContent className="p-6">
+              <h2 className="text-xl font-semibold mb-4 flex items-center gap-2">
+                <FileText className="h-5 w-5 text-blue-600" />
+                Contenu
+              </h2>
+              <div className="prose max-w-none text-slate-700">
+                {ressource.content}
+              </div>
+            </CardContent>
+          </Card>
         )}
 
         {/* Source Traceability */}

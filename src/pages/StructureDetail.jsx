@@ -19,8 +19,7 @@ import {
   Accessibility,
   ChevronRight,
   ExternalLink,
-  Calendar,
-  Loader2
+  Calendar
 } from 'lucide-react';
 import { generateBreadcrumbSchema, generateStructureSchema } from '@/utils/schema';
 import ProvenanceFreshness from '@/components/ProvenanceFreshness';

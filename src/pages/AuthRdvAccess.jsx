@@ -197,14 +197,14 @@ export default function AuthRdvAccess({ mode = 'login' }) {
 
           {!isSignupMode && (
             <div className="flex flex-wrap gap-3 text-sm">
-              <Link className="text-blue-700 hover:underline" to={forgotPath}>
+              <Link className="text-blue-800 hover:underline" to={forgotPath}>
                 Mot de passe oublié ?
               </Link>
               <button
                 type="button"
                 onClick={handleResendVerification}
                 disabled={resendLoading}
-                className="text-blue-700 hover:underline disabled:opacity-60"
+                className="text-blue-800 hover:underline disabled:opacity-60"
               >
                 {resendLoading ? 'Envoi...' : 'Renvoyer un email de verification'}
               </button>
@@ -212,7 +212,7 @@ export default function AuthRdvAccess({ mode = 'login' }) {
           )}
 
           <div className="flex flex-wrap gap-3 text-sm">
-            <Link className="text-blue-700 hover:underline" to={altPath}>
+            <Link className="text-blue-800 hover:underline" to={altPath}>
               {isSignupMode ? "J'ai deja un compte" : "Je n'ai pas de compte"}
             </Link>
             <Link className="text-slate-600 hover:underline" to={proLoginPath}>

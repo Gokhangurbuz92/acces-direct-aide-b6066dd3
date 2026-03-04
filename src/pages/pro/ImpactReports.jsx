@@ -12,10 +12,11 @@ import {
     MessageCircle,
     FileText,
     ShieldCheck,
-    Loader2,
     ArrowUpRight,
     CheckCircle2,
     XCircle,
+    MessageSquare,
+    Compass,
 } from 'lucide-react';
 import {
     BarChart,
@@ -108,8 +109,8 @@ export default function ImpactReports() {
                                 key={p}
                                 onClick={() => setPeriod(p)}
                                 className={`px-3 py-1.5 text-xs font-semibold transition-colors ${period === p
-                                        ? 'bg-slate-900 text-white rounded-lg'
-                                        : 'text-slate-500 hover:text-slate-700'
+                                    ? 'bg-slate-900 text-white rounded-lg'
+                                    : 'text-slate-500 hover:text-slate-700'
                                     }`}
                             >
                                 {p === 'month' ? 'Mois' : p === 'quarter' ? 'Trimestre' : 'Année'}
@@ -150,6 +151,28 @@ export default function ImpactReports() {
                             value={kpis.teamSize ?? 0}
                             icon={<Users size={16} className="text-purple-600" />}
                             sub={`${kpis.cancelledAppointments ?? 0} RDV annulés`}
+                        />
+                    </div>
+
+                    {/* Phase 3 — SMS Impact + Boussole Sociale */}
+                    <div className="grid grid-cols-2 lg:grid-cols-3 gap-4">
+                        <KpiCard
+                            label="Rappels SMS envoyés"
+                            value={kpis.smsNotifications ?? 0}
+                            icon={<MessageSquare size={16} className="text-teal-600" />}
+                            sub={`${kpis.smsImpactRate ?? 0}% de couverture`}
+                        />
+                        <KpiCard
+                            label="No-shows évités"
+                            value={kpis.avoidedNoShows ?? 0}
+                            icon={<TrendingUp size={16} className="text-teal-600" />}
+                            sub="Estimation DITP (35%)"
+                        />
+                        <KpiCard
+                            label="Boussole Sociale"
+                            value={kpis.compassSessions ?? 0}
+                            icon={<Compass size={16} className="text-indigo-600" />}
+                            sub="Orientations IA"
                         />
                     </div>
 
@@ -302,6 +325,27 @@ export default function ImpactReports() {
                                         <span className="text-xs font-bold text-slate-900">{s.count}</span>
                                     </div>
                                 ))}
+                            </div>
+                        </CardContent>
+                    </Card>
+
+                    {/* Social Impact Certification */}
+                    <Card>
+                        <CardContent className="py-6">
+                            <div className="flex items-center gap-4">
+                                <div className="w-12 h-12 bg-teal-50 rounded-xl flex items-center justify-center text-teal-600 shrink-0">
+                                    <ShieldCheck size={24} />
+                                </div>
+                                <div className="flex-1">
+                                    <h3 className="text-sm font-bold text-slate-900">Certification Impact Social</h3>
+                                    <p className="text-xs text-slate-500 mt-1">
+                                        Grâce aux rappels SMS et à la Boussole Sociale, votre structure
+                                        améliore son taux de présence et d&apos;engagement citoyen.
+                                    </p>
+                                </div>
+                                <span className="bg-emerald-100 text-emerald-700 px-3 py-1.5 rounded-full text-[10px] font-bold uppercase shrink-0">
+                                    Excellente
+                                </span>
                             </div>
                         </CardContent>
                     </Card>

@@ -112,19 +112,20 @@ async function invokeApi(url, options = {}) {
 describe('P13 — Pro auth rate limiting & refresh endpoint', () => {
 
     // ── Refresh route basic validation ──
-    it('POST /api/pro/auth/refresh without body → 400', async () => {
+    it('POST /api/pro/auth/refresh without auth → 401', async () => {
         const res = await invokeApi('/api/pro/auth/refresh', {
             method: 'POST',
             body: {},
         });
-        expect(res.statusCode).toBe(400);
+        expect(res.statusCode).toBe(401);
         expect(res.body?.error).toBeTruthy();
     });
 
     it('POST /api/pro/auth/refresh with invalid token → 401', async () => {
         const res = await invokeApi('/api/pro/auth/refresh', {
             method: 'POST',
-            body: { token: 'invalid-garbage-token' },
+            headers: { authorization: 'Bearer invalid-garbage-token' },
+            body: {},
         });
         expect(res.statusCode).toBe(401);
     });
@@ -139,13 +140,14 @@ describe('P13 — Pro auth rate limiting & refresh endpoint', () => {
 
         const res = await invokeApi('/api/pro/auth/refresh', {
             method: 'POST',
-            body: { token: proToken },
+            headers: { authorization: `Bearer ${proToken}` },
+            body: {},
         });
 
-        // May fail on DB (user doesn't exist) but should NOT be 400/404/405
-        // The token is valid so it should pass JWT verification
-        expect(res.statusCode).not.toBe(400);
-        expect(res.statusCode).not.toBe(405);
+        // Token is valid → should get 200 with new token
+        expect(res.statusCode).toBe(200);
+        expect(res.body?.success).toBe(true);
+        expect(res.body?.token).toBeTruthy();
     });
 
     it('GET /api/pro/auth/refresh → 405', async () => {

@@ -105,6 +105,7 @@ const FullSimulation = lazy(() => import("./pro/FullSimulation.jsx"));
 const AiOrchestrator = lazy(() => import("./pro/AiOrchestrator.jsx"));
 const HiveOrchestrator = lazy(() => import("./pro/HiveOrchestrator.jsx"));
 const ContentFactory = lazy(() => import("./pro/ContentFactory.jsx"));
+const StorybookExplorer = lazy(() => import("./pro/StorybookExplorer.jsx"));
 const AuthRdvAccess = lazy(() => import("./AuthRdvAccess.jsx"));
 const AuthVerifyEmail = lazy(() => import("./AuthVerifyEmail.jsx"));
 const AuthForgotPassword = lazy(() => import("./AuthForgotPassword.jsx"));
@@ -291,6 +292,7 @@ function PagesContent() {
                                 <Route path="orchestrator" element={<ProGuard><AiOrchestrator /></ProGuard>} />
                                 <Route path="hive" element={<ProGuard><HiveOrchestrator /></ProGuard>} />
                                 <Route path="content-factory" element={<ProGuard><ContentFactory /></ProGuard>} />
+                                <Route path="storybook" element={<ProGuard><StorybookExplorer /></ProGuard>} />
                                 <Route path="rehearsal" element={<ProGuard><ProRehearsal /></ProGuard>} />
                                 <Route path="mfa-settings" element={<ProGuard><ProMfaSettings /></ProGuard>} />
                             </Route>

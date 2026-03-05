@@ -22,6 +22,7 @@ import {
 import { Button, buttonVariants } from "@/components/ui/button";
 import AccessibilityPanel from '@/components/ui/AccessibilityPanel';
 import HideScreenButton from '@/components/ui/HideScreenButton';
+import DarkModeToggle from '@/components/ui/DarkModeToggle';
 import ChatAssistant from '@/components/chat/ChatAssistant';
 import { adminClient as client } from '@/api/client';
 import PropTypes from 'prop-types';
@@ -315,6 +316,7 @@ export default function Layout({ children, currentPageName }) {
 
             {/* Actions */}
             <div className="flex items-center gap-2">
+              <DarkModeToggle />
               <AccessibilityPanel />
 
               {/* Menu mobile */}

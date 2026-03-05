@@ -60,15 +60,16 @@ test.describe('Accessibility — keyboard navigation', () => {
             }
         });
 
-        // Tab until skip link receives focus (may need 1-5 tabs depending on browser + DOM order)
+        // Tab until skip link receives focus (may need more tabs due to header elements like DarkModeToggle)
         const skipLink = page.getByRole('link', { name: 'Aller au contenu principal' });
-        for (let i = 0; i < 5; i++) {
+        for (let i = 0; i < 10; i++) {
             await page.keyboard.press('Tab');
+            await page.waitForTimeout(50); // Small delay for focus to settle
             if (await skipLink.evaluate(el => el === document.activeElement)) break;
         }
 
         // Assert it received focus and became visible
-        await expect(skipLink).toBeFocused();
+        await expect(skipLink).toBeFocused({ timeout: 5000 });
         await expect(skipLink).toBeVisible();
 
         // Activate skip link

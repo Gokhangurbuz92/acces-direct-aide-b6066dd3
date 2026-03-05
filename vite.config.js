@@ -224,6 +224,23 @@ export default defineConfig({
             return 'qr-vendor';
           }
 
+          // Icons (lucide-react tree-shaken output)
+          if (id.includes('node_modules/lucide-react') ||
+            id.includes('node_modules/lucide')) {
+            return 'icon-vendor';
+          }
+
+          // Radix UI primitives
+          if (id.includes('node_modules/@radix-ui')) {
+            return 'radix-vendor';
+          }
+
+          // Command palette / search
+          if (id.includes('node_modules/cmdk') ||
+            id.includes('node_modules/@tanstack')) {
+            return 'search-vendor';
+          }
+
           // Other node_modules (catch-all for remaining dependencies)
           if (id.includes('node_modules/')) {
             return 'vendor';

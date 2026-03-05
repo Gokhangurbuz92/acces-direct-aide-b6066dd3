@@ -2,6 +2,7 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import SEO from '@/components/SEO';
+import AnimatedCard from '@/components/ui/AnimatedCard';
 
 export default function Guides() {
     const [guides, setGuides] = useState([]);
@@ -109,24 +110,26 @@ export default function Guides() {
                         <div className="text-center py-10">Chargement...</div>
                     ) : (
                         <div className="grid gap-6">
-                            {guides.map(guide => (
-                                <Link key={guide.id} to={`/bonnes-pratiques/${guide.slug}`} className="block group">
-                                    <article className="bg-white p-6 rounded-lg shadow-sm border border-gray-100 group-hover:shadow-md transition">
-                                        <div className="flex gap-2 mb-2">
-                                            {guide.categorie && (
-                                                <span className="bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded-full uppercase font-bold">
-                                                    {guide.categorie}
-                                                </span>
-                                            )}
-                                        </div>
-                                        <h2 className="text-xl font-bold text-gray-900 mb-2 group-hover:text-blue-600">
-                                            {guide.titre}
-                                        </h2>
-                                        <p className="text-gray-600 line-clamp-2">
-                                            {guide.resume_falc || "Voir le guide..."}
-                                        </p>
-                                    </article>
-                                </Link>
+                            {guides.map((guide, index) => (
+                                <AnimatedCard key={guide.id} index={index}>
+                                    <Link to={`/bonnes-pratiques/${guide.slug}`} className="block group">
+                                        <article className="bg-white p-6 rounded-lg shadow-sm border border-gray-100 group-hover:shadow-md transition">
+                                            <div className="flex gap-2 mb-2">
+                                                {guide.categorie && (
+                                                    <span className="bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded-full uppercase font-bold">
+                                                        {guide.categorie}
+                                                    </span>
+                                                )}
+                                            </div>
+                                            <h2 className="text-xl font-bold text-gray-900 mb-2 group-hover:text-blue-600">
+                                                {guide.titre}
+                                            </h2>
+                                            <p className="text-gray-600 line-clamp-2">
+                                                {guide.resume_falc || "Voir le guide..."}
+                                            </p>
+                                        </article>
+                                    </Link>
+                                </AnimatedCard>
                             ))}
 
                             {guides.length === 0 && (

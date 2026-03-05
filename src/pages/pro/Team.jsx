@@ -18,6 +18,9 @@ import {
     UserCog,
     UserX,
     TrendingUp,
+    RefreshCw,
+    Trash2,
+    AlertTriangle,
 } from 'lucide-react';
 import {
     Dialog,
@@ -33,6 +36,7 @@ import {
     SelectTrigger,
     SelectValue,
 } from '@/components/ui/select';
+import { toast } from 'sonner';
 
 /**
  * ProTeam — Page enrichie de gestion d'équipe
@@ -47,9 +51,11 @@ export default function ProTeam() {
     const [data, setData] = useState({ users: [], invitations: [] });
     const [stats, setStats] = useState(null);
     const [loading, setLoading] = useState(true);
-    const [isInviteOpen, setIsInviteOpen] = useState(false);
-    const [inviteEmail, setInviteEmail] = useState('');
-    const [inviteRole, setInviteRole] = useState('PRO');
+    const [inviting, setInviting] = useState(false);
+    const [disablingId, setDisablingId] = useState(null);
+    const [confirmDisable, setConfirmDisable] = useState(null);
+    const [resendingId, setResendingId] = useState(null);
+    const [cancellingId, setCancellingId] = useState(null);
 
     const token = typeof window !== 'undefined' ? localStorage.getItem('pro_token') : null;
     const headers = { Authorization: `Bearer ${token}` };
@@ -80,8 +86,13 @@ export default function ProTeam() {
         fetchTeam();
     }, [fetchTeam]);
 
+    const [isInviteOpen, setIsInviteOpen] = useState(false);
+    const [inviteEmail, setInviteEmail] = useState('');
+    const [inviteRole, setInviteRole] = useState('PRO');
+
     const handleInvite = async (e) => {
         e.preventDefault();
+        setInviting(true);
         try {
             const res = await fetch('/api/pro/invite', {
                 method: 'POST',
@@ -89,25 +100,81 @@ export default function ProTeam() {
                 body: JSON.stringify({ email: inviteEmail, role: inviteRole }),
             });
             if (res.ok) {
+                toast.success(`Invitation envoyée à ${inviteEmail}`);
                 fetchTeam();
                 setIsInviteOpen(false);
                 setInviteEmail('');
             } else {
                 const err = await res.json();
-                alert('Erreur: ' + err.error);
+                toast.error(err.error || 'Erreur lors de l\'envoi');
             }
-        } catch (e) {
-            if (import.meta.env.DEV) console.error(e);
+        } catch {
+            toast.error('Erreur réseau. Veuillez réessayer.');
+        } finally {
+            setInviting(false);
         }
     };
 
     const handleDisable = async (targetUserId) => {
-        if (!confirm('Désactiver ce compte collaborateur ?')) return;
-        await fetch(`/api/pro/team?userId=${targetUserId}`, {
-            method: 'DELETE',
-            headers,
-        });
-        fetchTeam();
+        setDisablingId(targetUserId);
+        try {
+            const res = await fetch(`/api/pro/team?userId=${targetUserId}`, {
+                method: 'DELETE',
+                headers,
+            });
+            if (res.ok) {
+                toast.success('Collaborateur désactivé.');
+                fetchTeam();
+            } else {
+                toast.error('Erreur lors de la désactivation.');
+            }
+        } catch {
+            toast.error('Erreur réseau.');
+        } finally {
+            setDisablingId(null);
+            setConfirmDisable(null);
+        }
+    };
+
+    const handleResendInvitation = async (invitationId, email) => {
+        setResendingId(invitationId);
+        try {
+            const res = await fetch('/api/pro/resend-invite', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', ...headers },
+                body: JSON.stringify({ invitationId }),
+            });
+            if (res.ok) {
+                toast.success(`Invitation relancée à ${email}`);
+            } else {
+                const err = await res.json();
+                toast.error(err.error || 'Erreur lors de la relance');
+            }
+        } catch {
+            toast.error('Erreur réseau.');
+        } finally {
+            setResendingId(null);
+        }
+    };
+
+    const handleCancelInvitation = async (invitationId, email) => {
+        setCancellingId(invitationId);
+        try {
+            const res = await fetch(`/api/pro/invite?id=${invitationId}`, {
+                method: 'DELETE',
+                headers,
+            });
+            if (res.ok) {
+                toast.success(`Invitation annulée pour ${email}`);
+                fetchTeam();
+            } else {
+                toast.error('Erreur lors de l\'annulation.');
+            }
+        } catch {
+            toast.error('Erreur réseau.');
+        } finally {
+            setCancellingId(null);
+        }
     };
 
     if (loading) {
@@ -238,9 +305,14 @@ export default function ProTeam() {
                                             variant="ghost"
                                             size="sm"
                                             className="text-red-500 hover:text-red-700 hover:bg-red-50"
-                                            onClick={() => handleDisable(u.id)}
+                                            onClick={() => setConfirmDisable(u)}
+                                            disabled={disablingId === u.id}
                                         >
-                                            <UserX className="mr-1 h-3.5 w-3.5" />
+                                            {disablingId === u.id ? (
+                                                <Loader2 className="mr-1 h-3.5 w-3.5 animate-spin" />
+                                            ) : (
+                                                <UserX className="mr-1 h-3.5 w-3.5" />
+                                            )}
                                             Désactiver
                                         </Button>
                                     )}
@@ -261,14 +333,42 @@ export default function ProTeam() {
                     <div className="space-y-2">
                         {data.invitations.map((inv) => (
                             <Card key={inv.id} className="bg-slate-50">
-                                <CardContent className="flex justify-between items-center p-4">
+                                <CardContent className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 p-4">
                                     <div>
                                         <p className="font-medium text-sm">{inv.email}</p>
-                                        <p className="text-xs text-slate-500">{inv.role}</p>
+                                        <div className="flex items-center gap-2 mt-1">
+                                            <RoleBadge role={inv.role} />
+                                            <span className="text-[10px] px-2 py-0.5 bg-amber-100 text-amber-700 rounded-full font-semibold">En attente</span>
+                                        </div>
                                     </div>
-                                    <div className="flex items-center text-xs text-slate-400 gap-1.5">
-                                        <Mail className="h-3.5 w-3.5" />
-                                        Envoyé
+                                    <div className="flex items-center gap-2">
+                                        <Button
+                                            variant="outline"
+                                            size="sm"
+                                            onClick={() => handleResendInvitation(inv.id, inv.email)}
+                                            disabled={resendingId === inv.id}
+                                        >
+                                            {resendingId === inv.id ? (
+                                                <Loader2 className="mr-1 h-3.5 w-3.5 animate-spin" />
+                                            ) : (
+                                                <RefreshCw className="mr-1 h-3.5 w-3.5" />
+                                            )}
+                                            Relancer
+                                        </Button>
+                                        <Button
+                                            variant="ghost"
+                                            size="sm"
+                                            className="text-red-500 hover:text-red-700 hover:bg-red-50"
+                                            onClick={() => handleCancelInvitation(inv.id, inv.email)}
+                                            disabled={cancellingId === inv.id}
+                                        >
+                                            {cancellingId === inv.id ? (
+                                                <Loader2 className="mr-1 h-3.5 w-3.5 animate-spin" />
+                                            ) : (
+                                                <Trash2 className="mr-1 h-3.5 w-3.5" />
+                                            )}
+                                            Annuler
+                                        </Button>
                                     </div>
                                 </CardContent>
                             </Card>
@@ -311,9 +411,49 @@ export default function ProTeam() {
                             </Select>
                         </div>
                         <DialogFooter>
-                            <Button type="submit">Inviter</Button>
+                            <Button type="submit" disabled={inviting}>
+                                {inviting ? (
+                                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                ) : (
+                                    <UserPlus className="mr-2 h-4 w-4" />
+                                )}
+                                {inviting ? 'Envoi...' : 'Inviter'}
+                            </Button>
                         </DialogFooter>
                     </form>
+                </DialogContent>
+            </Dialog>
+
+            {/* Confirm Disable Dialog */}
+            <Dialog open={!!confirmDisable} onOpenChange={() => setConfirmDisable(null)}>
+                <DialogContent>
+                    <DialogHeader>
+                        <DialogTitle className="flex items-center gap-2">
+                            <AlertTriangle className="h-5 w-5 text-red-500" />
+                            Désactiver ce collaborateur ?
+                        </DialogTitle>
+                    </DialogHeader>
+                    <p className="text-sm text-slate-600">
+                        Le compte de <strong>{confirmDisable?.email}</strong> sera désactivé.
+                        Il ne pourra plus accéder à l&apos;Espace Pro.
+                    </p>
+                    <DialogFooter className="gap-2">
+                        <Button variant="outline" onClick={() => setConfirmDisable(null)}>
+                            Annuler
+                        </Button>
+                        <Button
+                            variant="destructive"
+                            onClick={() => handleDisable(confirmDisable?.id)}
+                            disabled={disablingId === confirmDisable?.id}
+                        >
+                            {disablingId === confirmDisable?.id ? (
+                                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                            ) : (
+                                <UserX className="mr-2 h-4 w-4" />
+                            )}
+                            Confirmer la désactivation
+                        </Button>
+                    </DialogFooter>
                 </DialogContent>
             </Dialog>
         </div>

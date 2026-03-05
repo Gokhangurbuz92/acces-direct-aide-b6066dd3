@@ -51,6 +51,7 @@ import proOutlookAvailability from './_handlers/pro/outlook-availability.js';
 import proTeam from './_handlers/pro/team.js';
 import proTeamStats from './_handlers/pro/team-stats.js';
 import proInvite from './_handlers/pro/invite.js';
+import proResendInvite from './_handlers/pro/resend-invite.js';
 import proDossier from './_handlers/pro/dossier.js';
 import proNotifications from './_handlers/pro/notifications.js';
 import proAudit from './_handlers/pro/audit.js';
@@ -205,6 +206,7 @@ export const routes = [
     { path: 'pro/team/stats', match: 'exact', handler: proTeamStats },
     { path: 'pro/team', match: 'exact', handler: proTeam },
     { path: 'pro/invite', match: 'exact', handler: proInvite },
+    { path: 'pro/resend-invite', match: 'exact', handler: proResendInvite },
     { path: 'pro/dossier', match: 'exact', handler: proDossier },
     { path: 'pro/notifications/unread-count', match: 'exact', handler: proNotificationsUnreadCount },
     { path: 'pro/notifications', match: 'exact', handler: proNotifications },

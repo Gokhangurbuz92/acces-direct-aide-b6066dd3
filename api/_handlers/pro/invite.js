@@ -9,12 +9,48 @@ import crypto from 'crypto';
  */
 
 async function handler(req, res) {
-    if (req.method !== 'POST') return res.status(405).json({ error: "Method not allowed" });
+    if (req.method !== 'POST' && req.method !== 'DELETE') {
+        return res.status(405).json({ error: "Method not allowed" });
+    }
 
     const proCtx = requireProStructureContext(req, res);
     if (!proCtx) return;
 
     const { structureId, userId } = proCtx;
+
+    // ── DELETE: Cancel a pending invitation ──
+    if (req.method === 'DELETE') {
+        const url = new URL(req.url || '/', `https://${req.headers?.host || 'localhost'}`);
+        const invitationId = url.searchParams.get('id') || req.query?.id;
+
+        if (!invitationId) {
+            return res.status(400).json({ error: 'id requis.' });
+        }
+
+        try {
+            const invitation = await prisma.invitation.findFirst({
+                where: { id: invitationId, structureId, used_at: null },
+            });
+
+            if (!invitation) {
+                return res.status(404).json({ error: 'Invitation introuvable.' });
+            }
+
+            await prisma.invitation.delete({ where: { id: invitationId } });
+
+            await logProAudit('INVITATION_CANCELLED', userId, structureId, {
+                email: invitation.email,
+                invitationId,
+            }, req.headers?.['x-forwarded-for'] || req.socket?.remoteAddress || 'unknown');
+
+            return res.status(200).json({ ok: true });
+        } catch (e) {
+            logger.error({ err: e }, '[Invite] Cancel error');
+            return res.status(500).json({ error: 'Erreur interne.' });
+        }
+    }
+
+    // ── POST: Create invitation ──
 
     const { email, role: inviteRole } = req.body;
     if (!email) return res.status(400).json({ error: "Email required" });

@@ -23,9 +23,14 @@ const PAGES = [
 test.describe('Accessibility — axe audit (critical + serious)', () => {
     for (const { name, path } of PAGES) {
         test(`${name} (${path}) — no critical/serious violations`, async ({ page }) => {
+            // Augmentation du timeout pour la CI (PR #2)
+            test.setTimeout(30_000);
+
             await page.goto(path);
-            // Wait for main content to load
-            await page.waitForSelector('#main-content', { timeout: 10_000 });
+            // Attente d'un état réseau stable pour éviter les faux positifs (PR #2)
+            await page.waitForLoadState('networkidle');
+            // Wait for main content to load (timeout étendu pour CI)
+            await page.waitForSelector('#main-content', { timeout: 15_000 });
 
             const results = await new AxeBuilder({ page })
                 .withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa'])

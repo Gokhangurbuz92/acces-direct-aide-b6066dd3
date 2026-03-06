@@ -30,9 +30,11 @@ test.describe('SEO & Metadata', () => {
     });
 
     await page.goto('/aide/aide-test');
+    // Crucial : Attendre que Helmet injecte les tags après le fetch API (PR #2)
+    await page.waitForLoadState('networkidle');
 
-    // Check Title
-    await expect(page).toHaveTitle(/Aide Test SEO.*Accès Direct Aide/i);
+    // Check Title (timeout étendu pour le rendu Helmet dynamique)
+    await expect(page).toHaveTitle(/Aide Test SEO.*Accès Direct Aide/i, { timeout: 10_000 });
 
     // Check Meta Description
     // Use .last() because index.html has a static description which Helmet appends to.
@@ -82,8 +84,9 @@ test.describe('SEO & Metadata', () => {
     });
 
     await page.goto('/structures/structure-test');
+    await page.waitForLoadState('networkidle');
 
-    await expect(page).toHaveTitle(/Structure Test SEO.*Accès Direct Aide/i);
+    await expect(page).toHaveTitle(/Structure Test SEO.*Accès Direct Aide/i, { timeout: 10_000 });
 
     // Check Canonical (Should be /structures/structure-test)
     const canonical = page.locator('link[rel="canonical"]').last();
@@ -113,12 +116,22 @@ test.describe('SEO & Metadata', () => {
     });
 
     await page.goto('/demarches/demarche-test');
+    await page.waitForLoadState('networkidle');
 
-    await expect(page).toHaveTitle(/Demarche Test SEO.*Accès Direct Aide/i);
+    await expect(page).toHaveTitle(/Demarche Test SEO.*Accès Direct Aide/i, { timeout: 10_000 });
 
     // Check Canonical (Should be /demarches/demarche-test)
     const canonical = page.locator('link[rel="canonical"]').last();
     await expect(canonical).toHaveAttribute('href', /https?:\/\/.*\/demarches\/demarche-test/);
+  });
+
+  test('Réseaux Sociaux — Image OpenGraph au format WebP', async ({ page }) => {
+    await page.goto('/');
+    await page.waitForLoadState('networkidle');
+
+    // .first() : index.html statique, .last() = Helmet dynamique — les deux sont WebP
+    const ogImage = page.locator('meta[property="og:image"]').first();
+    await expect(ogImage).toHaveAttribute('content', /\.webp/i);
   });
 
 });

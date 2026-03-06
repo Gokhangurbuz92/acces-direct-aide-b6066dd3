@@ -111,6 +111,9 @@ model Aide {
   source_document_id String?
   sourceDocument     SourceDocument? @relation(fields: [source_document_id], references: [id])
 
+  // External connector dedup key (Aides-Territoires, MesAidesRéno, etc.)
+  externalId String? @unique
+
   @@index([statut, published_at])
   @@index([categoryId, statut])
   @@index([statut])

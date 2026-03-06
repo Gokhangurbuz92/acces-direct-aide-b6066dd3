@@ -134,32 +134,65 @@ export default defineConfig({
     rollupOptions: {
       output: {
         manualChunks: (id) => {
-          // Sentry (check first to avoid conflicts)
+          // ── Backend leak guard (PR #4) ──────────────────────
+          // Exclude server-only modules that may be transitively pulled in.
+          if (id.includes('node_modules/undici') ||
+            id.includes('node_modules/pino') ||
+            id.includes('node_modules/@prisma') ||
+            id.includes('node_modules/prisma') ||
+            id.includes('node_modules/bcrypt') ||
+            id.includes('node_modules/jsonwebtoken') ||
+            id.includes('node_modules/nodemailer')) {
+            return undefined; // Let Vite tree-shake these out
+          }
+
+          // ── Sentry (isolated for async loading) ────────────
           if (id.includes('node_modules/@sentry')) {
             return 'sentry-vendor';
           }
 
-          // React core (react, react-dom, scheduler) - must be before react-router
+          // ── React core ─────────────────────────────────────
           if (id.includes('node_modules/react/') ||
             id.includes('node_modules/react-dom/') ||
             id.includes('node_modules/scheduler/')) {
             return 'react-vendor';
           }
 
-          // React Router (separate from react core to avoid circular deps)
+          // ── React Router ───────────────────────────────────
           if (id.includes('node_modules/react-router') ||
             id.includes('node_modules/@remix-run/router')) {
             return 'react-router-vendor';
           }
 
-          // Pro-only ecosystem (lazy-loaded, only needed on Pro/Admin pages)
+          // ── Framer Motion (lazy-loaded) ────────────────────
+          if (id.includes('node_modules/framer-motion')) {
+            return 'framer-motion';
+          }
+
+          // ── Charts (recharts + d3 transitive deps) ─────────
+          if (id.includes('node_modules/recharts') ||
+            id.includes('node_modules/d3-') ||
+            id.includes('node_modules/victory') ||
+            id.includes('node_modules/internmap') ||
+            id.includes('node_modules/delaunator')) {
+            return 'charts-vendor';
+          }
+
+          // ── PDF (heavy, lazy-loaded) ───────────────────────
+          if (id.includes('node_modules/jspdf') ||
+            id.includes('node_modules/html2canvas') ||
+            id.includes('node_modules/dompurify')) {
+            return 'pdf-vendor';
+          }
+
+          // ── Pro-only ecosystem (lazy-loaded) ───────────────
           if (id.includes('node_modules/react-day-picker') ||
             id.includes('node_modules/react-markdown') ||
             id.includes('node_modules/react-resizable-panels')) {
             return 'pro-ecosystem';
           }
 
-          // React ecosystem (react-query, react-helmet, react-hook-form, etc.)
+          // ── React ecosystem (query, helmet, forms) ─────────
           if (id.includes('node_modules/@tanstack/react-query') ||
             id.includes('node_modules/@tanstack/query-core') ||
             id.includes('node_modules/react-helmet-async') ||
@@ -168,14 +201,14 @@ export default defineConfig({
             return 'react-ecosystem';
           }
 
-          // Framer Motion (lazy-loaded, only used by ChatWidget)
-          if (id.includes('node_modules/framer-motion')) {
-            return 'framer-motion';
+          // ── Icons (lucide — deduplicated, PR #4) ───────────
+          if (id.includes('node_modules/lucide-react') ||
+            id.includes('node_modules/lucide')) {
+            return 'icon-vendor';
           }
 
-          // UI libraries (radix-ui, lucide, etc.)
+          // ── UI primitives (Radix + accessories) ────────────
           if (id.includes('node_modules/@radix-ui') ||
-            id.includes('node_modules/lucide-react') ||
             id.includes('node_modules/cmdk') ||
             id.includes('node_modules/vaul') ||
             id.includes('node_modules/sonner') ||
@@ -186,7 +219,21 @@ export default defineConfig({
             return 'ui-vendor';
           }
 
-          // Utilities (date-fns, zod, clsx, etc.)
+          // ── Crypto / E2EE ──────────────────────────────────
+          if (id.includes('node_modules/tweetnacl') ||
+            id.includes('node_modules/crypto-js') ||
+            id.includes('node_modules/nacl')) {
+            return 'crypto-vendor';
+          }
+
+          // ── QR code ────────────────────────────────────────
+          if (id.includes('node_modules/qrcode') ||
+            id.includes('node_modules/react-qr-code') ||
+            id.includes('node_modules/qr.js')) {
+            return 'qr-vendor';
+          }
+
+          // ── Utilities (date-fns, zod, clsx, etc.) ──────────
           if (id.includes('node_modules/date-fns') ||
             id.includes('node_modules/zod') ||
             id.includes('node_modules/clsx') ||
@@ -196,52 +243,7 @@ export default defineConfig({
             return 'utils-vendor';
           }
 
-          // Charts and visualization (recharts + d3 transitive deps)
-          if (id.includes('node_modules/recharts') ||
-            id.includes('node_modules/d3-') ||
-            id.includes('node_modules/victory') ||
-            id.includes('node_modules/internmap') ||
-            id.includes('node_modules/delaunator')) {
-            return 'charts-vendor';
-          }
-
-          // PDF libraries (very heavy, lazy load or split)
-          if (id.includes('node_modules/jspdf') || id.includes('node_modules/html2canvas') || id.includes('node_modules/dompurify')) {
-            return 'pdf-vendor';
-          }
-
-          // Crypto / E2EE (tweetnacl, crypto-js, nacl-util)
-          if (id.includes('node_modules/tweetnacl') ||
-            id.includes('node_modules/crypto-js') ||
-            id.includes('node_modules/nacl')) {
-            return 'crypto-vendor';
-          }
-
-          // QR code rendering
-          if (id.includes('node_modules/qrcode') ||
-            id.includes('node_modules/react-qr-code') ||
-            id.includes('node_modules/qr.js')) {
-            return 'qr-vendor';
-          }
-
-          // Icons (lucide-react tree-shaken output)
-          if (id.includes('node_modules/lucide-react') ||
-            id.includes('node_modules/lucide')) {
-            return 'icon-vendor';
-          }
-
-          // Radix UI primitives
-          if (id.includes('node_modules/@radix-ui')) {
-            return 'radix-vendor';
-          }
-
-          // Command palette / search
-          if (id.includes('node_modules/cmdk') ||
-            id.includes('node_modules/@tanstack')) {
-            return 'search-vendor';
-          }
-
-          // Other node_modules (catch-all for remaining dependencies)
+          // ── Catch-all for remaining node_modules ───────────
           if (id.includes('node_modules/')) {
             return 'vendor';
           }

@@ -84,3 +84,4 @@ scripts/check-db-extensions.cjs
 *_SECRETS.md
 .env*.local
 !docs/ROTATE_SECRETS.md
+storybook-static

@@ -42,8 +42,14 @@ export class AidesTerritoiresConnector extends SourceConnector {
 
             while (retries <= maxRetries) {
                 try {
+                    const headers = { Accept: 'application/json' };
+                    // API v1.8+ requires Bearer token auth
+                    const apiKey = process.env.AIDES_TERRITOIRES_API_KEY;
+                    if (apiKey) {
+                        headers['Authorization'] = `Bearer ${apiKey}`;
+                    }
                     response = await fetch(nextUrl, {
-                        headers: { Accept: 'application/json' },
+                        headers,
                         signal: AbortSignal.timeout(30_000),
                     });
                     if (response.ok) break;

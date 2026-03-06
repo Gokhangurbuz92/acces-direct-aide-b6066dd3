@@ -16,15 +16,15 @@ import { Link } from 'react-router-dom';
  * @param {string} props.alt - Texte alternatif personnalisé
  * @param {string} props.className - Classes CSS additionnelles
  */
-const Logo = ({ 
+const Logo = ({
     family = 'current',
-    variant = 'full', 
+    variant = 'full',
     tone = 'default',
     size = 40,
     asLink = false,
     alt,
     className,
-    ...props 
+    ...props
 }) => {
     // Conversion size preset vers pixels
     const sizeMap = {
@@ -45,23 +45,23 @@ const Logo = ({
     if (!isCurrentFamily) {
         if (tone === 'white') {
             logoSrc = `${basePath}/logo${familySuffix}-white.svg`;
-            fallbackSrc = '/brand/logo-horizontal-transparent.png';
+            fallbackSrc = '/brand/logo-horizontal-transparent.webp';
         } else if (variant === 'icon') {
             logoSrc = `${basePath}/logo${familySuffix}-icon.svg`;
-            fallbackSrc = '/brand/logo-mark.png';
+            fallbackSrc = '/brand/logo-mark.webp';
         } else if (variant === 'tagline') {
             logoSrc = `${basePath}/logo${familySuffix}-tagline.svg`;
-            fallbackSrc = '/brand/logo-horizontal.png';
+            fallbackSrc = '/brand/logo-horizontal.webp';
         } else {
             logoSrc = `${basePath}/logo${familySuffix}-full.svg`;
-            fallbackSrc = '/brand/logo-horizontal.png';
+            fallbackSrc = '/brand/logo-horizontal.webp';
         }
     }
 
     // Texte alternatif
     const altText = alt || 'Logo AccesDirectAide';
     const whiteToneClass = tone === 'white' && isCurrentFamily ? 'brightness-0 invert' : '';
-    
+
     // Composant image
     const logoImage = (
         <img
@@ -77,12 +77,12 @@ const Logo = ({
             {...props}
         />
     );
-    
+
     // Si asLink, envelopper dans un Link
     if (asLink) {
         return (
-            <Link 
-                to="/" 
+            <Link
+                to="/"
                 className="inline-flex items-center focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-primary focus-visible:ring-offset-2 rounded"
                 aria-label="Aller à l’accueil"
             >
@@ -90,7 +90,7 @@ const Logo = ({
             </Link>
         );
     }
-    
+
     return logoImage;
 };
 

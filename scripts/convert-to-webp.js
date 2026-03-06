@@ -1,9 +1,7 @@
 /**
  * convert-to-webp.js
  * Automatise la conversion des images JPG/PNG vers WebP.
- * Nécessite la dépendance 'sharp' : npm install sharp --save-dev
- *
- * Usage: node scripts/convert-to-webp.js
+ * Nécessite la dépendance 'sharp' (déjà en devDependencies).
  */
 
 import sharp from 'sharp';
@@ -13,25 +11,22 @@ import { fileURLToPath } from 'url';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
-// Directories to scan for images
-const SCAN_DIRS = [
-  path.resolve(__dirname, '../public/brand'),
+// Dossiers à scanner
+const TARGET_DIRS = [
+  path.resolve(__dirname, '../public/assets'),
+  path.resolve(__dirname, '../public'),
 ];
 
 const TARGET_EXTENSIONS = ['.png', '.jpg', '.jpeg'];
 
-// Files to skip (OG images must stay PNG for social media crawlers)
-const SKIP_FILES = ['og-image.png', 'og-default.png'];
+// Fichiers à exclure de la conversion (déjà gérés ou nécessaires en format original)
+const EXCLUDE_PATTERNS = [
+  'favicon',
+  'apple-touch-icon',
+];
 
-let converted = 0;
-let skipped = 0;
-let errors = 0;
-
-async function walkAndConvert(directory) {
-  if (!fs.existsSync(directory)) {
-    console.log(`⏭️  Répertoire inexistant, ignoré : ${directory}`);
-    return;
-  }
+async function walkAndConvert(directory, depth = 0) {
+  if (!fs.existsSync(directory)) return;
 
   const files = fs.readdirSync(directory);
 
@@ -40,52 +35,53 @@ async function walkAndConvert(directory) {
     const stat = fs.statSync(fullPath);
 
     if (stat.isDirectory()) {
-      await walkAndConvert(fullPath);
+      // Ne pas descendre dans node_modules, .git, etc.
+      if (['node_modules', '.git', 'dist'].includes(file)) continue;
+      // Limiter la profondeur pour le dossier public/ root
+      if (depth < 2) {
+        await walkAndConvert(fullPath, depth + 1);
+      }
     } else if (TARGET_EXTENSIONS.includes(path.extname(file).toLowerCase())) {
-      if (SKIP_FILES.includes(file)) {
-        console.log(`⏭️  Fichier OG protégé, ignoré : ${file}`);
-        skipped++;
+      // Vérifier les exclusions
+      if (EXCLUDE_PATTERNS.some(p => file.toLowerCase().includes(p))) {
+        console.log(`⏭️  Exclusion : ${file}`);
         continue;
       }
 
       const outputName = file.replace(/\.(png|jpg|jpeg)$/i, '.webp');
       const outputPath = path.join(directory, outputName);
 
-      // Skip if WebP already exists
+      // Ne pas re-convertir si le WebP existe déjà
       if (fs.existsSync(outputPath)) {
-        console.log(`⏭️  WebP déjà existant : ${outputName}`);
-        skipped++;
+        console.log(`⏭️  WebP existe déjà : ${outputName}`);
         continue;
       }
 
-      const sizeBefore = (stat.size / 1024).toFixed(1);
+      console.log(`⚡ Conversion : ${file} → ${outputName}`);
 
       try {
-        await sharp(fullPath)
+        const info = await sharp(fullPath)
           .webp({ quality: 80 })
           .toFile(outputPath);
 
-        const outputStat = fs.statSync(outputPath);
-        const sizeAfter = (outputStat.size / 1024).toFixed(1);
-        const reduction = (100 - (outputStat.size / stat.size * 100)).toFixed(0);
-
-        console.log(`✅ ${file} (${sizeBefore} KB) → ${outputName} (${sizeAfter} KB) [-${reduction}%]`);
-        converted++;
+        const origSize = stat.size;
+        const newSize = info.size;
+        const reduction = Math.round((1 - newSize / origSize) * 100);
+        console.log(`✅ Succès : ${outputName} (${origSize} → ${newSize} octets, -${reduction}%)`);
       } catch (err) {
         console.error(`❌ Erreur sur ${file}:`, err.message);
-        errors++;
       }
     }
   }
 }
 
-console.log('🎨 Démarrage de l\'optimisation des images (WebP)...\n');
+console.log("🎨 Démarrage de l'optimisation des images (WebP)...");
 
-for (const dir of SCAN_DIRS) {
-  console.log(`📁 Scan : ${path.relative(path.resolve(__dirname, '..'), dir)}`);
-  await walkAndConvert(dir);
-  console.log('');
+for (const dir of TARGET_DIRS) {
+  if (fs.existsSync(dir)) {
+    console.log(`\n📂 Scan de ${path.relative(process.cwd(), dir)}/`);
+    await walkAndConvert(dir);
+  }
 }
 
-console.log('─'.repeat(50));
-console.log(`✨ Optimisation terminée : ${converted} convertis, ${skipped} ignorés, ${errors} erreurs.`);
+console.log("\n✨ Optimisation terminée.");

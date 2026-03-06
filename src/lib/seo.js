@@ -55,8 +55,8 @@ export function buildCanonicalUrl(path = '/') {
 }
 
 /** @param {string} imagePath */
-export function buildAbsoluteImageUrl(imagePath = '/og-default.png') {
-  const image = String(imagePath || '/og-default.png');
+export function buildAbsoluteImageUrl(imagePath = '/og-default.webp') {
+  const image = String(imagePath || '/og-default.webp');
   if (image.startsWith('http://') || image.startsWith('https://')) {
     return image;
   }
@@ -167,11 +167,11 @@ export function buildAideDetailSchemas(aide, canonicalPath) {
       },
       ...(territories.length > 0
         ? {
-            areaServed: territories.map((/** @type {string} */ territory) => ({
-              '@type': 'AdministrativeArea',
-              name: String(territory),
-            })),
-          }
+          areaServed: territories.map((/** @type {string} */ territory) => ({
+            '@type': 'AdministrativeArea',
+            name: String(territory),
+          })),
+        }
         : {}),
     },
   };

@@ -3,23 +3,87 @@ import { SourceConnector } from './SourceConnector.js';
 import crypto from 'crypto';
 
 const API_BASE = 'https://aides-territoires.beta.gouv.fr/api/aids/';
+const CONNEXION_URL = 'https://aides-territoires.beta.gouv.fr/api/connexion/';
 const PAGE_SIZE = 50;
 const MAX_PAGES = 100; // Safety cap: 50 * 100 = 5000 aides max
 
 /**
- * Connector for the Aides Territoires API (beta.gouv.fr).
+ * Connector for the Aides Territoires API v1.8+ (beta.gouv.fr).
  *
- * Public API — no token needed for read access.
+ * Auth flow (2 steps):
+ *   1. POST /api/connexion/ with header X-AUTH-TOKEN = static token
+ *      → returns a Bearer token valid 24h
+ *   2. Use Bearer token in Authorization header for all /api/aids/ calls
+ *
  * Docs: https://aides-territoires.beta.gouv.fr/api/swagger/
- *
- * This connector fetches published aides with pagination and caches
- * them in memory so the ingest-aids pipeline can process them one by one.
  */
 export class AidesTerritoiresConnector extends SourceConnector {
     constructor() {
         super('aides-territoires', 'https://aides-territoires.beta.gouv.fr');
         /** @type {Map<string, object>} */
         this._cache = new Map();
+        /** @type {string|null} */
+        this._bearerToken = null;
+    }
+
+    /**
+     * Exchange the static X-AUTH-TOKEN for a 24h Bearer token.
+     * @returns {Promise<string|null>} Bearer token or null if no API key configured
+     */
+    async _authenticate() {
+        const apiKey = process.env.AIDES_TERRITOIRES_API_KEY;
+        if (!apiKey) {
+            logger.warn('[AidesTerritoires] No AIDES_TERRITOIRES_API_KEY set — API calls will likely fail with 401');
+            return null;
+        }
+
+        try {
+            const res = await fetch(CONNEXION_URL, {
+                method: 'POST',
+                headers: {
+                    'X-AUTH-TOKEN': apiKey,
+                    'Accept': 'application/json',
+                },
+                signal: AbortSignal.timeout(15_000),
+            });
+
+            if (!res.ok) {
+                const body = await res.text().catch(() => '');
+                throw new Error(`Connexion API ${res.status}: ${body.substring(0, 200)}`);
+            }
+
+            const data = await res.json();
+            // The API returns the bearer token in the response
+            const token = data.token || data.access_token || data.bearer || data.Token;
+            if (!token) {
+                logger.warn('[AidesTerritoires] Connexion response missing token field', { keys: Object.keys(data) });
+                // Try using the whole response as a string if it looks like a token
+                if (typeof data === 'string' && data.length > 20) {
+                    this._bearerToken = data;
+                    return data;
+                }
+                return null;
+            }
+
+            this._bearerToken = token;
+            logger.info('[AidesTerritoires] Bearer token acquired successfully');
+            return token;
+        } catch (err) {
+            logger.error(`[AidesTerritoires] Authentication failed: ${err.message}`);
+            throw err;
+        }
+    }
+
+    /**
+     * Build headers for API requests, including Bearer auth if available.
+     * @returns {Record<string, string>}
+     */
+    _buildHeaders() {
+        const headers = { Accept: 'application/json' };
+        if (this._bearerToken) {
+            headers['Authorization'] = `Bearer ${this._bearerToken}`;
+        }
+        return headers;
     }
 
     /**
@@ -31,6 +95,10 @@ export class AidesTerritoiresConnector extends SourceConnector {
      */
     async getDetailUrls() {
         this._cache.clear();
+
+        // Step 1: Authenticate (exchange static token → 24h bearer)
+        await this._authenticate();
+
         let nextUrl = `${API_BASE}?published=true&page_size=${PAGE_SIZE}`;
         let page = 0;
 
@@ -42,15 +110,8 @@ export class AidesTerritoiresConnector extends SourceConnector {
 
             while (retries <= maxRetries) {
                 try {
-                    const headers = { Accept: 'application/json' };
-                    // API v1.8+ requires auth — X-AUTH-TOKEN per OpenAPI spec
-                    const apiKey = process.env.AIDES_TERRITOIRES_API_KEY;
-                    if (apiKey) {
-                        headers['X-AUTH-TOKEN'] = apiKey;
-                        headers['Authorization'] = `Bearer ${apiKey}`;
-                    }
                     response = await fetch(nextUrl, {
-                        headers,
+                        headers: this._buildHeaders(),
                         signal: AbortSignal.timeout(30_000),
                     });
                     if (response.ok) break;

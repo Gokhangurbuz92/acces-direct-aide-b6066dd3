@@ -7,7 +7,7 @@ import {
     getCurrentPathname,
 } from '@/lib/seo';
 
-const DEFAULT_IMAGE = '/og-default.png';
+const DEFAULT_IMAGE = '/og-default.webp';
 const DEFAULT_IMAGE_ALT = 'Accès Direct Aide - Informations sociales officielles';
 const SITE_NAME = 'Accès Direct Aide';
 

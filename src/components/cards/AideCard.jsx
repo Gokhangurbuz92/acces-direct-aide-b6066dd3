@@ -99,7 +99,7 @@ export default function AideCard({ aide, compact = false, index = 0 }) {
             </h3>
 
             {/* Description courte */}
-            <p className="text-slate-600 text-sm line-clamp-2">
+            <p className="text-slate-600 text-sm line-clamp-4">
               {isFalcEnabled && aide.summary_falc ? aide.summary_falc : aide.cest_quoi}
             </p>
 

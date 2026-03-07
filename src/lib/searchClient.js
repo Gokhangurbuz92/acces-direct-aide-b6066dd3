@@ -134,10 +134,19 @@ function normalizeResponse(payload) {
   const results = rawItems.map(normalizeResultItem);
   const totalFromPayload = Number(payload?.total);
 
+  // Normalize additional result types from expanded search
+  const demarches = Array.isArray(payload?.demarches) ? payload.demarches : [];
+  const structures = Array.isArray(payload?.structures) ? payload.structures : [];
+  const actualites = Array.isArray(payload?.actualites) ? payload.actualites : [];
+
   return {
     results,
+    demarches,
+    structures,
+    actualites,
     meta: {
       total: Number.isFinite(totalFromPayload) ? totalFromPayload : results.length,
+      totalAll: (Number.isFinite(totalFromPayload) ? totalFromPayload : results.length) + demarches.length + structures.length + actualites.length,
       message: typeof payload?.message === 'string' ? payload.message : null,
     },
     error: typeof payload?.error === 'string' ? payload.error : null,

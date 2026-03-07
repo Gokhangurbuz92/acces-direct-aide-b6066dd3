@@ -64,8 +64,8 @@ export default function DemarcheCard({ demarche, index = 0 }) {
             <h3 className="text-lg font-bold text-slate-900 group-hover:text-blue-700 transition-colors mb-2" data-testid="demarche-title">
               {demarche.titre}
             </h3>
-            <p className="text-slate-600 text-sm line-clamp-2 mb-4">
-              {isFalcEnabled && demarche.summary_falc ? demarche.summary_falc : (demarche.summary_falc || demarche.description_courte)}
+            <p className="text-slate-600 text-sm line-clamp-4 mb-4">
+              {isFalcEnabled && demarche.summary_falc ? demarche.summary_falc : (demarche.description_courte || demarche.summary_falc)}
             </p>
             {/* FALC badge */}
             {isFalcEnabled && demarche.summary_falc && (

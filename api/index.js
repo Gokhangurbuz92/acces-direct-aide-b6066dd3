@@ -8,6 +8,11 @@ import { env, getEnv } from './_utils/env.js';
 import { applyNoIndex, isTechnicalNoIndexPath } from './_utils/robots.js';
 import { checkRateLimit, getClientIp, getRateLimitStatus } from './_utils/rateLimit.js';
 
+// Vercel Serverless Function config — Pro plan supports up to 300s
+export const config = {
+    maxDuration: 300,
+};
+
 /** @param {unknown} value */
 function normalizeRequestId(value) {
     const raw = Array.isArray(value) ? value[0] : value;

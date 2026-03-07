@@ -4,8 +4,9 @@ import crypto from 'crypto';
 
 const API_BASE = 'https://aides-territoires.beta.gouv.fr/api/aids/';
 const CONNEXION_URL = 'https://aides-territoires.beta.gouv.fr/api/connexion/';
-const PAGE_SIZE = 20;
-const MAX_PAGES = 5; // 20 * 5 = 100 aides per run (safe within Vercel timeout)
+const PAGE_SIZE = 50;
+const PAGES_PER_RUN = 10; // 50 * 10 = 500 aides per run (safe within Vercel 300s timeout)
+const KV_CURSOR_KEY = 'at-connector:last-offset';
 
 /**
  * Connector for the Aides Territoires API v1.8+ (beta.gouv.fr).
@@ -93,32 +94,78 @@ export class AidesTerritoiresConnector extends SourceConnector {
      *
      * @returns {Promise<string[]>}
      */
+    /**
+     * Load last offset from Upstash KV (or 0 if first run).
+     * @returns {Promise<number>}
+     */
+    async _loadCursor() {
+        try {
+            const kvUrl = process.env.KV_REST_API_URL;
+            const kvToken = process.env.KV_REST_API_TOKEN;
+            if (!kvUrl || !kvToken) return 0;
+
+            const res = await fetch(`${kvUrl}/get/${KV_CURSOR_KEY}`, {
+                headers: { Authorization: `Bearer ${kvToken}` },
+                signal: AbortSignal.timeout(5_000),
+            });
+            if (!res.ok) return 0;
+            const data = await res.json();
+            const offset = parseInt(data.result, 10);
+            return Number.isFinite(offset) ? offset : 0;
+        } catch {
+            return 0;
+        }
+    }
+
+    /**
+     * Save offset to Upstash KV for next run.
+     * @param {number} offset
+     */
+    async _saveCursor(offset) {
+        try {
+            const kvUrl = process.env.KV_REST_API_URL;
+            const kvToken = process.env.KV_REST_API_TOKEN;
+            if (!kvUrl || !kvToken) return;
+
+            await fetch(`${kvUrl}/set/${KV_CURSOR_KEY}/${offset}`, {
+                headers: { Authorization: `Bearer ${kvToken}` },
+                signal: AbortSignal.timeout(5_000),
+            });
+            logger.info(`[AidesTerritoires] Cursor saved: offset=${offset}`);
+        } catch (err) {
+            logger.warn(`[AidesTerritoires] Failed to save cursor: ${err.message}`);
+        }
+    }
+
     async getDetailUrls() {
         this._cache.clear();
 
         // Step 1: Authenticate (exchange static token → 24h bearer)
         await this._authenticate();
 
-        let nextUrl = `${API_BASE}?published=true&page_size=${PAGE_SIZE}`;
-        let page = 0;
+        // Step 2: Load cursor (resume from last run)
+        const startOffset = await this._loadCursor();
+        let currentOffset = startOffset;
+        let pagesProcessed = 0;
+        let totalCount = null;
 
-        while (nextUrl && page < MAX_PAGES) {
-            page++;
+        while (pagesProcessed < PAGES_PER_RUN) {
+            pagesProcessed++;
+            const url = `${API_BASE}?published=true&page_size=${PAGE_SIZE}&offset=${currentOffset}`;
             let response;
             let retries = 0;
             const maxRetries = 1;
 
             while (retries <= maxRetries) {
                 try {
-                    response = await fetch(nextUrl, {
+                    response = await fetch(url, {
                         headers: this._buildHeaders(),
                         signal: AbortSignal.timeout(30_000),
                     });
                     if (response.ok) break;
-                    // Retry on 5xx
                     if (response.status >= 500 && retries < maxRetries) {
                         retries++;
-                        logger.warn(`[AidesTerritoires] Retry ${retries}/${maxRetries} after ${response.status} on page ${page}`);
+                        logger.warn(`[AidesTerritoires] Retry ${retries}/${maxRetries} after ${response.status} at offset ${currentOffset}`);
                         await new Promise(r => setTimeout(r, 2000));
                         continue;
                     }
@@ -126,7 +173,7 @@ export class AidesTerritoiresConnector extends SourceConnector {
                 } catch (err) {
                     if (retries < maxRetries && err.name !== 'AbortError') {
                         retries++;
-                        logger.warn(`[AidesTerritoires] Retry ${retries}/${maxRetries} after error on page ${page}: ${err.message}`);
+                        logger.warn(`[AidesTerritoires] Retry ${retries}/${maxRetries} after error at offset ${currentOffset}: ${err.message}`);
                         await new Promise(r => setTimeout(r, 2000));
                         continue;
                     }
@@ -136,6 +183,14 @@ export class AidesTerritoiresConnector extends SourceConnector {
 
             const data = await response.json();
             const results = data.results || [];
+            if (totalCount === null) totalCount = data.count || 0;
+
+            if (results.length === 0) {
+                // Reached the end of the catalogue — cycle back to 0
+                logger.info(`[AidesTerritoires] End of catalogue reached at offset ${currentOffset}, cycling to start`);
+                currentOffset = 0;
+                break;
+            }
 
             for (const item of results) {
                 const key = item.slug || item.id || crypto.randomUUID();
@@ -143,15 +198,14 @@ export class AidesTerritoiresConnector extends SourceConnector {
                 this._cache.set(virtualUrl, item);
             }
 
-            nextUrl = data.next || null;
+            currentOffset += results.length;
 
-            // Log progress every 10 pages
-            if (page % 10 === 0) {
-                logger.info(`[AidesTerritoires] Fetched page ${page}, cache size: ${this._cache.size}`);
-            }
+            logger.info(`[AidesTerritoires] Page ${pagesProcessed}/${PAGES_PER_RUN}, offset ${currentOffset}/${totalCount || '?'}, cache: ${this._cache.size}`);
         }
 
-        logger.info(`[AidesTerritoires] Total fetched: ${this._cache.size} aides across ${page} pages`);
+        // Save cursor for next run
+        await this._saveCursor(currentOffset);
+        logger.info(`[AidesTerritoires] Total fetched: ${this._cache.size} aides (offset ${startOffset}→${currentOffset})`);
         return Array.from(this._cache.keys());
     }
 

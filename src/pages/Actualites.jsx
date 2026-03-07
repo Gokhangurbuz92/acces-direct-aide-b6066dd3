@@ -393,7 +393,7 @@ export default function Actualites() {
                           {actu.titre}
                         </h2>
 
-                        <p className="text-slate-600 mb-4 leading-relaxed line-clamp-3">
+                        <p className="text-slate-600 mb-4 leading-relaxed line-clamp-5">
                           {isFalcEnabled && actu.summary_falc ? actu.summary_falc : excerpt}
                         </p>
 

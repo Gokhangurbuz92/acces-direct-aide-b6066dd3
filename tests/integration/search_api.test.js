@@ -2,7 +2,17 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import handler from '../../api/_handlers/search.js';
 
 vi.mock('../../api/_utils/prisma.js', () => ({
-  default: {},
+  default: {
+    demarche: {
+      findMany: vi.fn().mockResolvedValue([]),
+    },
+    structure: {
+      findMany: vi.fn().mockResolvedValue([]),
+    },
+    actualite: {
+      findMany: vi.fn().mockResolvedValue([]),
+    },
+  },
 }));
 
 vi.mock('../../api/lib/gemini-embedding.js', () => ({
@@ -64,11 +74,14 @@ describe('POST /api/search', () => {
       })
     );
     expect(res.status).toHaveBeenCalledWith(200);
-    expect(res.json).toHaveBeenCalledWith({
+    expect(res.json).toHaveBeenCalledWith(expect.objectContaining({
       items: [],
       total: 0,
       message: 'not found',
-    });
+      demarches: [],
+      structures: [],
+      actualites: [],
+    }));
   });
 
   it('returns fused items when search is successful', async () => {
@@ -98,16 +111,18 @@ describe('POST /api/search', () => {
     await handler(req, res);
 
     expect(res.status).toHaveBeenCalledWith(200);
-    expect(res.json).toHaveBeenCalledWith({
-      items: [
-        {
-          slug: 'apl-etudiant-strasbourg',
-          title: 'APL étudiant à Strasbourg',
-          score: 0.42,
-        },
-      ],
-      total: 1,
-      message: null,
-    });
+    const jsonCall = res.json.mock.calls[0][0];
+    expect(jsonCall.items).toEqual([
+      {
+        slug: 'apl-etudiant-strasbourg',
+        title: 'APL étudiant à Strasbourg',
+        score: 0.42,
+      },
+    ]);
+    expect(jsonCall.total).toBe(1);
+    expect(jsonCall.message).toBeNull();
+    expect(jsonCall).toHaveProperty('demarches');
+    expect(jsonCall).toHaveProperty('structures');
+    expect(jsonCall).toHaveProperty('actualites');
   });
 });

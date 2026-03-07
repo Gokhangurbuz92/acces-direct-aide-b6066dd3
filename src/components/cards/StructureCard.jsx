@@ -6,12 +6,15 @@ import {
   Clock,
   Calendar,
   Accessibility,
-  ArrowRight
+  ArrowRight,
+  Brain
 } from 'lucide-react';
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import CategoryChip from "@/components/ui/CategoryChip";
 import { formatProvenanceDate, getProvenance } from '@/lib/provenance';
+import { useFalc } from '@/contexts/FalcContext';
 import AnimatedCard from '@/components/ui/AnimatedCard';
 
 const TYPE_LABELS = {
@@ -38,6 +41,7 @@ const TYPE_COLORS = {
 };
 
 export default function StructureCard({ structure, compact = false, index = 0 }) {
+  const { isFalcEnabled } = useFalc();
   const provenance = getProvenance(structure);
   const verifiedAt = formatProvenanceDate(provenance.verifiedAt);
   const sourceHost = provenance.sourceHost;
@@ -61,6 +65,9 @@ export default function StructureCard({ structure, compact = false, index = 0 })
             {/* En-tête */}
             <div className="flex flex-wrap gap-2 items-start justify-between">
               <div className="flex flex-wrap gap-2">
+                {structure.categorie && (
+                  <CategoryChip slug={structure.categorie} />
+                )}
                 <Badge className={TYPE_COLORS[structure.type_structure] || 'bg-slate-100 text-slate-800'}>
                   {TYPE_LABELS[structure.type_structure] || structure.type_structure}
                 </Badge>
@@ -94,10 +101,17 @@ export default function StructureCard({ structure, compact = false, index = 0 })
             </h3>
 
             {/* Description */}
-            {structure.description_courte && (
-              <p className="text-slate-600 text-sm line-clamp-2">
-                {structure.description_courte}
+            {(structure.description_courte || (isFalcEnabled && structure.summary_falc)) && (
+              <p className="text-slate-600 text-sm line-clamp-4">
+                {isFalcEnabled && structure.summary_falc ? structure.summary_falc : structure.description_courte}
               </p>
+            )}
+            {/* FALC badge */}
+            {isFalcEnabled && structure.summary_falc && (
+              <Badge className="bg-teal-100 text-teal-700 border-teal-200 flex items-center gap-1 w-fit">
+                <Brain className="h-3 w-3" />
+                Simplifié
+              </Badge>
             )}
 
             {/* Infos de contact */}

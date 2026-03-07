@@ -199,6 +199,29 @@ export default function Annuaire() {
             </Button>
           </form>
 
+          {/* Quick-access type filter buttons */}
+          <div className="flex flex-wrap gap-2">
+            <Button
+              type="button"
+              variant={type === '' ? 'default' : 'outline'}
+              size="sm"
+              onClick={() => handleParamChange('type', '')}
+            >
+              Tous
+            </Button>
+            {TYPE_STRUCTURES.filter(t => t.value).slice(0, 10).map((t) => (
+              <Button
+                key={t.value}
+                type="button"
+                variant={type === t.value ? 'default' : 'outline'}
+                size="sm"
+                onClick={() => handleParamChange('type', t.value)}
+              >
+                {t.label}
+              </Button>
+            ))}
+          </div>
+
           {/* Filters */}
           {isFiltersOpen && (
             <Card>

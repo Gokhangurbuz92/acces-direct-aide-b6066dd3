@@ -4,8 +4,8 @@ import crypto from 'crypto';
 
 const API_BASE = 'https://aides-territoires.beta.gouv.fr/api/aids/';
 const CONNEXION_URL = 'https://aides-territoires.beta.gouv.fr/api/connexion/';
-const PAGE_SIZE = 50;
-const MAX_PAGES = 100; // Safety cap: 50 * 100 = 5000 aides max
+const PAGE_SIZE = 30;
+const MAX_PAGES = 15; // 30 * 15 = 450 aides per run (fits within Vercel 300s timeout)
 
 /**
  * Connector for the Aides Territoires API v1.8+ (beta.gouv.fr).

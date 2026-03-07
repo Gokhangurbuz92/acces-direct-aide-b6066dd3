@@ -36,10 +36,6 @@ vi.mock('../../api/lib/logger.js', () => ({
     }
 }));
 
-// Mock Connectors (Partial) - actually we want to test integration with connectors,
-// but mocking fetch is enough.
-// Wait, `GrandEstConnector` does real fetch. I should mock the responses.
-
 describe('Ingestion Pipeline', () => {
     beforeEach(() => {
         vi.clearAllMocks();
@@ -58,10 +54,10 @@ describe('Ingestion Pipeline', () => {
             text: async () => `<html><h1>Titre Grand Est</h1><p>Contenu</p></html>`
         });
 
-        // 3. Mock Agefiph Listing
+        // 3. Mock Agefiph Listing (updated to match new URL pattern)
         fetch.mockResolvedValueOnce({
             ok: true,
-            text: async () => `<html><a href="/aides-handicap/test">Aide Agefiph</a></html>`
+            text: async () => `<html><a href="/aides-financieres/aide-test">Aide Agefiph</a></html>`
         });
 
         // 4. Mock Agefiph Detail
@@ -70,25 +66,22 @@ describe('Ingestion Pipeline', () => {
             text: async () => `<html><h1>Titre Agefiph</h1><p>Contenu</p></html>`
         });
 
-        // 5. Mock Aides Territoires API (paginated JSON)
+        // 5. Mock Aides Territoires Auth (connexion endpoint)
         fetch.mockResolvedValueOnce({
-            ok: true,
-            json: async () => ({
-                results: [
-                    { slug: 'aide-at-1', name: 'Aide AT 1', description: 'Desc 1', url: 'https://at.fr/1' },
-                    { slug: 'aide-at-2', name: 'Aide AT 2', description: 'Desc 2', url: 'https://at.fr/2' },
-                ],
-                next: null, // Single page
-            }),
+            ok: false,
+            status: 401,
+            statusText: 'Unauthorized',
+            text: async () => 'Unauthorized',
         });
 
-        // DREES connector does not call global.fetch — it uses static data (5 items).
-        // Total expected creates: 1 (GrandEst) + 1 (Agefiph) + 2 (AT) + 5 (DREES) = 9
+        // DREES connector loads from JSON file — 32 static items, no fetch calls.
+        // AT will fail auth (no API key in test) → 0 AT aides.
+        // Total expected creates: 1 (GrandEst) + 1 (Agefiph) + 0 (AT, auth fail) + 32 (DREES) = 34
 
-        const stats = await runIngestAids({ limit: 10, runId: 'test', wipe: true });
+        const stats = await runIngestAids({ limit: 100, runId: 'test', wipe: true });
 
         expect(prisma.aide.deleteMany).toHaveBeenCalled(); // Wipe called
-        expect(prisma.aide.create).toHaveBeenCalledTimes(9); // 9 items created
-        expect(stats.created).toBe(9);
+        expect(prisma.aide.create).toHaveBeenCalledTimes(34); // 34 items created
+        expect(stats.created).toBe(34);
     });
 });

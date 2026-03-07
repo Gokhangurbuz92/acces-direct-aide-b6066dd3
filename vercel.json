@@ -1,6 +1,6 @@
 {
   "functions": {
-    "api/cron/*.js": {
+    "api/index.js": {
       "maxDuration": 300
     }
   },

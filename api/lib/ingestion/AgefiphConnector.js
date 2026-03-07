@@ -67,7 +67,7 @@ export class AgefiphConnector extends SourceConnector {
             }
         }
 
-        let theme = 'travail-formation'; // Default
+        let theme = 'handicap'; // Agefiph = aides spécifiques au handicap
         const lowerContent = (title + ' ' + content).toLowerCase();
         for (const cat of taxonomy) {
             if (cat.keywords.some(k => lowerContent.includes(k))) {

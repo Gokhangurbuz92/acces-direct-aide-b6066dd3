@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
-import { useSearchParams } from 'react-router-dom';
-import { Search, RotateCcw } from 'lucide-react';
+import { Link, useSearchParams } from 'react-router-dom';
+import { Search, RotateCcw, FileText, Building2, Newspaper, ArrowRight } from 'lucide-react';
 import SEO from '@/components/SEO';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -59,7 +59,10 @@ export default function Recherche() {
   const [limitInput, setLimitInput] = useState(limitFromUrl);
   const [status, setStatus] = useState('idle');
   const [results, setResults] = useState([]);
-  const [meta, setMeta] = useState({ total: 0, message: null });
+  const [demarches, setDemarches] = useState([]);
+  const [structures, setStructures] = useState([]);
+  const [actualites, setActualites] = useState([]);
+  const [meta, setMeta] = useState({ total: 0, totalAll: 0, message: null });
   const [errorMessage, setErrorMessage] = useState('');
 
   useEffect(() => {
@@ -72,7 +75,10 @@ export default function Recherche() {
     if (!queryFromUrl) {
       setStatus('idle');
       setResults([]);
-      setMeta({ total: 0, message: null });
+      setDemarches([]);
+      setStructures([]);
+      setActualites([]);
+      setMeta({ total: 0, totalAll: 0, message: null });
       setErrorMessage('');
       return;
     }
@@ -80,7 +86,10 @@ export default function Recherche() {
     if (queryFromUrl.length < 2) {
       setStatus('error');
       setResults([]);
-      setMeta({ total: 0, message: null });
+      setDemarches([]);
+      setStructures([]);
+      setActualites([]);
+      setMeta({ total: 0, totalAll: 0, message: null });
       setErrorMessage('Veuillez saisir au moins 2 caractères pour lancer la recherche.');
       return;
     }
@@ -102,13 +111,20 @@ export default function Recherche() {
         if (!isMounted) return;
 
         setResults(response.results);
+        setDemarches(response.demarches || []);
+        setStructures(response.structures || []);
+        setActualites(response.actualites || []);
         setMeta(response.meta);
-        setStatus(response.results.length > 0 ? 'success' : 'empty');
+        const hasAny = response.results.length > 0 || (response.demarches?.length > 0) || (response.structures?.length > 0) || (response.actualites?.length > 0);
+        setStatus(hasAny ? 'success' : 'empty');
       })
       .catch((error) => {
         if (!isMounted || isAbortError(error)) return;
         setResults([]);
-        setMeta({ total: 0, message: null });
+        setDemarches([]);
+        setStructures([]);
+        setActualites([]);
+        setMeta({ total: 0, totalAll: 0, message: null });
         setStatus('error');
         setErrorMessage(error.message || 'La recherche est temporairement indisponible.');
       });
@@ -121,11 +137,11 @@ export default function Recherche() {
 
   const liveMessage = useMemo(() => {
     if (status === 'loading') return 'Recherche en cours...';
-    if (status === 'success') return `${meta.total} résultat${meta.total > 1 ? 's' : ''} trouvé${meta.total > 1 ? 's' : ''}.`;
+    if (status === 'success') return `${meta.totalAll || meta.total} résultat${(meta.totalAll || meta.total) > 1 ? 's' : ''} trouvé${(meta.totalAll || meta.total) > 1 ? 's' : ''}.`;
     if (status === 'empty') return 'Aucun résultat trouvé.';
     if (status === 'error') return `Erreur de recherche: ${errorMessage}`;
     return 'Recherche prête.';
-  }, [status, meta.total, errorMessage]);
+  }, [status, meta.totalAll, meta.total, errorMessage]);
 
   const applySearch = (query, category, limit) => {
     const normalizedCategory = normalizeSearchCategory(category);
@@ -258,9 +274,98 @@ export default function Recherche() {
           {status === 'success' && (
             <>
               <p className="mb-4 text-sm text-slate-600" data-testid="search-success-state">
-                {meta.total} résultat{meta.total > 1 ? 's' : ''} affiché{meta.total > 1 ? 's' : ''}.
+                {meta.totalAll || meta.total} résultat{(meta.totalAll || meta.total) > 1 ? 's' : ''} affiché{(meta.totalAll || meta.total) > 1 ? 's' : ''}.
               </p>
-              <SearchResultsList results={results} />
+
+              {/* Aides */}
+              {results.length > 0 && (
+                <div className="mb-8">
+                  <h2 className="text-lg font-bold text-slate-900 mb-3 flex items-center gap-2">
+                    <Search className="h-5 w-5 text-blue-600" />
+                    Aides ({results.length})
+                  </h2>
+                  <SearchResultsList results={results} />
+                </div>
+              )}
+
+              {/* Démarches */}
+              {demarches.length > 0 && (
+                <div className="mb-8">
+                  <h2 className="text-lg font-bold text-slate-900 mb-3 flex items-center gap-2">
+                    <FileText className="h-5 w-5 text-indigo-600" />
+                    Démarches ({demarches.length})
+                  </h2>
+                  <ul className="grid gap-3 md:grid-cols-2">
+                    {demarches.map((d) => (
+                      <li key={d.id}>
+                        <Link
+                          to={d.slug ? `/demarches/${d.slug}` : `/demarches/view?id=${d.id}`}
+                          className="block p-4 bg-white rounded-xl border border-slate-200 hover:border-indigo-300 hover:shadow-md transition-all group"
+                        >
+                          <h3 className="font-semibold text-slate-900 group-hover:text-indigo-700 transition-colors">{d.title}</h3>
+                          {d.description && <p className="text-sm text-slate-600 mt-1 line-clamp-2">{d.description}</p>}
+                          <span className="inline-flex items-center gap-1 text-indigo-600 text-sm font-medium mt-2">
+                            Voir la démarche <ArrowRight className="h-3 w-3" />
+                          </span>
+                        </Link>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+
+              {/* Structures */}
+              {structures.length > 0 && (
+                <div className="mb-8">
+                  <h2 className="text-lg font-bold text-slate-900 mb-3 flex items-center gap-2">
+                    <Building2 className="h-5 w-5 text-green-600" />
+                    Structures ({structures.length})
+                  </h2>
+                  <ul className="grid gap-3 md:grid-cols-2">
+                    {structures.map((s) => (
+                      <li key={s.id}>
+                        <Link
+                          to={s.slug ? `/structures/${s.slug}` : `/structures/view?id=${s.id}`}
+                          className="block p-4 bg-white rounded-xl border border-slate-200 hover:border-green-300 hover:shadow-md transition-all group"
+                        >
+                          <h3 className="font-semibold text-slate-900 group-hover:text-green-700 transition-colors">{s.title}</h3>
+                          {s.ville && <p className="text-xs text-slate-500 mt-0.5">{s.ville}</p>}
+                          {s.description && <p className="text-sm text-slate-600 mt-1 line-clamp-2">{s.description}</p>}
+                          <span className="inline-flex items-center gap-1 text-green-600 text-sm font-medium mt-2">
+                            Voir la structure <ArrowRight className="h-3 w-3" />
+                          </span>
+                        </Link>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+
+              {/* Actualités */}
+              {actualites.length > 0 && (
+                <div className="mb-8">
+                  <h2 className="text-lg font-bold text-slate-900 mb-3 flex items-center gap-2">
+                    <Newspaper className="h-5 w-5 text-amber-600" />
+                    Actualités ({actualites.length})
+                  </h2>
+                  <ul className="grid gap-3 md:grid-cols-2">
+                    {actualites.map((a) => (
+                      <li key={a.id}>
+                        <Link
+                          to={a.slug ? `/actualites/${a.slug}` : `/actualites/view?id=${a.id}`}
+                          className="block p-4 bg-white rounded-xl border border-slate-200 hover:border-amber-300 hover:shadow-md transition-all group"
+                        >
+                          <h3 className="font-semibold text-slate-900 group-hover:text-amber-700 transition-colors">{a.title}</h3>
+                          {a.description && <p className="text-sm text-slate-600 mt-1 line-clamp-2">{a.description}</p>}
+                          <span className="inline-flex items-center gap-1 text-amber-600 text-sm font-medium mt-2">
+                            Lire la suite <ArrowRight className="h-3 w-3" />
+                          </span>
+                        </Link>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
             </>
           )}
         </section>

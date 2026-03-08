@@ -1,24 +1,24 @@
 <!doctype html>
-<html lang="fr">
+<html lang="fr" data-suppress-hydration-warning="true">
 
 <head>
   <meta charset="UTF-8" />
-  
+
   <!-- Favicons - Blueprint Trust -->
   <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-  
+
   <!-- Theme color - Brand Primary -->
   <meta name="theme-color" content="#002D5A" />
   <meta name="msapplication-TileColor" content="#002D5A" />
-  
+
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  
+
   <!-- SEO -->
   <title>AccesDirectAide — La lumière sur vos démarches</title>
   <meta name="description"
     content="Trouvez les aides sociales, préparez vos démarches (FALC) et prenez rendez-vous avec des structures d'accompagnement. La lumière sur vos démarches." />
   <link rel="canonical" href="https://www.accesdirectaide.fr/" />
-  
+
   <!-- Open Graph / Facebook -->
   <meta property="og:type" content="website" />
   <meta property="og:url" content="https://www.accesdirectaide.fr/" />
@@ -27,23 +27,23 @@
     content="Trouvez les aides sociales, préparez vos démarches (FALC) et prenez rendez-vous avec des structures d'accompagnement. La lumière sur vos démarches." />
   <meta property="og:image" content="/og-image.webp" />
   <meta property="og:locale" content="fr_FR" />
-  
+
   <!-- Twitter -->
   <meta name="twitter:card" content="summary_large_image" />
   <meta name="twitter:title" content="AccesDirectAide — La lumière sur vos démarches" />
   <meta name="twitter:description"
     content="Trouvez les aides sociales, préparez vos démarches (FALC) et prenez rendez-vous avec des structures d'accompagnement." />
   <meta name="twitter:image" content="/og-image.webp" />
-  
+
   <!-- PWA Manifest -->
   <link rel="manifest" href="/manifest.json" />
-  
+
   <!-- Local Fonts (Inter) -->
   <link rel="preload" href="/fonts/Inter-Regular.woff2" as="font" type="font/woff2" crossorigin />
   <link rel="preload" href="/fonts/Inter-Medium.woff2" as="font" type="font/woff2" crossorigin />
   <link rel="preload" href="/fonts/Inter-SemiBold.woff2" as="font" type="font/woff2" crossorigin />
   <link rel="preload" href="/fonts/Inter-Bold.woff2" as="font" type="font/woff2" crossorigin />
-  
+
   <!-- JSON-LD Structured Data -->
   <script type="application/ld+json">
   {
@@ -72,7 +72,7 @@
   </script>
 </head>
 
-<body>
+<body data-suppress-hydration-warning="true">
   <!-- Phase 3.4 RGAA: Early accessibility init (before React hydration) -->
   <script>
     try {
@@ -82,7 +82,7 @@
       if (s.contrast === 'dark') document.documentElement.classList.add('dark-mode');
       if (s.lineHeight === 'large') document.documentElement.classList.add('large-line-height');
       if (s.simplifiedMode) document.documentElement.classList.add('simplified-mode');
-    } catch(e) {}
+    } catch (e) { }
   </script>
   <div id="root"></div>
   <script type="module" src="/src/main.jsx"></script>

@@ -80,7 +80,11 @@ var createEntityClient = function (endpoint) {
     return {
         /** @param {string=} sort @param {number | string=} limit */
         list: function (sort, limit) {
-            return apiRequest('/api/' + endpoint + '?sort=' + (sort || '') + '&limit=' + (limit || ''));
+            var params = new URLSearchParams();
+            if (sort) params.append('sort', sort);
+            if (limit) params.append('limit', String(limit));
+            var qs = params.toString();
+            return apiRequest('/api/' + endpoint + (qs ? '?' + qs : ''));
         },
         /** @param {any} id */
         get: function (id) {
@@ -112,6 +116,15 @@ var createEntityClient = function (endpoint) {
 };
 
 export const apiClient = {
+    /**
+     * Generic GET request — delegates to apiRequest.
+     * Returns { data: payload } for compatibility with admin page callers.
+     * @param {string} url
+     * @returns {Promise<{ data: any }>}
+     */
+    get: function (url) {
+        return apiRequest(url).then(function (payload) { return { data: payload }; });
+    },
     taxonomy: {
         get: function () {
             return apiRequest('/api/taxonomy');

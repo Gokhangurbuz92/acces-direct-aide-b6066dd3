@@ -12,7 +12,11 @@ const baseSearchSchema = z.object({
 export const searchAidesSchema = baseSearchSchema.extend({
   // P2: cap listing page size for public /api/aides
   pageSize: z.coerce.number().int().min(1).max(50).default(20),
-  limit: z.coerce.number().int().min(1).max(50).optional(),
+  // Allow `limit=` (empty) without failing validation (compat with legacy list() calls).
+  limit: z.preprocess(
+    (value) => (value === '' || value == null ? undefined : value),
+    z.coerce.number().int().min(1).max(50).optional(),
+  ),
   theme: z.string().optional(),
   sousTheme: z.string().optional(),
   public: z.string().optional(), // audience alias

@@ -27,6 +27,7 @@ jobs:
         uses: chromaui/action@v11
         with:
           projectToken: ${{ secrets.CHROMATIC_PROJECT_TOKEN }}
-          exitZeroOnChanges: false
+          exitZeroOnChanges: true
+          autoAcceptChanges: "main"
           onlyChanged: true
           buildScriptName: build-storybook

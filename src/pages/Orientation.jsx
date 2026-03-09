@@ -15,8 +15,8 @@ export default function Orientation() {
         noindex
       />
       <section className="mx-auto max-w-3xl px-4 py-12 sm:px-6">
-        <h1 className="mb-2 text-3xl font-bold text-slate-900">Mon Assistant</h1>
-        <p className="mb-6 text-slate-600">
+        <h1 className="mb-2 text-3xl font-black text-slate-900 uppercase italic">Mon Assistant</h1>
+        <p className="mb-6 text-slate-700 font-medium">
           Répondez à quelques questions pour recevoir des recommandations personnalisées.
         </p>
 

@@ -809,7 +809,7 @@ model Appointment {
   @@index([proId, start_at])
   @@index([cancel_token_hash])
   @@index([access_token_hash])
-  @@index([structureId, status, start_at])
+  @@index([structureId, status, start_at, end_at])
 }
 
 model Message {

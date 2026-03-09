@@ -153,23 +153,82 @@ async function requestJson(path, options = {}) {
   return payload;
 }
 
+import { cryptoE2EE } from '@/lib/crypto-messaging.js';
+
+/**
+ * Décrypte les messages d'une conversation s'ils sont chiffrés E2EE.
+ */
+async function decryptConversation(data, conversationId) {
+  if (!data?.item?.messages) return data;
+
+  data.item.messages = await Promise.all(
+    data.item.messages.map(async (msg) => {
+      if (msg.body && msg.body.startsWith('E2EE:')) {
+        try {
+          msg.body = await cryptoE2EE.decrypt(msg.body.slice(5), conversationId);
+        } catch (err) {
+          // Fallback géré par le try/catch interne de cryptoE2EE s'il échoue, 
+          // mais par sécurité.
+        }
+      }
+      return msg;
+    })
+  );
+
+  return data;
+}
+
+/**
+ * Décrypte les derniers messages (lastMessage) dans une liste de conversations.
+ */
+async function decryptConversationList(data) {
+  if (!data?.items) return data;
+
+  data.items = await Promise.all(
+    data.items.map(async (conv) => {
+      if (conv.lastMessage?.body?.startsWith('E2EE:')) {
+        try {
+          conv.lastMessage.body = await cryptoE2EE.decrypt(conv.lastMessage.body.slice(5), conv.id);
+        } catch (err) {
+          // fallback
+        }
+      }
+      return conv;
+    })
+  );
+
+  return data;
+}
+
 export const rdvMessagingClient = {
   authMe() {
     return requestJson('/api/auth/me', { auth: 'user' });
   },
   user: {
-    listConversations() {
-      return requestJson('/api/messages/conversations', { auth: 'user' });
+    async listConversations() {
+      const data = await requestJson('/api/messages/conversations', { auth: 'user' });
+      return decryptConversationList(data);
     },
-    getConversation(conversationId) {
-      return requestJson(`/api/messages/conversations/${encodeURIComponent(conversationId)}`, { auth: 'user' });
+    async getConversation(conversationId) {
+      const data = await requestJson(`/api/messages/conversations/${encodeURIComponent(conversationId)}`, { auth: 'user' });
+      return decryptConversation(data, conversationId);
     },
-    sendMessage(conversationId, body) {
-      return requestJson(`/api/messages/conversations/${encodeURIComponent(conversationId)}`, {
+    async sendMessage(conversationId, body) {
+      const encryptedBlob = await cryptoE2EE.encrypt(body, conversationId);
+      const finalBody = `E2EE:${encryptedBlob}`;
+
+      const data = await requestJson(`/api/messages/conversations/${encodeURIComponent(conversationId)}`, {
         method: 'POST',
         auth: 'user',
-        body: { body },
+        body: { body: finalBody },
       });
+
+      // Décrypter le message renvoyé dans la réponse si nécessaire
+      if (data?.item?.body?.startsWith('E2EE:')) {
+        data.item.body = await cryptoE2EE.decrypt(data.item.body.slice(5), conversationId);
+      }
+
+      return data;
     },
     getOrCreateFromAppointment(appointmentId) {
       return requestJson(`/api/messages/from-appointment/${encodeURIComponent(appointmentId)}`, {
@@ -179,18 +238,29 @@ export const rdvMessagingClient = {
     },
   },
   pro: {
-    listConversations() {
-      return requestJson('/api/pro/messages/conversations', { auth: 'pro' });
+    async listConversations() {
+      const data = await requestJson('/api/pro/messages/conversations', { auth: 'pro' });
+      return decryptConversationList(data);
     },
-    getConversation(conversationId) {
-      return requestJson(`/api/pro/messages/conversations/${encodeURIComponent(conversationId)}`, { auth: 'pro' });
+    async getConversation(conversationId) {
+      const data = await requestJson(`/api/pro/messages/conversations/${encodeURIComponent(conversationId)}`, { auth: 'pro' });
+      return decryptConversation(data, conversationId);
     },
-    sendMessage(conversationId, body) {
-      return requestJson(`/api/pro/messages/conversations/${encodeURIComponent(conversationId)}`, {
+    async sendMessage(conversationId, body) {
+      const encryptedBlob = await cryptoE2EE.encrypt(body, conversationId);
+      const finalBody = `E2EE:${encryptedBlob}`;
+
+      const data = await requestJson(`/api/pro/messages/conversations/${encodeURIComponent(conversationId)}`, {
         method: 'POST',
         auth: 'pro',
-        body: { body },
+        body: { body: finalBody },
       });
+
+      if (data?.item?.body?.startsWith('E2EE:')) {
+        data.item.body = await cryptoE2EE.decrypt(data.item.body.slice(5), conversationId);
+      }
+
+      return data;
     },
   },
 };

@@ -27,10 +27,8 @@ test.describe('Accessibility — axe audit (critical + serious)', () => {
             test.setTimeout(30_000);
 
             await page.goto(path);
-            // Attente d'un état réseau stable pour éviter les faux positifs (PR #2)
-            await page.waitForLoadState('networkidle');
             // Wait for main content to load (timeout étendu pour CI)
-            await page.waitForSelector('#main-content', { timeout: 15_000 });
+            await page.waitForSelector('#main-content', { state: 'visible', timeout: 15_000 });
 
             const results = await new AxeBuilder({ page })
                 .withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa'])

@@ -348,7 +348,8 @@ export default function SharedDossier() {
                             <div className="h-[350px]">
                                 <SecureChat
                                     shareId={shareId}
-                                    currentUserId={user?.id || 'pro'}
+                                    senderId={user?.id || 'pro'}
+                                    receiverId="citizen"
                                 />
                             </div>
                         </CardContent>

@@ -191,7 +191,7 @@ export default function Wizard() {
             {/* Progress bar */}
             {phase === 'wizard' && (
                 <div className="px-6 pt-5">
-                    <div className="mb-1 flex items-center justify-between text-xs text-slate-600">
+                    <div className="mb-1 flex justify-between text-slate-700 font-bold uppercase text-[10px] tracking-widest">
                         <span>Étape {step + 1} sur {TOTAL_STEPS}</span>
                     </div>
                     <div className="h-1.5 w-full overflow-hidden rounded-full bg-slate-100" role="progressbar" aria-valuenow={progress} aria-valuemin={0} aria-valuemax={100} aria-valuetext={`Étape ${step + 1} sur ${TOTAL_STEPS}`} aria-label="Progression du diagnostic">

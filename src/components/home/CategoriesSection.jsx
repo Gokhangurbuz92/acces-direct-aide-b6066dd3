@@ -8,7 +8,7 @@ export default function CategoriesSection() {
     <section className="py-14 lg:py-16">
       <div className="mx-auto max-w-6xl px-4 sm:px-6">
         <h2 className="text-3xl font-bold text-slate-900">Quelle est votre situation ?</h2>
-        <p className="mt-3 max-w-3xl text-slate-600">
+        <p className="mt-3 max-w-3xl text-slate-700">
           Nous avons organisé les dispositifs par situation pour vous aider à accéder plus vite aux informations utiles.
         </p>
 
@@ -25,7 +25,7 @@ export default function CategoriesSection() {
                   <ChevronRight className="h-4 w-4 transition group-hover:rotate-90" />
                 </span>
               </div>
-              <p className="mt-3 text-sm text-slate-600">Explorer les dispositifs →</p>
+              <p className="mt-3 text-sm text-slate-700">Explorer les dispositifs →</p>
             </Link>
           ))}
         </div>

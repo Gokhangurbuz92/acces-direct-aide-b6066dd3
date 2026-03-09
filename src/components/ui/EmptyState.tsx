@@ -1,5 +1,6 @@
 import * as React from "react"
 import { cn } from "@/lib/utils"
+import { motion } from "framer-motion"
 
 export interface EmptyStateProps extends React.HTMLAttributes<HTMLDivElement> {
     title: string;
@@ -11,34 +12,59 @@ export interface EmptyStateProps extends React.HTMLAttributes<HTMLDivElement> {
 const EmptyState = React.forwardRef<HTMLDivElement, EmptyStateProps>(
     ({ className, title, description, icon, actions, ...props }, ref) => {
         return (
-            <div
+            <motion.div
                 ref={ref}
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.4, ease: "easeOut" }}
                 data-testid="empty-state"
                 className={cn(
-                    "flex flex-col items-center justify-center text-center p-8 rounded-lg border border-dashed border-border bg-background",
+                    "flex flex-col items-center justify-center text-center py-16 px-6 rounded-3xl border border-dashed border-slate-200/60 bg-slate-50/80 shadow-sm backdrop-blur-sm",
                     className
                 )}
                 {...props}
             >
                 {icon && (
-                    <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-muted text-muted-foreground">
-                        {icon}
-                    </div>
+                    <motion.div
+                        initial={{ scale: 0.8, opacity: 0 }}
+                        animate={{ scale: 1, opacity: 1 }}
+                        transition={{ delay: 0.1, duration: 0.5, type: "spring", stiffness: 200 }}
+                        className="mb-6 flex h-20 w-20 items-center justify-center rounded-2xl bg-white text-brand-500 shadow-sm rotate-3 border border-slate-100"
+                    >
+                        <div className="-rotate-3">
+                            {icon}
+                        </div>
+                    </motion.div>
                 )}
-                <h3 className="text-xl font-semibold text-foreground mb-2">
+                <motion.h3
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    transition={{ delay: 0.2 }}
+                    className="text-2xl font-bold text-slate-800 mb-3"
+                >
                     {title}
-                </h3>
+                </motion.h3>
                 {description && (
-                    <p className="text-sm text-muted-foreground max-w-md mb-6 leading-relaxed">
+                    <motion.p
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        transition={{ delay: 0.3 }}
+                        className="text-lg font-light text-slate-600 max-w-md mb-8 leading-relaxed"
+                    >
                         {description}
-                    </p>
+                    </motion.p>
                 )}
                 {actions && (
-                    <div className="flex flex-col sm:flex-row items-center gap-3">
+                    <motion.div
+                        initial={{ opacity: 0, y: 5 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ delay: 0.4 }}
+                        className="flex flex-col sm:flex-row items-center gap-3"
+                    >
                         {actions}
-                    </div>
+                    </motion.div>
                 )}
-            </div>
+            </motion.div>
         )
     }
 )

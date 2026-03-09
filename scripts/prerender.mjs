@@ -12,6 +12,9 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { build } from 'vite';
+import { config as dotenvConfig } from 'dotenv';
+
+dotenvConfig({ path: path.resolve(process.cwd(), '.env.local') });
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const distPath = path.resolve(__dirname, '../dist');
@@ -48,12 +51,32 @@ async function fetchTopAides(limit) {
             take: limit,
         });
 
-        await prisma.$disconnect();
         return aides.filter((a) => a.slug);
     } catch (error) {
         console.warn(`⚠ Cannot connect to DB for aide slugs: ${error.message}`);
         console.warn('  Only static routes will be prerendered.');
         return [];
+    }
+}
+
+/**
+ * Fetch theme x territory combinations for programmatic SEO.
+ * @returns {Promise<{ categories: string[], territories: string[] }>}
+ */
+async function fetchSeoCombinations() {
+    try {
+        const prismaModule = await import('../api/_utils/prisma.js');
+        const prisma = prismaModule.default;
+
+        const cats = await prisma.aidCategory.findMany({ select: { slug: true } });
+
+        // Key territories for SEO rollout
+        const territories = ['paris', 'strasbourg', 'lyon', 'marseille', 'bas-rhin', 'haute-garonne', 'gironde'];
+
+        return { categories: cats.map(c => c.slug).filter(Boolean), territories };
+    } catch (error) {
+        console.warn(`⚠ Cannot connect to DB for SEO combinations: ${error.message}`);
+        return { categories: [], territories: [] };
     }
 }
 
@@ -141,6 +164,36 @@ async function prerender() {
         }
     }
 
+    // 5.1 Programmatic SEO routes
+    const { categories, territories } = await fetchSeoCombinations();
+    for (const cat of categories) {
+        // Theme only
+        const urlCat = `/aides/theme/${cat}`;
+        console.log(`Prerendering SEO Route ${urlCat} ...`);
+        try {
+            const html = await renderRoute(urlCat, template, render, seo, {
+                title: `Aides : ${cat} | AccesDirectAide`,
+                description: `Toutes les aides sociales de la catégorie ${cat}. Trouvez l'accompagnement adapté à vos besoins.`
+            });
+            writeHtml(urlCat, html);
+            rendered++;
+        } catch (e) { skipped++; }
+
+        // Theme + Territory
+        for (const terr of territories) {
+            const urlCatTerr = `/aides/theme/${cat}/${terr}`;
+            console.log(`Prerendering SEO Route ${urlCatTerr} ...`);
+            try {
+                const html = await renderRoute(urlCatTerr, template, render, seo, {
+                    title: `Aides ${cat} en ${terr} | AccesDirectAide`,
+                    description: `Découvrez toutes les aides ${cat} disponibles en ${terr}. Accédez aux démarches et accompagnements locaux.`
+                });
+                writeHtml(urlCatTerr, html);
+                rendered++;
+            } catch (e) { skipped++; }
+        }
+    }
+
     // 6. Cleanup the temporary server bundle
     fs.rmSync(serverOutDir, { recursive: true, force: true });
 
@@ -182,7 +235,7 @@ async function renderRoute(url, template, render, seo, overrideSeo) {
 
     const descTag = `<meta name="description" content="${escapeHtml(routeSeo.description)}" />`;
     if (html.includes('<meta name="description"')) {
-        html = html.replace(/<meta name="description" content=".*?"\s*\/?>/, descTag);
+        html = html.replace(/<meta\s+name="description"[\s\S]*?>/, descTag);
     } else {
         html = html.replace('</head>', `  ${descTag}\n</head>`);
     }

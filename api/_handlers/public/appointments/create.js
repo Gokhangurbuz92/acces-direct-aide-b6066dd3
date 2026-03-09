@@ -14,7 +14,7 @@ const bodySchema = z.object({
 
 const handler = async (req) => {
     if (req.method !== 'POST') {
-         throw createError(405, errorCodes.BAD_REQUEST, 'Method not allowed');
+        throw createError(405, errorCodes.BAD_REQUEST, 'Method not allowed');
     }
 
     const { structureId, startAt, email, name } = req.validated.body;
@@ -42,15 +42,15 @@ const handler = async (req) => {
 
     let serviceId;
     if (!service) {
-         // Create default service if missing
-         service = await prisma.service.create({
-             data: {
-                 structureId,
-                 slug: 'rdv-generique',
-                 name: 'Rendez-vous',
-                 duration_minutes: 60
-             }
-         });
+        // Create default service if missing
+        service = await prisma.service.create({
+            data: {
+                structureId,
+                slug: 'rdv-generique',
+                name: 'Rendez-vous',
+                duration_minutes: 60
+            }
+        });
     }
     serviceId = service.id;
 
@@ -98,6 +98,10 @@ const handler = async (req) => {
                 appointment,
                 cancelToken
             };
+        }, {
+            isolationLevel: 'Serializable',
+            maxWait: 5000, // 5s timeout pour éviter les deadlocks bloquants
+            timeout: 10000
         });
 
         return {

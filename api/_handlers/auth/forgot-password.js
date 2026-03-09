@@ -10,7 +10,7 @@ import {
   normalizeEmail,
 } from '../../_utils/user-auth.js';
 
-const RESET_TOKEN_TTL_MS = 60 * 60 * 1000;
+const RESET_TOKEN_TTL_MS = 15 * 60 * 1000; // 15 minutes TTL for stricter security
 
 const GENERIC_RESPONSE = {
   ok: true,

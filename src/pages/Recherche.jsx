@@ -180,7 +180,7 @@ export default function Recherche() {
       <div className="mx-auto w-full max-w-6xl px-4 pt-8 sm:px-6 lg:pt-12">
         <header className="mb-6">
           <h1 className="text-3xl font-bold text-slate-900">Recherche intelligente</h1>
-          <p className="mt-2 max-w-3xl text-slate-600">
+          <p className="mt-2 max-w-3xl text-slate-700">
             Saisissez votre besoin pour trouver rapidement des aides pertinentes.
           </p>
         </header>
@@ -209,7 +209,7 @@ export default function Recherche() {
                 </div>
                 <p className="font-semibold text-slate-900">Exemples de recherche</p>
               </div>
-              <p className="text-sm text-slate-600">
+              <p className="text-sm text-slate-700">
                 Lancez une requête avec une expression naturelle, puis affinez avec la catégorie.
               </p>
               <div className="mt-4 flex flex-wrap gap-2">
@@ -273,7 +273,7 @@ export default function Recherche() {
 
           {status === 'success' && (
             <>
-              <p className="mb-4 text-sm text-slate-600" data-testid="search-success-state">
+              <p className="mb-4 text-sm text-slate-700" data-testid="search-success-state">
                 {meta.totalAll || meta.total} résultat{(meta.totalAll || meta.total) > 1 ? 's' : ''} affiché{(meta.totalAll || meta.total) > 1 ? 's' : ''}.
               </p>
 
@@ -303,7 +303,7 @@ export default function Recherche() {
                           className="block p-4 bg-white rounded-xl border border-slate-200 hover:border-indigo-300 hover:shadow-md transition-all group"
                         >
                           <h3 className="font-semibold text-slate-900 group-hover:text-indigo-700 transition-colors">{d.title}</h3>
-                          {d.description && <p className="text-sm text-slate-600 mt-1 line-clamp-2">{d.description}</p>}
+                          {d.description && <p className="text-sm text-slate-700 mt-1 line-clamp-2">{d.description}</p>}
                           <span className="inline-flex items-center gap-1 text-indigo-600 text-sm font-medium mt-2">
                             Voir la démarche <ArrowRight className="h-3 w-3" />
                           </span>
@@ -330,7 +330,7 @@ export default function Recherche() {
                         >
                           <h3 className="font-semibold text-slate-900 group-hover:text-green-700 transition-colors">{s.title}</h3>
                           {s.ville && <p className="text-xs text-slate-500 mt-0.5">{s.ville}</p>}
-                          {s.description && <p className="text-sm text-slate-600 mt-1 line-clamp-2">{s.description}</p>}
+                          {s.description && <p className="text-sm text-slate-700 mt-1 line-clamp-2">{s.description}</p>}
                           <span className="inline-flex items-center gap-1 text-green-600 text-sm font-medium mt-2">
                             Voir la structure <ArrowRight className="h-3 w-3" />
                           </span>
@@ -356,7 +356,7 @@ export default function Recherche() {
                           className="block p-4 bg-white rounded-xl border border-slate-200 hover:border-amber-300 hover:shadow-md transition-all group"
                         >
                           <h3 className="font-semibold text-slate-900 group-hover:text-amber-700 transition-colors">{a.title}</h3>
-                          {a.description && <p className="text-sm text-slate-600 mt-1 line-clamp-2">{a.description}</p>}
+                          {a.description && <p className="text-sm text-slate-700 mt-1 line-clamp-2">{a.description}</p>}
                           <span className="inline-flex items-center gap-1 text-amber-600 text-sm font-medium mt-2">
                             Lire la suite <ArrowRight className="h-3 w-3" />
                           </span>

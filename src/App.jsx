@@ -5,6 +5,8 @@ import { HelmetProvider } from 'react-helmet-async'
 import { QueryClientProvider } from '@tanstack/react-query'
 import { queryClient } from "@/lib/queryClient";
 import ErrorBoundary from "@/components/ErrorBoundary";
+import { Analytics } from '@vercel/analytics/react';
+import { SpeedInsights } from '@vercel/speed-insights/react';
 
 function App({ url }) {
   return (
@@ -12,6 +14,8 @@ function App({ url }) {
       <QueryClientProvider client={queryClient}>
         <HelmetProvider>
           <Pages url={url} />
+          <Analytics mode={'production'} />
+          <SpeedInsights />
           <Toaster />
         </HelmetProvider>
       </QueryClientProvider>

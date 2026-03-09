@@ -135,8 +135,6 @@ test.describe('P8-G review queue triage mode', () => {
     });
 
     await page.goto('/admin/review-queue');
-    await page.waitForResponse((response) => response.url().includes('/api/admin/review-queue?'));
-
     await expect(page.getByText('Alpha dossier')).toBeVisible();
     await expect(page.getByText('Beta dossier')).toBeVisible();
 

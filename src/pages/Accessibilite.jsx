@@ -26,12 +26,12 @@ export default function Accessibilite() {
           </CardHeader>
           <CardContent>
             <p className="text-slate-700 mb-4">
-              AccesDirectAide s'engage à rendre son site accessible au plus grand nombre, 
+              AccesDirectAide s'engage à rendre son site accessible au plus grand nombre,
               conformément aux standards WCAG 2.1 niveau AA.
             </p>
             <p className="text-slate-700">
-              Nous travaillons continuellement à améliorer l'accessibilité pour que 
-              chacun puisse accéder facilement aux informations, quelles que soient 
+              Nous travaillons continuellement à améliorer l'accessibilité pour que
+              chacun puisse accéder facilement aux informations, quelles que soient
               ses capacités ou son équipement.
             </p>
           </CardContent>
@@ -48,7 +48,7 @@ export default function Accessibilite() {
             </CardHeader>
             <CardContent>
               <p className="text-slate-700">
-                Utilisez les boutons A- / A+ en haut de page pour agrandir ou 
+                Utilisez les boutons A- / A+ en haut de page pour agrandir ou
                 réduire la taille du texte selon vos besoins.
               </p>
             </CardContent>
@@ -63,7 +63,7 @@ export default function Accessibilite() {
             </CardHeader>
             <CardContent>
               <p className="text-slate-700">
-                Activez le mode contraste élevé pour améliorer la lisibilité 
+                Activez le mode contraste élevé pour améliorer la lisibilité
                 si vous avez des difficultés visuelles.
               </p>
             </CardContent>
@@ -78,7 +78,7 @@ export default function Accessibilite() {
             </CardHeader>
             <CardContent>
               <p className="text-slate-700">
-                Tout le site est navigable au clavier. Utilisez la touche Tab 
+                Tout le site est navigable au clavier. Utilisez la touche Tab
                 pour passer d'un élément à l'autre.
               </p>
             </CardContent>
@@ -93,7 +93,7 @@ export default function Accessibilite() {
             </CardHeader>
             <CardContent>
               <p className="text-slate-700">
-                Tous nos contenus sont rédigés en langage facile inspiré du FALC 
+                Tous nos contenus sont rédigés en langage facile inspiré du FALC
                 (Facile à Lire et à Comprendre).
               </p>
             </CardContent>
@@ -139,7 +139,7 @@ export default function Accessibilite() {
             <div>
               <h3 className="font-semibold text-slate-900 mb-2">Textes</h3>
               <p className="text-slate-700">
-                Phrases courtes, vocabulaire simple, structure claire avec des titres 
+                Phrases courtes, vocabulaire simple, structure claire avec des titres
                 et sous-titres.
               </p>
             </div>
@@ -147,7 +147,7 @@ export default function Accessibilite() {
             <div>
               <h3 className="font-semibold text-slate-900 mb-2">Images</h3>
               <p className="text-slate-700">
-                Toutes les images importantes ont une description alternative 
+                Toutes les images importantes ont une description alternative
                 pour les lecteurs d'écran.
               </p>
             </div>
@@ -175,7 +175,7 @@ export default function Accessibilite() {
           </CardHeader>
           <CardContent>
             <p className="text-slate-700 mb-4">
-              Si vous rencontrez une difficulté d'accessibilité sur ce site, 
+              Si vous rencontrez une difficulté d'accessibilité sur ce site,
               nous vous encourageons à nous le signaler :
             </p>
             <ul className="space-y-2 text-slate-700 mb-4">
@@ -184,14 +184,14 @@ export default function Accessibilite() {
               <li>• En indiquant votre configuration (navigateur, lecteur d'écran, etc.)</li>
             </ul>
             <p className="text-slate-700">
-              Nous nous engageons à vous répondre sous 5 jours ouvrés et à corriger 
+              Nous nous engageons à vous répondre sous 5 jours ouvrés et à corriger
               les problèmes signalés dans les meilleurs délais.
             </p>
           </CardContent>
         </Card>
 
-        <p className="text-sm text-slate-500 mt-8 text-center">
-          Dernière révision : {new Date().toLocaleDateString('fr-FR')}
+        <p className="mt-8 text-sm text-slate-500 text-center">
+          <span suppressHydrationWarning>Dernière révision : {new Date().toLocaleDateString('fr-FR')}</span>
         </p>
       </div>
     </div>

@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Link, useLocation, useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
+import { track } from '@vercel/analytics';
 import { Search, RotateCcw, SlidersHorizontal } from 'lucide-react';
 import SEO from '@/components/SEO';
 import { client } from '@/api/client';
@@ -36,7 +37,7 @@ function parseLimit(value) {
 export default function Aides() {
   const location = useLocation();
   const navigate = useNavigate();
-  const { slug } = useParams();
+  const { slug, categorySlug, territorySlug } = useParams();
   const [searchParams, setSearchParams] = useSearchParams();
   const [isFiltersOpen, setIsFiltersOpen] = useState(false);
   const [localFilters, setLocalFilters] = useState(INITIAL_LOCAL_FILTERS);
@@ -72,9 +73,9 @@ export default function Aides() {
   }, [location.pathname, slug, searchParams, navigate]);
 
   const q = (searchParams.get('q') || '').trim();
-  const category = (searchParams.get('category') || searchParams.get('theme') || '').trim();
+  const category = (categorySlug || searchParams.get('category') || searchParams.get('theme') || '').trim();
   const situation = (searchParams.get('situation') || '').trim();
-  const territory = (searchParams.get('territory') || searchParams.get('territoire') || '').trim();
+  const territory = (territorySlug || searchParams.get('territory') || searchParams.get('territoire') || '').trim();
   const source = (searchParams.get('source') || '').trim();
   const page = parsePage(searchParams.get('page'));
   const limit = parseLimit(searchParams.get('limit') || searchParams.get('pageSize'));
@@ -154,6 +155,7 @@ export default function Aides() {
   }, [isLoading, isError, filteredItems.length, pagination?.total]);
 
   const handleParamChange = (key, value) => {
+    track('filter_aides', { filter_key: key, filter_value: value || 'all' });
     const params = new URLSearchParams(searchParams);
     if (value) {
       params.set(key, value);
@@ -166,7 +168,11 @@ export default function Aides() {
 
   const handleSearchSubmit = (event) => {
     event.preventDefault();
-    handleParamChange('q', queryInput.trim());
+    const cleanQuery = queryInput.trim();
+    if (cleanQuery) {
+      track('search_aides', { query: cleanQuery });
+    }
+    handleParamChange('q', cleanQuery);
   };
 
   const clearFilters = () => {
@@ -182,19 +188,29 @@ export default function Aides() {
 
   const getTitle = () => {
     if (q) return `Aides - ${q}`;
+    if (category && territory) {
+      const taxonomyCat = taxonomy?.categories?.find((c) => c.slug === category);
+      const catLabel = taxonomyCat ? taxonomyCat.label : category;
+      return `Aides ${catLabel} en ${territory} | AccesDirectAide`;
+    }
     if (category && taxonomy?.categories?.length) {
       const found = taxonomy.categories.find((c) => c.slug === category);
-      if (found) return `Aides - ${found.label}`;
+      if (found) return `Aides - ${found.label} | AccesDirectAide`;
     }
     if (situation && taxonomy?.aidSituations?.length) {
       const found = taxonomy.aidSituations.find((s) => s.code === situation || s.slug === situation);
-      if (found) return `Aides pour : ${found.label}`;
+      if (found) return `Aides pour : ${found.label} | AccesDirectAide`;
     }
-    return 'Aides sociales';
+    return 'Aides sociales et démarches';
   };
 
   const getDescription = () => {
     if (q) return `Résultats pour la recherche "${q}" sur les aides disponibles.`;
+    if (category && territory) {
+      const taxonomyCat = taxonomy?.categories?.find((c) => c.slug === category);
+      const catLabel = taxonomyCat ? taxonomyCat.label : category;
+      return `Découvrez toutes les aides ${catLabel} disponibles en ${territory}. Accédez aux démarches et accompagnements locaux.`;
+    }
     if (category && taxonomy?.categories?.length) {
       const found = taxonomy.categories.find((c) => c.slug === category);
       if (found) return `Toutes les aides sociales de la catégorie ${found.label}.`;
@@ -243,7 +259,7 @@ export default function Aides() {
   const totalPages = pagination?.totalPages || 1;
 
   return (
-    <div className="min-h-screen overflow-x-hidden bg-slate-50">
+    <main className="min-h-screen overflow-x-hidden bg-slate-50">
       <SEO
         title={getTitle()}
         description={getDescription()}
@@ -260,9 +276,14 @@ export default function Aides() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col gap-4">
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
             <div>
-              <h1 className="text-2xl font-bold text-slate-900">Aides</h1>
+              <h1 className="text-2xl font-bold text-slate-900">
+                {categorySlug && territorySlug ? `Aides ${taxonomy?.categories?.find(c => c.slug === category)?.label || categorySlug} en ${territorySlug}` :
+                  categorySlug ? `Aides : ${taxonomy?.categories?.find(c => c.slug === category)?.label || categorySlug}` :
+                    'Aides sociales'
+                }
+              </h1>
               <p className="text-slate-600 text-sm">
-                Filtrez par catégorie, situation ou territoire, ou lancez une recherche.
+                {categorySlug && territorySlug ? 'Explorez les dispositifs et accompagnements disponibles pour votre région.' : 'Filtrez par catégorie, situation ou territoire, ou lancez une recherche.'}
               </p>
             </div>
             <div className="flex items-center gap-2">
@@ -283,7 +304,7 @@ export default function Aides() {
           </div>
 
           {/* Search bar */}
-          <form onSubmit={handleSearchSubmit} className="flex flex-col sm:flex-row gap-3">
+          <form onSubmit={handleSearchSubmit} className="flex flex-col sm:flex-row gap-3" role="search">
             <div className="relative flex-1">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-slate-400" aria-hidden="true" />
               <Input
@@ -294,7 +315,7 @@ export default function Aides() {
                 className="pl-10 h-11 bg-slate-50 border-slate-200 focus:bg-white transition-colors"
               />
             </div>
-            <Button type="submit" className="h-11">
+            <Button type="submit" className="h-11 bg-slate-900 text-white hover:bg-slate-800">
               Rechercher
             </Button>
           </form>
@@ -433,16 +454,16 @@ export default function Aides() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
         <div className="flex flex-col gap-8 lg:flex-row">
           {/* Sidebar FilterPanel */}
-          <div className="w-full shrink-0 lg:w-64">
+          <aside className="w-full shrink-0 lg:w-64" aria-label="Filtres de recherche">
             <FilterPanel
               filters={localFilters}
               onChange={setLocalFilters}
               onReset={resetLocalFilters}
             />
-          </div>
+          </aside>
 
           {/* Results column */}
-          <div className="min-w-0 flex-1">
+          <section className="min-w-0 flex-1" aria-label="Résultats des aides">
             {/* Error state */}
             {isError && (
               <EmptyState
@@ -484,11 +505,15 @@ export default function Aides() {
                     </p>
                   )}
 
-                  {/* Empty without active filters — neutral message, NOT EmptyState */}
+                  {/* Empty without active filters */}
                   {filteredItems.length === 0 && !hasAnyFilters && (
-                    <p className="py-8 text-center text-sm text-muted-foreground" data-testid="aides-empty-neutral">
-                      Aucune aide disponible pour le moment.
-                    </p>
+                    <div className="my-8" data-testid="aides-empty-neutral">
+                      <EmptyState
+                        title="Aucune aide disponible pour le moment"
+                        description="Notre catalogue d'aides est en cours de mise à jour. N'hésitez pas à revenir plus tard."
+                        icon={<Search className="h-6 w-6" />}
+                      />
+                    </div>
                   )}
 
                   {/* Empty with active filters — EmptyState via AidGrid */}
@@ -534,9 +559,9 @@ export default function Aides() {
                 </>
               );
             })()}
-          </div>
+          </section>
         </div>
       </div>
-    </div>
+    </main>
   );
 }

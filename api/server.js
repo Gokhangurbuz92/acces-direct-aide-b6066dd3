@@ -13,6 +13,7 @@
 
 import { createServer } from 'node:http';
 import { parse } from 'node:url';
+import { logger } from './lib/logger.js';
 
 // Dynamic import to handle top-level await in the handler module
 const { default: handler } = await import('./index.js');
@@ -82,7 +83,7 @@ const server = createServer(async (req, res) => {
     try {
         await handler(req, res);
     } catch (err) {
-        console.error('[server] Unhandled error:', err);
+        logger.error('[server] Unhandled error', err);
         if (!res.headersSent) {
             res.writeHead(500, { 'Content-Type': 'application/json' });
             res.end(JSON.stringify({ error: 'Internal Server Error' }));
@@ -91,16 +92,16 @@ const server = createServer(async (req, res) => {
 });
 
 server.listen(PORT, '0.0.0.0', () => {
-    console.log(`🚀 ADA API server listening on http://0.0.0.0:${PORT}`);
+    logger.info(`🚀 ADA API server listening on http://0.0.0.0:${PORT}`);
 });
 
 // Graceful shutdown
 process.on('SIGTERM', () => {
-    console.log('Received SIGTERM, shutting down gracefully...');
+    logger.info('Received SIGTERM, shutting down gracefully...');
     server.close(() => process.exit(0));
 });
 
 process.on('SIGINT', () => {
-    console.log('Received SIGINT, shutting down...');
+    logger.info('Received SIGINT, shutting down...');
     server.close(() => process.exit(0));
 });

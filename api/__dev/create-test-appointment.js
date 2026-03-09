@@ -1,9 +1,9 @@
-
 import prisma from '../_utils/prisma.js';
 import { hash, encrypt } from '../lib/crypto.js';
 import crypto from 'crypto';
 import bcrypt from 'bcryptjs';
 import { env } from '../_utils/env.js';
+import { logger } from '../lib/logger.js';
 /**
  * @param {import('../_utils/http-types').ApiRequest} req
  * @param {import('../_utils/http-types').ApiResponse} res
@@ -123,7 +123,7 @@ export default async function handler(req, res) {
         });
 
     } catch (e) {
-        console.error(e);
+        logger.error('Failed to create test appointment', e);
         res.status(500).json({ error: e.message });
     }
 }

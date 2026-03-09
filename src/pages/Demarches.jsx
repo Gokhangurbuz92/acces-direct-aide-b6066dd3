@@ -359,14 +359,20 @@ export default function Demarches() {
           <div data-testid="demarches-empty-state">
             <EmptyState
               title={q || category || situation ? "Aucune démarche trouvée" : "Démarches en cours d'intégration"}
-              message={
+              description={
                 q || category || situation
                   ? "Essayez une autre recherche ou ajustez les filtres."
                   : "Notre catalogue de démarches est en cours de constitution. En attendant, utilisez notre assistant pour un accompagnement personnalisé."
               }
-              actionLabel={q || category || situation ? "Réinitialiser les filtres" : undefined}
-              onAction={q || category || situation ? clearFilters : undefined}
-              type="search"
+              icon={<Search className="h-6 w-6" />}
+              actions={
+                q || category || situation ? (
+                  <Button type="button" variant="outline" onClick={clearFilters} data-testid="empty-reset">
+                    Réinitialiser les filtres
+                  </Button>
+                ) : undefined
+              }
+              data-testid="demarches-empty-component"
             />
             {!(q || category || situation) && (
               <div className="mt-4 flex justify-center">

@@ -34,8 +34,8 @@ export default function SubventionDossier() {
                         <div className="text-xl text-gray-600 font-medium">L'accès aux droits simplifié par le numérique</div>
                     </div>
                     <div className="text-right text-sm text-gray-500">
-                        Version : {new Date().getFullYear()}.1<br />
-                        Document généré le {new Date().toLocaleDateString('fr-FR')}
+                        <span suppressHydrationWarning>Version : {new Date().getFullYear()}.1</span><br />
+                        <span suppressHydrationWarning>Document généré le {new Date().toLocaleDateString('fr-FR')}</span>
                     </div>
                 </header>
 

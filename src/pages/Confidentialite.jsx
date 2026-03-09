@@ -20,8 +20,8 @@ export default function Confidentialite() {
               Notre engagement
             </h2>
             <p className="text-slate-700 mb-4">
-              AccesDirectAide est un site non lucratif. Nous ne vendons, 
-              ne louons et ne partageons aucune donnée personnelle avec des tiers 
+              AccesDirectAide est un site non lucratif. Nous ne vendons,
+              ne louons et ne partageons aucune donnée personnelle avec des tiers
               à des fins commerciales.
             </p>
             <p className="text-slate-700">
@@ -33,12 +33,12 @@ export default function Confidentialite() {
             <h2 className="text-xl font-bold text-slate-900 mb-4">
               Données collectées
             </h2>
-            
+
             <h3 className="text-lg font-semibold text-slate-900 mb-2 mt-4">
               1. Navigation sur le site
             </h3>
             <p className="text-slate-700 mb-4">
-              Lorsque vous consultez le site, nous ne collectons aucune donnée 
+              Lorsque vous consultez le site, nous ne collectons aucune donnée
               personnelle identifiable. La navigation est entièrement libre et anonyme.
             </p>
 
@@ -54,7 +54,7 @@ export default function Confidentialite() {
               <li>Le contenu de votre message</li>
             </ul>
             <p className="text-slate-700">
-              Ces données sont utilisées uniquement pour répondre à votre demande 
+              Ces données sont utilisées uniquement pour répondre à votre demande
               et ne sont jamais partagées.
             </p>
 
@@ -62,8 +62,8 @@ export default function Confidentialite() {
               3. Assistant conversationnel (chatbot)
             </h3>
             <p className="text-slate-700 mb-4">
-              Les conversations avec notre assistant sont temporaires et anonymes. 
-              Elles ne sont pas associées à votre identité et sont supprimées 
+              Les conversations avec notre assistant sont temporaires et anonymes.
+              Elles ne sont pas associées à votre identité et sont supprimées
               régulièrement.
             </p>
             <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-4">
@@ -78,8 +78,8 @@ export default function Confidentialite() {
               </ul>
             </div>
             <p className="text-slate-700">
-              Les conversations sont stockées temporairement (30 jours maximum) 
-              uniquement pour améliorer le service. Aucune donnée n'est revendue 
+              Les conversations sont stockées temporairement (30 jours maximum)
+              uniquement pour améliorer le service. Aucune donnée n'est revendue
               ou partagée à des tiers.
             </p>
           </section>
@@ -89,7 +89,7 @@ export default function Confidentialite() {
               Cookies
             </h2>
             <p className="text-slate-700 mb-4">
-              Ce site utilise uniquement des cookies techniques nécessaires au 
+              Ce site utilise uniquement des cookies techniques nécessaires au
               bon fonctionnement (préférences d'accessibilité, session de navigation).
             </p>
             <p className="text-slate-700">
@@ -102,7 +102,7 @@ export default function Confidentialite() {
               Vos droits (RGPD)
             </h2>
             <p className="text-slate-700 mb-4">
-              Conformément au Règlement Général sur la Protection des Données (RGPD), 
+              Conformément au Règlement Général sur la Protection des Données (RGPD),
               vous disposez des droits suivants :
             </p>
             <ul className="list-disc list-inside text-slate-700 space-y-2 mb-4">
@@ -139,8 +139,8 @@ export default function Confidentialite() {
               Sécurité
             </h2>
             <p className="text-slate-700">
-              Vos données sont hébergées sur des serveurs sécurisés. Nous mettons 
-              en œuvre toutes les mesures techniques nécessaires pour protéger 
+              Vos données sont hébergées sur des serveurs sécurisés. Nous mettons
+              en œuvre toutes les mesures techniques nécessaires pour protéger
               vos informations contre tout accès non autorisé.
             </p>
           </section>
@@ -162,12 +162,12 @@ export default function Confidentialite() {
               Modifications
             </h2>
             <p className="text-slate-700">
-              Cette politique de confidentialité peut être mise à jour. La dernière 
+              Cette politique de confidentialité peut être mise à jour. La dernière
               version est toujours disponible sur cette page.
             </p>
-            <p className="text-sm text-slate-500 mt-4">
-              Dernière mise à jour : {new Date().toLocaleDateString('fr-FR')}
-            </p>
+            <div className="mt-12 text-center text-sm text-slate-500">
+              <span suppressHydrationWarning>Dernière mise à jour : {new Date().toLocaleDateString('fr-FR')}</span>
+            </div>
           </section>
         </div>
       </div>

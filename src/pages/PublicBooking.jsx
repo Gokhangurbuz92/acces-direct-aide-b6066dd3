@@ -15,6 +15,7 @@ import {
     Loader2,
     AlertCircle,
 } from 'lucide-react';
+import { track } from '@vercel/analytics';
 import SEO from '@/components/SEO';
 
 /**
@@ -57,6 +58,8 @@ export default function PublicBooking() {
             if (!res.ok) throw new Error('Impossible de charger les services.');
             const data = await res.json();
             setServices(data.items || []);
+            // Tracker le début du flow si on a réussi à charger la page structure
+            track('start_booking_flow', { structure: structureSlug });
         } catch (err) {
             setError(err.message);
         } finally {
@@ -132,6 +135,7 @@ export default function PublicBooking() {
             }
 
             const data = await res.json();
+            track('booking_confirm_success', { structure: structureSlug, mode: bookingMode });
             setConfirmation(data);
             setStep(4);
         } catch (err) {
@@ -143,6 +147,7 @@ export default function PublicBooking() {
 
     // Handle service selection
     const handleSelectService = (service) => {
+        track('booking_select_service', { structure: structureSlug, service: service.name });
         setSelectedService(service);
         fetchSlots(service.id);
         setStep(2);
@@ -358,8 +363,8 @@ export default function PublicBooking() {
                                 type="button"
                                 onClick={() => setBookingMode('VIDEO')}
                                 className={`p-4 rounded-xl border-2 text-left transition-all ${bookingMode === 'VIDEO'
-                                        ? 'border-indigo-500 bg-indigo-50'
-                                        : 'border-slate-200 hover:border-slate-300'
+                                    ? 'border-indigo-500 bg-indigo-50'
+                                    : 'border-slate-200 hover:border-slate-300'
                                     }`}
                             >
                                 <Video
@@ -375,8 +380,8 @@ export default function PublicBooking() {
                                 type="button"
                                 onClick={() => setBookingMode('IN_PERSON')}
                                 className={`p-4 rounded-xl border-2 text-left transition-all ${bookingMode === 'IN_PERSON'
-                                        ? 'border-indigo-500 bg-indigo-50'
-                                        : 'border-slate-200 hover:border-slate-300'
+                                    ? 'border-indigo-500 bg-indigo-50'
+                                    : 'border-slate-200 hover:border-slate-300'
                                     }`}
                             >
                                 <MapPin
@@ -462,8 +467,8 @@ function StepIndicator({ current, target, label }) {
         <div className="flex flex-col items-center gap-1.5">
             <div
                 className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold transition-all ${active
-                        ? 'bg-indigo-600 text-white'
-                        : 'bg-slate-200 text-slate-400'
+                    ? 'bg-indigo-600 text-white'
+                    : 'bg-slate-200 text-slate-400'
                     } ${isNow ? 'ring-4 ring-indigo-100' : ''}`}
             >
                 {active && current > target ? <CheckCircle2 size={14} /> : target}

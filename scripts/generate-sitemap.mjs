@@ -64,7 +64,6 @@ async function fetchSlugsFromDB(limit) {
             take: limit,
         });
 
-        await prisma.$disconnect();
         return aides.filter((a) => a.slug);
     } catch (error) {
         console.warn(`⚠ Cannot connect to DB for slugs: ${error.message}`);
@@ -109,6 +108,28 @@ function toISODate(date, fallback) {
 // Main
 // ---------------------------------------------------------------------------
 
+/**
+ * Fetch theme x territory combinations for programmatic SEO.
+ * @returns {Promise<{ categories: string[], territories: string[] }>}
+ */
+async function fetchSeoCombinations() {
+    try {
+        const prismaModule = await import('../api/_utils/prisma.js');
+        const prisma = prismaModule.default;
+
+        const cats = await prisma.aidCategory.findMany({ select: { slug: true } });
+
+        // Key territories for SEO rollout
+        const territories = ['paris', 'strasbourg', 'lyon', 'marseille', 'bas-rhin', 'haute-garonne', 'gironde'];
+
+        return { categories: cats.map(c => c.slug).filter(Boolean), territories };
+    } catch (error) {
+        console.warn(`⚠ Cannot connect to DB for SEO combinations: ${error.message}`);
+        return { categories: [], territories: [] };
+    }
+}
+
+
 async function main() {
     const { limit } = parseArgs();
     const buildDate = new Date().toISOString().split('T')[0];
@@ -130,6 +151,18 @@ async function main() {
         );
     }
 
+    let seoLinksCount = 0;
+    // Programmatic SEO routes
+    const { categories, territories } = await fetchSeoCombinations();
+    for (const cat of categories) {
+        entries.push(urlEntry(`${BASE_URL}/aides/theme/${cat}`, buildDate, 'weekly', '0.8'));
+        seoLinksCount++;
+        for (const terr of territories) {
+            entries.push(urlEntry(`${BASE_URL}/aides/theme/${cat}/${terr}`, buildDate, 'weekly', '0.8'));
+            seoLinksCount++;
+        }
+    }
+
     const xml = [
         '<?xml version="1.0" encoding="UTF-8"?>',
         '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">',
@@ -146,6 +179,7 @@ async function main() {
     console.log(`✓ Sitemap written to ${sitemapPath}`);
     console.log(`  Static routes: 2`);
     console.log(`  Aide routes: ${aides.length}`);
+    console.log(`  SEO programmatic links: ${seoLinksCount}`);
     console.log(`  Total URLs: ${entries.length}`);
 }
 

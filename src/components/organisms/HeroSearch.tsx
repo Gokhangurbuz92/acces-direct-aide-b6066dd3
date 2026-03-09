@@ -39,7 +39,7 @@ export default function HeroSearch({
                     {title}
                 </h1>
 
-                <p className="mt-4 text-base text-muted-foreground sm:text-lg">
+                <p className="mt-4 text-base text-foreground/80 sm:text-lg">
                     {subtitle}
                 </p>
 
@@ -65,7 +65,7 @@ export default function HeroSearch({
                             className="pl-10"
                         />
                     </div>
-                    <Button type="submit">Rechercher</Button>
+                    <Button type="submit" className="bg-indigo-700 text-white hover:bg-indigo-800">Rechercher</Button>
                 </form>
             </div>
         </section>

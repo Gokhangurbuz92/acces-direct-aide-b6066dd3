@@ -88,7 +88,7 @@ async function handler(req, res) {
                             title: String(item.title || 'Sans titre').slice(0, 255),
                             reason: 'AI_DISCOVERY',
                             severity: 'LOW',
-                            status: 'OPEN',
+                            status: 'open',
                             details: {
                                 source: item.source || 'Gemini Search',
                                 summary: item.summary || '',

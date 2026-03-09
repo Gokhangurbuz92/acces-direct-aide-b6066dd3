@@ -70,8 +70,8 @@ export default function Method() {
                     Nous corrigerons très vite.
                 </p>
 
-                <p className="text-sm text-gray-500 mt-8">
-                    Dernière mise à jour des contenus : {new Date().toLocaleDateString('fr-FR')} (Automatique)
+                <p className="text-xs text-slate-500 mb-4 flex items-center md:justify-center">
+                    <span suppressHydrationWarning>Dernière mise à jour des contenus : {new Date().toLocaleDateString('fr-FR')} (Automatique)</span>
                 </p>
             </div>
         </div>

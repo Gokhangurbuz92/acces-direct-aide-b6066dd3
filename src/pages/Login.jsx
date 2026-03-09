@@ -33,24 +33,24 @@ export default function Login() {
                         </div>
                     )}
                     <div className="grid gap-3 sm:grid-cols-2">
-                    <Link
-                        to={adminLoginPath}
-                        aria-label="Aller à la connexion administration"
-                        className="inline-flex w-full items-center justify-center rounded-md border border-input bg-background px-4 py-2 text-sm font-medium shadow-sm hover:bg-accent hover:text-accent-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                    >
-                        Administration
-                    </Link>
-                    <Link
-                        to={proLoginPath}
-                        aria-label="Aller à la connexion espace pro"
-                        className="inline-flex w-full items-center justify-center rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground shadow-sm hover:bg-primary/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                    >
-                        Espace Pro
-                    </Link>
+                        <Link
+                            to={adminLoginPath}
+                            aria-label="Aller à la connexion administration"
+                            className="inline-flex w-full items-center justify-center rounded-md border border-input bg-background px-4 py-2 text-sm font-medium shadow-sm hover:bg-accent hover:text-accent-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                        >
+                            Administration
+                        </Link>
+                        <Link
+                            to={proLoginPath}
+                            aria-label="Aller à la connexion espace pro"
+                            className="inline-flex w-full items-center justify-center rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground shadow-sm hover:bg-primary/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                        >
+                            Espace Pro
+                        </Link>
                     </div>
-                    <div className="text-center text-sm text-slate-600">
+                    <div className="text-center text-sm text-slate-700">
                         Pas encore de compte ?{' '}
-                        <Link className="text-blue-700 hover:underline" to={signupPath}>
+                        <Link className="text-blue-900 hover:underline" to={signupPath}>
                             Créer un compte
                         </Link>
                     </div>

@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState, useCallback } from 'react';
 import { Link, useParams, useNavigate } from 'react-router-dom';
+import { track } from '@vercel/analytics';
 import { createPageUrl } from '@/utils';
 import { client } from '@/api/client';
 import { useQuery } from '@tanstack/react-query';
@@ -57,6 +58,13 @@ export default function AideDetail() {
     }
   }, [aide, slug, navigate]);
 
+  // Vercel Analytics Tracking: View Aide Detail
+  useEffect(() => {
+    if (aide?.slug && status === 'success') {
+      track('view_aide_detail', { slug: aide.slug, categorie: aide.categorie });
+    }
+  }, [aide?.slug, aide?.categorie, status]);
+
   // Structures sidebar (keep react-query — it's not aide data)
   const { data: structuresData } = useQuery({
     queryKey: ['structures-aide', aide?.categorie],
@@ -98,7 +106,7 @@ export default function AideDetail() {
           ogType="article"
           schema={schema}
         />
-        <div className="min-h-screen bg-slate-50">
+        <main className="min-h-screen bg-slate-50">
           <div className="bg-white border-b border-slate-200">
             <div className="max-w-4xl mx-auto px-4 sm:px-6 py-4">
               <Skeleton className="h-4 w-48" />
@@ -129,7 +137,7 @@ export default function AideDetail() {
               </div>
             </div>
           </div>
-        </div>
+        </main>
       </>
     );
   }
@@ -145,7 +153,7 @@ export default function AideDetail() {
           description="Une erreur est survenue."
           path={canonicalPath}
         />
-        <div className="min-h-screen bg-slate-50 flex items-center justify-center px-4">
+        <main className="min-h-screen bg-slate-50 flex items-center justify-center px-4">
           <div
             className="rounded-2xl border border-destructive/30 bg-destructive/5 p-8 text-destructive max-w-md text-center"
             role="alert"
@@ -166,7 +174,7 @@ export default function AideDetail() {
               </Button>
             </div>
           </div>
-        </div>
+        </main>
       </>
     );
   }
@@ -214,7 +222,7 @@ export default function AideDetail() {
   const territoireLabel = getTerritoireLabel();
 
   return (
-    <div className="min-h-screen bg-slate-50">
+    <main className="min-h-screen bg-slate-50">
       <SEO
         title={seoTitle}
         description={seoDescription}
@@ -230,7 +238,7 @@ export default function AideDetail() {
             <ChevronRight className="h-4 w-4" />
             <Link to={createPageUrl('Aides')} className="hover:text-blue-600">Aides</Link>
             <ChevronRight className="h-4 w-4" />
-            <span className="text-slate-900">{aide.titre}</span>
+            <span className="text-slate-900" aria-current="page">{aide.titre}</span>
           </nav>
         </div>
       </div>
@@ -246,7 +254,7 @@ export default function AideDetail() {
         </Link>
 
         {/* En-tête */}
-        <div className="bg-white rounded-2xl p-6 md:p-8 border border-slate-200 mb-6">
+        <header className="bg-white rounded-2xl p-6 md:p-8 border border-slate-200 mb-6">
           <div className="flex flex-wrap gap-2 mb-4">
             {categoryLabel && <CategoryChip slug={categorySlug} label={categoryLabel} />}
             {aide.est_urgent && (
@@ -281,7 +289,7 @@ export default function AideDetail() {
               </span>
             )}
           </div>
-        </div>
+        </header>
 
         {/* FALC Toggle + On-demand AI generation */}
         <div className="mb-6">
@@ -294,6 +302,7 @@ export default function AideDetail() {
               type="button"
               disabled={isGeneratingFalc}
               onClick={async () => {
+                track('generate_falc', { slug: aide.slug });
                 setIsGeneratingFalc(true);
                 try {
                   const res = await fetch('/api/public/falc/summarize', {
@@ -328,25 +337,29 @@ export default function AideDetail() {
 
         <div className="grid lg:grid-cols-3 gap-6">
           {/* Contenu principal */}
-          <div className="lg:col-span-2 space-y-6">
+          <article className="lg:col-span-2 space-y-6">
             {isFalcMode ? (
               /* FALC Mode Content */
-              <Card>
-                <CardContent className="p-6">
-                  <FalcContent falcData={aide} entityType="aide" />
-                </CardContent>
-              </Card>
+              <section aria-label="Version simplifiée (FALC)">
+                <Card>
+                  <CardContent className="p-6">
+                    <FalcContent falcData={aide} entityType="aide" />
+                  </CardContent>
+                </Card>
+              </section>
             ) : (
               /* Normal Mode Content */
               <>
                 {/* C'est quoi ? */}
                 {aide.cest_quoi && (
-                  <Card>
-                    <CardContent className="p-6">
-                      <h2 className="text-lg font-bold text-slate-900 mb-3">C&apos;est quoi ?</h2>
-                      <p className="text-slate-700 leading-relaxed">{aide.cest_quoi}</p>
-                    </CardContent>
-                  </Card>
+                  <section aria-labelledby="heading-cest-quoi">
+                    <Card>
+                      <CardContent className="p-6">
+                        <h2 id="heading-cest-quoi" className="text-lg font-bold text-slate-900 mb-3">C&apos;est quoi ?</h2>
+                        <p className="text-slate-700 leading-relaxed">{aide.cest_quoi}</p>
+                      </CardContent>
+                    </Card>
+                  </section>
                 )}
 
                 {/* FALC Summary */}
@@ -354,119 +367,131 @@ export default function AideDetail() {
 
                 {/* Pour qui ? */}
                 {aide.pour_qui && (
-                  <Card>
-                    <CardContent className="p-6">
-                      <h2 className="text-lg font-bold text-slate-900 mb-3">Pour qui ?</h2>
-                      <p className="text-slate-700 leading-relaxed">{aide.pour_qui}</p>
-                    </CardContent>
-                  </Card>
+                  <section aria-labelledby="heading-pour-qui">
+                    <Card>
+                      <CardContent className="p-6">
+                        <h2 id="heading-pour-qui" className="text-lg font-bold text-slate-900 mb-3">Pour qui ?</h2>
+                        <p className="text-slate-700 leading-relaxed">{aide.pour_qui}</p>
+                      </CardContent>
+                    </Card>
+                  </section>
                 )}
 
                 {/* Ce que ça aide */}
                 {aide.ce_que_ca_aide && (
-                  <Card>
-                    <CardContent className="p-6">
-                      <h2 className="text-lg font-bold text-slate-900 mb-3">Ce que ça peut aider</h2>
-                      <p className="text-slate-700 leading-relaxed">{aide.ce_que_ca_aide}</p>
-                    </CardContent>
-                  </Card>
+                  <section aria-labelledby="heading-ce-que">
+                    <Card>
+                      <CardContent className="p-6">
+                        <h2 id="heading-ce-que" className="text-lg font-bold text-slate-900 mb-3">Ce que ça peut aider</h2>
+                        <p className="text-slate-700 leading-relaxed">{aide.ce_que_ca_aide}</p>
+                      </CardContent>
+                    </Card>
+                  </section>
                 )}
 
                 {/* Documents nécessaires */}
                 {aide.documents_necessaires?.length > 0 && (
-                  <Card>
-                    <CardContent className="p-6">
-                      <h2 className="text-lg font-bold text-slate-900 mb-3">
-                        <FileText className="inline h-5 w-5 mr-2" />
-                        Documents à préparer
-                      </h2>
-                      <ul className="space-y-2">
-                        {aide.documents_necessaires.map((doc, idx) => (
-                          <li key={idx} className="flex items-start gap-2 text-slate-700">
-                            <CheckCircle2 className="h-5 w-5 text-green-500 mt-0.5 flex-shrink-0" />
-                            {doc}
-                          </li>
-                        ))}
-                      </ul>
-                    </CardContent>
-                  </Card>
+                  <section aria-labelledby="heading-documents">
+                    <Card>
+                      <CardContent className="p-6">
+                        <h2 id="heading-documents" className="text-lg font-bold text-slate-900 mb-3">
+                          <FileText className="inline h-5 w-5 mr-2 text-slate-500" aria-hidden="true" />
+                          Documents à préparer
+                        </h2>
+                        <ul className="space-y-2">
+                          {aide.documents_necessaires.map((doc, idx) => (
+                            <li key={idx} className="flex items-start gap-2 text-slate-700">
+                              <CheckCircle2 className="h-5 w-5 text-green-500 mt-0.5 flex-shrink-0" aria-hidden="true" />
+                              <span>{doc}</span>
+                            </li>
+                          ))}
+                        </ul>
+                      </CardContent>
+                    </Card>
+                  </section>
                 )}
 
                 {/* Étapes */}
                 {aide.etapes?.length > 0 && (
-                  <Card>
-                    <CardContent className="p-6">
-                      <h2 className="text-lg font-bold text-slate-900 mb-4">Étapes de la demande</h2>
-                      <div className="space-y-4">
-                        {aide.etapes.map((etape, idx) => (
-                          <div key={idx} className="flex gap-4">
-                            <div className="w-8 h-8 rounded-full bg-blue-100 text-blue-700 flex items-center justify-center font-bold flex-shrink-0">
-                              {etape.numero || idx + 1}
+                  <section aria-labelledby="heading-etapes">
+                    <Card>
+                      <CardContent className="p-6">
+                        <h2 id="heading-etapes" className="text-lg font-bold text-slate-900 mb-4">Étapes de la demande</h2>
+                        <div className="space-y-4">
+                          {aide.etapes.map((etape, idx) => (
+                            <div key={idx} className="flex gap-4">
+                              <div className="w-8 h-8 rounded-full bg-blue-100 text-blue-700 flex items-center justify-center font-bold flex-shrink-0" aria-hidden="true">
+                                {etape.numero || idx + 1}
+                              </div>
+                              <div>
+                                <h3 className="font-semibold text-slate-900">{etape.titre}</h3>
+                                <p className="text-slate-600 text-sm mt-1">{etape.description}</p>
+                              </div>
                             </div>
-                            <div>
-                              <h3 className="font-semibold text-slate-900">{etape.titre}</h3>
-                              <p className="text-slate-600 text-sm mt-1">{etape.description}</p>
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    </CardContent>
-                  </Card>
+                          ))}
+                        </div>
+                      </CardContent>
+                    </Card>
+                  </section>
                 )}
 
                 {/* Où faire la demande */}
                 {(aide.ou_demander || aide.lien_demande) && (
-                  <Card>
-                    <CardContent className="p-6">
-                      <h2 className="text-lg font-bold text-slate-900 mb-3">Où faire la demande ?</h2>
-                      {aide.ou_demander && <p className="text-slate-700 mb-4">{aide.ou_demander}</p>}
-                      {aide.lien_demande && (
-                        <Button asChild>
-                          <a href={aide.lien_demande} target="_blank" rel="noopener noreferrer">
-                            Faire ma demande
-                            <ExternalLink className="ml-2 h-4 w-4" />
-                          </a>
-                        </Button>
-                      )}
-                    </CardContent>
-                  </Card>
+                  <section aria-labelledby="heading-ou-demander">
+                    <Card>
+                      <CardContent className="p-6">
+                        <h2 id="heading-ou-demander" className="text-lg font-bold text-slate-900 mb-3">Où faire la demande ?</h2>
+                        {aide.ou_demander && <p className="text-slate-700 mb-4">{aide.ou_demander}</p>}
+                        {aide.lien_demande && (
+                          <Button asChild onClick={() => track('click_request_aide', { slug: aide.slug, location: 'body' })}>
+                            <a href={aide.lien_demande} target="_blank" rel="noopener noreferrer">
+                              Faire ma demande
+                              <ExternalLink className="ml-2 h-4 w-4" aria-hidden="true" />
+                            </a>
+                          </Button>
+                        )}
+                      </CardContent>
+                    </Card>
+                  </section>
                 )}
 
                 {/* Sources — "Consulter la source officielle" */}
                 {aide.source_url && (
-                  <Card className="bg-slate-50">
-                    <CardContent className="p-6">
-                      <h2 className="text-lg font-bold text-slate-900 mb-3">Sources</h2>
-                      <ul className="space-y-2">
-                        <li>
-                          <a href={aide.source_url} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline flex items-center gap-1">
-                            Consulter la source officielle
-                            <ExternalLink className="h-3 w-3" />
-                          </a>
-                          {aide.source_name && (
-                            <span className="text-xs text-slate-500 ml-2">({aide.source_name})</span>
-                          )}
-                        </li>
-                      </ul>
-                    </CardContent>
-                  </Card>
+                  <section aria-labelledby="heading-sources">
+                    <Card className="bg-slate-50">
+                      <CardContent className="p-6">
+                        <h2 id="heading-sources" className="text-lg font-bold text-slate-900 mb-3">Sources</h2>
+                        <ul className="space-y-2">
+                          <li>
+                            <a href={aide.source_url} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline flex items-center gap-1">
+                              Consulter la source officielle
+                              <ExternalLink className="h-3 w-3" aria-hidden="true" />
+                            </a>
+                            {aide.source_name && (
+                              <span className="text-xs text-slate-500 ml-2">({aide.source_name})</span>
+                            )}
+                          </li>
+                        </ul>
+                      </CardContent>
+                    </Card>
+                  </section>
                 )}
               </>
             )}
-          </div>
+          </article>
 
           {/* Sidebar */}
-          <div className="space-y-6">
+          <aside className="space-y-6" aria-label="Actions et informations complémentaires">
             <ProvenanceFreshness provenance={provenance} />
 
             {/* Actions */}
             <Card>
               <CardContent className="p-6 space-y-3">
                 {aide.lien_demande && (
-                  <Button className="w-full" asChild>
+                  <Button className="w-full" asChild onClick={() => track('click_request_aide', { slug: aide.slug, location: 'sidebar' })}>
                     <a href={aide.lien_demande} target="_blank" rel="noopener noreferrer">
                       Faire ma demande
-                      <ExternalLink className="ml-2 h-4 w-4" />
+                      <ExternalLink className="ml-2 h-4 w-4" aria-hidden="true" />
                     </a>
                   </Button>
                 )}
@@ -474,9 +499,12 @@ export default function AideDetail() {
                   <Button
                     variant="outline"
                     className="w-full"
-                    onClick={() => window.open(pdfDownloadUrl, '_blank', 'noopener,noreferrer')}
+                    onClick={() => {
+                      track('download_aide_pdf', { slug: aide.slug });
+                      window.open(pdfDownloadUrl, '_blank', 'noopener,noreferrer');
+                    }}
                   >
-                    <Download className="mr-2 h-4 w-4" />
+                    <Download className="mr-2 h-4 w-4" aria-hidden="true" />
                     Télécharger en PDF
                   </Button>
                 )}
@@ -519,9 +547,9 @@ export default function AideDetail() {
                 </CardContent>
               </Card>
             )}
-          </div>
+          </aside>
         </div>
       </div>
-    </div>
+    </main>
   );
 }

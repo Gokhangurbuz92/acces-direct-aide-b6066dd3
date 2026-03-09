@@ -11,7 +11,7 @@ import {
   normalizeNextPath,
 } from '../../_utils/user-auth.js';
 
-const VERIFY_TOKEN_TTL_MS = 60 * 60 * 1000;
+const VERIFY_TOKEN_TTL_MS = 15 * 60 * 1000; // 15 minutes TTL
 
 const GENERIC_RESPONSE = {
   ok: true,

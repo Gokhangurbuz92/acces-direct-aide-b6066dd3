@@ -224,6 +224,10 @@ async function handler(req, res) {
         },
       });
       return { conflict: false, appointment };
+    }, {
+      isolationLevel: 'Serializable',
+      maxWait: 5000,
+      timeout: 10000
     });
 
     if (conflictResult.conflict || !conflictResult.appointment) {

@@ -102,7 +102,6 @@ const RegionalDashboard = lazy(() => import("./pro/RegionalDashboard.jsx"));
 const OfficialAttestation = lazy(() => import("./pro/OfficialAttestation.jsx"));
 const SystemHealth = lazy(() => import("./pro/SystemHealth.jsx"));
 const FullSimulation = lazy(() => import("./pro/FullSimulation.jsx"));
-const AiOrchestrator = lazy(() => import("./pro/AiOrchestrator.jsx"));
 const HiveOrchestrator = lazy(() => import("./pro/HiveOrchestrator.jsx"));
 const ContentFactory = lazy(() => import("./pro/ContentFactory.jsx"));
 const StorybookExplorer = lazy(() => import("./pro/StorybookExplorer.jsx"));
@@ -140,6 +139,7 @@ const AdminDashboard = lazy(() => import("./AdminDashboard.jsx"));
 const AdminFeatures = lazy(() => import("./AdminFeatures.jsx"));
 const AdminConversations = lazy(() => import("./AdminConversations.jsx"));
 const AdminNationalDashboard = lazy(() => import("./admin/NationalDashboard.jsx"));
+const AIOrchestrator = lazy(() => import("./admin/AIOrchestrator.jsx"));
 
 // Pro
 const ProLayout = lazy(() => import("./pro/ProLayout.jsx"));
@@ -289,7 +289,6 @@ function PagesContent() {
                                 <Route path="attestation/:shareId" element={<ProGuard><OfficialAttestation /></ProGuard>} />
                                 <Route path="health" element={<ProGuard><SystemHealth /></ProGuard>} />
                                 <Route path="simulation" element={<ProGuard><FullSimulation /></ProGuard>} />
-                                <Route path="orchestrator" element={<ProGuard><AiOrchestrator /></ProGuard>} />
                                 <Route path="hive" element={<ProGuard><HiveOrchestrator /></ProGuard>} />
                                 <Route path="content-factory" element={<ProGuard><ContentFactory /></ProGuard>} />
                                 <Route path="storybook" element={<ProGuard><StorybookExplorer /></ProGuard>} />
@@ -343,6 +342,7 @@ function PagesContent() {
                             <Route path="/admin" element={<Navigate to="/admin/dashboard" replace />} />
                             <Route path="/admin/dashboard" element={<AdminGuard><AdminDashboard /></AdminGuard>} />
                             <Route path="/admin/national" element={<AdminGuard><AdminNationalDashboard /></AdminGuard>} />
+                            <Route path="/admin/orchestrator" element={<AdminGuard><AIOrchestrator /></AdminGuard>} />
                             <Route path="/admin/features" element={<AdminGuard><AdminFeatures /></AdminGuard>} />
                             <Route path="/admin/conversations" element={<AdminGuard><AdminConversations /></AdminGuard>} />
                             <Route path="/admin/audit" element={<AdminGuard><AdminAudit /></AdminGuard>} />
@@ -376,6 +376,8 @@ function PagesContent() {
                             <Route path="/aide/view" element={<AideDetail />} />
                             <Route path="/aides/view" element={<LegacyViewRedirect basePath="/aides" />} />
                             <Route path="/aide/:slug" element={<LegacyAideRedirect />} />
+                            <Route path="/aides/theme/:categorySlug/:territorySlug" element={<Aides />} />
+                            <Route path="/aides/theme/:categorySlug" element={<Aides />} />
                             <Route path="/aides/:slug" element={<AideDetail />} />
                             <Route path="/aides" element={<Aides />} />
                             <Route path="/recherche" element={<Recherche />} />

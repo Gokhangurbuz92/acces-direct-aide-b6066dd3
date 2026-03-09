@@ -1,135 +1,120 @@
-# Accès Direct Aide
+# 📖 Accès Direct Aide — Code Wiki & Documentation Rapide
 
-Platform connecting professional aid structures with beneficiaries, featuring secure appointment booking, messaging, and document exchange. Built with React, Node.js (Vercel Serverless), and Prisma (PostgreSQL).
+Bienvenue dans la documentation technique centrale du projet **Accès Direct Aide**. Ce projet propose une plateforme sécurisée connectant les structures professionnelles d'aide sociale avec les bénéficiaires (citoyens).
 
-## Features
+---
 
-- **Public**: Search & View Aid/Structure information (FALC accessibility).
-- **Pro**: Manage structure, team, services, and availability.
-- **Appointments**: Secure booking flow with token-based access for beneficiaries.
-- **Messaging**: End-to-end encrypted messaging and file exchange between Pro and Beneficiary.
-- **Privacy**: Strict PII encryption (AES-256-GCM) and tenant isolation.
+## 🌍 Vue d'ensemble du projet
 
-## Prerequisites
+### But Principal
+**Accès Direct Aide** a pour vocation de simplifier, centraliser et sécuriser l'accès à l'information et à l'accompagnement social. Le projet s'appuie sur une philosophie **Zero-Knowledge** garantissant que les données sensibles des usagers (documents, messages) restent strictement confidentielles via un chiffrement de bout en bout.
 
-- **Node.js**: v20 or later.
-- **Docker**: (Recommended) for local PostgreSQL.
-- **NPM**: v10 or later.
+### À qui s'adresse l'application ?
+L'application cible deux publics majeurs :
+1. **Les Citoyens (Bénéficiaires) :** Peuvent rechercher des aides adaptées à leur situation (traduites en langage simplifié FALC par l'IA), prendre rendez-vous, transférer des documents de manière sécurisée sans avoir à créer de compte classique (système de "Passeport" par token).
+2. **Les Professionnels (Structures Sociales, Agents) :** Disposent d'un tableau de bord (Espace Pro) pour gérer leurs disponibilités, accepter des rendez-vous locaux ou en visioconférence, exporter des rapports d'impact et échanger de façon sécurisée avec les bénéficiaires.
 
-## Getting Started (Development)
+---
 
-1.  **Install Dependencies**
-    Always use `npm ci` to ensure a consistent environment based on the lockfile.
-    ```bash
-    npm ci
-    ```
+## 🛠️ Stack Technique
 
-2.  **Environment Setup**
-    Copy `.env.example` to `.env`.
-    ```bash
-    cp .env.example .env
-    ```
-    *Note: For local development, ensure your DATABASE_URL points to a local PostgreSQL instance.*
+Le projet repose sur une pile moderne de type "Serverless" optimisée pour la performance, l'accessibilité et la sécurité.
 
-3.  **Local Database (Docker)**
-    Start a local PostgreSQL instance and apply migrations:
-    ```bash
-    docker-compose up -d
-    npx prisma migrate dev
-    ```
+*   **Frontend :**
+    *   **Cœur :** React 18, Vite, React Router DOM v7.
+    *   **UI & Stylisation :** Tailwind CSS, Radix UI (base pour les composants accessibles façon shadcn/ui), Framer Motion (animations), Lucide React (icônes).
+    *   **Data Fetching & State :** TanStack React Query.
+    *   **Analyse & Graphiques :** Recharts.
+*   **Backend (API) :**
+    *   **Infrastructure :** Node.js avec architecture Serverless déployée sur **Vercel** (dossier `/api`).
+    *   **Base de Données :** PostgreSQL interfacé via l'ORM **Prisma**.
+    *   **Cache & Rate Limiting :** Redis (via `@upstash/redis` et `@vercel/kv`).
+*   **Intelligence Artificielle & Inclusion (Phase 3) :**
+    *   **LLMs :** OpenAI et Google Generative AI (Gemini). Utilisés pour la simplification FALC (Facile À Lire et à Comprendre) et le moteur RAG "Boussole Sociale".
+*   **Sécurité (Zero-Knowledge) :**
+    *   Chiffrement **AES-256-GCM** pour les données personnelles (PII).
+    *   Hachage des mots de passe avec `bcryptjs`.
+    *   JWT pour les sessions de l'espace professionnel.
+*   **DevOps & Qualité :**
+    *   **Tests E2E :** Playwright (tests d'accessibilité et fonctionnels).
+    *   **Composants & Design System :** Storybook & Chromatic.
+    *   **Linting/Typage :** ESLint, TypeScript (vérification avec `tsc`), Prettier.
+    *   **Observabilité :** Sentry, Pino (Logging structuré).
 
-4.  **Run Development Server**
-    ```bash
-    npm run dev
-    ```
-    Access the app at `http://localhost:5173`.
+---
 
+## 🏢 Architecture du Code
 
-## Architecture
+L'architecture du projet est conçue de manière modulaire, séparant clairement la logique front-end, l'API back-end et la donnée.
 
-- **Frontend**: Vite + React + Tailwind CSS.
-- **Backend**: Node.js API (Serverless functions in `/api`).
-- **Database**: PostgreSQL (Prisma ORM).
-- **Storage**: Local (Dev) or S3-compatible (Prod).
-- **Security**:
-    - Passwords hashed with `bcrypt`.
-    - Sensitive data (names, contacts, messages, files) encrypted with `AES-256-GCM`.
-    - Rate limiting via Vercel KV.
+| Dossier Principal | Description |
+| :--- | :--- |
+| **`/src`** | Contient l'intégralité du code front-end (React). Organisé par `/components` (UI partagée), `/pages` (vues de l'application), `/lib` (utilitaires et api client), `/hooks`, `/contexts`. |
+| **`/api`** | Héberge les Serverless Functions (Backend complet routé pour Vercel). On y trouve les endpoints pour l'authentification (`/auth`), la gestion des pros, les intégrations IA et la signature des rendez-vous. |
+| **`/prisma`** | Contient le schéma de la base de données (`schema.prisma`) décrivant des dizaines de modèles (Aides, Structures, Appointments, Messages, etc.), ainsi que les fichiers de `seed` et les migrations SQL. |
+| **`/docs`** | Documentation approfondie (infrastructures, protocoles Vercel, rapports d'audit, guides E2E). |
+| **`/tests` et `/e2e`** | Suites de tests. `/e2e` est propulsé par Playwright pour valider le parcours utilisateur global et vérifier le respect stricts des règles d'accessibilité (A11y). |
+| **`/scripts`** | Outils internes (Node/Bash) pour le build, le typage strict (`tsc`), les diagnostics système, backfill DB, et audits de sécurité. |
+| **`/packages`** | Indique potentiellement une future ou actuelle structure monorepo permettant de partager du code entre plusieurs applications. |
 
-## API Environment Variable
+---
 
-The front-end API client reads `VITE_API_BASE_URL` from environment.
+## ✨ Fonctionnalités Clés
 
-| Value | Behaviour |
-|-------|-----------|
-| *(empty / unset)* | Same-origin requests (`/api/…`) — **default on Vercel** |
-| `https://staging.example.com` | Proxy to a remote API (useful in dev) |
+1.  **Annuaire Universel & Aides :** Scraping/Ingestion d'aides depuis diverses sources avec simplification instantanée en FALC par IA pour l'accessibilité cognitive.
+2.  **Boussole Sociale (Assistant RAG) :** Un outil d'orientation propulsé par l'IA pour guider l'usager vers le bon service ou la bonne démarche selon son profil.
+3.  **Booking de Rendez-vous (Public & Pro) :**
+    *   Côté Usager : Prise de rendez-vous fluide sans création de compte complexe (géré par un token/passeport encrypté).
+    *   Côté Pro : Gestion d'agenda, synchronisation Outlook, paramétrage avancé des buffers de temps, et déclenchement de Visioconférence (Jitsi).
+4.  **Messagerie et Coffre-fort E2EE :**
+    *   Échange de pièces jointes (via AWS S3) et de messages.
+    *   Déchiffrement effectué uniquement dans le navigateur client de l'agent ou de l'usager, garantissant l'absence de fuite côté serveur.
+5.  **Pilotage, Rapports & Audit :** Outils de reporting incluant des statistiques d'impact, un journal d'audit strict RGPD et la transmission automatique au SI-SIAO.
 
-Set it in `.env.local` for local development if needed.
+---
 
-## API Cache Policy
+## 🚀 Guide de Démarrage (Local Development)
 
-The data layer uses an in-memory TTL cache (`src/lib/api/cache.ts`) to avoid redundant network requests:
+Pour qu'un nouveau développeur puisse configurer l'environnement complet en local, suivez ces étapes :
 
-| Scope | TTL | Description |
-|-------|-----|-------------|
-| Listing (`/api/aides?…`) | 60 s | Short TTL — filters change frequently |
-| Detail (`/api/aides/:slug`) | 5 min | Longer TTL — detail content is stable |
+### 1. Prérequis
+Assurez-vous d'avoir installé :
+- **Node.js** (v20+)
+- **NPM** (v10+)
+- **Docker** et **Docker Compose** (pour la base PostgreSQL locale)
 
-**Inflight deduplication**: identical concurrent requests share the same `Promise` (no double-fetch).
-**Refetch**: the "Réessayer" button invalidates the relevant cache entries and forces a fresh network call.
-
-## Deployment
-
-1.  **Build**
-    ```bash
-    npm run build
-    ```
-
-2.  **Vercel Deployment**
-    - Connect repository to Vercel.
-    - Set Environment Variables (see `.env.example`).
-    - Deploy.
-
-## Deployment & Infrastructure
-
-For detailed information about our Production and Staging environments, DNS configuration, and Git workflow, please refer to:
-
-- [Infrastructure Source of Truth](docs/INFRASTRUCTURE.md)
-- [Vercel Migration Guide](docs/VERCEL_MIGRATION_GUIDE.md)
-- [Authentification — Parcours Public / Pro / Admin](docs/Auth.md)
-- [Guide d'intégration Auth JWT](docs/AuthIntegration.md)
-
-## Setup Chromatic
-
-To enable the blocking visual regression CI:
-1. Go to your GitHub repository **Settings** -> **Secrets and variables** -> **Actions**
-2. Click **New repository secret**.
-3. Name MUST be exactly: `CHROMATIC_PROJECT_TOKEN`
-4. Value: The token obtained from your Chromatic project dashboard.
-*(Never commit this token into the codebase).*
-
-## Contribuer / Guardrails
-
-### Tests E2E (Playwright)
-
-130+ tests ultra-rapides (<1 min) grâce aux mocks API synchrones :
-
+### 2. Installation des dépendances
+Cloner le dépôt, puis installer les paquets à l'aide de :
 ```bash
-USE_MOCKS=true npx playwright test
+npm ci
 ```
+*(Utilisez `npm ci` plutôt que `npm install` pour garantir la reproductibilité depuis le `package-lock.json`.)*
 
-📖 Pour en savoir plus sur l'écriture et l'exécution des tests, consultez le [Guide des tests E2E](docs/E2E_TESTING.md).
+### 3. Configuration de l'environnement
+Copiez le fichier d'exemple pour initialiser vos variables d'environnement locales :
+```bash
+cp .env.example .env
+```
+Assurez-vous que la variable `DATABASE_URL` pointe bien vers votre base locale (c'est le cas par défaut dans l'exemple).
 
-### Préflight
-Avant de soumettre une Pull Request, exécutez la commande suivante qui regroupe toutes les vérifications :
+### 4. Lancement de la Base de Données (Docker)
+Démarrez le conteneur PostgreSQL en arrière-plan et appliquez les migrations Prisma pour générer les tables :
+```bash
+docker compose up -d
+npx prisma migrate dev
+```
+*(Optionnel) Si vous souhaitez avoir un jeu d'essai, vous pouvez lancer `npm run db:seed`.*
 
+### 5. Démarrer le Serveur de Développement
+Lancez le backend API et le front-end React avec Vite :
+```bash
+npm run dev
+```
+Vous pouvez désormais accéder à l'application métier sur **[http://localhost:5173](http://localhost:5173)**.
+
+### Vérification Avant Commit (Preflight)
+Avant de proposer un correctif (Pull Request), lancez la pipeline de vérification locale complète :
 ```bash
 npm run preflight
 ```
-*(Celle-ci lance : `npm ci`, `npm run lint`, `npm run typecheck`, `npm test`, `npm run build`)*
-
-### Règles Minimales (DoD)
-- **Couleurs :** Pas de couleurs hardcodées (ex: `#xxxxxx`) dans `src/components/**`.
-- **Design System :** Pas de classes palette (ex: `bg-blue-500` ou `text-slate-400`) dans `src/components/ui/**`. Utilisez les tokens fournis.
-- **Storybook :** Stories Storybook obligatoires pour chaque nouveau composant du Design System (DS).
+Cette commande exécute le lint, le typecheck TypeScript, la suite de tests unitaires et vérifie que le build de production s'effectue sans erreur.

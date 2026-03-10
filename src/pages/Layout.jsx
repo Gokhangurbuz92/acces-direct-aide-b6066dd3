@@ -57,7 +57,7 @@ const FOOTER_LINKS = [
   { label: 'À propos', page: 'APropos' },
   { label: 'Sources & méthode', page: 'SourcesMethode' },
   { label: 'Contact', page: 'Contact' },
-  { label: 'Signaler une erreur', page: 'Contact' }, // Points to Contact for now
+  { label: 'Signaler une erreur', href: '/contact?sujet=signalement_erreur' }, // Points to Contact with subject pre-filled
   { label: 'Partenaires', href: '/partenaires' },
   { label: 'Impact', href: '/impact' },
   { label: 'Accessibilité', page: 'Accessibilite' },

@@ -98,8 +98,8 @@ async function runAudit() {
                                 queue.push({ url: normalizedHref, depth: depth + 1 });
                             }
                         }
-                    } catch (e) {
-                        // ignore broken urls
+                    } catch {
+                        /* ignore broken urls */
                     }
                 }
                 console.log(`[Depth ${depth}] Links in queue for next depth: ${queue.length}`);

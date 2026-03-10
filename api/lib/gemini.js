@@ -171,7 +171,7 @@ async function fetchLexicalContext(message, limit = 5) {
  * @returns {Promise<string>} Raw text response
  */
 export async function generateText(prompt, options = {}) {
-    const modelName = options.model || 'gemini-2.5-flash-preview-05-20';
+    const modelName = options.model || 'gemini-2.0-flash';
     const model = getGenAI().getGenerativeModel({
         model: modelName,
         generationConfig: {

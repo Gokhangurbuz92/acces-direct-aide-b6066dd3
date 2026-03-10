@@ -1,206 +1,158 @@
-
-import { Link } from 'react-router-dom';
-import { createPageUrl } from '@/utils';
-import { Button } from "@/components/ui/button";
+import SEO from '@/components/SEO';
+import { Lightbulb, Target, CheckCircle2, History, Globe2, HeartHandshake } from 'lucide-react';
 import { Card, CardContent } from "@/components/ui/card";
-import {
-  CheckCircle2,
-  Shield,
-  Heart,
-  Users,
-  Target,
-  BookOpen,
-  ExternalLink
-} from 'lucide-react';
+import { Link } from 'react-router-dom';
 
 export default function APropos() {
   return (
-    <div className="min-h-screen bg-slate-50">
-      {/* En-tête */}
-      <div className="bg-blue-600 text-white py-16">
+    <div className="min-h-screen bg-slate-50 pb-20">
+      <SEO
+        title="À Propos & Notre Histoire"
+        description="Découvrez l'origine, la mission et les engagements d'Accès Direct Aide pour lutter contre le non-recours aux droits."
+        path="/a-propos"
+      />
+
+      {/* Hero Section */}
+      <div className="bg-slate-900 text-white pt-16 pb-24 border-b border-slate-800">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 text-center">
-          <h1 className="text-3xl md:text-4xl font-bold mb-4">
-            À propos d'AccesDirectAide
-          </h1>
-          <p className="text-xl text-blue-100 max-w-2xl mx-auto">
-            Un site gratuit et sans but lucratif pour vous aider à trouver 
-            les aides et les services dont vous avez besoin.
+          <div className="inline-flex justify-center items-center w-16 h-16 rounded-2xl bg-orange-500/20 text-orange-400 mb-6 ring-1 ring-orange-500/30">
+            <Lightbulb className="w-8 h-8" />
+          </div>
+          <h1 className="text-3xl md:text-5xl font-bold mb-6 tracking-tight text-slate-50">Notre Histoire & Mission</h1>
+          <p className="text-lg md:text-xl text-slate-300 max-w-2xl mx-auto leading-relaxed">
+            Née face à la complexité administrative, Accès Direct Aide s'engage pour garantir l'accès au bout des doigts, pour tous.
           </p>
         </div>
       </div>
 
-      <div className="max-w-4xl mx-auto px-4 sm:px-6 py-12">
-        {/* Notre mission */}
-        <section className="mb-12">
-          <h2 className="text-2xl font-bold text-slate-900 mb-6 flex items-center gap-3">
-            <Target className="h-7 w-7 text-blue-600" />
-            Notre mission
-          </h2>
-          <div className="prose prose-slate max-w-none">
-            <p className="text-lg text-slate-700 leading-relaxed">
-              AccesDirectAide est né d'un constat simple : trouver les bonnes aides 
-              et comprendre les démarches administratives peut être très compliqué.
-            </p>
-            <p className="text-slate-600 leading-relaxed">
-              Notre objectif est de rendre ces informations accessibles à tous, 
-              avec des explications simples et claires, dans un langage que tout le monde peut comprendre.
-            </p>
-          </div>
-        </section>
+      <div className="max-w-3xl mx-auto px-4 sm:px-6 -mt-10 relative z-10 space-y-6">
 
-        {/* Nos engagements */}
-        <section className="mb-12">
-          <h2 className="text-2xl font-bold text-slate-900 mb-6 flex items-center gap-3">
-            <Shield className="h-7 w-7 text-blue-600" />
-            Nos engagements
-          </h2>
-          <div className="grid md:grid-cols-2 gap-6">
-            <Card>
-              <CardContent className="p-6">
-                <div className="flex items-start gap-4">
-                  <div className="w-12 h-12 rounded-xl bg-green-100 flex items-center justify-center flex-shrink-0">
-                    <CheckCircle2 className="h-6 w-6 text-green-600" />
+        {/* Le Constat */}
+        <Card className="border-orange-200 bg-orange-50/50 shadow-sm overflow-hidden">
+          <CardContent className="p-6 md:p-8">
+            <div className="flex items-start gap-4">
+              <div className="p-3 bg-orange-100 text-orange-700 rounded-full mt-1">
+                <History className="w-6 h-6" />
+              </div>
+              <div>
+                <h2 className="text-xl font-bold text-orange-900 mb-2">
+                  Le Constat Initial (L'Étincelle)
+                </h2>
+                <p className="text-orange-900/80 leading-relaxed">
+                  L'idée d'Accès Direct Aide est née d'un constat frappant de notre fondateur, travailleur social dans le Bas-Rhin pendant depuis plusieurs années au sein des chantiers d'insertion et diverses autres associations de réinsertion et d'hébergement. Face à l'inflation des démarches dématérialisées et au jargon institutionnel, il a vu la fracture numérique aggraver la précarité.
+                  <br /><br />
+                  <strong>1 usager sur 3 renonce à ses droits </strong> simplement parce que l'information n'est pas trouvée ou qu'elle est "trop dure à lire".
+                </p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Le Projet */}
+        <Card className="border-slate-200 shadow-sm">
+          <CardContent className="p-6 md:p-8 space-y-8">
+
+            <section className="space-y-4">
+              <div className="flex items-center gap-3 border-b border-slate-100 pb-4">
+                <div className="p-2 bg-blue-50 rounded-lg">
+                  <Target className="w-5 h-5 text-blue-600" />
+                </div>
+                <h2 className="text-xl font-bold text-slate-900">Notre Mission Civique</h2>
+              </div>
+              <div className="space-y-3 text-slate-700 leading-relaxed px-2">
+                <p>
+                  Rompre "l'effet silo" et utiliser la puissance brute du numérique (moteurs d'intelligence artificielle ouverts, Open-Data) non pas pour vendre, mais pour <strong>traduire l'État aux citoyens et pour accompagner les professionnels de l'Action Sociale de "1er ligne"</strong>.
+                </p>
+                <div className="bg-slate-50 border-l-4 border-blue-500 p-4 mt-4">
+                  <blockquote className="italic text-slate-600 font-medium">
+                    « Un droit qui n'est pas compris est un droit qui n'est pas utilisé. Traduire l'administration en français "de tous les jours", c'est la première étape de l'égalité. »
+                  </blockquote>
+                </div>
+              </div>
+            </section>
+
+            <section className="space-y-4">
+              <div className="flex items-center gap-3 border-b border-slate-100 pb-4">
+                <div className="p-2 bg-blue-50 rounded-lg">
+                  <CheckCircle2 className="w-5 h-5 text-blue-600" />
+                </div>
+                <h2 className="text-xl font-bold text-slate-900">Nos 4 piliers inébranlables</h2>
+              </div>
+              <div className="grid sm:grid-cols-2 gap-4 px-2">
+                <div className="border border-slate-100 rounded-lg p-4 bg-white">
+                  <h3 className="font-bold text-slate-800 mb-2 flex items-center gap-2">
+                    <span className="text-green-500">1.</span> Gratuité absolue
+                  </h3>
+                  <p className="text-sm text-slate-600">L'information sociale ne s'achète pas. Ni pour le public, ni pour les pros.</p>
+                </div>
+                <div className="border border-slate-100 rounded-lg p-4 bg-white">
+                  <h3 className="font-bold text-slate-800 mb-2 flex items-center gap-2">
+                    <span className="text-blue-500">2.</span> FALC
+                  </h3>
+                  <p className="text-sm text-slate-600">Facile À Lire et à Comprendre obligatoire pour l'interface via l'Intelligence Artificielle.</p>
+                </div>
+                <div className="border border-slate-100 rounded-lg p-4 bg-white">
+                  <h3 className="font-bold text-slate-800 mb-2 flex items-center gap-2">
+                    <span className="text-purple-500">3.</span> Neutralité
+                  </h3>
+                  <p className="text-sm text-slate-600">Aucun parti pris politique, philosophique ou religieux. Juste le droit pour tous.</p>
+                </div>
+                <div className="border border-slate-100 rounded-lg p-4 bg-white">
+                  <h3 className="font-bold text-slate-800 mb-2 flex items-center gap-2">
+                    <span className="text-red-500">4.</span> Sécurité by Design
+                  </h3>
+                  <p className="text-sm text-slate-600">Cryptographie complète des outils partagés pour le suivi des usagers.</p>
+                </div>
+              </div>
+            </section>
+
+            <section className="space-y-4">
+              <div className="flex items-center gap-3 border-b border-slate-100 pb-4">
+                <div className="p-2 bg-blue-50 rounded-lg">
+                  <Globe2 className="w-5 h-5 text-blue-600" />
+                </div>
+                <h2 className="text-xl font-bold text-slate-900">Le Déploiement : Vision Locale et Nationale</h2>
+              </div>
+              <div className="space-y-3 text-slate-700 leading-relaxed px-2">
+                <p>
+                  Un socle national robuste permet de proposer les aides communes à tous les français (Pôle Emploi, CAF, CNAV). Cependant, la vraie force de la solidarité se vit au maillage local.
+                </p>
+                <div className="relative border-l border-slate-200 ml-3 pl-6 mt-6 space-y-8">
+                  <div className="relative">
+                    <div className="absolute -left-[31px] bg-blue-600 text-white w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold ring-4 ring-white">1</div>
+                    <h4 className="font-bold text-slate-900">Phase Opérationnelle (Alsace)</h4>
+                    <p className="text-sm text-slate-600 mt-1">Lancement dans le Bas-Rhin et Haut-Rhin (67/68) pour éprouver la précision des données associatives locales pour une utilité immédiate pour les travailleurs sociaux alsaciens.</p>
                   </div>
-                  <div>
-                    <h3 className="font-bold text-slate-900 mb-2">Informations vérifiées</h3>
-                    <p className="text-slate-600 text-sm">
-                      Toutes nos informations proviennent de sources officielles 
-                      (sites de l'État, CAF, CPAM, etc.) et sont vérifiées régulièrement.
-                    </p>
+                  <div className="relative">
+                    <div className="absolute -left-[31px] bg-slate-200 text-slate-600 w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold ring-4 ring-white">2</div>
+                    <h4 className="font-bold text-slate-900">Étape Grand-Est</h4>
+                    <p className="text-sm text-slate-600 mt-1">Généralisation à la région Grand-Est en partenariat avec les départements.</p>
+                  </div>
+                  <div className="relative">
+                    <div className="absolute -left-[31px] bg-slate-200 text-slate-600 w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold ring-4 ring-white">3</div>
+                    <h4 className="font-bold text-slate-900">France Entière</h4>
+                    <p className="text-sm text-slate-600 mt-1">Objectif long terme : une cartographie sociale exhaustive et ouverte sur tout l'hexagone.</p>
                   </div>
                 </div>
-              </CardContent>
-            </Card>
+              </div>
+            </section>
 
-            <Card>
-              <CardContent className="p-6">
-                <div className="flex items-start gap-4">
-                  <div className="w-12 h-12 rounded-xl bg-blue-100 flex items-center justify-center flex-shrink-0">
-                    <Shield className="h-6 w-6 text-blue-600" />
-                  </div>
-                  <div>
-                    <h3 className="font-bold text-slate-900 mb-2">Zéro fake news</h3>
-                    <p className="text-slate-600 text-sm">
-                      Nous ne publions jamais d'informations non vérifiées. 
-                      En cas de doute, nous préférons ne pas publier.
-                    </p>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
+            {/* CTA */}
+            <div className="mt-8 pt-8 border-t border-slate-100 flex flex-col sm:flex-row items-center justify-between gap-4 bg-slate-50 p-6 rounded-xl">
+              <div>
+                <h3 className="font-bold text-slate-900 flex items-center gap-2">
+                  <HeartHandshake className="w-5 h-5 text-blue-600" />
+                  Vous êtes un acteur du social ?
+                </h3>
+                <p className="text-sm text-slate-600 mt-1">Rencontrons-nous pour construire la suite, ou référencez directement votre structure.</p>
+              </div>
+              <Link to="/partenaires" className="px-6 py-2 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition w-full sm:w-auto text-center shrink-0 shadow-sm">
+                Espace Partenaires
+              </Link>
+            </div>
 
-            <Card>
-              <CardContent className="p-6">
-                <div className="flex items-start gap-4">
-                  <div className="w-12 h-12 rounded-xl bg-purple-100 flex items-center justify-center flex-shrink-0">
-                    <Heart className="h-6 w-6 text-purple-600" />
-                  </div>
-                  <div>
-                    <h3 className="font-bold text-slate-900 mb-2">100% gratuit</h3>
-                    <p className="text-slate-600 text-sm">
-                      AccesDirectAide est un site non lucratif. Pas de publicité, 
-                      pas de revente de données, pas de frais cachés.
-                    </p>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardContent className="p-6">
-                <div className="flex items-start gap-4">
-                  <div className="w-12 h-12 rounded-xl bg-amber-100 flex items-center justify-center flex-shrink-0">
-                    <Users className="h-6 w-6 text-amber-600" />
-                  </div>
-                  <div>
-                    <h3 className="font-bold text-slate-900 mb-2">Accessible à tous</h3>
-                    <p className="text-slate-600 text-sm">
-                      Le site est conçu pour être utilisable par tous : 
-                      langage simple, navigation facile, compatible avec les lecteurs d'écran.
-                    </p>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-        </section>
-
-        {/* Langage FALC */}
-        <section className="mb-12">
-          <h2 className="text-2xl font-bold text-slate-900 mb-6 flex items-center gap-3">
-            <BookOpen className="h-7 w-7 text-blue-600" />
-            Notre façon d'écrire
-          </h2>
-          <Card className="bg-blue-50 border-blue-200">
-            <CardContent className="p-6">
-              <p className="text-slate-700 mb-4">
-                Nous utilisons le <strong>Facile à Lire et à Comprendre (FALC)</strong>, 
-                une méthode d'écriture qui rend les textes accessibles à tous.
-              </p>
-              <ul className="space-y-2 text-slate-600">
-                <li className="flex items-start gap-2">
-                  <CheckCircle2 className="h-5 w-5 text-blue-600 mt-0.5 flex-shrink-0" />
-                  Des phrases courtes et simples
-                </li>
-                <li className="flex items-start gap-2">
-                  <CheckCircle2 className="h-5 w-5 text-blue-600 mt-0.5 flex-shrink-0" />
-                  Des mots de tous les jours
-                </li>
-                <li className="flex items-start gap-2">
-                  <CheckCircle2 className="h-5 w-5 text-blue-600 mt-0.5 flex-shrink-0" />
-                  Pas de jargon administratif
-                </li>
-                <li className="flex items-start gap-2">
-                  <CheckCircle2 className="h-5 w-5 text-blue-600 mt-0.5 flex-shrink-0" />
-                  Des explications concrètes avec des exemples
-                </li>
-              </ul>
-            </CardContent>
-          </Card>
-        </section>
-
-        {/* Sources */}
-        <section className="mb-12">
-          <h2 className="text-2xl font-bold text-slate-900 mb-6">
-            Nos sources
-          </h2>
-          <p className="text-slate-600 mb-6">
-            Nous utilisons uniquement des sources officielles et fiables :
-          </p>
-          <div className="grid sm:grid-cols-2 gap-4">
-            {[
-              { name: 'Service-Public.fr', url: 'https://www.service-public.fr' },
-              { name: 'CAF.fr', url: 'https://www.caf.fr' },
-              { name: 'Ameli.fr', url: 'https://www.ameli.fr' },
-              { name: 'France Travail', url: 'https://www.francetravail.fr' },
-              { name: 'MDPH', url: 'https://www.monparcourshandicap.gouv.fr' },
-              { name: 'Data.gouv.fr', url: 'https://www.data.gouv.fr' },
-            ].map((source) => (
-              <a
-                key={source.name}
-                href={source.url}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="flex items-center justify-between p-4 bg-white rounded-lg border border-slate-200 hover:border-blue-300 hover:shadow-md transition-all"
-              >
-                <span className="font-medium text-slate-900">{source.name}</span>
-                <ExternalLink className="h-4 w-4 text-slate-400" />
-              </a>
-            ))}
-          </div>
-        </section>
-
-        {/* CTA */}
-        <section className="text-center py-8">
-          <h2 className="text-xl font-bold text-slate-900 mb-4">
-            Vous avez une question ou une suggestion ?
-          </h2>
-          <Link to={createPageUrl('Contact')}>
-            <Button size="lg">
-              Nous contacter
-            </Button>
-          </Link>
-        </section>
+          </CardContent>
+        </Card>
       </div>
     </div>
   );

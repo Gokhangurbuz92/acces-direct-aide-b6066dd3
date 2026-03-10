@@ -51,8 +51,8 @@ async function run() {
     await triggerEndpoint("STEP 1: Structures", "cron/ingest-structures");
 
     // 2. Run Main Pipeline (Aids + RSS)
-    // Since structures are done, this should skip them and have time for RSS
-    await triggerEndpoint("STEP 2: Full Pipeline (Aids + RSS)", "cron/pipeline");
+    await triggerEndpoint("STEP 2: Full Pipeline (Aides)", "cron/pipeline?source=aides");
+    await triggerEndpoint("STEP 3: Full Pipeline (RSS)", "cron/pipeline?source=rss");
 }
 
 run();

@@ -12,11 +12,11 @@ import prisma from '../../../_utils/prisma.js';
  *
  * Phase 3 — Intelligence Souveraine
  * Performs territorial RAG search via PostgreSQL Full-Text Search (GIN),
- * then sends contextual data to Gemini 2.5 Flash with the "Boussole Sociale" system prompt.
+ * then sends contextual data to Gemini 2.0 Flash with the "Boussole Sociale" system prompt.
  * Returns answer + smart links + follow-up suggestions.
  */
 
-const GEMINI_MODEL = 'gemini-2.5-flash-preview-05-20';
+const GEMINI_MODEL = 'gemini-2.0-flash';
 
 // ── Sensitive Data Patterns ──
 const NIR_RE = /\b[12]\s?\d{2}\s?\d{2}\s?\d{2}\s?\d{3}\s?\d{3}\s?\d{2}\b/;

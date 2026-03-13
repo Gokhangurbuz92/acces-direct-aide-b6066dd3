@@ -211,6 +211,14 @@ async function handleDiagnostic(req, res) {
         });
 
         // Graceful error responses
+        if (err.fallback) {
+            return res.status(503).json({
+                error: err.message,
+                fallback: true,
+                requestId,
+            });
+        }
+
         if (err.code === 'OPENFISCA_TIMEOUT' || err.code === 'OPENFISCA_NETWORK_ERROR') {
             return res.status(503).json({
                 error: 'OPENFISCA_UNAVAILABLE',
@@ -303,6 +311,14 @@ async function handleTrace(req, res) {
             return res.status(503).json({
                 error: 'TRACE_DISABLED',
                 message: 'Le mode trace est désactivé dans cet environnement.',
+                requestId,
+            });
+        }
+
+        if (err.fallback) {
+            return res.status(503).json({
+                error: err.message,
+                fallback: true,
                 requestId,
             });
         }

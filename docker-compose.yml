@@ -75,6 +75,20 @@ services:
       postgres:
         condition: service_healthy
 
+  # ---------------------------------------------------------
+  # Moteur Législatif (OpenFisca)
+  # ---------------------------------------------------------
+  openfisca:
+    build:
+      context: ./infrastructure/openfisca
+      dockerfile: Dockerfile
+    container_name: ada-openfisca
+    restart: unless-stopped
+    ports:
+      - "2000:2000"
+    networks:
+      - ada-network
+
 networks:
   ada-network:
     driver: bridge

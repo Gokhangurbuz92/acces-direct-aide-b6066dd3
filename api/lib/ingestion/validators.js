@@ -6,19 +6,19 @@ import { z } from 'zod';
  */
 export const AidIngestSchema = z.object({
     title: z.string().min(3, "Title must be at least 3 characters").max(500),
-    description: z.string().optional(),
-    content: z.string().optional(),
-    source_url: z.string().trim().url("Must be a valid URL").or(z.literal('')),
-    apply_url: z.string().trim().url("Must be a valid URL").or(z.literal('')),
-    theme: z.string().optional(),
-    fetched_at: z.date().optional().default(() => new Date()),
+    description: z.string().nullable().optional(),
+    content: z.string().nullable().optional(),
+    source_url: z.string().trim().url("Must be a valid URL").or(z.literal('')).nullable().optional(),
+    apply_url: z.string().trim().url("Must be a valid URL").or(z.literal('')).nullable().optional(),
+    theme: z.string().nullable().optional(),
+    fetched_at: z.union([z.date(), z.string()]).optional().transform((v) => (v ? new Date(v) : new Date())),
     
-    // Optional enriched fields (Lot 9a / Univ Data Arc)
-    _montant_max: z.string().optional(),
-    _echelon_territorial: z.string().optional(),
-    _code_insee_territoire: z.string().optional(),
-    _source_donnee: z.string().optional(),
-    _lien_demarche: z.string().optional()
+    // Optional enriched fields
+    _montant_max: z.string().nullable().optional(),
+    _echelon_territorial: z.string().nullable().optional(),
+    _code_insee_territoire: z.string().nullable().optional(),
+    _source_donnee: z.string().nullable().optional(),
+    _lien_demarche: z.string().nullable().optional()
 }).passthrough(); // Allow other connector-specific raw fields through just in case
 
 /**

@@ -1,6 +1,8 @@
 import logger from '../../_utils/logger.js';
 import { randomUUID } from 'crypto';
-import prisma from '../../_utils/prisma.js';
+import { db } from '../../../src/db/index.js';
+import * as schema from '../../../src/db/schema.js';
+import { count, and, eq } from 'drizzle-orm';
 import { env } from '../../_utils/env.js';
 import { applyNoIndex } from '../../_utils/robots.js';
 
@@ -31,13 +33,17 @@ function withTimeout(promise, ms) {
  * @returns {Promise<{ openTotal: number, openP0: number, openP1: number }>}
  */
 async function loadMetrics() {
-  const [openTotal, openP0, openP1] = await Promise.all([
-    withTimeout(prisma.reviewQueueItem.count({ where: { status: 'open' } }), TIMEOUT_MS),
-    withTimeout(prisma.reviewQueueItem.count({ where: { status: 'open', severity: 'P0' } }), TIMEOUT_MS),
-    withTimeout(prisma.reviewQueueItem.count({ where: { status: 'open', severity: 'P1' } }), TIMEOUT_MS),
+  const [openTotalRes, openP0Res, openP1Res] = await Promise.all([
+    withTimeout(db.select({ value: count() }).from(schema.ReviewQueueItem).where(eq(schema.ReviewQueueItem.status, 'open')), TIMEOUT_MS),
+    withTimeout(db.select({ value: count() }).from(schema.ReviewQueueItem).where(and(eq(schema.ReviewQueueItem.status, 'open'), eq(schema.ReviewQueueItem.severity, 'P0'))), TIMEOUT_MS),
+    withTimeout(db.select({ value: count() }).from(schema.ReviewQueueItem).where(and(eq(schema.ReviewQueueItem.status, 'open'), eq(schema.ReviewQueueItem.severity, 'P1'))), TIMEOUT_MS),
   ]);
 
-  return { openTotal, openP0, openP1 };
+  return {
+    openTotal: openTotalRes[0].value,
+    openP0: openP0Res[0].value,
+    openP1: openP1Res[0].value
+  };
 }
 
 /**

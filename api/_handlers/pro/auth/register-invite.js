@@ -3,8 +3,8 @@ import logger from '../../../_utils/logger.js';
 import { hashPassword } from '../../../_utils/user-auth.js';
 import { signProToken, logProAudit } from '../../../_utils/auth.js';
 import { checkRateLimit, getClientIp } from '../../../_utils/rateLimit.js';
-import { db } from '../../../src/db/index.js';
-import { Invitation, ProUser } from '../../../src/db/schema.js';
+import { db } from '../../../../src/db/index.js';
+import { Invitation, ProUser } from '../../../../src/db/schema.js';
 import { eq, and } from 'drizzle-orm';
 
 /**

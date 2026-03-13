@@ -1,5 +1,6 @@
-
-import prisma from '../../_utils/prisma.js';
+import { db } from '../../../src/db/index.js';
+import { ProRdvService, Service, ProAppointment } from '../../../src/db/schema.js';
+import { eq, desc, and, inArray, sql } from 'drizzle-orm';
 import { AUTH_ROLE, requireProStructureContext } from '../../_utils/auth.js';
 import { withProRdvHandler } from '../../_utils/with-pro-rdv-handler.js';
 
@@ -49,9 +50,9 @@ async function handler(req, res) {
   const canWrite = role === AUTH_ROLE.STRUCTURE_ADMIN || role === AUTH_ROLE.SUPERADMIN;
 
   if (req.method === 'GET') {
-    const services = await prisma.proRdvService.findMany({
-      where: { structureId },
-      orderBy: { createdAt: 'desc' },
+    const services = await db.query.ProRdvService.findMany({
+      where: eq(ProRdvService.structureId, structureId),
+      orderBy: [desc(ProRdvService.createdAt)],
     });
     return res.status(200).json(services.map(serialize));
   }
@@ -79,16 +80,14 @@ async function handler(req, res) {
       return res.status(400).json({ error: 'durationMinutes must be a positive number' });
     }
 
-    const created = await prisma.proRdvService.create({
-      data: {
+    const [created] = await db.insert(ProRdvService).values({
         structureId,
         name,
         durationMinutes,
         bufferBeforeMinutes,
         bufferAfterMinutes,
         isActive: Boolean(isActive),
-      },
-    });
+    }).returning();
     return res.status(201).json(serialize(created));
   }
 
@@ -97,11 +96,11 @@ async function handler(req, res) {
     const id = String(req.query.id || body.id || '').trim();
     if (!id) return res.status(400).json({ error: 'id is required' });
 
-    const existing = await prisma.proRdvService.findUnique({
-      where: { id },
+    const existing = await db.query.ProRdvService.findFirst({
+      where: eq(ProRdvService.id, id),
     });
     if (!existing) {
-      const legacy = await prisma.service.findUnique({ where: { id } });
+      const legacy = await db.query.Service.findFirst({ where: eq(Service.id, id) });
       if (legacy && legacy.structureId !== structureId) {
         return res.status(403).json({ error: 'Forbidden' });
       }
@@ -148,10 +147,7 @@ async function handler(req, res) {
       return res.status(200).json(serialize(existing));
     }
 
-    const updated = await prisma.proRdvService.update({
-      where: { id: existing.id },
-      data: updates,
-    });
+    const [updated] = await db.update(ProRdvService).set(updates).where(eq(ProRdvService.id, existing.id)).returning();
     return res.status(200).json(serialize(updated));
   }
 
@@ -159,11 +155,11 @@ async function handler(req, res) {
     const id = String(req.query.id || '').trim();
     if (!id) return res.status(400).json({ error: 'id is required' });
 
-    const existing = await prisma.proRdvService.findUnique({
-      where: { id },
+    const existing = await db.query.ProRdvService.findFirst({
+      where: eq(ProRdvService.id, id),
     });
     if (!existing) {
-      const legacy = await prisma.service.findUnique({ where: { id } });
+      const legacy = await db.query.Service.findFirst({ where: eq(Service.id, id) });
       if (legacy && legacy.structureId !== structureId) {
         return res.status(403).json({ error: 'Forbidden' });
       }
@@ -171,22 +167,20 @@ async function handler(req, res) {
     }
     if (existing.structureId !== structureId) return res.status(403).json({ error: 'Forbidden' });
 
-    const activeAppointments = await prisma.proAppointment.count({
-      where: {
-        serviceId: id,
-        status: { in: ['booked', 'requested', 'confirmed', 'locked'] },
-      },
-    });
+    const activeAppointmentsRes = await db.select({ count: sql`count(*)` })
+      .from(ProAppointment)
+      .where(and(
+        eq(ProAppointment.serviceId, id),
+        inArray(ProAppointment.status, ['booked', 'requested', 'confirmed', 'locked'])
+      ));
+    const activeAppointments = Number(activeAppointmentsRes[0].count);
 
     if (activeAppointments > 0) {
-      const disabled = await prisma.proRdvService.update({
-        where: { id },
-        data: { isActive: false },
-      });
+      const [disabled] = await db.update(ProRdvService).set({ isActive: false }).where(eq(ProRdvService.id, id)).returning();
       return res.status(200).json({ ...serialize(disabled), deleted: false, disabled: true });
     }
 
-    await prisma.proRdvService.delete({ where: { id } });
+    await db.delete(ProRdvService).where(eq(ProRdvService.id, id));
     return res.status(200).json({ success: true });
   }
 

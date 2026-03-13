@@ -1,6 +1,8 @@
 import logger from '../../../_utils/logger.js';
 // @ts-nocheck
-import prisma from '../../../_utils/prisma.js';
+import { db } from '../../../../src/db/index.js';
+import { SharedDiagnostic, AuditLog } from '../../../../src/db/schema.js';
+import { eq, desc, inArray, and } from 'drizzle-orm';
 import { requireProAuth, requireProStructureContext } from '../../../_utils/auth.js';
 /**
  * Dossier View Log API (Pro-only, RGPD transparency)
@@ -27,9 +29,9 @@ async function handler(req, res) {
 
     try {
         // Check dossier exists
-        const shared = await prisma.sharedDiagnostic.findUnique({
-            where: { id: shareId },
-            select: { id: true, viewCount: true },
+        const shared = await db.query.SharedDiagnostic.findFirst({
+            where: eq(SharedDiagnostic.id, shareId),
+            columns: { id: true, viewCount: true },
         });
 
         if (!shared) {
@@ -37,14 +39,14 @@ async function handler(req, res) {
         }
 
         // Get view audit logs
-        const viewLogs = await prisma.auditLog.findMany({
-            where: {
-                entityId: shareId,
-                action: { in: ['DOSSIER_VIEWED', 'DOSSIER_EXPORTED', 'DOSSIER_STATUS_UPDATED'] },
-            },
-            orderBy: { createdAt: 'desc' },
-            take: 50,
-            select: {
+        const viewLogs = await db.query.AuditLog.findMany({
+            where: and(
+                eq(AuditLog.entityId, shareId),
+                inArray(AuditLog.action, ['DOSSIER_VIEWED', 'DOSSIER_EXPORTED', 'DOSSIER_STATUS_UPDATED'])
+            ),
+            orderBy: [desc(AuditLog.createdAt)],
+            limit: 50,
+            columns: {
                 id: true,
                 action: true,
                 actorId: true,

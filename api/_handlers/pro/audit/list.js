@@ -1,5 +1,7 @@
 import logger from '../../../_utils/logger.js';
-import prisma from '../../../_utils/prisma.js';
+import { db } from '../../../../src/db/index.js';
+import { ProAuditLog } from '../../../../src/db/schema.js';
+import { eq, and, count } from 'drizzle-orm';
 import { AUTH_ROLE, requireProRole, requireProStructureContext } from '../../../_utils/auth.js';
 
 /**
@@ -27,25 +29,26 @@ async function handler(req, res) {
     const actionFilter = url.searchParams.get('action');
 
     try {
-        const whereClause = {
-            structureId,
-            ...(actionFilter ? { action: actionFilter } : {}),
-        };
+        let whereConditions = [eq(ProAuditLog.structureId, structureId)];
+        if (actionFilter) {
+            whereConditions.push(eq(ProAuditLog.action, actionFilter));
+        }
 
-        const [logs, totalCount] = await Promise.all([
-            prisma.proAuditLog.findMany({
-                where: whereClause,
-                orderBy: { createdAt: 'desc' },
-                skip: (page - 1) * limit,
-                take: limit,
-                include: {
+        const [logs, totalCountRes] = await Promise.all([
+            db.query.ProAuditLog.findMany({
+                where: and(...whereConditions),
+                orderBy: (pal, { desc }) => [desc(pal.createdAt)],
+                offset: (page - 1) * limit,
+                limit: limit,
+                with: {
                     proUser: {
-                        select: { id: true, email: true },
+                        columns: { id: true, email: true },
                     },
                 },
             }),
-            prisma.proAuditLog.count({ where: whereClause }),
+            db.select({ count: count() }).from(ProAuditLog).where(and(...whereConditions)),
         ]);
+        const totalCount = totalCountRes[0].count;
 
         const entries = logs.map((log) => ({
             id: log.id,

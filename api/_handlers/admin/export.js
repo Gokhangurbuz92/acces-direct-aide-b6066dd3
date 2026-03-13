@@ -1,5 +1,7 @@
 import { checkRateLimit, getClientIp, getRateLimitStatus } from '../../_utils/rateLimit.js';
-import prisma from '../../_utils/prisma.js';
+import { db } from '../../../src/db/index.js';
+import * as schema from '../../../src/db/schema.js';
+import { desc } from 'drizzle-orm';
 import { verifyAdmin } from '../../_utils/auth.js';
 /**
  * @param {import('../../_utils/http-types').ApiRequest} req
@@ -16,14 +18,19 @@ export default async function handler(req, res) {
     if (req.method !== 'GET') return res.status(405).json({ error: 'Method not allowed' });
     if (!verifyAdmin(req)) return res.status(401).json({ error: 'Unauthorized' });
 
-    const { entity } = req.query;
-    const model = prisma[entity?.toLowerCase()];
-    if (!model) return res.status(400).json({ error: 'Invalid entity' });
+    const modelName = entity?.toLowerCase();
+    const modelKey = Object.keys(schema).find(k => k.toLowerCase() === modelName);
+    const model = modelKey ? schema[modelKey] : null;
+    if (!model || !db.query[modelKey]) return res.status(400).json({ error: 'Invalid entity' });
 
     try {
-        const items = await model.findMany({
-            orderBy: { updatedAt: 'desc' }
-        });
+        let query = db.select().from(model);
+        if (model.updatedAt) {
+             query = query.orderBy(desc(model.updatedAt));
+        } else if (model.createdAt) {
+             query = query.orderBy(desc(model.createdAt));
+        }
+        const items = await query;
 
         if (items.length === 0) {
              res.setHeader('Content-Type', 'text/csv');

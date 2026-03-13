@@ -1,5 +1,7 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
-import prisma from '../../api/_utils/prisma.js';
+import { db } from '../../src/db/index.js';
+import { eq, sql } from 'drizzle-orm';
+import { vi } from 'vitest';
 import monitorCronActualites from '../../api/_handlers/monitor/cron-actualites.js';
 
 function mockReq(overrides = {}) {
@@ -44,15 +46,17 @@ describe('P6-G monitor cron actualites endpoint', () => {
   const ORIGINAL_FAIL = process.env.CRON_ACTUALITES_FAIL_MINUTES;
 
   beforeEach(async () => {
+    vi.restoreAllMocks();
     delete process.env.CRON_ACTUALITES_STALE_MINUTES;
     delete process.env.CRON_ACTUALITES_FAIL_MINUTES;
-    await prisma.cronRun.deleteMany({ where: { job: 'actualites' } });
+    await db.delete(schema.CronRun);
   });
 
   afterEach(async () => {
+    vi.restoreAllMocks();
     process.env.CRON_ACTUALITES_STALE_MINUTES = ORIGINAL_STALE;
     process.env.CRON_ACTUALITES_FAIL_MINUTES = ORIGINAL_FAIL;
-    await prisma.cronRun.deleteMany({ where: { job: 'actualites' } });
+    await db.delete(schema.CronRun);
   });
 
   it('returns 405 for non-GET methods', async () => {
@@ -94,15 +98,14 @@ describe('P6-G monitor cron actualites endpoint', () => {
   });
 
   it('returns 200 fresh when latest success is recent', async () => {
-    await prisma.cronRun.create({
-      data: {
+    await (await db.insert(schema.CronRun).values({
         job: 'actualites',
         status: 'success',
         startedAt: new Date(),
         finishedAt: new Date(),
         durationMs: 20,
       },
-    });
+    ).returning())[0];
 
     const req = mockReq({ requestId: 'monitor-fresh' });
     const res = mockRes();
@@ -119,15 +122,14 @@ describe('P6-G monitor cron actualites endpoint', () => {
     process.env.CRON_ACTUALITES_STALE_MINUTES = '1';
     process.env.CRON_ACTUALITES_FAIL_MINUTES = '999';
 
-    await prisma.cronRun.create({
-      data: {
+    await (await db.insert(schema.CronRun).values({
         job: 'actualites',
         status: 'success',
         startedAt: new Date(Date.now() - 5 * 60 * 1000),
         finishedAt: new Date(Date.now() - 5 * 60 * 1000),
         durationMs: 20,
       },
-    });
+    ).returning())[0];
 
     const req = mockReq({ requestId: 'monitor-stale' });
     const res = mockRes();
@@ -147,10 +149,7 @@ describe('P6-G monitor cron actualites endpoint', () => {
   });
 
   it('returns 503 error when freshness lookup fails', async () => {
-    const originalFindFirst = prisma.cronRun.findFirst;
-    prisma.cronRun.findFirst = async () => {
-      throw new Error('db unavailable');
-    };
+    vi.spyOn(db.query.CronRun, 'findFirst').mockRejectedValue(new Error('db unavailable'));
 
     try {
       const req = mockReq({ requestId: 'monitor-error' });
@@ -170,7 +169,7 @@ describe('P6-G monitor cron actualites endpoint', () => {
       expect(res.body).not.toHaveProperty('stack');
       expect(res.body).not.toHaveProperty('details');
     } finally {
-      prisma.cronRun.findFirst = originalFindFirst;
+      vi.restoreAllMocks();
     }
   });
 });

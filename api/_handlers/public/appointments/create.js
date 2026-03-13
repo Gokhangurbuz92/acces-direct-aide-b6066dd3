@@ -1,4 +1,6 @@
-import prisma from '../../../_utils/prisma.js';
+import { db } from '../../../../src/db/index.js';
+import { Beneficiary, Service, Appointment } from '../../../../src/db/schema.js';
+import { eq, and, lt, gt, inArray } from 'drizzle-orm';
 import { z } from 'zod';
 import { createHandler } from '../../../_utils/wrapper.js';
 import { encrypt, hash } from '../../../lib/crypto.js';
@@ -21,36 +23,34 @@ const handler = async (req) => {
 
     // 1. Handle Beneficiary
     const contactHash = hash(email);
-    let beneficiary = await prisma.beneficiary.findFirst({
-        where: { contact_hash: contactHash }
+    let beneficiary = await db.query.Beneficiary.findFirst({
+        where: eq(Beneficiary.contact_hash, contactHash)
     });
 
     if (!beneficiary) {
-        beneficiary = await prisma.beneficiary.create({
-            data: {
+        const [newBeneficiary] = await db.insert(Beneficiary).values({
                 contact_encrypted: encrypt(email),
                 contact_hash: contactHash,
                 first_name_encrypted: name ? encrypt(name) : null
-            }
-        });
+        }).returning();
+        beneficiary = newBeneficiary;
     }
 
     // 2. Find Service
-    let service = await prisma.service.findFirst({
-        where: { structureId }
+    let service = await db.query.Service.findFirst({
+        where: eq(Service.structureId, structureId)
     });
 
     let serviceId;
     if (!service) {
         // Create default service if missing
-        service = await prisma.service.create({
-            data: {
+        const [newService] = await db.insert(Service).values({
                 structureId,
                 slug: 'rdv-generique',
                 name: 'Rendez-vous',
                 duration_minutes: 60
-            }
-        });
+        }).returning();
+        service = newService;
     }
     serviceId = service.id;
 
@@ -60,17 +60,15 @@ const handler = async (req) => {
     const end = new Date(start.getTime() + duration * 60000);
 
     try {
-        const result = await prisma.$transaction(async (tx) => {
+        const result = await db.transaction(async (tx) => {
             // Check for overlaps
-            const conflict = await tx.appointment.findFirst({
-                where: {
-                    structureId,
-                    status: { in: ['confirmed', 'locked'] },
-                    AND: [
-                        { start_at: { lt: end } },
-                        { end_at: { gt: start } }
-                    ]
-                }
+            const conflict = await tx.query.Appointment.findFirst({
+                where: and(
+                    eq(Appointment.structureId, structureId),
+                    inArray(Appointment.status, ['confirmed', 'locked']),
+                    lt(Appointment.start_at, end),
+                    gt(Appointment.end_at, start)
+                )
             });
 
             if (conflict) {
@@ -80,8 +78,7 @@ const handler = async (req) => {
             const cancelToken = crypto.randomBytes(32).toString('hex');
             const accessToken = crypto.randomBytes(32).toString('hex');
 
-            const appointment = await tx.appointment.create({
-                data: {
+            const [appointment] = await tx.insert(Appointment).values({
                     structureId,
                     serviceId,
                     beneficiaryId: beneficiary.id,
@@ -91,17 +88,14 @@ const handler = async (req) => {
                     status: 'confirmed',
                     cancel_token_hash: hash(cancelToken),
                     access_token_hash: hash(accessToken)
-                }
-            });
+            }).returning();
 
             return {
                 appointment,
                 cancelToken
             };
         }, {
-            isolationLevel: 'Serializable',
-            maxWait: 5000, // 5s timeout pour éviter les deadlocks bloquants
-            timeout: 10000
+            isolationLevel: 'serializable'
         });
 
         return {

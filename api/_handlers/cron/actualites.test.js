@@ -14,14 +14,23 @@ const mocks = vi.hoisted(() => ({
     errors: [],
     durationByStage: { fetchMs: 1, processingMs: 1 },
   }),
-  prisma: {
-    cronRun: {
-      findFirst: vi.fn().mockResolvedValue(null),
-      create: vi.fn().mockResolvedValue({ id: 'cron-run-id' }),
-      update: vi.fn().mockResolvedValue({}),
+  dbValues: vi.fn(() => ({
+    returning: vi.fn().mockResolvedValue([{ id: 'cron-run-id' }])
+  })),
+  dbSet: vi.fn(() => ({
+    where: vi.fn().mockResolvedValue([{ id: 'cron-run-id' }])
+  })),
+  db: {
+    query: {
+      CronRun: {
+        findFirst: vi.fn().mockResolvedValue(null),
+      },
     },
   },
 }));
+
+mocks.db.insert = vi.fn(() => ({ values: mocks.dbValues }));
+mocks.db.update = vi.fn(() => ({ set: mocks.dbSet }));
 
 vi.mock('../../_utils/pipelineLock.js', () => ({
   withLock: mocks.withLock,
@@ -35,8 +44,8 @@ vi.mock('./ingest-actualites-rss.js', () => ({
   runIngestActualitesRss: mocks.runIngestActualitesRss,
 }));
 
-vi.mock('../../_utils/prisma.js', () => ({
-  default: mocks.prisma,
+vi.mock('../../../src/db/index.js', () => ({
+  db: mocks.db,
 }));
 
 import handler from './actualites.js';
@@ -111,7 +120,7 @@ describe('Cron Actualites Handler', () => {
     await handler(req, res);
 
     expect(res.status).toHaveBeenCalledWith(401);
-    expect(mocks.prisma.cronRun.create).not.toHaveBeenCalled();
+    expect(mocks.db.insert).not.toHaveBeenCalled();
   });
 
   it('authorizes Vercel Cron user-agent in production (no secret header)', async () => {
@@ -154,20 +163,18 @@ describe('Cron Actualites Handler', () => {
 
     expect(res.status).toHaveBeenCalledWith(202);
     expect(mocks.runIngestActualitesRss).not.toHaveBeenCalled();
-    expect(mocks.prisma.cronRun.create).toHaveBeenCalledTimes(1);
-    expect(mocks.prisma.cronRun.create).toHaveBeenCalledWith(
+    expect(mocks.db.insert).toHaveBeenCalledTimes(1);
+    expect(mocks.dbValues).toHaveBeenCalledWith(
       expect.objectContaining({
-        data: expect.objectContaining({
-          status: 'skipped',
-          skipReason: 'locked',
-          trigger: 'manual',
-        }),
-      }),
+        status: 'skipped',
+        skipReason: 'locked',
+        trigger: 'manual',
+      })
     );
   });
 
   it('returns 202 and records skipped run when cooldown is active', async () => {
-    mocks.prisma.cronRun.findFirst.mockResolvedValueOnce({ startedAt: new Date() });
+    mocks.db.query.CronRun.findFirst.mockResolvedValueOnce({ startedAt: new Date() });
 
     const res = mockRes();
     await handler(
@@ -179,15 +186,13 @@ describe('Cron Actualites Handler', () => {
 
     expect(res.status).toHaveBeenCalledWith(202);
     expect(mocks.runIngestActualitesRss).not.toHaveBeenCalled();
-    expect(mocks.prisma.cronRun.create).toHaveBeenCalledTimes(1);
-    expect(mocks.prisma.cronRun.create).toHaveBeenCalledWith(
+    expect(mocks.db.insert).toHaveBeenCalledTimes(1);
+    expect(mocks.dbValues).toHaveBeenCalledWith(
       expect.objectContaining({
-        data: expect.objectContaining({
-          status: 'skipped',
-          skipReason: 'cooldown',
-          trigger: 'manual',
-        }),
-      }),
+        status: 'skipped',
+        skipReason: 'cooldown',
+        trigger: 'manual',
+      })
     );
   });
 
@@ -200,15 +205,13 @@ describe('Cron Actualites Handler', () => {
     await handler(req, res);
 
     expect(res.status).toHaveBeenCalledWith(200);
-    expect(mocks.prisma.cronRun.create).toHaveBeenCalledWith(
+    expect(mocks.dbValues).toHaveBeenCalledWith(
       expect.objectContaining({
-        data: expect.objectContaining({
-          status: 'running',
-          trigger: 'manual',
-        }),
-      }),
+        status: 'running',
+        trigger: 'manual',
+      })
     );
-    expect(mocks.prisma.cronRun.update).toHaveBeenCalled();
+    expect(mocks.db.update).toHaveBeenCalled();
     expect(mocks.runIngestActualitesRss).toHaveBeenCalledWith(
       expect.objectContaining({ runId: expect.any(String) }),
     );

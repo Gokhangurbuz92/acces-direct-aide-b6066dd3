@@ -2,7 +2,9 @@ import logger from '../../_utils/logger.js';
 import { env } from '../../_utils/env.js';
 // @ts-nocheck
 import { getCronAuth } from '../../_utils/cronAuth.js';
-import prisma from '../../_utils/prisma.js';
+import { db } from '../../../src/db/index.js';
+import { ProAppointment, ProUser, AuditLog } from '../../../src/db/schema.js';
+import { gte, lte, and, inArray } from 'drizzle-orm';
 import { sendMail } from '../../_utils/mailer.js';
 import { createNotification } from '../../_handlers/pro/notifications.js';
 
@@ -42,17 +44,15 @@ export default async function handler(req, res) {
         const tomorrowEnd = new Date(tomorrowStart);
         tomorrowEnd.setHours(23, 59, 59, 999);
 
-        const appointments = await prisma.proAppointment.findMany({
-            where: {
-                startAt: {
-                    gte: tomorrowStart,
-                    lte: tomorrowEnd,
-                },
-                status: { in: ['confirmed', 'pending'] },
-            },
-            include: {
+        const appointments = await db.query.ProAppointment.findMany({
+            where: and(
+                gte(ProAppointment.startAt, tomorrowStart),
+                lte(ProAppointment.startAt, tomorrowEnd),
+                inArray(ProAppointment.status, ['confirmed', 'pending'])
+            ),
+            with: {
                 createdByProUser: {
-                    select: {
+                    columns: {
                         id: true,
                         email: true,
                         structureId: true,
@@ -168,19 +168,17 @@ export default async function handler(req, res) {
         }
 
         // Audit log
-        await prisma.auditLog.create({
-            data: {
-                action: 'CRON_RDV_REMINDER',
-                entityId: 'system',
-                entityType: 'CRON',
-                details: JSON.stringify({
-                    appointmentsFound: appointments.length,
-                    emailsSent,
-                    notificationsCreated,
-                    errors: errors.length,
-                }),
-                ipHash: 'CRON',
-            },
+        await db.insert(AuditLog).values({
+            action: 'CRON_RDV_REMINDER',
+            entityId: 'system',
+            entityType: 'CRON',
+            details: JSON.stringify({
+                appointmentsFound: appointments.length,
+                emailsSent,
+                notificationsCreated,
+                errors: errors.length,
+            }),
+            ipHash: 'CRON',
         }).catch(() => { });
 
         logger.info({

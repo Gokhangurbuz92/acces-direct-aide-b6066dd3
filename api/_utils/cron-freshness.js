@@ -1,4 +1,7 @@
 import { env } from './env.js';
+import { db as defaultDb } from '../../src/db/index.js';
+import { CronRun } from '../../src/db/schema.js';
+import { eq, and, desc } from 'drizzle-orm';
 
 /**
  * @param {Date | null | undefined} value
@@ -20,10 +23,10 @@ function computeAgeMinutes(lastSuccessAt, nowMs) {
 /**
  * Build freshness status for the "actualites" cron job from CronRun history.
  *
- * @param {import('@prisma/client').PrismaClient} prismaClient
+ * @param {import('drizzle-orm/pg-core').PgDatabase<any>} dbClient
  * @param {{ nowMs?: number }} [options]
  */
-export async function getActualitesCronFreshness(prismaClient, options = {}) {
+export async function getActualitesCronFreshness(dbClient = defaultDb, options = {}) {
   const staleMinutes = env.cron.actualitesStaleMinutes;
   const failMinutes = Math.max(env.cron.actualitesFailMinutes, staleMinutes);
   const nowMs = typeof options.nowMs === 'number' ? options.nowMs : Date.now();
@@ -32,15 +35,15 @@ export async function getActualitesCronFreshness(prismaClient, options = {}) {
 
   try {
     const [lastSuccess, lastRun] = await Promise.all([
-      prismaClient.cronRun.findFirst({
-        where: { job: 'actualites', status: 'success' },
-        orderBy: { startedAt: 'desc' },
-        select: { startedAt: true },
+      dbClient.query.CronRun.findFirst({
+        where: and(eq(CronRun.job, 'actualites'), eq(CronRun.status, 'success')),
+        orderBy: (t, { desc }) => [desc(t.startedAt)],
+        columns: { startedAt: true },
       }),
-      prismaClient.cronRun.findFirst({
-        where: { job: 'actualites' },
-        orderBy: { startedAt: 'desc' },
-        select: { startedAt: true, status: true },
+      dbClient.query.CronRun.findFirst({
+        where: eq(CronRun.job, 'actualites'),
+        orderBy: (t, { desc }) => [desc(t.startedAt)],
+        columns: { startedAt: true, status: true },
       }),
     ]);
 

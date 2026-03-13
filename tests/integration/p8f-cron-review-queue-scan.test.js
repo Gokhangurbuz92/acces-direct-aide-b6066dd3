@@ -1,6 +1,8 @@
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import apiHandler from '../../api/index.js';
-import prisma from '../../api/_utils/prisma.js';
+import { db } from '../../src/db/index.js';
+import * as schema from '../../src/db/schema.js';
+import { eq, sql } from 'drizzle-orm';
 
 /**
  * @param {{
@@ -111,7 +113,7 @@ describe('P8-F cron review queue scan endpoint contract', () => {
     process.env.CRON_SECRET = 'p8f-cron-secret';
     process.env.DATA_REVIEW_SCAN_CRON_ENABLED = '1';
     process.env.DATA_REVIEW_SCAN_CRON_LIMIT_PER_TYPE = '10';
-    await prisma.reviewQueueItem.deleteMany({ where: { reason: { startsWith: 'P8F_CRON_' } } });
+    await await db.delete(schema.ReviewQueueItem);
   });
 
   afterEach(async () => {
@@ -124,9 +126,9 @@ describe('P8-F cron review queue scan endpoint contract', () => {
     if (originalCronLimit == null) delete process.env.DATA_REVIEW_SCAN_CRON_LIMIT_PER_TYPE;
     else process.env.DATA_REVIEW_SCAN_CRON_LIMIT_PER_TYPE = originalCronLimit;
 
-    await prisma.reviewQueueItem.deleteMany({ where: { reason: { startsWith: 'P8F_CRON_' } } });
+    await await db.delete(schema.ReviewQueueItem);
     if (createdAideIds.length > 0) {
-      await prisma.aide.deleteMany({ where: { id: { in: createdAideIds } } });
+      await await db.delete(schema.Aide);
       createdAideIds.length = 0;
     }
   });
@@ -144,8 +146,7 @@ describe('P8-F cron review queue scan endpoint contract', () => {
   });
 
   it('returns 200 with summary when authorized via Bearer cron secret', async () => {
-    const aide = await prisma.aide.create({
-      data: {
+    const aide = await (await db.insert(schema.Aide).values({
         titre: 'P8F cron scan candidate',
         slug: `p8f-cron-scan-${Date.now()}`,
         statut: 'publie',
@@ -155,7 +156,7 @@ describe('P8-F cron review queue scan endpoint contract', () => {
         source_url: null,
       },
       select: { id: true },
-    });
+    ).returning())[0];
     createdAideIds.push(aide.id);
 
     const res = await invokeApi('/api/cron/review-queue/scan', {

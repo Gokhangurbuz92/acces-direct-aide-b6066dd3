@@ -1,6 +1,8 @@
 import logger from '../../_utils/logger.js';
 // @ts-nocheck
-import prisma from '../../_utils/prisma.js';
+import { db } from '../../../src/db/index.js';
+import { SharedDiagnostic, ProAppointment } from '../../../src/db/schema.js';
+import { eq, and, gte, ne } from 'drizzle-orm';
 
 /**
  * Citizen Passport API (Public)
@@ -23,8 +25,8 @@ export default async function handler(req, res) {
     }
 
     try {
-        const shared = await prisma.sharedDiagnostic.findUnique({
-            where: { id: shareId },
+        const shared = await db.query.SharedDiagnostic.findFirst({
+            where: eq(SharedDiagnostic.id, shareId),
         });
 
         if (!shared) {
@@ -36,22 +38,24 @@ export default async function handler(req, res) {
         // Find appointments for this citizen
         let appointments = [];
         if (shared.citizenUserId) {
-            appointments = await prisma.proAppointment.findMany({
-                where: {
-                    citizenUserId: shared.citizenUserId,
-                    startAt: { gte: new Date() },
-                    status: { not: 'cancelled' },
-                },
-                select: {
+            appointments = await db.query.ProAppointment.findMany({
+                where: and(
+                    eq(ProAppointment.citizenUserId, shared.citizenUserId),
+                    gte(ProAppointment.startAt, new Date()),
+                    ne(ProAppointment.status, 'cancelled')
+                ),
+                columns: {
                     id: true,
                     startAt: true,
                     endAt: true,
                     status: true,
-                    service: { select: { label: true, mode: true } },
-                    createdByProUser: { select: { firstName: true, lastName: true } },
                 },
-                orderBy: { startAt: 'asc' },
-                take: 5,
+                with: {
+                    service: { columns: { label: true, mode: true } },
+                    createdByProUser: { columns: { firstName: true, lastName: true } },
+                },
+                orderBy: (pa, { asc }) => [asc(pa.startAt)],
+                limit: 5,
             });
         }
 

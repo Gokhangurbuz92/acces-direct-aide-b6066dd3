@@ -1,5 +1,7 @@
 import { verify as verifyTotp } from 'otplib';
-import prisma from '../../_utils/prisma.js';
+import { db } from '../../../src/db/index.js';
+import { AdminUser } from '../../../src/db/schema.js';
+import { eq } from 'drizzle-orm';
 import { decryptToken } from '../../_utils/vault.js';
 import logger from '../../_utils/logger.js';
 import { requireAdminAuth, signAdminSessionToken } from '../../_utils/auth.js';
@@ -32,7 +34,7 @@ async function verifyHandler(req, res) {
 
     try {
         // 1. Find admin with MFA secret
-        const admin = await prisma.adminUser.findUnique({ where: { email: adminEmail } });
+        const admin = await db.query.AdminUser.findFirst({ where: eq(AdminUser.email, adminEmail) });
         if (!admin || !admin.mfaSecret || !admin.mfaIv) {
             return res.status(404).json({ error: 'MFA not configured. Run setup first.' });
         }
@@ -54,10 +56,7 @@ async function verifyHandler(req, res) {
 
         // 4. First-time activation
         if (!admin.mfaEnabled) {
-            await prisma.adminUser.update({
-                where: { id: admin.id },
-                data: { mfaEnabled: true },
-            });
+            await db.update(AdminUser).set({ mfaEnabled: true }).where(eq(AdminUser.id, admin.id));
             logger.info(
                 { msg: 'admin.mfa.activated', email: adminEmail },
                 '[Admin MFA] MFA activated for admin',

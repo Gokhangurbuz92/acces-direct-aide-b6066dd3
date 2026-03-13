@@ -1,5 +1,6 @@
 import { getCronAuth } from '../../_utils/cronAuth.js';
-import prisma from '../../_utils/prisma.js';
+import { db } from '../../../src/db/index.js';
+import { Aide, ConversationLog } from '../../../src/db/schema.js';
 import { storage } from '../../lib/storage.js';
 import { logger } from '../../lib/logger.js';
 import * as Sentry from '@sentry/node';
@@ -21,11 +22,11 @@ export default async function handler(req, res) {
         logger.info(`[BACKUP] 🚀 Démarrage de la sauvegarde Cloud...`);
 
         // 1. Catalogue d'aides
-        const aides = await prisma.aide.findMany();
+        const aides = await db.query.Aide.findMany();
 
         // 2. Logs de conversation
-        const logs = await prisma.conversationLog.findMany({
-            orderBy: { createdAt: 'desc' },
+        const logs = await db.query.ConversationLog.findMany({
+            orderBy: (cl, { desc }) => [desc(cl.createdAt)],
         });
 
         // 3. Build backup package

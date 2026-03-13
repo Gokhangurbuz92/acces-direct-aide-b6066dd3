@@ -1,5 +1,7 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
-import prisma from '../../api/_utils/prisma.js';
+import { db } from '../../src/db/index.js';
+import * as schema from '../../src/db/schema.js';
+import { eq, sql } from 'drizzle-orm';
 
 function mockReq(overrides = {}) {
   return {
@@ -44,7 +46,7 @@ describe('P6-B+ Admin cron-runs API', () => {
 
   afterEach(async () => {
     if (createdIds.length > 0) {
-      await prisma.cronRun.deleteMany({ where: { id: { in: createdIds } } });
+      await await db.delete(schema.CronRun);
     }
   });
 
@@ -58,8 +60,7 @@ describe('P6-B+ Admin cron-runs API', () => {
   });
 
   it('lists recent cron runs when authorized', async () => {
-    const run = await prisma.cronRun.create({
-      data: {
+    const run = await (await db.insert(schema.CronRun).values({
         job: 'actualites',
         status: 'success',
         trigger: 'manual',
@@ -70,7 +71,7 @@ describe('P6-B+ Admin cron-runs API', () => {
         updatedAt: new Date(),
       },
       select: { id: true },
-    });
+    ).returning())[0];
     createdIds.push(run.id);
 
     const { default: handler } = await import('../../api/_handlers/admin/cron-runs.js');
@@ -95,8 +96,7 @@ describe('P6-B+ Admin cron-runs API', () => {
   });
 
   it('returns a cron run detail when authorized', async () => {
-    const run = await prisma.cronRun.create({
-      data: {
+    const run = await (await db.insert(schema.CronRun).values({
         job: 'actualites',
         status: 'skipped',
         trigger: 'external',
@@ -108,7 +108,7 @@ describe('P6-B+ Admin cron-runs API', () => {
         updatedAt: new Date(),
       },
       select: { id: true },
-    });
+    ).returning())[0];
     createdIds.push(run.id);
 
     const { default: handler } = await import('../../api/_handlers/admin/cron-runs.js');

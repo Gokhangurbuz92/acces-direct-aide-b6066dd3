@@ -1,5 +1,7 @@
 import { generateSecret, generateURI } from 'otplib';
-import prisma from '../../_utils/prisma.js';
+import { db } from '../../../src/db/index.js';
+import { AdminUser } from '../../../src/db/schema.js';
+import { eq } from 'drizzle-orm';
 import { encryptToken, isVaultReady } from '../../_utils/vault.js';
 import logger from '../../_utils/logger.js';
 import { requireAdminAuth } from '../../_utils/auth.js';
@@ -33,7 +35,7 @@ async function setupHandler(req, res) {
 
     try {
         // 1. Find AdminUser by email
-        const admin = await prisma.adminUser.findUnique({ where: { email: adminEmail } });
+        const admin = await db.query.AdminUser.findFirst({ where: eq(AdminUser.email, adminEmail) });
         if (!admin) {
             return res.status(404).json({ error: 'Admin account not found' });
         }
@@ -53,14 +55,11 @@ async function setupHandler(req, res) {
         const encrypted = encryptToken(secret);
 
         // 5. Persist encrypted secret in DB
-        await prisma.adminUser.update({
-            where: { id: admin.id },
-            data: {
+        await db.update(AdminUser).set({
                 mfaSecret: encrypted.content,
                 mfaIv: encrypted.iv,
                 mfaEnabled: false, // Not active until first verification
-            },
-        });
+        }).where(eq(AdminUser.id, admin.id));
 
         // 6. Generate Provisioning URI for authenticator apps
         const otpauth = generateURI({

@@ -1,5 +1,7 @@
 import logger from '../../_utils/logger.js';
-import prisma from '../../_utils/prisma.js';
+import { db } from '../../../src/db/index.js';
+import { Structure, Service, Appointment } from '../../../src/db/schema.js';
+import { eq, and, gte, lte, inArray } from 'drizzle-orm';
 import { startOfDay, endOfDay, addDays, format, parse, addMinutes, isBefore, isAfter } from 'date-fns';
 /**
  * @param {import('../../_utils/http-types').ApiRequest} req
@@ -19,11 +21,11 @@ export default async function handler(req, res) {
 
     try {
         // 1. Resolve Structure & Service
-        const structure = await prisma.structure.findUnique({
-            where: { slug: structure_slug },
-            include: {
+        const structure = await db.query.Structure.findFirst({
+            where: eq(Structure.slug, structure_slug),
+            with: {
                 availabilities: true, // Get all pro availabilities
-                proUsers: { where: { status: 'active' } } // Only active pros
+                proUsers: { where: (pu, { eq }) => eq(pu.status, 'active') } // Only active pros
             }
         });
 
@@ -31,8 +33,11 @@ export default async function handler(req, res) {
             return res.status(404).json({ error: "Structure not found or pro not enabled" });
         }
 
-        const service = await prisma.service.findUnique({
-            where: { structureId_slug: { structureId: structure.id, slug: service_slug } }
+        const service = await db.query.Service.findFirst({
+            where: and(
+                eq(Service.structureId, structure.id),
+                eq(Service.slug, service_slug)
+            )
         });
 
         if (!service || !service.is_active) {
@@ -46,13 +51,13 @@ export default async function handler(req, res) {
         // ... (omitted for MVP)
 
         // 3. Get Existing Appointments (Confirmed or Locked)
-        const appointments = await prisma.appointment.findMany({
-            where: {
-                structureId: structure.id,
-                start_at: { gte: startOfDay(startDate), lte: endOfDay(endDate) },
-                status: { in: ['confirmed', 'locked'] },
-                // Exclude cancelled/expired
-            }
+        const appointments = await db.query.Appointment.findMany({
+            where: and(
+                eq(Appointment.structureId, structure.id),
+                gte(Appointment.start_at, startOfDay(startDate)),
+                lte(Appointment.start_at, endOfDay(endDate)),
+                inArray(Appointment.status, ['confirmed', 'locked'])
+            )
         });
 
         // 4. Calculate Slots

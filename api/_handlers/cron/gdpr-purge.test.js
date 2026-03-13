@@ -1,14 +1,17 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 
-const mocks = vi.hoisted(() => ({
-  prisma: {
-    entityVersion: { deleteMany: vi.fn() },
-    updateLog: { deleteMany: vi.fn() },
-    auditLog: { deleteMany: vi.fn() },
-  },
-}));
+const mocks = vi.hoisted(() => {
+  const whereMock = vi.fn();
+  const deleteMock = vi.fn(() => ({ where: whereMock }));
+  return {
+    whereMock,
+    db: {
+      delete: deleteMock,
+    },
+  };
+});
 
-vi.mock('../../_utils/prisma.js', () => ({ default: mocks.prisma }));
+vi.mock('../../../src/db/index.js', () => ({ db: mocks.db }));
 
 import handler from './gdpr-purge.js';
 
@@ -64,9 +67,9 @@ describe('Cron GDPR Purge Handler', () => {
   it('should accept legacy ?key= when CRON_SECRET matches (backward compatible)', async () => {
     process.env.CRON_SECRET = 'test-cron-secret';
 
-    mocks.prisma.entityVersion.deleteMany.mockResolvedValue({ count: 1 });
-    mocks.prisma.updateLog.deleteMany.mockResolvedValue({ count: 2 });
-    mocks.prisma.auditLog.deleteMany.mockResolvedValue({ count: 0 });
+    mocks.whereMock.mockResolvedValueOnce([{ id: 1 }]); // versions
+    mocks.whereMock.mockResolvedValueOnce([{ id: 1 }, { id: 2 }]); // update logs
+    mocks.whereMock.mockResolvedValueOnce([]); // audit logs
 
     const req = mockReq({ method: 'GET', query: { key: 'test-cron-secret' }, headers: {} });
     const res = mockRes();

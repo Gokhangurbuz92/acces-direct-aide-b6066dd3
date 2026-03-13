@@ -1,5 +1,8 @@
 import { computeRawContentHash } from './contentHash.js';
 import { env } from './env.js';
+import { db } from '../../src/db/index.js';
+import { SourceDocument } from '../../src/db/schema.js';
+import { and, eq, desc } from 'drizzle-orm';
 
 /**
  * @param {unknown} value
@@ -25,7 +28,7 @@ function safeShortString(value) {
  * Create/update a traceability SourceDocument row and return its id.
  * Reuses the latest row when `(source_url, content_hash)` already exists.
  *
- * @param {import('@prisma/client').PrismaClient} prismaClient
+ * @param {any} unusedPrismaClient - Kept for signature compatibility but unused
  * @param {{
  *   sourceUrl?: string | null,
  *   rawContent?: string | null,
@@ -33,7 +36,7 @@ function safeShortString(value) {
  * }} input
  * @returns {Promise<{ id: string | null, contentHash: string | null }>}
  */
-export async function upsertSourceDocument(prismaClient, input) {
+export async function upsertSourceDocument(unusedPrismaClient, input) {
   const sourceUrl = safeString(input?.sourceUrl);
   const rawContent = safeString(input?.rawContent);
 
@@ -49,36 +52,31 @@ export async function upsertSourceDocument(prismaClient, input) {
     ...(input?.metadata || {}),
   };
 
-  const existing = await prismaClient.sourceDocument.findFirst({
-    where: {
-      ...(sourceUrl ? { source_url: sourceUrl } : {}),
-      content_hash: contentHash,
-    },
-    orderBy: { fetched_at: 'desc' },
-    select: { id: true },
+  const conditions = [eq(SourceDocument.content_hash, contentHash)];
+  if (sourceUrl) conditions.push(eq(SourceDocument.source_url, sourceUrl));
+  const whereFilter = and(...conditions);
+
+  const existing = await db.query.SourceDocument.findFirst({
+    where: whereFilter,
+    orderBy: (sd, { desc }) => [desc(sd.fetched_at)],
+    columns: { id: true },
   });
 
   if (existing) {
-    await prismaClient.sourceDocument.update({
-      where: { id: existing.id },
-      data: {
-        fetched_at: new Date(),
-        metadata,
-      },
-    });
+    await db.update(SourceDocument).set({
+      fetched_at: new Date(),
+      metadata,
+    }).where(eq(SourceDocument.id, existing.id));
     return { id: existing.id, contentHash };
   }
 
-  const created = await prismaClient.sourceDocument.create({
-    data: {
-      source_url: sourceUrl,
-      fetched_at: new Date(),
-      content_hash: contentHash,
-      raw_content: rawContent,
-      metadata,
-    },
-    select: { id: true },
-  });
+  const [created] = await db.insert(SourceDocument).values({
+    source_url: sourceUrl,
+    fetched_at: new Date(),
+    content_hash: contentHash,
+    raw_content: rawContent,
+    metadata,
+  }).returning({ id: SourceDocument.id });
 
   return { id: created.id, contentHash };
 }

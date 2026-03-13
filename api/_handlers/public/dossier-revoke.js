@@ -1,6 +1,8 @@
 import logger from '../../_utils/logger.js';
 // @ts-nocheck
-import prisma from '../../_utils/prisma.js';
+import { db } from '../../../src/db/index.js';
+import { SharedDiagnostic } from '../../../src/db/schema.js';
+import { eq } from 'drizzle-orm';
 import { logProAudit } from '../../_utils/auth.js';
 
 /**
@@ -27,8 +29,8 @@ export default async function handler(req, res) {
 
     try {
         // Verify it exists first
-        const shared = await prisma.sharedDiagnostic.findUnique({
-            where: { id: shareId },
+        const shared = await db.query.SharedDiagnostic.findFirst({
+            where: eq(SharedDiagnostic.id, shareId),
         });
 
         if (!shared) {
@@ -36,9 +38,7 @@ export default async function handler(req, res) {
         }
 
         // Delete the shared diagnostic link
-        await prisma.sharedDiagnostic.delete({
-            where: { id: shareId },
-        });
+        await db.delete(SharedDiagnostic).where(eq(SharedDiagnostic.id, shareId));
 
         // Audit log — critical legal trace
         const ip = req.headers?.['x-forwarded-for'] || req.socket?.remoteAddress || 'unknown';

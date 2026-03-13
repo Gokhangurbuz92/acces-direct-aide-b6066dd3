@@ -3,7 +3,7 @@ import { kv } from '../../../_utils/kv.js';
 import crypto from 'crypto';
 import { checkRateLimit } from '../../../_utils/rateLimit.js';
 import { logProAudit } from '../../../_utils/auth.js';
-import { db } from '../../../src/db/index.js';
+import { db } from '../../../../src/db/index.js';
 import { eq } from 'drizzle-orm';
 import { env } from '../../../_utils/env.js';
 /**

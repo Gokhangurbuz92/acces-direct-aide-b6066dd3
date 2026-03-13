@@ -150,7 +150,7 @@ export default async function handler(req, res) {
 
         // 2. Search / List
         logger.info('SEARCH_DEMARCHES_START', { requestId, path: req.url, query: rawQuery });
-        const { items, total } = await searchDemarches(prisma, {
+        const { items, total } = await searchDemarches({
             ...effectiveParams,
             hideTestContent: !isAdmin,
         });

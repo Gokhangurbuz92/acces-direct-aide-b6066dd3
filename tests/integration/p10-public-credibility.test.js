@@ -1,7 +1,9 @@
 import crypto from 'node:crypto';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import demarchesHandler from '../../api/_handlers/demarches.js';
-import prisma from '../../api/_utils/prisma.js';
+import { db } from '../../src/db/index.js';
+import * as schema from '../../src/db/schema.js';
+import { eq, sql } from 'drizzle-orm';
 
 function createMockReq({ method = 'GET', url = '/api/demarches', query = {}, headers = {} } = {}) {
   return {
@@ -44,7 +46,7 @@ describe.skipIf(!hasDatabase)('P10-0 public credibility guards', () => {
 
   beforeAll(async () => {
     const now = new Date();
-    await prisma.demarche.createMany({
+    await db.query.Demarche.createMany({
       data: [
         {
           slug: hiddenSlug,
@@ -65,11 +67,7 @@ describe.skipIf(!hasDatabase)('P10-0 public credibility guards', () => {
   });
 
   afterAll(async () => {
-    await prisma.demarche.deleteMany({
-      where: {
-        slug: { in: [hiddenSlug, visibleSlug] },
-      },
-    });
+    await await db.delete(schema.Demarche);
   });
 
   it('list endpoint excludes test-labeled demarches on public surface', async () => {

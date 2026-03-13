@@ -1,6 +1,8 @@
 import logger from '../../_utils/logger.js';
 // @ts-nocheck
-import prisma from '../../_utils/prisma.js';
+import { db } from '../../../src/db/index.js';
+import { ProNotification } from '../../../src/db/schema.js';
+import { eq, and, isNull, inArray, count } from 'drizzle-orm';
 import { requireProAuth, requireProStructureContext } from '../../_utils/auth.js';
 /**
  * Pro Notifications API
@@ -29,21 +31,24 @@ async function handler(req, res) {
             const unreadOnly = url.searchParams.get('unread') === 'true';
             const skip = (page - 1) * limit;
 
-            const whereClause = {
-                userId,
-                ...(unreadOnly ? { readAt: null } : {}),
-            };
+            let whereConditions = [eq(ProNotification.userId, userId)];
+            if (unreadOnly) {
+                whereConditions.push(isNull(ProNotification.readAt));
+            }
 
-            const [notifications, total, unreadCount] = await Promise.all([
-                prisma.proNotification.findMany({
-                    where: whereClause,
-                    orderBy: { createdAt: 'desc' },
-                    take: limit,
-                    skip,
+            const [notifications, totalRes, unreadCountRes] = await Promise.all([
+                db.query.ProNotification.findMany({
+                    where: and(...whereConditions),
+                    orderBy: (pn, { desc }) => [desc(pn.createdAt)],
+                    limit,
+                    offset: skip,
                 }),
-                prisma.proNotification.count({ where: whereClause }),
-                prisma.proNotification.count({ where: { userId, readAt: null } }),
+                db.select({ count: count() }).from(ProNotification).where(and(...whereConditions)),
+                db.select({ count: count() }).from(ProNotification).where(and(eq(ProNotification.userId, userId), isNull(ProNotification.readAt))),
             ]);
+            
+            const total = totalRes[0].count;
+            const unreadCount = unreadCountRes[0].count;
 
             return res.status(200).json({
                 ok: true,
@@ -78,24 +83,24 @@ async function handler(req, res) {
             // Limit batch size to prevent abuse
             const safeIds = ids.slice(0, 100);
 
-            const updated = await prisma.proNotification.updateMany({
-                where: {
-                    id: { in: safeIds },
-                    userId, // enforce ownership
-                },
-                data: {
+            const updated = await db.update(ProNotification).set({
                     readAt: action === 'read' ? new Date() : null,
-                },
-            });
+            }).where(
+                and(
+                    inArray(ProNotification.id, safeIds),
+                    eq(ProNotification.userId, userId)
+                )
+            ).returning();
 
             // Get new unread count
-            const unreadCount = await prisma.proNotification.count({
-                where: { userId, readAt: null },
-            });
+            const unreadCountRes = await db.select({ count: count() }).from(ProNotification).where(
+                and(eq(ProNotification.userId, userId), isNull(ProNotification.readAt))
+            );
+            const unreadCount = unreadCountRes[0].count;
 
             return res.status(200).json({
                 ok: true,
-                updated: updated.count,
+                updated: updated.length,
                 unreadCount,
             });
         } catch (error) {
@@ -123,16 +128,15 @@ export default requireProAuth(handler);
  */
 export async function createNotification(data) {
     try {
-        return await prisma.proNotification.create({
-            data: {
+        const [newNotif] = await db.insert(ProNotification).values({
                 userId: data.userId,
                 structureId: data.structureId,
                 type: data.type,
                 title: data.title,
                 message: data.message,
                 metadata: data.metadata || null,
-            },
-        });
+        }).returning();
+        return newNotif;
     } catch (error) {
         logger.warn({ err: error, data }, '[Notifications] Failed to create notification');
         return null;

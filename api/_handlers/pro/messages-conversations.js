@@ -1,5 +1,7 @@
 // @ts-nocheck
-import prisma from '../../_utils/prisma.js';
+import { db } from '../../../src/db/index.js';
+import { RdvConversation, RdvConversationMessage } from '../../../src/db/schema.js';
+import { eq, desc, asc } from 'drizzle-orm';
 import { requireProStructureContext } from '../../_utils/auth.js';
 import { checkRateLimit, getClientIp, getRateLimitStatus } from '../../_utils/rateLimit.js';
 import { withProRdvHandler } from '../../_utils/with-pro-rdv-handler.js';
@@ -67,40 +69,24 @@ async function enforceRateLimit(req, action, subject) {
  * @param {number} limit
  */
 async function loadConversationForPro(conversationId, limit) {
-  return prisma.rdvConversation.findUnique({
-    where: {
-      id: conversationId,
-    },
-    include: {
+  return db.query.RdvConversation.findFirst({
+    where: eq(RdvConversation.id, conversationId),
+    with: {
       structure: {
-        select: {
-          id: true,
-          slug: true,
-          nom: true,
-        },
+        columns: { id: true, slug: true, nom: true },
       },
       appointment: {
-        select: {
-          id: true,
-          startAt: true,
-          endAt: true,
-          status: true,
-          service: {
-            select: {
-              id: true,
-              name: true,
-            },
-          },
+        columns: { id: true, startAt: true, endAt: true, status: true },
+        with: {
+          service: { columns: { id: true, name: true } },
         },
       },
       messages: {
-        orderBy: { createdAt: 'asc' },
-        take: limit,
+        orderBy: [asc(RdvConversationMessage.createdAt)],
+        limit,
       },
       citizenUser: {
-        select: {
-          id: true,
-        },
+        columns: { id: true },
       },
     },
   });
@@ -119,41 +105,23 @@ async function getConversations(req, res, proCtx) {
   const url = getUrl(req);
   const limit = toLimit(url.searchParams.get('limit'), 20, 100);
 
-  const conversations = await prisma.rdvConversation.findMany({
-    where: {
-      structureId: proCtx.structureId,
-    },
-    take: limit,
-    orderBy: {
-      lastMessageAt: 'desc',
-    },
-    include: {
+  const conversations = await db.query.RdvConversation.findMany({
+    where: eq(RdvConversation.structureId, proCtx.structureId),
+    limit,
+    orderBy: [desc(RdvConversation.lastMessageAt)],
+    with: {
       structure: {
-        select: {
-          id: true,
-          slug: true,
-          nom: true,
-        },
+        columns: { id: true, slug: true, nom: true },
       },
       appointment: {
-        select: {
-          id: true,
-          startAt: true,
-          endAt: true,
-          status: true,
-          service: {
-            select: {
-              id: true,
-              name: true,
-            },
-          },
+        columns: { id: true, startAt: true, endAt: true, status: true },
+        with: {
+          service: { columns: { id: true, name: true } },
         },
       },
       messages: {
-        orderBy: {
-          createdAt: 'desc',
-        },
-        take: 1,
+        orderBy: [desc(RdvConversationMessage.createdAt)],
+        limit: 1,
       },
     },
   });
@@ -206,26 +174,14 @@ async function sendMessage(req, res, proCtx, conversationId) {
     return res.status(400).json({ error: 'Message body is required' });
   }
 
-  const created = await prisma.$transaction(async (tx) => {
-    const conversation = await tx.rdvConversation.findUnique({
-      where: {
-        id: conversationId,
-      },
-      include: {
-        structure: {
-          select: {
-            id: true,
-            nom: true,
-          },
-        },
-        appointment: {
-          select: {
-            id: true,
-            startAt: true,
-          },
-        },
+  const created = await db.transaction(async (tx) => {
+    const conversation = await tx.query.RdvConversation.findFirst({
+      where: eq(RdvConversation.id, conversationId),
+      with: {
+        structure: { columns: { id: true, nom: true } },
+        appointment: { columns: { id: true, startAt: true } },
         citizenUser: {
-          select: {
+          columns: {
             email: true,
             emailVerifiedAt: true,
             notificationEmailEnabled: true,
@@ -239,23 +195,16 @@ async function sendMessage(req, res, proCtx, conversationId) {
       return { forbidden: true };
     }
 
-    const message = await tx.rdvConversationMessage.create({
-      data: {
+    const [message] = await tx.insert(RdvConversationMessage).values({
         conversationId: conversation.id,
         senderType: 'PRO',
         senderProUserId: proCtx.userId,
         body,
-      },
-    });
+    }).returning();
 
-    await tx.rdvConversation.update({
-      where: {
-        id: conversation.id,
-      },
-      data: {
+    await tx.update(RdvConversation).set({
         lastMessageAt: message.createdAt,
-      },
-    });
+    }).where(eq(RdvConversation.id, conversation.id));
 
     return { conversation, message, forbidden: false };
   });

@@ -1,7 +1,11 @@
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import monitorCoreHandler from '../../api/monitor/core.js';
-import prisma from '../../api/_utils/prisma.js';
+import { db } from '../../src/db/index.js';
+import * as schema from '../../src/db/schema.js';
+import { eq, sql } from 'drizzle-orm';
 import { kv } from '../../api/_utils/kv.js';
+
+import { vi } from 'vitest';
 
 /**
  * @param {{
@@ -101,31 +105,22 @@ async function invokeApi(url, options = {}) {
 }
 
 describe('P8-B monitor core endpoint contract', () => {
-  /** @type {typeof prisma.$queryRaw} */
-  let originalQueryRaw;
-  /** @type {typeof kv.set} */
-  let originalKvSet;
-  /** @type {typeof kv.get} */
-  let originalKvGet;
-  /** @type {typeof kv.del} */
-  let originalKvDel;
-
   beforeEach(() => {
-    originalQueryRaw = prisma.$queryRaw;
+    vi.restoreAllMocks();
     originalKvSet = kv.set;
     originalKvGet = kv.get;
     originalKvDel = kv.del;
   });
 
   afterEach(() => {
-    prisma.$queryRaw = originalQueryRaw;
+    vi.restoreAllMocks();
     kv.set = originalKvSet;
     kv.get = originalKvGet;
     kv.del = originalKvDel;
   });
 
   it('GET /api/monitor/core returns 200 with minimal safe payload and technical headers', async () => {
-    prisma.$queryRaw = async () => [{ '?column?': 1 }];
+    vi.spyOn(db, 'execute').mockResolvedValue([{ '?column?': 1 }]);
     kv.set = async () => 'OK';
     kv.get = async () => 'ok';
     kv.del = async () => 1;
@@ -157,9 +152,7 @@ describe('P8-B monitor core endpoint contract', () => {
   });
 
   it('returns 503 with safe generic error when DB probe fails', async () => {
-    prisma.$queryRaw = async () => {
-      throw new Error('relation private_table does not exist');
-    };
+    vi.spyOn(db, 'execute').mockRejectedValue(new Error('relation private_table does not exist'));
     kv.set = async () => 'OK';
     kv.get = async () => 'ok';
     kv.del = async () => 1;

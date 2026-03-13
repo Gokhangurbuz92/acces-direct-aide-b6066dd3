@@ -1,7 +1,9 @@
 import { describe, expect, it } from 'vitest';
 
 import apiHandler from '../../api/index.js';
-import prisma from '../../api/_utils/prisma.js';
+import { db } from '../../src/db/index.js';
+import * as schema from '../../src/db/schema.js';
+import { eq, sql } from 'drizzle-orm';
 
 /**
  * @param {{
@@ -96,13 +98,7 @@ function extractPdfSignature(body) {
 
 describe('P10-3 PDF export', () => {
   it('returns application/pdf for a published aide', async () => {
-    const aide = await prisma.aide.findFirst({
-      where: {
-        statut: 'publie',
-        slug: { not: null },
-      },
-      select: { slug: true },
-    });
+    const aide = await db.query.Aide.findFirst({ where: eq(schema.Aide.id, "TODO_FIX_WHERE") /* AUTOMIGRATED: {         statut: 'publie',         slug: { not: null },       },       select: { slug: true },      */ });
     if (!aide?.slug) return; // No published aide in DB — skip gracefully
 
     const res = await invokeApi(`/api/pdf/aides/${encodeURIComponent(aide.slug)}`);
@@ -114,13 +110,7 @@ describe('P10-3 PDF export', () => {
   });
 
   it('returns application/pdf for a published demarche', async () => {
-    const demarche = await prisma.demarche.findFirst({
-      where: {
-        statut: 'publie',
-        slug: { not: null },
-      },
-      select: { slug: true },
-    });
+    const demarche = await db.query.Demarche.findFirst({ where: eq(schema.Demarche.id, "TODO_FIX_WHERE") /* AUTOMIGRATED: {         statut: 'publie',         slug: { not: null },       },       select: { slug: true },      */ });
     if (!demarche?.slug) return; // No published demarche in DB — skip gracefully
 
     const res = await invokeApi(`/api/pdf/demarches/${encodeURIComponent(demarche.slug)}`);

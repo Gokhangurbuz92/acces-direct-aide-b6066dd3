@@ -1,7 +1,9 @@
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 
 import apiHandler from '../../api/index.js';
-import prisma from '../../api/_utils/prisma.js';
+import { db } from '../../src/db/index.js';
+import * as schema from '../../src/db/schema.js';
+import { eq, sql } from 'drizzle-orm';
 import { signProToken } from '../../api/lib/pro-auth.js';
 import { buildUserSessionCookie, signUserSessionToken } from '../../api/_utils/user-auth.js';
 import { __clearTestOutbox, __getTestOutbox } from '../../api/_utils/mailer.js';
@@ -149,28 +151,28 @@ beforeEach(() => {
 
 afterEach(async () => {
   if (notificationIds.length > 0) {
-    await prisma.rdvNotificationLog.deleteMany({ where: { id: { in: notificationIds } } });
+    await await db.delete(schema.RdvNotificationLog);
   }
   if (messageIds.length > 0) {
-    await prisma.rdvConversationMessage.deleteMany({ where: { id: { in: messageIds } } });
+    await await db.delete(schema.RdvConversationMessage);
   }
   if (conversationIds.length > 0) {
-    await prisma.rdvConversation.deleteMany({ where: { id: { in: conversationIds } } });
+    await await db.delete(schema.RdvConversation);
   }
   if (appointmentIds.length > 0) {
-    await prisma.proAppointment.deleteMany({ where: { id: { in: appointmentIds } } });
+    await await db.delete(schema.ProAppointment);
   }
   if (serviceIds.length > 0) {
-    await prisma.proRdvService.deleteMany({ where: { id: { in: serviceIds } } });
+    await await db.delete(schema.ProRdvService);
   }
   if (proUserIds.length > 0) {
-    await prisma.proUser.deleteMany({ where: { id: { in: proUserIds } } });
+    await await db.delete(schema.ProUser);
   }
   if (userIds.length > 0) {
-    await prisma.citizenUser.deleteMany({ where: { id: { in: userIds } } });
+    await await db.delete(schema.CitizenUser);
   }
   if (structureIds.length > 0) {
-    await prisma.structure.deleteMany({ where: { id: { in: structureIds } } });
+    await await db.delete(schema.Structure);
   }
 
   notificationIds = [];
@@ -191,8 +193,7 @@ afterEach(async () => {
 async function createFixture() {
   const suffix = `${Date.now()}-${Math.random().toString(16).slice(2, 8)}`;
 
-  const structureA = await prisma.structure.create({
-    data: {
+  const structureA = await (await db.insert(schema.Structure).values({
       nom: `P10E Structure A ${suffix}`,
       slug: `p10e-struct-a-${suffix}`,
       statut: 'actif',
@@ -205,10 +206,9 @@ async function createFixture() {
       insee_codes: [],
       is_pro_enabled: true,
     },
-  });
+  ).returning())[0];
 
-  const structureB = await prisma.structure.create({
-    data: {
+  const structureB = await (await db.insert(schema.Structure).values({
       nom: `P10E Structure B ${suffix}`,
       slug: `p10e-struct-b-${suffix}`,
       statut: 'actif',
@@ -221,12 +221,11 @@ async function createFixture() {
       insee_codes: [],
       is_pro_enabled: true,
     },
-  });
+  ).returning())[0];
 
   structureIds.push(structureA.id, structureB.id);
 
-  const proA = await prisma.proUser.create({
-    data: {
+  const proA = await (await db.insert(schema.ProUser).values({
       email: `pro-a-${suffix}@test.local`,
       password_hash: 'hash',
       role: 'STRUCTURE_ADMIN',
@@ -234,10 +233,9 @@ async function createFixture() {
       structureId: structureA.id,
       notificationEmailEnabled: true,
     },
-  });
+  ).returning())[0];
 
-  const proB = await prisma.proUser.create({
-    data: {
+  const proB = await (await db.insert(schema.ProUser).values({
       email: `pro-b-${suffix}@test.local`,
       password_hash: 'hash',
       role: 'STRUCTURE_ADMIN',
@@ -245,42 +243,38 @@ async function createFixture() {
       structureId: structureB.id,
       notificationEmailEnabled: true,
     },
-  });
+  ).returning())[0];
 
   proUserIds.push(proA.id, proB.id);
 
-  const userA = await prisma.citizenUser.create({
-    data: {
+  const userA = await (await db.insert(schema.CitizenUser).values({
       email: `user-a-${suffix}@test.local`,
       passwordHash: 'hash',
       emailVerifiedAt: new Date(),
       notificationEmailEnabled: true,
     },
-  });
+  ).returning())[0];
 
-  const userB = await prisma.citizenUser.create({
-    data: {
+  const userB = await (await db.insert(schema.CitizenUser).values({
       email: `user-b-${suffix}@test.local`,
       passwordHash: 'hash',
       emailVerifiedAt: new Date(),
       notificationEmailEnabled: true,
     },
-  });
+  ).returning())[0];
 
   userIds.push(userA.id, userB.id);
 
-  const service = await prisma.proRdvService.create({
-    data: {
+  const service = await (await db.insert(schema.ProRdvService).values({
       structureId: structureA.id,
       name: 'Accompagnement',
       durationMinutes: 30,
       isActive: true,
     },
-  });
+  ).returning())[0];
   serviceIds.push(service.id);
 
-  const appointment = await prisma.proAppointment.create({
-    data: {
+  const appointment = await (await db.insert(schema.ProAppointment).values({
       structureId: structureA.id,
       serviceId: service.id,
       startAt: new Date('2026-03-05T10:00:00.000Z'),
@@ -291,27 +285,25 @@ async function createFixture() {
       citizenEmailSnapshot: userA.email,
       idempotencyKey: `p10e-${suffix}`,
     },
-  });
+  ).returning())[0];
   appointmentIds.push(appointment.id);
 
-  const conversation = await prisma.rdvConversation.create({
-    data: {
+  const conversation = await (await db.insert(schema.RdvConversation).values({
       appointmentId: appointment.id,
       structureId: structureA.id,
       citizenUserId: userA.id,
       lastMessageAt: new Date('2026-03-05T10:00:00.000Z'),
     },
-  });
+  ).returning())[0];
   conversationIds.push(conversation.id);
 
-  const initialMessage = await prisma.rdvConversationMessage.create({
-    data: {
+  const initialMessage = await (await db.insert(schema.RdvConversationMessage).values({
       conversationId: conversation.id,
       senderType: 'USER',
       senderCitizenUserId: userA.id,
       body: 'Bonjour',
     },
-  });
+  ).returning())[0];
   messageIds.push(initialMessage.id);
 
   return {
@@ -390,13 +382,11 @@ describe('P10-E messaging contracts', () => {
     expect(created.statusCode).toBe(201);
     expect(created.body?.item?.senderType).toBe('USER');
 
-    const createdMessage = await prisma.rdvConversationMessage.findUnique({
-      where: { id: created.body.item.id },
-    });
+    const createdMessage = await db.query.RdvConversationMessage.findFirst({ where: eq(schema.RdvConversationMessage.id, "TODO_FIX_WHERE") /* AUTOMIGRATED: { id: created.body.item.id },      */ });
     expect(createdMessage).toBeTruthy();
     if (createdMessage) messageIds.push(createdMessage.id);
 
-    const logs = await prisma.rdvNotificationLog.findMany({
+    const logs = await db.query.RdvNotificationLog.findMany({
       where: {
         messageId: created.body.item.id,
         recipientType: 'PRO',

@@ -1,6 +1,8 @@
 import { checkRateLimit, getClientIp, getRateLimitStatus } from '../../_utils/rateLimit.js';
 import logger from '../../_utils/logger.js';
-import prisma from '../../_utils/prisma.js';
+import { db } from '../../../src/db/index.js';
+import { EntityVersion } from '../../../src/db/schema.js';
+import { eq, and } from 'drizzle-orm';
 import { verifyAdmin, resolveAuthContext } from '../../_utils/auth.js';
 import { restoreVersion } from '../../_utils/snapshot.js';
 /**
@@ -25,13 +27,13 @@ export default async function handler(req, res) {
                 return res.status(400).json({ error: "Missing entity_type or entity_id" });
             }
 
-            const versions = await prisma.entityVersion.findMany({
-                where: {
-                    entity_type,
-                    entity_id: String(entity_id)
-                },
-                orderBy: { createdAt: 'desc' },
-                take: 20
+            const versions = await db.query.EntityVersion.findMany({
+                where: and(
+                    eq(EntityVersion.entity_type, entity_type),
+                    eq(EntityVersion.entity_id, String(entity_id))
+                ),
+                orderBy: (ev, { desc }) => [desc(ev.createdAt)],
+                limit: 20
             });
 
             return res.status(200).json(versions);

@@ -1,5 +1,7 @@
 import logger from '../../_utils/logger.js';
-import prisma from '../../_utils/prisma.js';
+import { db } from '../../../src/db/index.js';
+import { Appointment } from '../../../src/db/schema.js';
+import { eq } from 'drizzle-orm';
 import { checkRateLimit } from '../_utils/rateLimit.js';
 import { hash } from '../../lib/crypto.js';
 /**
@@ -20,8 +22,8 @@ export default async function handler(req, res) {
 
     try {
         const tokenHash = hash(token);
-        const appointment = await prisma.appointment.findFirst({
-            where: { access_token_hash: tokenHash }
+        const appointment = await db.query.Appointment.findFirst({
+            where: eq(Appointment.access_token_hash, tokenHash)
         });
 
         if (!appointment) {
@@ -29,10 +31,7 @@ export default async function handler(req, res) {
         }
 
         if (appointment.status === 'requested') {
-            await prisma.appointment.update({
-                where: { id: appointment.id },
-                data: { status: 'confirmed' }
-            });
+            await db.update(Appointment).set({ status: 'confirmed' }).where(eq(Appointment.id, appointment.id));
         }
 
         return res.status(200).json({

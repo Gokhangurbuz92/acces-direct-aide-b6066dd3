@@ -1,3 +1,6 @@
+import { db as defaultDb } from '../../src/db/index.js';
+import { sql } from 'drizzle-orm';
+
 export const REQUIRED_PRO_RDV_TABLES = [
   'ProRdvService',
   'ProAvailabilityRule',
@@ -31,18 +34,18 @@ function withTimeout(promise, ms) {
 }
 
 /**
- * @param {import('@prisma/client').PrismaClient} prisma
+ * @param {import('drizzle-orm/pg-core').PgDatabase<any>} dbClient
  * @param {number} timeoutMs
  * @returns {Promise<Set<string>>}
  */
-async function loadExistingTables(prisma, timeoutMs) {
-  const rows = await withTimeout(
-    prisma.$queryRaw`
+async function loadExistingTables(dbClient, timeoutMs) {
+  const { rows } = await withTimeout(
+    dbClient.execute(sql`
       SELECT table_name
       FROM information_schema.tables
       WHERE table_schema = 'public'
         AND table_name IN ('ProRdvService', 'ProAvailabilityRule', 'ProAppointment', 'ProTimeOff')
-    `,
+    `),
     timeoutMs,
   );
 
@@ -55,17 +58,18 @@ async function loadExistingTables(prisma, timeoutMs) {
 }
 
 /**
- * @param {import('@prisma/client').PrismaClient} prisma
+ * @param {import('drizzle-orm/pg-core').PgDatabase<any>} dbClient
  * @param {number} timeoutMs
  * @returns {Promise<{ prismaMigrationsOk: boolean, missingMigrations: string[], migrationsTablePresent: boolean }>}
  */
-async function loadMigrationStatus(prisma, timeoutMs) {
+async function loadMigrationStatus(dbClient, timeoutMs) {
   const tableProbe = await withTimeout(
-    prisma.$queryRaw`SELECT to_regclass('public."_prisma_migrations"') AS migrations_regclass`,
+    dbClient.execute(sql`SELECT to_regclass('public."_prisma_migrations"') AS migrations_regclass`),
     timeoutMs,
   );
 
-  const firstProbe = Array.isArray(tableProbe) && tableProbe.length > 0 ? tableProbe[0] : null;
+  const probeRows = tableProbe.rows || [];
+  const firstProbe = Array.isArray(probeRows) && probeRows.length > 0 ? probeRows[0] : null;
   const regclass = firstProbe && typeof firstProbe === 'object'
     ? String(firstProbe.migrations_regclass || '')
     : '';
@@ -78,15 +82,16 @@ async function loadMigrationStatus(prisma, timeoutMs) {
     };
   }
 
-  const rows = await withTimeout(
-    prisma.$queryRaw`
+  const dbRows = await withTimeout(
+    dbClient.execute(sql`
       SELECT migration_name, finished_at, rolled_back_at
       FROM "_prisma_migrations"
       WHERE migration_name IN ('20260305000000_add_pro_rdv_core')
-    `,
+    `),
     timeoutMs,
   );
 
+  const rows = dbRows.rows || [];
   const applied = new Set();
   for (const row of Array.isArray(rows) ? rows : []) {
     const migrationName = row && typeof row === 'object' ? String(row.migration_name || '') : '';
@@ -107,13 +112,13 @@ async function loadMigrationStatus(prisma, timeoutMs) {
 }
 
 /**
- * @param {import('@prisma/client').PrismaClient} prisma
+ * @param {import('drizzle-orm/pg-core').PgDatabase<any>} dbClient
  * @param {number=} timeoutMs
  */
-export async function getProRdvReadiness(prisma, timeoutMs = DEFAULT_TIMEOUT_MS) {
+export async function getProRdvReadiness(dbClient = defaultDb, timeoutMs = DEFAULT_TIMEOUT_MS) {
   const [existingTables, migrationStatus] = await Promise.all([
-    loadExistingTables(prisma, timeoutMs),
-    loadMigrationStatus(prisma, timeoutMs),
+    loadExistingTables(dbClient, timeoutMs),
+    loadMigrationStatus(dbClient, timeoutMs),
   ]);
 
   const missingTables = REQUIRED_PRO_RDV_TABLES.filter((tableName) => !existingTables.has(tableName));

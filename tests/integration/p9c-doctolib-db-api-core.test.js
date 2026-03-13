@@ -1,7 +1,9 @@
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 
 import apiHandler from '../../api/index.js';
-import prisma from '../../api/_utils/prisma.js';
+import { db } from '../../src/db/index.js';
+import * as schema from '../../src/db/schema.js';
+import { eq, sql } from 'drizzle-orm';
 import { signProToken } from '../../api/lib/pro-auth.js';
 
 /**
@@ -125,19 +127,19 @@ beforeEach(() => {
 
 afterEach(async () => {
   if (createdAppointmentIds.length > 0) {
-    await prisma.proAppointment.deleteMany({ where: { id: { in: createdAppointmentIds } } });
+    await await db.delete(schema.ProAppointment);
   }
   if (createdRuleIds.length > 0) {
-    await prisma.proAvailabilityRule.deleteMany({ where: { id: { in: createdRuleIds } } });
+    await await db.delete(schema.ProAvailabilityRule);
   }
   if (createdServiceIds.length > 0) {
-    await prisma.proRdvService.deleteMany({ where: { id: { in: createdServiceIds } } });
+    await await db.delete(schema.ProRdvService);
   }
   if (createdProUserIds.length > 0) {
-    await prisma.proUser.deleteMany({ where: { id: { in: createdProUserIds } } });
+    await await db.delete(schema.ProUser);
   }
   if (createdStructureIds.length > 0) {
-    await prisma.structure.deleteMany({ where: { id: { in: createdStructureIds } } });
+    await await db.delete(schema.Structure);
   }
 
   createdAppointmentIds = [];
@@ -152,8 +154,7 @@ afterEach(async () => {
 
 async function createTenantFixture() {
   const suffix = `${Date.now()}-${Math.random().toString(16).slice(2, 8)}`;
-  const structureA = await prisma.structure.create({
-    data: {
+  const structureA = await (await db.insert(schema.Structure).values({
       nom: `P9C Structure A ${suffix}`,
       slug: `p9c-structure-a-${suffix}`,
       services: [],
@@ -165,9 +166,8 @@ async function createTenantFixture() {
       insee_codes: [],
       is_pro_enabled: true,
     },
-  });
-  const structureB = await prisma.structure.create({
-    data: {
+  ).returning())[0];
+  const structureB = await (await db.insert(schema.Structure).values({
       nom: `P9C Structure B ${suffix}`,
       slug: `p9c-structure-b-${suffix}`,
       services: [],
@@ -179,20 +179,18 @@ async function createTenantFixture() {
       insee_codes: [],
       is_pro_enabled: true,
     },
-  });
+  ).returning())[0];
 
-  const proUserA = await prisma.proUser.create({
-    data: {
+  const proUserA = await (await db.insert(schema.ProUser).values({
       email: `p9c-a-${suffix}@test.local`,
       password_hash: 'hashed',
       role: 'STRUCTURE_ADMIN',
       status: 'active',
       structureId: structureA.id,
     },
-  });
+  ).returning())[0];
 
-  const serviceB = await prisma.proRdvService.create({
-    data: {
+  const serviceB = await (await db.insert(schema.ProRdvService).values({
       structureId: structureB.id,
       name: 'Service B',
       durationMinutes: 30,
@@ -200,7 +198,7 @@ async function createTenantFixture() {
       bufferAfterMinutes: 0,
       isActive: true,
     },
-  });
+  ).returning())[0];
 
   createdStructureIds.push(structureA.id, structureB.id);
   createdProUserIds.push(proUserA.id);
@@ -258,7 +256,7 @@ describe('P9-C doctolib social DB + pro API core', () => {
     });
     expect(setAvailability.statusCode).toBe(200);
 
-    const dbRules = await prisma.proAvailabilityRule.findMany({
+    const dbRules = await db.query.ProAvailabilityRule.findMany({
       where: { structureId: fixture.structureA.id },
       select: { id: true },
     });

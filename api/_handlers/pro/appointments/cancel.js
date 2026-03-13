@@ -1,5 +1,5 @@
-import { db } from '../../../src/db/index.js';
-import { ProAppointment } from '../../../src/db/schema.js';
+import { db } from '../../../../src/db/index.js';
+import { ProAppointment } from '../../../../src/db/schema.js';
 import { eq } from 'drizzle-orm';
 import { requireProStructureContext } from '../../../_utils/auth.js';
 import { withProRdvHandler } from '../../../_utils/with-pro-rdv-handler.js';

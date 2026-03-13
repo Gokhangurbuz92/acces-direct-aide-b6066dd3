@@ -3,7 +3,9 @@ import { randomUUID } from 'crypto';
 import * as Sentry from '@sentry/node';
 import { checkRateLimit, getClientIp, getRateLimitStatus } from '../../../_utils/rateLimit.js';
 import { generateText } from '../../../lib/gemini.js';
-import prisma from '../../../_utils/prisma.js';
+import { db } from '../../../../src/db/index.js';
+import { Aide, Structure, Demarche, ConversationLog } from '../../../../src/db/schema.js';
+import { eq, or, ilike, and, desc, sql, arrayContains } from 'drizzle-orm';
 
 /**
  * orient.js — Boussole Sociale (Compass Orientation Handler)
@@ -113,40 +115,40 @@ async function searchAidesFTS(keywords, territory, limit = 5) {
     const tsQuery = buildTsQuery(keywords);
     if (!tsQuery) {
         // No keywords — return recent published aides (optionally filtered by territory)
-        return prisma.aide.findMany({
-            where: {
-                statut: 'publie',
-                ...(territory ? { departements: { has: territory } } : {}),
-            },
-            select: { id: true, titre: true, slug: true, cest_quoi: true, categorie: true, summary_falc: true },
-            take: limit,
-            orderBy: { published_at: 'desc' },
+        return db.query.Aide.findMany({
+            where: (a, { eq, and }) => and(
+                eq(a.statut, 'publie'),
+                ...(territory ? [arrayContains(a.departements, [territory])] : [])
+            ),
+            columns: { id: true, titre: true, slug: true, cest_quoi: true, categorie: true, summary_falc: true },
+            limit: limit,
+            orderBy: (a, { desc }) => [desc(a.published_at)],
         });
     }
 
     try {
-        const aides = await prisma.$queryRaw`
+        const aides = await db.execute(sql`
             SELECT id, titre, slug, cest_quoi, categorie, summary_falc,
                    ts_rank(to_tsvector('french', coalesce(titre,'') || ' ' || coalesce(cest_quoi,'')),
                            to_tsquery('french', ${tsQuery})) AS rank
             FROM "Aide"
             WHERE to_tsvector('french', coalesce(titre,'') || ' ' || coalesce(cest_quoi,''))
                   @@ to_tsquery('french', ${tsQuery})
-            ${territory ? prisma.$queryRaw`AND ${territory} = ANY("departements")` : prisma.$queryRaw``}
+            ${territory ? sql`AND ${territory} = ANY("departements")` : sql``}
             ORDER BY rank DESC
             LIMIT ${limit}
-        `;
-        return aides;
+        `);
+        return aides.rows || aides; // Depending on PG adapter
     } catch (ftsErr) {
         // Fallback to Prisma contains (if GIN index not yet deployed)
         logger.warn({ msg: 'compass.fts_fallback', error: ftsErr.message });
-        return prisma.aide.findMany({
-            where: {
-                OR: keywords.map((k) => ({ titre: { contains: k, mode: 'insensitive' } })),
-                ...(territory ? { departements: { has: territory } } : {}),
-            },
-            select: { id: true, titre: true, slug: true, cest_quoi: true, categorie: true, summary_falc: true },
-            take: limit,
+        return db.query.Aide.findMany({
+            where: (a, { or, and }) => and(
+                or(...keywords.map((k) => ilike(a.titre, `%${k}%`))),
+                ...(territory ? [arrayContains(a.departements, [territory])] : [])
+            ),
+            columns: { id: true, titre: true, slug: true, cest_quoi: true, categorie: true, summary_falc: true },
+            limit: limit,
         });
     }
 }
@@ -159,44 +161,44 @@ async function searchStructuresFTS(keywords, territory, limit = 3) {
 
     // If we have territory but no keywords, just filter by territory
     if (!tsQuery && territory) {
-        return prisma.structure.findMany({
-            where: { departement: territory, status: 'actif' },
-            select: { id: true, nom: true, slug: true, type_structure: true, departement: true, ville: true, telephone: true },
-            take: limit,
+        return db.query.Structure.findMany({
+            where: and(eq(Structure.departement, territory), eq(Structure.status, 'actif')),
+            columns: { id: true, nom: true, slug: true, type_structure: true, departement: true, ville: true, telephone: true },
+            limit: limit,
         });
     }
     if (!tsQuery) {
-        return prisma.structure.findMany({
-            where: { status: 'actif' },
-            select: { id: true, nom: true, slug: true, type_structure: true, departement: true, ville: true, telephone: true },
-            take: limit,
+        return db.query.Structure.findMany({
+            where: eq(Structure.status, 'actif'),
+            columns: { id: true, nom: true, slug: true, type_structure: true, departement: true, ville: true, telephone: true },
+            limit: limit,
         });
     }
 
     try {
-        const structures = await prisma.$queryRaw`
+        const structures = await db.execute(sql`
             SELECT id, nom, slug, type_structure, departement, ville, telephone,
                    ts_rank(to_tsvector('french', coalesce(nom,'') || ' ' || coalesce(ville,'')),
                            to_tsquery('french', ${tsQuery})) AS rank
             FROM "Structure"
             WHERE to_tsvector('french', coalesce(nom,'') || ' ' || coalesce(ville,''))
                   @@ to_tsquery('french', ${tsQuery})
-            ${territory ? prisma.$queryRaw`AND departement = ${territory}` : prisma.$queryRaw``}
+            ${territory ? sql`AND departement = ${territory}` : sql``}
             AND status = 'actif'
             ORDER BY rank DESC
             LIMIT ${limit}
-        `;
-        return structures;
+        `);
+        return structures.rows || structures; // Postgres adapter compatibility
     } catch (ftsErr) {
         logger.warn({ msg: 'compass.fts_structures_fallback', error: ftsErr.message });
-        return prisma.structure.findMany({
-            where: {
-                ...(keywords.length > 0 ? { OR: keywords.map((k) => ({ nom: { contains: k, mode: 'insensitive' } })) } : {}),
-                ...(territory ? { departement: territory } : {}),
-                status: 'actif',
-            },
-            select: { id: true, nom: true, slug: true, type_structure: true, departement: true, ville: true, telephone: true },
-            take: limit,
+        return db.query.Structure.findMany({
+            where: and(
+                ...(keywords.length > 0 ? [or(...keywords.map((k) => ilike(Structure.nom, `%${k}%`)))] : []),
+                ...(territory ? [eq(Structure.departement, territory)] : []),
+                eq(Structure.status, 'actif')
+            ),
+            columns: { id: true, nom: true, slug: true, type_structure: true, departement: true, ville: true, telephone: true },
+            limit: limit,
         });
     }
 }
@@ -209,7 +211,7 @@ async function searchDemarchesFTS(keywords, limit = 3) {
     if (!tsQuery) return [];
 
     try {
-        const demarches = await prisma.$queryRaw`
+        const demarches = await db.execute(sql`
             SELECT id, titre, slug, description_courte, summary_falc,
                    ts_rank(to_tsvector('french', coalesce(titre,'') || ' ' || coalesce(description_courte,'')),
                            to_tsquery('french', ${tsQuery})) AS rank
@@ -218,14 +220,14 @@ async function searchDemarchesFTS(keywords, limit = 3) {
                   @@ to_tsquery('french', ${tsQuery})
             ORDER BY rank DESC
             LIMIT ${limit}
-        `;
-        return demarches;
+        `);
+        return demarches.rows || demarches;
     } catch (ftsErr) {
         logger.warn({ msg: 'compass.fts_demarches_fallback', error: ftsErr.message });
-        return prisma.demarche.findMany({
-            where: { OR: keywords.map((k) => ({ titre: { contains: k, mode: 'insensitive' } })) },
-            select: { id: true, titre: true, slug: true, description_courte: true, summary_falc: true },
-            take: limit,
+        return db.query.Demarche.findMany({
+            where: or(...keywords.map((k) => ilike(Demarche.titre, `%${k}%`))),
+            columns: { id: true, titre: true, slug: true, description_courte: true, summary_falc: true },
+            limit: limit,
         });
     }
 }
@@ -386,8 +388,7 @@ export default async function handler(req, res) {
 
         // ── 5. Log conversation with enriched metadata ──
         try {
-            await prisma.conversationLog.create({
-                data: {
+            await db.insert(ConversationLog).values({
                     message: trimmed.slice(0, 500),
                     intent: territory ? `compass:${territory}` : 'compass',
                     searchMode: 'compass',
@@ -402,7 +403,6 @@ export default async function handler(req, res) {
                         structures_count: structures.length,
                         demarches_count: demarches.length,
                     },
-                },
             });
         } catch (logErr) {
             log.warn({ msg: 'compass.log_write_failed', error: logErr.message, requestId });

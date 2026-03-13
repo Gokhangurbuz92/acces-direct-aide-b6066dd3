@@ -184,7 +184,7 @@ async function handler(req, res) {
     }
 
     // 2. Search / List
-    const { items, total } = await searchStructures(prisma, effectiveParams);
+    const { items, total } = await searchStructures(effectiveParams);
 
     // Enrich items with description_courte if missing
     const enrichedItems = items.map(enrichDescription);

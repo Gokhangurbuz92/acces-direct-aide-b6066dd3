@@ -1,6 +1,6 @@
 import logger from '../../_utils/logger.js';
 import { randomUUID } from 'crypto';
-import prisma from '../../_utils/prisma.js';
+import { db } from '../../../src/db/index.js';
 import { env } from '../../_utils/env.js';
 import { applyNoIndex } from '../../_utils/robots.js';
 
@@ -65,9 +65,9 @@ export default async function handler(req, res) {
 
   try {
     const latest = await withTimeout(
-      prisma.sourceDocument.findFirst({
-        orderBy: { fetched_at: 'desc' },
-        select: { fetched_at: true },
+      db.query.SourceDocument.findFirst({
+        orderBy: (sd, { desc }) => [desc(sd.fetched_at)],
+        columns: { fetched_at: true },
       }),
       TIMEOUT_MS,
     );

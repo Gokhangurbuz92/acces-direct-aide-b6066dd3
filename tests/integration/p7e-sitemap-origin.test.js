@@ -1,6 +1,8 @@
 import { afterEach, describe, expect, it } from 'vitest';
 import sitemapHandler from '../../api/_handlers/sitemap.js';
-import prisma from '../../api/_utils/prisma.js';
+import { db } from '../../src/db/index.js';
+import * as schema from '../../src/db/schema.js';
+import { eq, sql } from 'drizzle-orm';
 
 const ORIGINAL_VERCEL_ENV = process.env.VERCEL_ENV;
 
@@ -59,8 +61,8 @@ afterEach(() => {
 describe('P7-E sitemap canonical origin', () => {
   it('forces www canonical origin in production regardless of incoming host', async () => {
     process.env.VERCEL_ENV = 'production';
-    const originalFindMany = prisma.aide.findMany;
-    prisma.aide.findMany = async () => [{ slug: 'aide-prod', updatedAt: new Date('2026-01-01T00:00:00.000Z') }];
+    const originalFindMany = db.query.Aide.findMany;
+    db.query.Aide.findMany = async () => [{ slug: 'aide-prod', updatedAt: new Date('2026-01-01T00:00:00.000Z') }];
 
     try {
       const req = createReq({
@@ -76,14 +78,14 @@ describe('P7-E sitemap canonical origin', () => {
       expect(String(res.body)).toContain('<loc>https://www.accesdirectaide.fr/</loc>');
       expect(String(res.body)).toContain('<loc>https://www.accesdirectaide.fr/aides/aide-prod</loc>');
     } finally {
-      prisma.aide.findMany = originalFindMany;
+      db.query.Aide.findMany = originalFindMany;
     }
   });
 
   it('uses request origin in preview/dev environments', async () => {
     process.env.VERCEL_ENV = 'preview';
-    const originalFindMany = prisma.aide.findMany;
-    prisma.aide.findMany = async () => [{ slug: 'aide-preview', updatedAt: new Date('2026-01-01T00:00:00.000Z') }];
+    const originalFindMany = db.query.Aide.findMany;
+    db.query.Aide.findMany = async () => [{ slug: 'aide-preview', updatedAt: new Date('2026-01-01T00:00:00.000Z') }];
 
     try {
       const req = createReq({
@@ -99,7 +101,7 @@ describe('P7-E sitemap canonical origin', () => {
       expect(String(res.body)).toContain('<loc>https://preview-accesdirectaide.vercel.app/</loc>');
       expect(String(res.body)).toContain('<loc>https://preview-accesdirectaide.vercel.app/aides/aide-preview</loc>');
     } finally {
-      prisma.aide.findMany = originalFindMany;
+      db.query.Aide.findMany = originalFindMany;
     }
   });
 });

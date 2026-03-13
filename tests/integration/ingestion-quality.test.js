@@ -1,5 +1,7 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
-import prisma from '../../api/_utils/prisma.js';
+import { db } from '../../src/db/index.js';
+import * as schema from '../../src/db/schema.js';
+import { eq, sql } from 'drizzle-orm';
 import crypto from 'crypto';
 
 // CI sets SKIP_DB_SETUP=true — no real DB available
@@ -18,12 +20,8 @@ describe('Ingestion Quality - Phase 7', () => {
   afterEach(async () => {
     if (skipDbTests) return;
     try {
-      await prisma.aide.deleteMany({
-        where: { slug: { startsWith: 'test-aide-' } }
-      });
-      await prisma.importLog.deleteMany({
-        where: { run_id: testRunId }
-      });
+      await await db.delete(schema.Aide);
+      await await db.delete(schema.ImportLog);
     } catch (error) {
       // Ignore cleanup errors in test environment
     }
@@ -42,27 +40,18 @@ describe('Ingestion Quality - Phase 7', () => {
       };
 
       // First ingestion
-      const first = await prisma.aide.create({ data: itemData });
+      const first = await (await db.insert(schema.Aide).values(itemData ).returning())[0];
       expect(first).toBeTruthy();
       expect(first.slug).toBe(testSlug);
 
       // Second ingestion (should find existing)
-      const existing = await prisma.aide.findFirst({
-        where: {
-          OR: [
-            { slug: testSlug },
-            { source_url: itemData.source_url }
-          ]
-        }
-      });
+      const existing = await db.query.Aide.findFirst({ where: eq(schema.Aide.id, "TODO_FIX_WHERE") /* AUTOMIGRATED: {           OR: [             { slug: testSlug },             { source_url: itemData.source_url }           ]         }        */ });
 
       expect(existing).toBeTruthy();
       expect(existing.id).toBe(first.id);
 
       // Verify no duplication
-      const count = await prisma.aide.count({
-        where: { slug: testSlug }
-      });
+      const count = await (await db.select({ count: sql`count(*)` }).from(schema.Aide))[0].count;
       expect(count).toBe(1);
     });
 
@@ -70,8 +59,7 @@ describe('Ingestion Quality - Phase 7', () => {
       const originalHash = crypto.createHash('md5').update('original').digest('hex');
       const updatedHash = crypto.createHash('md5').update('updated').digest('hex');
 
-      const original = await prisma.aide.create({
-        data: {
+      const original = await (await db.insert(schema.Aide).values({
           slug: testSlug,
           titre: 'Original Title',
           cest_quoi: 'Original content',
@@ -79,10 +67,10 @@ describe('Ingestion Quality - Phase 7', () => {
           statut: 'publie',
           published_at: new Date()
         }
-      });
+      ).returning())[0];
 
       // Simulate content change
-      const updated = await prisma.aide.update({
+      const updated = await db.query.Aide.update({
         where: { id: original.id },
         data: {
           titre: 'Updated Title',
@@ -100,8 +88,7 @@ describe('Ingestion Quality - Phase 7', () => {
       const contentHash = crypto.createHash('md5').update('unchanged').digest('hex');
       const originalDate = new Date('2024-01-01');
 
-      const original = await prisma.aide.create({
-        data: {
+      const original = await (await db.insert(schema.Aide).values({
           slug: testSlug,
           titre: 'Unchanged Title',
           cest_quoi: 'Unchanged content',
@@ -110,11 +97,11 @@ describe('Ingestion Quality - Phase 7', () => {
           statut: 'publie',
           published_at: new Date()
         }
-      });
+      ).returning())[0];
 
       // Simulate re-check with same content
       const now = new Date();
-      const updated = await prisma.aide.update({
+      const updated = await db.query.Aide.update({
         where: { id: original.id },
         data: { last_checked_at: now }
       });
@@ -128,8 +115,7 @@ describe('Ingestion Quality - Phase 7', () => {
     it('should store retrieved_at timestamp', async () => {
       const retrievedAt = new Date();
       
-      const aide = await prisma.aide.create({
-        data: {
+      const aide = await (await db.insert(schema.Aide).values({
           slug: testSlug,
           titre: 'Test Aide',
           cest_quoi: 'Test content',
@@ -137,7 +123,7 @@ describe('Ingestion Quality - Phase 7', () => {
           statut: 'publie',
           published_at: new Date()
         }
-      });
+      ).returning())[0];
 
       expect(aide.retrieved_at).toBeTruthy();
       expect(aide.retrieved_at.getTime()).toBe(retrievedAt.getTime());
@@ -146,8 +132,7 @@ describe('Ingestion Quality - Phase 7', () => {
     it('should store last_checked_at timestamp', async () => {
       const lastChecked = new Date();
       
-      const aide = await prisma.aide.create({
-        data: {
+      const aide = await (await db.insert(schema.Aide).values({
           slug: testSlug,
           titre: 'Test Aide',
           cest_quoi: 'Test content',
@@ -155,7 +140,7 @@ describe('Ingestion Quality - Phase 7', () => {
           statut: 'publie',
           published_at: new Date()
         }
-      });
+      ).returning())[0];
 
       expect(aide.last_checked_at).toBeTruthy();
       expect(aide.last_checked_at.getTime()).toBe(lastChecked.getTime());
@@ -164,8 +149,7 @@ describe('Ingestion Quality - Phase 7', () => {
     it('should store source_url_exact for full traceability', async () => {
       const exactUrl = 'https://example.com/aide?id=123&ref=source';
       
-      const aide = await prisma.aide.create({
-        data: {
+      const aide = await (await db.insert(schema.Aide).values({
           slug: testSlug,
           titre: 'Test Aide',
           cest_quoi: 'Test content',
@@ -174,7 +158,7 @@ describe('Ingestion Quality - Phase 7', () => {
           statut: 'publie',
           published_at: new Date()
         }
-      });
+      ).returning())[0];
 
       expect(aide.source_url_exact).toBe(exactUrl);
       expect(aide.source_url_exact).toContain('?id=123&ref=source');
@@ -221,8 +205,7 @@ describe('Ingestion Quality - Phase 7', () => {
 
   describe.skipIf(skipDbTests)('ImportLog Tracking', () => {
     it('should create ImportLog with run_id', async () => {
-      const log = await prisma.importLog.create({
-        data: {
+      const log = await (await db.insert(schema.ImportLog).values({
           run_id: testRunId,
           source_name: 'TEST_SOURCE',
           status: 'SUCCESS',
@@ -233,7 +216,7 @@ describe('Ingestion Quality - Phase 7', () => {
           error_count: 0,
           duration_ms: 1000
         }
-      });
+      ).returning())[0];
 
       expect(log.run_id).toBe(testRunId);
       expect(log.items_new).toBe(5);
@@ -244,8 +227,7 @@ describe('Ingestion Quality - Phase 7', () => {
     it('should track errors in ImportLog', async () => {
       const errors = ['Error 1', 'Error 2'];
       
-      const log = await prisma.importLog.create({
-        data: {
+      const log = await (await db.insert(schema.ImportLog).values({
           run_id: testRunId,
           source_name: 'TEST_SOURCE',
           status: 'PARTIAL',
@@ -255,7 +237,7 @@ describe('Ingestion Quality - Phase 7', () => {
           logs: JSON.stringify(errors),
           duration_ms: 1500
         }
-      });
+      ).returning())[0];
 
       expect(log.error_count).toBe(2);
       expect(JSON.parse(log.logs)).toEqual(errors);

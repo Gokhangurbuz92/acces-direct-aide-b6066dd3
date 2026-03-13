@@ -15,7 +15,9 @@ import logger from '../../_utils/logger.js';
  *   OUTLOOK_TOKEN_ENCRYPTION_KEY
  */
 
-import prisma from '../../_utils/prisma.js';
+import { db } from '../../../src/db/index.js';
+import { ProUser, ProOutlookToken, Structure, AuditLog } from '../../../src/db/schema.js';
+import { eq } from 'drizzle-orm';
 import { env } from '../../_utils/env.js';
 import { encryptToken, isVaultReady } from '../../_utils/vault.js';
 
@@ -94,9 +96,9 @@ export default async function handler(req, res) {
         let proUserId = null;
 
         if (structureId) {
-            const proUser = await prisma.proUser.findFirst({
-                where: { structureId },
-                select: { id: true, email: true },
+            const proUser = await db.query.ProUser.findFirst({
+                where: eq(ProUser.structureId, structureId),
+                columns: { id: true, email: true },
             });
             if (proUser) {
                 proUserId = proUser.id;
@@ -109,47 +111,43 @@ export default async function handler(req, res) {
         }
 
         // 4. Persist encrypted tokens in ProOutlookToken (upsert)
-        await prisma.proOutlookToken.upsert({
-            where: { userId: proUserId },
-            update: {
+        await db.insert(ProOutlookToken).values({
+            userId: proUserId,
+            accessTokenEnc: encryptedAccess.content,
+            refreshTokenEnc: encryptedRefresh.content,
+            iv: encryptedAccess.iv,
+            expiresAt,
+            scope: tokens.scope || '',
+        }).onConflictDoUpdate({
+            target: ProOutlookToken.userId,
+            set: {
                 accessTokenEnc: encryptedAccess.content,
                 refreshTokenEnc: encryptedRefresh.content,
                 iv: encryptedAccess.iv,
                 expiresAt,
                 scope: tokens.scope || '',
-            },
-            create: {
-                userId: proUserId,
-                accessTokenEnc: encryptedAccess.content,
-                refreshTokenEnc: encryptedRefresh.content,
-                iv: encryptedAccess.iv,
-                expiresAt,
-                scope: tokens.scope || '',
-            },
+            }
         });
 
         // 5. Also maintain backward-compatible settings_json on Structure
         if (structureId) {
             try {
-                const structure = await prisma.structure.findUnique({
-                    where: { id: structureId },
-                    select: { id: true, settings_json: true },
+                const structure = await db.query.Structure.findFirst({
+                    where: eq(Structure.id, structureId),
+                    columns: { id: true, settings_json: true },
                 });
                 if (structure) {
                     const existingSettings = (structure.settings_json && typeof structure.settings_json === 'object')
                         ? structure.settings_json
                         : {};
-                    await prisma.structure.update({
-                        where: { id: structureId },
-                        data: {
+                    await db.update(Structure).set({
                             settings_json: {
                                 ...existingSettings,
                                 outlookConnectedAt: new Date().toISOString(),
                                 outlookScopes: tokens.scope || '',
                                 // No longer storing cleartext tokens in settings_json
                             },
-                        },
-                    });
+                    }).where(eq(Structure.id, structureId));
                 }
             } catch (settingsErr) {
                 logger.warn({ msg: 'outlook.settings_update_failed', error: settingsErr.message });
@@ -158,8 +156,7 @@ export default async function handler(req, res) {
 
         // 6. Audit log
         try {
-            await prisma.auditLog.create({
-                data: {
+            await db.insert(AuditLog).values({
                     action: 'OUTLOOK_CONNECTED',
                     entity: 'ProOutlookToken',
                     entity_id: proUserId,
@@ -168,7 +165,6 @@ export default async function handler(req, res) {
                         expiresAt: expiresAt.toISOString(),
                         encrypted: true,
                     },
-                },
             });
         } catch (auditErr) {
             logger.warn({ msg: 'outlook.audit_log_failed', error: auditErr.message });

@@ -3,7 +3,7 @@ import { verifyPassword } from '../../../_utils/user-auth.js';
 import jwt from 'jsonwebtoken';
 import { signProToken, logProAudit } from '../../../_utils/auth.js';
 import { checkRateLimit, getClientIp, getRateLimitStatus } from '../../../_utils/rateLimit.js';
-import { db } from '../../../src/db/index.js';
+import { db } from '../../../../src/db/index.js';
 import { eq } from 'drizzle-orm';
 import { env } from '../../../_utils/env.js';
 /**

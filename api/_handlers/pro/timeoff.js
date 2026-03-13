@@ -1,4 +1,6 @@
-import prisma from '../../_utils/prisma.js';
+import { db } from '../../../src/db/index.js';
+import { ProTimeOff } from '../../../src/db/schema.js';
+import { eq, and, gt, lt, gte, lte, asc } from 'drizzle-orm';
 import { requireProStructureContext } from '../../_utils/auth.js';
 import { withProRdvHandler } from '../../_utils/with-pro-rdv-handler.js';
 
@@ -51,20 +53,15 @@ async function handler(req, res) {
     const from = toDate(req.query.from);
     const to = toDate(req.query.to);
 
-    /** @type {Record<string, any>} */
-    const where = { structureId: proCtx.structureId };
+    const conditions = [eq(ProTimeOff.structureId, proCtx.structureId)];
     if (from || to) {
-      where.startAt = {
-        ...(from ? { lt: to || new Date('2999-01-01T00:00:00.000Z') } : {}),
-      };
-      where.endAt = {
-        ...(to ? { gt: from || new Date('1970-01-01T00:00:00.000Z') } : {}),
-      };
+      if (from) conditions.push(gt(ProTimeOff.endAt, from));
+      if (to) conditions.push(lt(ProTimeOff.startAt, to));
     }
 
-    const items = await prisma.proTimeOff.findMany({
-      where,
-      orderBy: [{ startAt: 'asc' }, { createdAt: 'asc' }],
+    const items = await db.query.ProTimeOff.findMany({
+      where: and(...conditions),
+      orderBy: [asc(ProTimeOff.startAt), asc(ProTimeOff.createdAt)],
     });
 
     return res.status(200).json({ items: items.map(serialize), total: items.length });
@@ -79,14 +76,12 @@ async function handler(req, res) {
     const rangeError = validateRange(startAt, endAt);
     if (rangeError) return res.status(400).json({ error: rangeError });
 
-    const created = await prisma.proTimeOff.create({
-      data: {
+    const [created] = await db.insert(ProTimeOff).values({
         structureId: proCtx.structureId,
         startAt: /** @type {Date} */ (startAt),
         endAt: /** @type {Date} */ (endAt),
         reason: reason || null,
-      },
-    });
+    }).returning();
 
     return res.status(201).json({ ok: true, item: serialize(created) });
   }
@@ -96,7 +91,7 @@ async function handler(req, res) {
     const id = String(req.query.id || body.id || '').trim();
     if (!id) return res.status(400).json({ error: 'id is required' });
 
-    const existing = await prisma.proTimeOff.findUnique({ where: { id } });
+    const existing = await db.query.ProTimeOff.findFirst({ where: eq(ProTimeOff.id, id) });
     if (!existing) return res.status(404).json({ error: 'Time off not found' });
     if (existing.structureId !== proCtx.structureId) return res.status(403).json({ error: 'Forbidden' });
 
@@ -121,14 +116,11 @@ async function handler(req, res) {
       return res.status(200).json({ ok: true, item: serialize(existing) });
     }
 
-    const updated = await prisma.proTimeOff.update({
-      where: { id },
-      data: {
+    const [updated] = await db.update(ProTimeOff).set({
         startAt: /** @type {Date} */ (nextStartAt),
         endAt: /** @type {Date} */ (nextEndAt),
         reason: nextReason || null,
-      },
-    });
+    }).where(eq(ProTimeOff.id, id)).returning();
 
     return res.status(200).json({ ok: true, item: serialize(updated) });
   }
@@ -137,11 +129,11 @@ async function handler(req, res) {
     const id = String(req.query.id || '').trim();
     if (!id) return res.status(400).json({ error: 'id is required' });
 
-    const existing = await prisma.proTimeOff.findUnique({ where: { id } });
+    const existing = await db.query.ProTimeOff.findFirst({ where: eq(ProTimeOff.id, id) });
     if (!existing) return res.status(404).json({ error: 'Time off not found' });
     if (existing.structureId !== proCtx.structureId) return res.status(403).json({ error: 'Forbidden' });
 
-    await prisma.proTimeOff.delete({ where: { id } });
+    await db.delete(ProTimeOff).where(eq(ProTimeOff.id, id));
     return res.status(200).json({ ok: true, id });
   }
 

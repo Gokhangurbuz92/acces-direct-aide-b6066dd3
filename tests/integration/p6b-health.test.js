@@ -1,5 +1,7 @@
 import { describe, it, expect, afterEach, beforeEach } from 'vitest';
-import prisma from '../../api/_utils/prisma.js';
+import { db } from '../../src/db/index.js';
+import * as schema from '../../src/db/schema.js';
+import { eq, sql } from 'drizzle-orm';
 import health from '../../api/_handlers/health.js';
 import healthDeep from '../../api/_handlers/health-deep.js';
 
@@ -50,13 +52,13 @@ describe('P6-B+ Health endpoints', () => {
   beforeEach(async () => {
     delete process.env.CRON_ACTUALITES_STALE_MINUTES;
     delete process.env.CRON_ACTUALITES_FAIL_MINUTES;
-    await prisma.cronRun.deleteMany({ where: { job: 'actualites' } });
+    await await db.delete(schema.CronRun);
   });
 
   afterEach(async () => {
     process.env.CRON_ACTUALITES_STALE_MINUTES = ORIGINAL_STALE;
     process.env.CRON_ACTUALITES_FAIL_MINUTES = ORIGINAL_FAIL;
-    await prisma.cronRun.deleteMany({ where: { job: 'actualites' } });
+    await await db.delete(schema.CronRun);
   });
 
   it('GET /api/health returns minimal ok payload + x-request-id', async () => {
@@ -106,15 +108,14 @@ describe('P6-B+ Health endpoints', () => {
   });
 
   it('GET /api/health/deep reports cron freshness when latest success is recent', async () => {
-    await prisma.cronRun.create({
-      data: {
+    await (await db.insert(schema.CronRun).values({
         job: 'actualites',
         status: 'success',
         startedAt: new Date(),
         finishedAt: new Date(),
         durationMs: 20,
       },
-    });
+    ).returning())[0];
 
     const req = mockReq({
       url: '/api/health/deep',
@@ -138,15 +139,14 @@ describe('P6-B+ Health endpoints', () => {
     process.env.CRON_ACTUALITES_STALE_MINUTES = '1';
     process.env.CRON_ACTUALITES_FAIL_MINUTES = '999';
 
-    await prisma.cronRun.create({
-      data: {
+    await (await db.insert(schema.CronRun).values({
         job: 'actualites',
         status: 'success',
         startedAt: new Date(Date.now() - 5 * 60 * 1000),
         finishedAt: new Date(Date.now() - 5 * 60 * 1000),
         durationMs: 20,
       },
-    });
+    ).returning())[0];
 
     const req = mockReq({
       url: '/api/health/deep',
@@ -171,15 +171,14 @@ describe('P6-B+ Health endpoints', () => {
     process.env.CRON_ACTUALITES_STALE_MINUTES = '1';
     process.env.CRON_ACTUALITES_FAIL_MINUTES = '2';
 
-    await prisma.cronRun.create({
-      data: {
+    await (await db.insert(schema.CronRun).values({
         job: 'actualites',
         status: 'success',
         startedAt: new Date(Date.now() - 10 * 60 * 1000),
         finishedAt: new Date(Date.now() - 10 * 60 * 1000),
         durationMs: 20,
       },
-    });
+    ).returning())[0];
 
     const req = mockReq({
       url: '/api/health/deep',

@@ -3,8 +3,8 @@ import { kv } from '../../../_utils/kv.js';
 import { hashPassword } from '../../../_utils/user-auth.js';
 import { checkRateLimit } from '../../../_utils/rateLimit.js';
 import { logProAudit } from '../../../_utils/auth.js';
-import { db } from '../../../src/db/index.js';
-import { ProUser } from '../../../src/db/schema.js';
+import { db } from '../../../../src/db/index.js';
+import { ProUser } from '../../../../src/db/schema.js';
 import { eq } from 'drizzle-orm';
 /**
  * @param {import('../../../_utils/http-types').ApiRequest} req

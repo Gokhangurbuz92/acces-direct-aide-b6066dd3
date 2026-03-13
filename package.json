@@ -113,6 +113,7 @@
     "dompurify": "^3.3.3",
     "dotenv": "^17.3.1",
     "drizzle-orm": "^0.45.1",
+    "drizzle-zod": "^0.8.3",
     "embla-carousel-react": "^8.5.2",
     "framer-motion": "^12.4.7",
     "input-otp": "^1.4.2",

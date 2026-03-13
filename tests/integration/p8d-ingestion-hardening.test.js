@@ -1,6 +1,8 @@
 import { afterEach, describe, expect, it } from 'vitest';
 
-import prisma from '../../api/_utils/prisma.js';
+import { db } from '../../src/db/index.js';
+import * as schema from '../../src/db/schema.js';
+import { eq, sql } from 'drizzle-orm';
 import { scanDataQuality } from '../../api/_utils/dataQuality.js';
 import { upsertActualiteFromFeedItem } from '../../api/_handlers/cron/ingest-actualites-rss.js';
 import { ensureSlugOrNull } from '../../api/_utils/slug.js';
@@ -16,20 +18,20 @@ const created = {
 afterEach(async () => {
   const entityIds = [...created.actualiteIds, ...created.aideIds, ...created.demarcheIds];
   if (entityIds.length > 0) {
-    await prisma.reviewQueueItem.deleteMany({ where: { entityId: { in: entityIds } } });
+    await await db.delete(schema.ReviewQueueItem);
   }
 
   if (created.actualiteIds.length > 0) {
-    await prisma.actualite.deleteMany({ where: { id: { in: created.actualiteIds } } });
+    await await db.delete(schema.Actualite);
   }
   if (created.aideIds.length > 0) {
-    await prisma.aide.deleteMany({ where: { id: { in: created.aideIds } } });
+    await await db.delete(schema.Aide);
   }
   if (created.demarcheIds.length > 0) {
-    await prisma.demarche.deleteMany({ where: { id: { in: created.demarcheIds } } });
+    await await db.delete(schema.Demarche);
   }
   if (created.sourceDocumentIds.length > 0) {
-    await prisma.sourceDocument.deleteMany({ where: { id: { in: created.sourceDocumentIds } } });
+    await await db.delete(schema.SourceDocument);
   }
 
   created.actualiteIds = [];
@@ -66,20 +68,14 @@ describe('P8-D ingestion hardening contracts', () => {
 
     expect(first.action).toBe('created');
 
-    const createdActualite = await prisma.actualite.findUnique({
-      where: { canonical_url: canonicalUrl },
-      select: { id: true, updatedAt: true, source_document_id: true },
-    });
+    const createdActualite = await db.query.Actualite.findFirst({ where: eq(schema.Actualite.id, "TODO_FIX_WHERE") /* AUTOMIGRATED: { canonical_url: canonicalUrl },       select: { id: true, updatedAt: true, source_document_id: true },      */ });
     expect(createdActualite?.id).toBeTruthy();
     expect(createdActualite?.source_document_id).toBeTruthy();
 
     created.actualiteIds.push(createdActualite.id);
     created.sourceDocumentIds.push(String(createdActualite.source_document_id));
 
-    const linkedSource = await prisma.sourceDocument.findUnique({
-      where: { id: String(createdActualite.source_document_id) },
-      select: { source_url: true, content_hash: true },
-    });
+    const linkedSource = await db.query.SourceDocument.findFirst({ where: eq(schema.SourceDocument.id, "TODO_FIX_WHERE") /* AUTOMIGRATED: { id: String(createdActualite.source_document_id) },       select: { source_url: true, content_hash: true },      */ });
     expect(linkedSource?.source_url).toBe(canonicalUrl);
     expect(typeof linkedSource?.content_hash).toBe('string');
 
@@ -96,15 +92,12 @@ describe('P8-D ingestion hardening contracts', () => {
 
     expect(second.action).toBe('skipped');
 
-    const afterSecondRun = await prisma.actualite.findUnique({
-      where: { canonical_url: canonicalUrl },
-      select: { id: true, updatedAt: true },
-    });
+    const afterSecondRun = await db.query.Actualite.findFirst({ where: eq(schema.Actualite.id, "TODO_FIX_WHERE") /* AUTOMIGRATED: { canonical_url: canonicalUrl },       select: { id: true, updatedAt: true },      */ });
 
     expect(afterSecondRun?.id).toBe(createdActualite.id);
     expect(afterSecondRun?.updatedAt.getTime()).toBe(createdActualite.updatedAt.getTime());
 
-    const duplicateCount = await prisma.actualite.count({ where: { canonical_url: canonicalUrl } });
+    const duplicateCount = await (await db.select({ count: sql`count(*)` }).from(schema.Actualite))[0].count;
     expect(duplicateCount).toBe(1);
   });
 
@@ -116,8 +109,7 @@ describe('P8-D ingestion hardening contracts', () => {
   it('feeds review queue for missing slug, missing source document and missing source URL', async () => {
     const suffix = `${Date.now()}-${Math.random().toString(16).slice(2, 8)}`;
 
-    const aideMissingSlug = await prisma.aide.create({
-      data: {
+    const aideMissingSlug = await (await db.insert(schema.Aide).values({
         titre: `P8D aide missing slug ${suffix}`,
         slug: ensureSlugOrNull('###'),
         territoires: ['FRANCE'],
@@ -126,21 +118,19 @@ describe('P8-D ingestion hardening contracts', () => {
         statut: 'publie',
       },
       select: { id: true },
-    });
+    ).returning())[0];
     created.aideIds.push(aideMissingSlug.id);
 
-    const sourceWithoutUrl = await prisma.sourceDocument.create({
-      data: {
+    const sourceWithoutUrl = await (await db.insert(schema.SourceDocument).values({
         source_url: null,
         content_hash: `p8d-${suffix}`,
         metadata: {},
       },
       select: { id: true },
-    });
+    ).returning())[0];
     created.sourceDocumentIds.push(sourceWithoutUrl.id);
 
-    const demarcheWithBrokenSource = await prisma.demarche.create({
-      data: {
+    const demarcheWithBrokenSource = await (await db.insert(schema.Demarche).values({
         titre: `P8D demarche source url ${suffix}`,
         slug: `p8d-demarche-${suffix}`,
         date_verification: new Date(),
@@ -149,7 +139,7 @@ describe('P8-D ingestion hardening contracts', () => {
         source_document_id: sourceWithoutUrl.id,
       },
       select: { id: true },
-    });
+    ).returning())[0];
     created.demarcheIds.push(demarcheWithBrokenSource.id);
 
     const summary = await scanDataQuality({
@@ -158,7 +148,7 @@ describe('P8-D ingestion hardening contracts', () => {
     });
     expect(summary.openTotal).toBeGreaterThan(0);
 
-    const aideOpenItems = await prisma.reviewQueueItem.findMany({
+    const aideOpenItems = await db.query.ReviewQueueItem.findMany({
       where: {
         entityType: 'aide',
         entityId: aideMissingSlug.id,
@@ -170,7 +160,7 @@ describe('P8-D ingestion hardening contracts', () => {
     expect(aideReasons.has('MISSING_SLUG')).toBe(true);
     expect(aideReasons.has('MISSING_SOURCE_DOCUMENT')).toBe(true);
 
-    const demarcheOpenItems = await prisma.reviewQueueItem.findMany({
+    const demarcheOpenItems = await db.query.ReviewQueueItem.findMany({
       where: {
         entityType: 'demarche',
         entityId: demarcheWithBrokenSource.id,

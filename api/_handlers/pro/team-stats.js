@@ -1,6 +1,8 @@
 import logger from '../../_utils/logger.js';
 // @ts-nocheck
-import prisma from '../../_utils/prisma.js';
+import { db } from '../../../src/db/index.js';
+import { ProUser, ProAppointment, RdvConversation } from '../../../src/db/schema.js';
+import { eq, and, gte, lt, not, isNotNull, count } from 'drizzle-orm';
 import { AUTH_ROLE, requireProRole, requireProStructureContext } from '../../_utils/auth.js';
 
 /**
@@ -29,9 +31,9 @@ async function handler(req, res) {
         tomorrow.setDate(tomorrow.getDate() + 1);
 
         // 2. Team members with appointment counts
-        const members = await prisma.proUser.findMany({
-            where: { structureId },
-            select: {
+        const members = await db.query.ProUser.findMany({
+            where: eq(ProUser.structureId, structureId),
+            columns: {
                 id: true,
                 email: true,
                 role: true,
@@ -41,34 +43,38 @@ async function handler(req, res) {
         });
 
         // 3. Today's appointments for the whole structure
-        const appointmentsToday = await prisma.proAppointment.count({
-            where: {
-                structureId,
-                startAt: { gte: today, lt: tomorrow },
-                status: { not: 'cancelled' },
-            },
-        });
+        const appointmentsTodayRes = await db.select({ count: count() }).from(ProAppointment).where(
+            and(
+                eq(ProAppointment.structureId, structureId),
+                gte(ProAppointment.startAt, today),
+                lt(ProAppointment.startAt, tomorrow),
+                not(eq(ProAppointment.status, 'cancelled'))
+            )
+        );
+        const appointmentsToday = appointmentsTodayRes[0].count;
 
         // 4. Total upcoming appointments
-        const appointmentsUpcoming = await prisma.proAppointment.count({
-            where: {
-                structureId,
-                startAt: { gte: today },
-                status: { not: 'cancelled' },
-            },
-        });
+        const appointmentsUpcomingRes = await db.select({ count: count() }).from(ProAppointment).where(
+            and(
+                eq(ProAppointment.structureId, structureId),
+                gte(ProAppointment.startAt, today),
+                not(eq(ProAppointment.status, 'cancelled'))
+            )
+        );
+        const appointmentsUpcoming = appointmentsUpcomingRes[0].count;
 
         // 5. Per-member appointment counts (upcoming)
-        const memberStats = await prisma.proAppointment.groupBy({
-            by: ['createdByProUserId'],
-            where: {
-                structureId,
-                startAt: { gte: today },
-                status: { not: 'cancelled' },
-                createdByProUserId: { not: null },
-            },
-            _count: { id: true },
-        });
+        const memberStats = await db.select({
+            createdByProUserId: ProAppointment.createdByProUserId,
+            _count: { id: count() }
+        }).from(ProAppointment).where(
+            and(
+                eq(ProAppointment.structureId, structureId),
+                gte(ProAppointment.startAt, today),
+                not(eq(ProAppointment.status, 'cancelled')),
+                isNotNull(ProAppointment.createdByProUserId)
+            )
+        ).groupBy(ProAppointment.createdByProUserId);
 
         const memberCountMap = {};
         for (const stat of memberStats) {
@@ -78,12 +84,13 @@ async function handler(req, res) {
         }
 
         // 6. Active conversations count
-        const conversationsActive = await prisma.rdvConversation.count({
-            where: {
-                structureId,
-                lastMessageAt: { gte: new Date(Date.now() - 7 * 86400000) },
-            },
-        });
+        const conversationsActiveRes = await db.select({ count: count() }).from(RdvConversation).where(
+            and(
+                eq(RdvConversation.structureId, structureId),
+                gte(RdvConversation.lastMessageAt, new Date(Date.now() - 7 * 86400000))
+            )
+        );
+        const conversationsActive = conversationsActiveRes[0].count;
 
         // 7. Build response
         const enrichedMembers = members.map((m) => ({

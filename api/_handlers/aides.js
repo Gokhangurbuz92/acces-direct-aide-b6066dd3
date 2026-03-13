@@ -161,7 +161,7 @@ async function handler(req, res) {
         });
 
         // Ensure ONLY ONE declaration of items/total
-        const { items, total, facets } = await searchAides(prisma, effectiveParams);
+        const { items, total, facets } = await searchAides(effectiveParams);
 
         logger.info('SEARCH_AIDES_SUCCESS', {
             requestId,

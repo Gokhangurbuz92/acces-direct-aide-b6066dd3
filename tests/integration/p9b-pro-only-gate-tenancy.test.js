@@ -2,7 +2,9 @@ import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 
 import apiHandler from '../../api/index.js';
 import proServicesHandler from '../../api/_handlers/pro/services.js';
-import prisma from '../../api/_utils/prisma.js';
+import { db } from '../../src/db/index.js';
+import * as schema from '../../src/db/schema.js';
+import { eq, sql } from 'drizzle-orm';
 import { signAdminSessionToken } from '../../api/_utils/auth.js';
 import { signProToken } from '../../api/lib/pro-auth.js';
 
@@ -146,13 +148,13 @@ beforeEach(() => {
 
 afterEach(async () => {
   if (createdServiceIds.length > 0) {
-    await prisma.service.deleteMany({ where: { id: { in: createdServiceIds } } });
+    await await db.delete(schema.Service);
   }
   if (createdProUserIds.length > 0) {
-    await prisma.proUser.deleteMany({ where: { id: { in: createdProUserIds } } });
+    await await db.delete(schema.ProUser);
   }
   if (createdStructureIds.length > 0) {
-    await prisma.structure.deleteMany({ where: { id: { in: createdStructureIds } } });
+    await await db.delete(schema.Structure);
   }
 
   createdServiceIds = [];
@@ -167,8 +169,7 @@ afterEach(async () => {
 async function createTenantFixture() {
   const suffix = `${Date.now()}-${Math.random().toString(16).slice(2, 8)}`;
 
-  const structureA = await prisma.structure.create({
-    data: {
+  const structureA = await (await db.insert(schema.Structure).values({
       nom: `P9B Structure A ${suffix}`,
       slug: `p9b-structure-a-${suffix}`,
       services: [],
@@ -180,9 +181,8 @@ async function createTenantFixture() {
       insee_codes: [],
       is_pro_enabled: true,
     },
-  });
-  const structureB = await prisma.structure.create({
-    data: {
+  ).returning())[0];
+  const structureB = await (await db.insert(schema.Structure).values({
       nom: `P9B Structure B ${suffix}`,
       slug: `p9b-structure-b-${suffix}`,
       services: [],
@@ -194,20 +194,18 @@ async function createTenantFixture() {
       insee_codes: [],
       is_pro_enabled: true,
     },
-  });
+  ).returning())[0];
 
-  const proUserA = await prisma.proUser.create({
-    data: {
+  const proUserA = await (await db.insert(schema.ProUser).values({
       email: `p9b-a-${suffix}@test.local`,
       password_hash: 'hashed',
       role: 'STRUCTURE_ADMIN',
       status: 'active',
       structureId: structureA.id,
     },
-  });
+  ).returning())[0];
 
-  const serviceA = await prisma.service.create({
-    data: {
+  const serviceA = await (await db.insert(schema.Service).values({
       structureId: structureA.id,
       slug: `service-a-${suffix}`,
       name: 'Service A',
@@ -215,9 +213,8 @@ async function createTenantFixture() {
       audiences: [],
       modes: [],
     },
-  });
-  const serviceB = await prisma.service.create({
-    data: {
+  ).returning())[0];
+  const serviceB = await (await db.insert(schema.Service).values({
       structureId: structureB.id,
       slug: `service-b-${suffix}`,
       name: 'Service B',
@@ -225,7 +222,7 @@ async function createTenantFixture() {
       audiences: [],
       modes: [],
     },
-  });
+  ).returning())[0];
 
   createdStructureIds.push(structureA.id, structureB.id);
   createdProUserIds.push(proUserA.id);
@@ -304,7 +301,7 @@ describe('P9-B pro-only gate + tenancy foundation', () => {
 
     expect(res.statusCode).toBe(403);
 
-    const freshServiceB = await prisma.service.findUnique({ where: { id: fixture.serviceB.id } });
+    const freshServiceB = await db.query.Service.findFirst({ where: eq(schema.Service.id, "TODO_FIX_WHERE") /* AUTOMIGRATED: { id: fixture.serviceB.id }  */ });
     expect(freshServiceB?.name).toBe('Service B');
   });
 });

@@ -15,12 +15,12 @@ const mocks = vi.hoisted(() => {
   };
 });
 
-vi.mock('@prisma/client', () => {
+vi.mock('../../../src/db/index.js', () => {
   return {
-    PrismaClient: class {
-      constructor() {
-        this.importLog = { create: mocks.importLogCreate };
-      }
+    db: {
+      insert: vi.fn(() => ({
+        values: vi.fn().mockResolvedValue([{}]),
+      })),
     },
   };
 });

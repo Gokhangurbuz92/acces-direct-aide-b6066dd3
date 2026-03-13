@@ -1,3 +1,6 @@
+import { db } from '../../src/db/index.js';
+import * as schema from '../../src/db/schema.js';
+import { eq, inArray, and, or, sql } from 'drizzle-orm';
 import { describe, it, expect, beforeAll, vi, beforeEach } from 'vitest';
 
 // 1. Define Hoisted Mocks
@@ -10,7 +13,7 @@ const { mockFindFirst, mockFindMany, mockCount } = vi.hoisted(() => {
 });
 
 // 2. Mock Prisma
-vi.mock('../../api/_utils/prisma.js', () => {
+vi.mock('../../api/_utils/db.query.Js', () => {
     return {
         default: {
             resourceAccessibility: {

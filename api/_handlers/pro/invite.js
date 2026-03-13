@@ -1,5 +1,7 @@
 import logger from '../../_utils/logger.js';
-import prisma from '../../_utils/prisma.js';
+import { db } from '../../../src/db/index.js';
+import { ProUser, Invitation } from '../../../src/db/schema.js';
+import { eq, and, isNull } from 'drizzle-orm';
 import { ROLE, logProAudit } from '../../_utils/auth.js';
 import { AUTH_ROLE, requireProRole, requireProStructureContext } from '../../_utils/auth.js';
 import crypto from 'crypto';
@@ -28,15 +30,19 @@ async function handler(req, res) {
         }
 
         try {
-            const invitation = await prisma.invitation.findFirst({
-                where: { id: invitationId, structureId, used_at: null },
+            const invitation = await db.query.Invitation.findFirst({
+                where: and(
+                    eq(Invitation.id, invitationId),
+                    eq(Invitation.structureId, structureId),
+                    isNull(Invitation.used_at)
+                )
             });
 
             if (!invitation) {
                 return res.status(404).json({ error: 'Invitation introuvable.' });
             }
 
-            await prisma.invitation.delete({ where: { id: invitationId } });
+            await db.delete(Invitation).where(eq(Invitation.id, invitationId));
 
             await logProAudit('INVITATION_CANCELLED', userId, structureId, {
                 email: invitation.email,
@@ -57,7 +63,9 @@ async function handler(req, res) {
 
     try {
         // Check if user already exists in structure
-        const existing = await prisma.proUser.findFirst({ where: { structureId, email } });
+        const existing = await db.query.ProUser.findFirst({
+            where: and(eq(ProUser.structureId, structureId), eq(ProUser.email, email))
+        });
         if (existing) {
             return res.status(400).json({ error: "User already in team" });
         }
@@ -65,15 +73,13 @@ async function handler(req, res) {
         const token = crypto.randomBytes(32).toString('hex');
         const expires_at = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000); // 7 days
 
-        const invitation = await prisma.invitation.create({
-            data: {
+        const [invitation] = await db.insert(Invitation).values({
                 structureId,
                 email,
                 role: inviteRole || ROLE.PRO,
                 token,
                 expires_at
-            }
-        });
+        }).returning();
 
         // Mock sending email (token intentionally redacted in logs)
         logger.info(`[MOCK EMAIL] Invitation sent to ${email} with token [REDACTED]`);

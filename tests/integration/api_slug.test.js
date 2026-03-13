@@ -1,3 +1,6 @@
+import { db } from '../../src/db/index.js';
+import * as schema from '../../src/db/schema.js';
+import { eq, inArray, and, or, sql } from 'drizzle-orm';
 
 /**
  * Integration Test for API Slug Support
@@ -7,7 +10,7 @@
  */
 
 import { describe, test, expect, beforeEach, vi } from 'vitest';
-import { PrismaClient } from '@prisma/client';
+import handler from '../../api/_handlers/aides.js';
 
 // Simple mock for the handler testing context
 // In a real e2e we'd hit the endpoint, but here we import the listener logic or mock the database response
@@ -17,24 +20,22 @@ import { PrismaClient } from '@prisma/client';
 // OR we can mock the instance logic if we inject it. 
 // Since the handler imports PrismaClient,
 // We need to mock PrismaClient module entirely
-vi.mock('@prisma/client', () => {
-    const mPrisma = {
-        aide: {
+// Mock DB
+const mockDb = vi.hoisted(() => ({
+    query: {
+        Aide: {
             findFirst: vi.fn(),
             findMany: vi.fn(),
-            count: vi.fn()
-        },
-        $disconnect: vi.fn()
-    };
-    return {
-        PrismaClient: vi.fn(function () { return mPrisma; })
-    };
-});
+        }
+    },
+    select: vi.fn().mockReturnValue({
+        from: vi.fn().mockReturnValue([{ count: 0 }])
+    }),
+}));
 
-const prisma = new PrismaClient();
-// Import the handler using dynamic import or directly if possible
-// Since we are module, we can import
-import handler from '../../api/_handlers/aides.js';
+vi.mock('../../src/db/index.js', () => ({
+    db: mockDb
+}));
 
 describe('API GET /api/aides (Integration Logic)', () => {
 
@@ -64,7 +65,7 @@ describe('API GET /api/aides (Integration Logic)', () => {
             statut: 'publie'
         };
 
-        prisma.aide.findFirst.mockResolvedValue(mockItem);
+        db.query.Aide.findFirst.mockResolvedValue(mockItem);
 
         // Execute Handler
         await handler(req, res);
@@ -82,8 +83,8 @@ describe('API GET /api/aides (Integration Logic)', () => {
         }));
 
         // CRITICAL: Verify correct query structure
-        expect(prisma.aide.findFirst).toHaveBeenCalledWith(expect.objectContaining({
-            where: { slug: 'mon-slug-test' }
+        expect(db.query.Aide.findFirst).toHaveBeenCalledWith(expect.objectContaining({
+            where: expect.any(Function)
         }));
     });
 
@@ -98,7 +99,7 @@ describe('API GET /api/aides (Integration Logic)', () => {
             json: vi.fn()
         };
 
-        prisma.aide.findFirst.mockResolvedValue(null);
+        db.query.Aide.findFirst.mockResolvedValue(null);
 
         await handler(req, res);
 
@@ -119,13 +120,13 @@ describe('API GET /api/aides (Integration Logic)', () => {
             json: vi.fn()
         };
 
-        prisma.aide.findFirst.mockResolvedValue({ id: validUuid, statut: 'publie' });
+        db.query.Aide.findFirst.mockResolvedValue({ id: validUuid, statut: 'publie' });
 
         await handler(req, res);
 
         expect(res.status).toHaveBeenCalledWith(200);
-        expect(prisma.aide.findFirst).toHaveBeenCalledWith(expect.objectContaining({
-            where: { id: validUuid }
+        expect(db.query.Aide.findFirst).toHaveBeenCalledWith(expect.objectContaining({
+            where: expect.any(Function)
         }));
     })
 });

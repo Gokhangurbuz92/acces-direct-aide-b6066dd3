@@ -2,7 +2,7 @@ import logger from '../../_utils/logger.js';
 import { randomUUID } from 'crypto';
 import { getCronAuth, getHeader } from '../../_utils/cronAuth.js';
 import { env } from '../../_utils/env.js';
-import prisma from '../../_utils/prisma.js';
+import { db } from '../../../src/db/index.js';
 import { scanDataQuality } from '../../_utils/dataQuality.js';
 
 /**
@@ -95,7 +95,7 @@ export default async function handler(req, res) {
     const limitPerType = parseLimit(requestedLimit, env.dataQuality.reviewScanCronLimitPerType);
 
     const summary = await scanDataQuality({
-      prismaClient: prisma,
+      db,
       limitPerType,
     });
 

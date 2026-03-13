@@ -1,6 +1,8 @@
 import { checkRateLimit, getClientIp, getRateLimitStatus } from '../../_utils/rateLimit.js';
 import logger from '../../_utils/logger.js';
-import prisma from '../../_utils/prisma.js';
+import { db } from '../../../src/db/index.js';
+import { Aide, Structure, ReviewQueueItem, SharedDiagnostic, ProUser } from '../../../src/db/schema.js';
+import { count, desc, eq } from 'drizzle-orm';
 import { verifyAdmin } from '../../_utils/auth.js';
 
 /**
@@ -41,33 +43,31 @@ export default async function handler(req, res) {
             totalAides,
         ] = await Promise.all([
             // Aids grouped by territorial scope
-            prisma.aide.groupBy({
-                by: ['territory_scope'],
-                _count: { id: true },
-                orderBy: { _count: { id: 'desc' } },
-            }),
+            db.select({
+                territory_scope: Aide.territory_scope,
+                _count: { id: count(Aide.id) }
+            }).from(Aide)
+              .groupBy(Aide.territory_scope)
+              .orderBy(desc(count(Aide.id))),
 
             // Active structures
-            prisma.structure.count({
-                where: { status: 'actif' },
-            }),
+            db.select({ value: count() }).from(Structure).where(eq(Structure.status, 'actif')).then(res => res[0].value),
 
             // Review queue breakdown by status (pending, approved, rejected)
-            prisma.reviewQueueItem.groupBy({
-                by: ['status'],
-                _count: { id: true },
-            }),
+            db.select({
+                status: ReviewQueueItem.status,
+                _count: { id: count(ReviewQueueItem.id) }
+            }).from(ReviewQueueItem)
+              .groupBy(ReviewQueueItem.status),
 
             // Social impact: total shared diagnostics
-            prisma.sharedDiagnostic.count(),
+            db.select({ value: count() }).from(SharedDiagnostic).then(res => res[0].value),
 
             // Active pro users
-            prisma.proUser.count({
-                where: { status: 'active' },
-            }),
+            db.select({ value: count() }).from(ProUser).where(eq(ProUser.status, 'active')).then(res => res[0].value),
 
             // Total aids
-            prisma.aide.count(),
+            db.select({ value: count() }).from(Aide).then(res => res[0].value),
         ]);
 
         return res.status(200).json({

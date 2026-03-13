@@ -3,7 +3,7 @@ import * as dotenv from 'dotenv';
 
 // Load environment variables dynamically depending on the environment
 dotenv.config({ path: '.env' });
-if (process.env.NODE_ENV !== 'production') {
+if (process.env.NODE_ENV !== 'production' && process.env.NODE_ENV !== 'test') {
     dotenv.config({ path: '.env.local', override: true });
 }
 

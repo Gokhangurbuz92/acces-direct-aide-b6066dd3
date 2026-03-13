@@ -1,7 +1,9 @@
 import logger from '../../_utils/logger.js';
 import { env } from '../../_utils/env.js';
 // @ts-nocheck
-import prisma from '../../_utils/prisma.js';
+import { db } from '../../../src/db/index.js';
+import { ProAppointment } from '../../../src/db/schema.js';
+import { eq } from 'drizzle-orm';
 import { logProAudit } from '../../_utils/auth.js';
 import { sendMail } from '../../_utils/mailer.js';
 
@@ -71,11 +73,11 @@ export default async function handler(req, res) {
     }
 
     try {
-        const appointment = await prisma.proAppointment.findUnique({
-            where: { id: appointmentId },
-            include: {
-                service: { select: { label: true, mode: true } },
-                createdByProUser: { select: { firstName: true, lastName: true } },
+        const appointment = await db.query.ProAppointment.findFirst({
+            where: eq(ProAppointment.id, appointmentId),
+            with: {
+                service: { columns: { label: true, mode: true } },
+                createdByProUser: { columns: { firstName: true, lastName: true } },
             },
         });
 
@@ -85,19 +87,13 @@ export default async function handler(req, res) {
 
         if (action === 'unsubscribe') {
             // Remove phone from appointment
-            await prisma.proAppointment.update({
-                where: { id: appointmentId },
-                data: { beneficiaryPhone: null },
-            });
+            await db.update(ProAppointment).set({ beneficiaryPhone: null }).where(eq(ProAppointment.id, appointmentId));
 
             return res.status(200).json({ ok: true, message: 'Rappel SMS désactivé.' });
         }
 
         // Subscribe: store phone on the appointment
-        await prisma.proAppointment.update({
-            where: { id: appointmentId },
-            data: { beneficiaryPhone: phoneNumber.replace(/\s/g, '') },
-        });
+        await db.update(ProAppointment).set({ beneficiaryPhone: phoneNumber.replace(/\s/g, '') }).where(eq(ProAppointment.id, appointmentId));
 
         // Format message for logging (production: send via Twilio)
         const proName = appointment.createdByProUser

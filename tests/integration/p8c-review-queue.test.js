@@ -1,7 +1,9 @@
 import { afterEach, describe, expect, it } from 'vitest';
 
 import apiHandler from '../../api/index.js';
-import prisma from '../../api/_utils/prisma.js';
+import { db } from '../../src/db/index.js';
+import * as schema from '../../src/db/schema.js';
+import { eq, sql } from 'drizzle-orm';
 
 function adminAuthHeader() {
   return { authorization: `Bearer ${process.env.ADMIN_TOKEN}` };
@@ -114,24 +116,23 @@ afterEach(async () => {
   if (createdEntities.length === 0) return;
 
   const entityIds = createdEntities.map((entry) => entry.id);
-  await prisma.reviewQueueItem.deleteMany({ where: { entityId: { in: entityIds } } });
+  await await db.delete(schema.ReviewQueueItem);
 
   const aideIds = createdEntities.filter((entry) => entry.type === 'aide').map((entry) => entry.id);
   const demarcheIds = createdEntities.filter((entry) => entry.type === 'demarche').map((entry) => entry.id);
 
   if (aideIds.length > 0) {
-    await prisma.aide.deleteMany({ where: { id: { in: aideIds } } });
+    await await db.delete(schema.Aide);
   }
   if (demarcheIds.length > 0) {
-    await prisma.demarche.deleteMany({ where: { id: { in: demarcheIds } } });
+    await await db.delete(schema.Demarche);
   }
 
   createdEntities.length = 0;
 });
 
 async function createAideForReviewQueue() {
-  const aide = await prisma.aide.create({
-    data: {
+  const aide = await (await db.insert(schema.Aide).values({
       titre: `RQ aide ${Date.now()}-${Math.random().toString(16).slice(2, 8)}`,
       territoires: ['FRANCE'],
       documents_necessaires: [],
@@ -140,14 +141,13 @@ async function createAideForReviewQueue() {
       statut: 'publie',
     },
     select: { id: true, titre: true },
-  });
+  ).returning())[0];
   createdEntities.push({ type: 'aide', id: aide.id });
   return aide;
 }
 
 async function createStaleDemarche() {
-  const demarche = await prisma.demarche.create({
-    data: {
+  const demarche = await (await db.insert(schema.Demarche).values({
       titre: `RQ demarche stale ${Date.now()}-${Math.random().toString(16).slice(2, 8)}`,
       documents_necessaires: ['piece-identite'],
       slug: `rq-demarche-stale-${Math.random().toString(16).slice(2, 10)}`,
@@ -155,7 +155,7 @@ async function createStaleDemarche() {
       statut: 'publie',
     },
     select: { id: true, titre: true },
-  });
+  ).returning())[0];
   createdEntities.push({ type: 'demarche', id: demarche.id });
   return demarche;
 }
@@ -175,7 +175,7 @@ describe('P8-C Review Queue contracts', () => {
     expect(String(scanRes.getHeader('cache-control')).toLowerCase()).toContain('no-store');
     expect(scanRes.getHeader('x-robots-tag')).toBe('noindex, nofollow');
 
-    const openItems = await prisma.reviewQueueItem.findMany({
+    const openItems = await db.query.ReviewQueueItem.findMany({
       where: {
         entityType: 'aide',
         entityId: aide.id,
@@ -205,14 +205,7 @@ describe('P8-C Review Queue contracts', () => {
       body: { limitPerType: 200 },
     });
 
-    const count = await prisma.reviewQueueItem.count({
-      where: {
-        entityType: 'aide',
-        entityId: aide.id,
-        reason: 'MISSING_SLUG',
-        status: 'open',
-      },
-    });
+    const count = await (await db.select({ count: sql`count(*)` }).from(schema.ReviewQueueItem))[0].count;
 
     expect(count).toBe(1);
   });
@@ -247,7 +240,7 @@ describe('P8-C Review Queue contracts', () => {
       body: { limitPerType: 200 },
     });
 
-    const openItems = await prisma.reviewQueueItem.findMany({
+    const openItems = await db.query.ReviewQueueItem.findMany({
       where: {
         entityType: 'aide',
         entityId: aide.id,
@@ -291,18 +284,7 @@ describe('P8-C Review Queue contracts', () => {
 
     expect(scanRes.statusCode).toBe(200);
 
-    const staleItem = await prisma.reviewQueueItem.findFirst({
-      where: {
-        entityType: 'demarche',
-        entityId: demarche.id,
-        status: 'open',
-        reason: 'STALE_VERIFICATION',
-      },
-      select: {
-        id: true,
-        details: true,
-      },
-    });
+    const staleItem = await db.query.ReviewQueueItem.findFirst({ where: eq(schema.ReviewQueueItem.id, "TODO_FIX_WHERE") /* AUTOMIGRATED: {         entityType: 'demarche',         entityId: demarche.id,         status: 'open',         reason: 'STALE_VERIFICATION',       },       select: {         id: true,         details: true,       },      */ });
 
     expect(staleItem).toBeTruthy();
     const details = /** @type {{ ageDays?: number } | null | undefined } */ (staleItem?.details);

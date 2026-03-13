@@ -1,8 +1,10 @@
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 
 import apiHandler from '../../api/index.js';
-import prisma from '../../api/_utils/prisma.js';
+import { db } from '../../src/db/index.js';
+import * as schema from '../../src/db/schema.js';
 import { signProToken } from '../../api/lib/pro-auth.js';
+import { vi } from 'vitest';
 
 /**
  * @param {{
@@ -104,23 +106,14 @@ async function invokeApi(url, options = {}) {
   return res;
 }
 
-/**
- * @param {unknown} query
- * @returns {string}
- */
 function getSqlFromQuery(query) {
-  return String(
-    query && typeof query === 'object' && Array.isArray(query.strings)
-      ? query.strings.join(' ')
-      : query || '',
-  );
+  return String(query && query.query ? query.query : query || '');
 }
 
 const originalJwtSecret = process.env.JWT_SECRET;
 const originalAdminToken = process.env.ADMIN_TOKEN;
 
-/** @type {typeof prisma.$queryRaw} */
-let originalQueryRaw;
+
 
 /** @type {string[]} */
 let createdStructureIds = [];
@@ -128,19 +121,19 @@ let createdStructureIds = [];
 let createdProUserIds = [];
 
 beforeEach(() => {
+  vi.restoreAllMocks();
   process.env.JWT_SECRET = process.env.JWT_SECRET || 'p10c-test-jwt-secret';
   process.env.ADMIN_TOKEN = process.env.ADMIN_TOKEN || 'p10c-test-admin-token';
-  originalQueryRaw = prisma.$queryRaw;
 });
 
 afterEach(async () => {
-  prisma.$queryRaw = originalQueryRaw;
+  vi.restoreAllMocks();
 
   if (createdProUserIds.length > 0) {
-    await prisma.proUser.deleteMany({ where: { id: { in: createdProUserIds } } });
+    await await db.delete(schema.ProUser);
   }
   if (createdStructureIds.length > 0) {
-    await prisma.structure.deleteMany({ where: { id: { in: createdStructureIds } } });
+    await await db.delete(schema.Structure);
   }
 
   createdStructureIds = [];
@@ -152,8 +145,7 @@ afterEach(async () => {
 
 async function createProFixture(isProEnabled = false) {
   const suffix = `${Date.now()}-${Math.random().toString(16).slice(2, 8)}`;
-  const structure = await prisma.structure.create({
-    data: {
+  const structure = await (await db.insert(schema.Structure).values({
       nom: `P10C Structure ${suffix}`,
       slug: `p10c-structure-${suffix}`,
       services: [],
@@ -165,17 +157,16 @@ async function createProFixture(isProEnabled = false) {
       insee_codes: [],
       is_pro_enabled: isProEnabled,
     },
-  });
+  ).returning())[0];
 
-  const proUser = await prisma.proUser.create({
-    data: {
+  const proUser = await (await db.insert(schema.ProUser).values({
       email: `p10c-${suffix}@test.local`,
       password_hash: 'hashed',
       role: 'STRUCTURE_ADMIN',
       status: 'active',
       structureId: structure.id,
     },
-  });
+  ).returning())[0];
 
   createdStructureIds.push(structure.id);
   createdProUserIds.push(proUser.id);
@@ -215,9 +206,7 @@ describe('P10-C pro rdv publish settings', () => {
       bookingMode: 'IN_PERSON',
     });
 
-    const inDb = await prisma.structureRdvSettings.findUnique({
-      where: { structureId: fixture.structure.id },
-    });
+    const inDb = await db.query.StructureRdvSettings.findFirst({ where: eq(schema.StructureRdvSettings.id, "TODO_FIX_WHERE") /* AUTOMIGRATED: { structureId: fixture.structure.id },      */ });
     expect(inDb).toBeTruthy();
     expect(inDb?.isPublished).toBe(false);
   });
@@ -231,34 +220,34 @@ describe('P10-C pro rdv publish settings', () => {
       role: fixture.proUser.role,
     });
 
-    prisma.$queryRaw = async (query) => {
-      const sql = getSqlFromQuery(query);
+    vi.spyOn(db, 'execute').mockImplementation(async (query) => {
+      const sqlStr = getSqlFromQuery(query);
 
-      if (sql.includes('information_schema.tables')) {
-        return [
+      if (sqlStr.includes('information_schema.tables')) {
+        return { rows: [
           { table_name: 'ProRdvService' },
           { table_name: 'ProAvailabilityRule' },
           { table_name: 'ProAppointment' },
           { table_name: 'ProTimeOff' },
-        ];
+        ]};
       }
 
-      if (sql.includes('to_regclass')) {
-        return [{ migrations_regclass: 'public._prisma_migrations' }];
+      if (sqlStr.includes('to_regclass')) {
+        return { rows: [{ migrations_regclass: 'public._prisma_migrations' }] };
       }
 
-      if (sql.includes('FROM "_prisma_migrations"')) {
-        return [
+      if (sqlStr.includes('FROM "_prisma_migrations"')) {
+        return { rows: [
           {
             migration_name: '20260305000000_add_pro_rdv_core',
             finished_at: new Date(),
             rolled_back_at: null,
           },
-        ];
+        ]};
       }
 
-      return [];
-    };
+      return { rows: [] };
+    });
 
     const res = await invokeApi('/api/pro/rdv/settings', {
       method: 'PUT',
@@ -278,12 +267,10 @@ describe('P10-C pro rdv publish settings', () => {
       contactEmail: 'rdv@test.local',
     });
 
-    const structure = await prisma.structure.findUnique({ where: { id: fixture.structure.id } });
+    const structure = await db.query.Structure.findFirst({ where: eq(schema.Structure.id, "TODO_FIX_WHERE") /* AUTOMIGRATED: { id: fixture.structure.id }  */ });
     expect(structure?.is_pro_enabled).toBe(true);
 
-    const settings = await prisma.structureRdvSettings.findUnique({
-      where: { structureId: fixture.structure.id },
-    });
+    const settings = await db.query.StructureRdvSettings.findFirst({ where: eq(schema.StructureRdvSettings.id, "TODO_FIX_WHERE") /* AUTOMIGRATED: { structureId: fixture.structure.id },      */ });
     expect(settings?.isPublished).toBe(true);
     expect(settings?.bookingMode).toBe('BOTH');
   });
@@ -297,27 +284,27 @@ describe('P10-C pro rdv publish settings', () => {
       role: fixture.proUser.role,
     });
 
-    prisma.$queryRaw = async (query) => {
-      const sql = getSqlFromQuery(query);
+    vi.spyOn(db, 'execute').mockImplementation(async (query) => {
+      const sqlStr = getSqlFromQuery(query);
 
-      if (sql.includes('information_schema.tables')) {
-        return [
+      if (sqlStr.includes('information_schema.tables')) {
+        return { rows: [
           { table_name: 'ProRdvService' },
           { table_name: 'ProAvailabilityRule' },
           { table_name: 'ProAppointment' },
-        ];
+        ]};
       }
 
-      if (sql.includes('to_regclass')) {
-        return [{ migrations_regclass: 'public._prisma_migrations' }];
+      if (sqlStr.includes('to_regclass')) {
+        return { rows: [{ migrations_regclass: 'public._prisma_migrations' }] };
       }
 
-      if (sql.includes('FROM "_prisma_migrations"')) {
-        return [];
+      if (sqlStr.includes('FROM "_prisma_migrations"')) {
+        return { rows: [] };
       }
 
-      return [];
-    };
+      return { rows: [] };
+    });
 
     const res = await invokeApi('/api/pro/rdv/settings', {
       method: 'PUT',
@@ -334,7 +321,7 @@ describe('P10-C pro rdv publish settings', () => {
       missingMigrations: ['20260305000000_add_pro_rdv_core'],
     });
 
-    const structure = await prisma.structure.findUnique({ where: { id: fixture.structure.id } });
+    const structure = await db.query.Structure.findFirst({ where: eq(schema.Structure.id, "TODO_FIX_WHERE") /* AUTOMIGRATED: { id: fixture.structure.id }  */ });
     expect(structure?.is_pro_enabled).toBe(false);
   });
 });

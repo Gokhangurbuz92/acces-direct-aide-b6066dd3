@@ -1,6 +1,8 @@
 import { checkRateLimit, getClientIp, getRateLimitStatus } from '../../_utils/rateLimit.js';
 import logger from '../../_utils/logger.js';
-import prisma from '../../_utils/prisma.js';
+import { db } from '../../../src/db/index.js';
+import { SourceSnapshot } from '../../../src/db/schema.js';
+import { or, gte, eq } from 'drizzle-orm';
 import { verifyAdmin } from '../../_utils/auth.js';
 
 /**
@@ -30,19 +32,16 @@ export default async function handler(req, res) {
         const isBroken = req.query.is_broken === 'true';
         const limit = req.query.limit ? parseInt(req.query.limit, 10) : 100;
 
-        const where = {};
+        const conditions = [];
         
         if (isBroken) {
-            where.OR = [
-                { http_status: { gte: 400 } },
-                { http_status: 0 } // Network errors
-            ];
+            conditions.push(or(gte(SourceSnapshot.http_status, 400), eq(SourceSnapshot.http_status, 0)));
         }
 
-        const results = await prisma.sourceSnapshot.findMany({
-            where,
-            orderBy: { fetched_at: 'desc' },
-            take: limit
+        const results = await db.query.SourceSnapshot.findMany({
+            where: conditions.length ? conditions[0] : undefined,
+            orderBy: (ss, { desc }) => [desc(ss.fetched_at)],
+            limit: limit
         });
 
         // Group by entity for better readability

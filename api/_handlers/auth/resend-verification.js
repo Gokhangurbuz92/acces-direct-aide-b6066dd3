@@ -1,4 +1,6 @@
-import prisma from '../../_utils/prisma.js';
+import { db } from '../../../src/db/index.js';
+import { CitizenUser, AuthToken } from '../../../src/db/schema.js';
+import { eq, and, isNull } from 'drizzle-orm';
 import { checkRateLimit, getRateLimitStatus } from '../../_utils/rateLimit.js';
 import { sendMail } from '../../_utils/mailer.js';
 import {
@@ -40,7 +42,7 @@ export default async function handler(req, res) {
   }
 
   try {
-    const user = await prisma.citizenUser.findUnique({ where: { email } });
+    const user = await db.query.CitizenUser.findFirst({ where: eq(CitizenUser.email, email) });
     if (!user || user.emailVerifiedAt) {
       return res.status(200).json(GENERIC_RESPONSE);
     }
@@ -49,24 +51,21 @@ export default async function handler(req, res) {
     const tokenHash = hashAuthToken(rawToken);
     const expiresAt = new Date(Date.now() + VERIFY_TOKEN_TTL_MS);
 
-    await prisma.$transaction([
-      prisma.authToken.updateMany({
-        where: {
-          userId: user.id,
-          type: 'EMAIL_VERIFY',
-          usedAt: null,
-        },
-        data: { usedAt: new Date() },
-      }),
-      prisma.authToken.create({
-        data: {
+    await db.transaction(async (tx) => {
+      await tx.update(AuthToken).set({ usedAt: new Date() }).where(
+        and(
+          eq(AuthToken.userId, user.id),
+          eq(AuthToken.type, 'EMAIL_VERIFY'),
+          isNull(AuthToken.usedAt)
+        )
+      );
+      await tx.insert(AuthToken).values({
           userId: user.id,
           type: 'EMAIL_VERIFY',
           tokenHash,
           expiresAt,
-        },
-      }),
-    ]);
+      });
+    });
 
     const verifyUrl = buildAppUrl(`/api/auth/verify-email?token=${encodeURIComponent(rawToken)}&next=${encodeURIComponent(nextPath)}`);
     await sendMail({

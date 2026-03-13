@@ -1,5 +1,7 @@
 import logger from '../../../_utils/logger.js';
-import prisma from '../../../_utils/prisma.js';
+import { db } from '../../../../src/db/index.js';
+import { Structure, Service, Appointment, Availability, Beneficiary, ConsentLog, AuditLog } from '../../../../src/db/schema.js';
+import { eq, and, lt, gt, inArray } from 'drizzle-orm';
 import { addMinutes, parseISO } from 'date-fns';
 import { encrypt, hash } from '../../../lib/crypto.js';
 import { checkRateLimit } from '../../../_utils/auth.js'; // Reuse or move to shared
@@ -46,11 +48,14 @@ export default async function handler(req, res) {
 
     try {
         // 3. Fetch Structure & Service
-        const structure = await prisma.structure.findUnique({ where: { slug: structure_slug } });
+        const structure = await db.query.Structure.findFirst({ where: eq(Structure.slug, structure_slug) });
         if (!structure) return res.status(404).json({ error: "Structure not found" });
 
-        const service = await prisma.service.findUnique({
-            where: { structureId_slug: { structureId: structure.id, slug: service_slug } }
+        const service = await db.query.Service.findFirst({
+            where: and(
+                eq(Service.structureId, structure.id),
+                eq(Service.slug, service_slug)
+            )
         });
         if (!service) return res.status(404).json({ error: "Service not found" });
 
@@ -59,15 +64,15 @@ export default async function handler(req, res) {
 
         // 4. Check Availability & Double Booking (Concurrency)
         // Find existing booking
-        await prisma.appointment.findFirst({
-            where: {
-                structureId: structure.id,
+        await db.query.Appointment.findFirst({
+            where: and(
+                eq(Appointment.structureId, structure.id),
                 // Overlap check
                 // (StartA < EndB) and (EndA > StartB)
-                start_at: { lt: endTime },
-                end_at: { gt: startTime },
-                status: { in: ['confirmed', 'locked'] }
-            }
+                lt(Appointment.start_at, endTime),
+                gt(Appointment.end_at, startTime),
+                inArray(Appointment.status, ['confirmed', 'locked'])
+            )
         });
 
         // We need 1 available pro.
@@ -82,8 +87,8 @@ export default async function handler(req, res) {
         // Let's assume we find ONE pro and lock them.
 
         // Get all pros in structure
-        const availabilities = await prisma.availability.findMany({
-            where: { structureId: structure.id }
+        const availabilities = await db.query.Availability.findMany({
+            where: eq(Availability.structureId, structure.id)
         });
 
         let assignedProId = null;
@@ -96,13 +101,13 @@ export default async function handler(req, res) {
             // But we must verify backend side against double booking.
 
             // Check if THIS pro has conflict
-            const conflict = await prisma.appointment.findFirst({
-                where: {
-                    proId: avail.proId,
-                    start_at: { lt: endTime },
-                    end_at: { gt: startTime },
-                    status: { in: ['confirmed', 'locked'] }
-                }
+            const conflict = await db.query.Appointment.findFirst({
+                where: and(
+                    eq(Appointment.proId, avail.proId),
+                    lt(Appointment.start_at, endTime),
+                    gt(Appointment.end_at, startTime),
+                    inArray(Appointment.status, ['confirmed', 'locked'])
+                )
             });
 
             if (!conflict) {
@@ -118,25 +123,23 @@ export default async function handler(req, res) {
 
         // 5. Create Beneficiary
         // Lookup by hash?
-        let ben = await prisma.beneficiary.findFirst({
-            where: { contact_hash: contactHash }
+        let ben = await db.query.Beneficiary.findFirst({
+            where: eq(Beneficiary.contact_hash, contactHash)
         });
 
         if (!ben) {
-            ben = await prisma.beneficiary.create({
-                data: {
+            const [newBen] = await db.insert(Beneficiary).values({
                     contact_encrypted: encrypt(contactRaw),
                     contact_hash: contactHash,
                     first_name_encrypted: beneficiary.firstName ? encrypt(beneficiary.firstName) : null
-                }
-            });
+            }).returning();
+            ben = newBen;
         }
         // If exists, maybe update encrypted contact if needed? 
         // But hash is same, so contact is same.
 
         // 6. Create Locked Appointment
-        const appointment = await prisma.appointment.create({
-            data: {
+        const [appointment] = await db.insert(Appointment).values({
                 structureId: structure.id,
                 serviceId: service.id,
                 proId: assignedProId,
@@ -147,46 +150,24 @@ export default async function handler(req, res) {
                 mode: mode || 'presentiel',
                 lock_expires_at: addMinutes(new Date(), 10), // 10 min lock
                 cancel_token_hash: hash(crypto.randomUUID()) // placeholder, real one in confirm? Or here?
-                // Request flow usually -> Lock -> Confirm email code? 
-                // Prompt: "Reservation step creates locked... confirm within lock window".
-                // "Step 3: Provide contact... Confirmation page".
-                // Doesn't explicitly say "Email verification required to confirm".
-                // But says "Confirmation page + ICS ... + email confirmation (Resend)".
-                // So confirmation is implicit/immediate?
-                // If so, status should be 'confirmed' immediately?
-                // "Reservation step creates Appointment status=locked... confirm within lock window -> confirmed".
-                // Maybe the frontend calls request -> gets ID -> calls confirm?
-                // Let's assume 2-step for safety or captcha. 
-                // Or maybe just ONE step for MVP "Doctolib social"?
-                // "Step 1... Step 2... Step 3 provides contact -> Confirmation."
-                // This implies 1 API call at the end? 
-                // If 1 API call, then we lock+confirm in one go?
-                // But prompt says "Reservation step creates locked... confirm...".
-                // This implies /request returns an ID, then frontend calls /confirm immediately?
-                // I will return the ID and require /confirm call to finalizing status to 'confirmed'.
-            }
-        });
+        }).returning();
 
         // 7. Log Consent
-        await prisma.consentLog.create({
-            data: {
+        await db.insert(ConsentLog).values({
                 policy_version: 'v1',
                 policy_hash: 'hash-of-policy-text',
                 subject_type: 'beneficiary',
                 subject_id: ben.id
-            }
         });
 
         // 8. Audit Log
-        await prisma.auditLog.create({
-            data: {
+        await db.insert(AuditLog).values({
                 action: 'BOOK_REQUEST',
-                actor: 'beneficiary',
-                entity: 'Appointment',
-                entity_id: appointment.id,
+                actorId: 'beneficiary', // Ensure mapping schema to actorId
+                entityType: 'Appointment',
+                entityId: appointment.id,
                 ip_hash: hash(ip),
-                details: { structureId: structure.id }
-            }
+                details: JSON.stringify({ structureId: structure.id }) // Serialize to JSON string
         });
 
         return res.status(201).json({

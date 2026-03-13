@@ -1,8 +1,10 @@
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 
 import apiHandler from '../../api/index.js';
-import prisma from '../../api/_utils/prisma.js';
+import { db } from '../../src/db/index.js';
+import * as schema from '../../src/db/schema.js';
 import { signProToken } from '../../api/lib/pro-auth.js';
+import { vi } from 'vitest';
 
 /**
  * @param {{
@@ -104,16 +106,8 @@ async function invokeApi(url, options = {}) {
   return res;
 }
 
-/**
- * @param {unknown} query
- * @returns {string}
- */
 function getSqlFromQuery(query) {
-  return String(
-    query && typeof query === 'object' && Array.isArray(query.strings)
-      ? query.strings.join(' ')
-      : query || '',
-  );
+  return String(query && query.query ? query.query : query || '');
 }
 
 const originalJwtSecret = process.env.JWT_SECRET;
@@ -122,8 +116,7 @@ const originalReadPerMin = process.env.PRO_RDV_RATE_LIMIT_READ_PER_MIN;
 const originalWritePerMin = process.env.PRO_RDV_RATE_LIMIT_WRITE_PER_MIN;
 const originalWritePerDay = process.env.PRO_RDV_RATE_LIMIT_WRITE_PER_DAY;
 
-/** @type {typeof prisma.$queryRaw} */
-let originalQueryRaw;
+
 
 /** @type {string[]} */
 let createdStructureIds = [];
@@ -133,22 +126,22 @@ let createdProUserIds = [];
 let createdTimeOffIds = [];
 
 beforeEach(() => {
+  vi.restoreAllMocks();
   process.env.JWT_SECRET = process.env.JWT_SECRET || 'p9d-test-jwt-secret';
   process.env.ADMIN_TOKEN = process.env.ADMIN_TOKEN || 'p9d-test-admin-token';
-  originalQueryRaw = prisma.$queryRaw;
 });
 
 afterEach(async () => {
-  prisma.$queryRaw = originalQueryRaw;
+  vi.restoreAllMocks();
 
   if (createdTimeOffIds.length > 0) {
-    await prisma.proTimeOff.deleteMany({ where: { id: { in: createdTimeOffIds } } });
+    await await db.delete(schema.ProTimeOff);
   }
   if (createdProUserIds.length > 0) {
-    await prisma.proUser.deleteMany({ where: { id: { in: createdProUserIds } } });
+    await await db.delete(schema.ProUser);
   }
   if (createdStructureIds.length > 0) {
-    await prisma.structure.deleteMany({ where: { id: { in: createdStructureIds } } });
+    await await db.delete(schema.Structure);
   }
 
   createdTimeOffIds = [];
@@ -164,8 +157,7 @@ afterEach(async () => {
 
 async function createProFixture() {
   const suffix = `${Date.now()}-${Math.random().toString(16).slice(2, 8)}`;
-  const structureA = await prisma.structure.create({
-    data: {
+  const structureA = await (await db.insert(schema.Structure).values({
       nom: `P9D Structure A ${suffix}`,
       slug: `p9d-structure-a-${suffix}`,
       services: [],
@@ -177,9 +169,8 @@ async function createProFixture() {
       insee_codes: [],
       is_pro_enabled: true,
     },
-  });
-  const structureB = await prisma.structure.create({
-    data: {
+  ).returning())[0];
+  const structureB = await (await db.insert(schema.Structure).values({
       nom: `P9D Structure B ${suffix}`,
       slug: `p9d-structure-b-${suffix}`,
       services: [],
@@ -191,26 +182,24 @@ async function createProFixture() {
       insee_codes: [],
       is_pro_enabled: true,
     },
-  });
+  ).returning())[0];
 
-  const proUserA = await prisma.proUser.create({
-    data: {
+  const proUserA = await (await db.insert(schema.ProUser).values({
       email: `p9d-a-${suffix}@test.local`,
       password_hash: 'hashed',
       role: 'STRUCTURE_ADMIN',
       status: 'active',
       structureId: structureA.id,
     },
-  });
-  const proUserB = await prisma.proUser.create({
-    data: {
+  ).returning())[0];
+  const proUserB = await (await db.insert(schema.ProUser).values({
       email: `p9d-b-${suffix}@test.local`,
       password_hash: 'hashed',
       role: 'STRUCTURE_ADMIN',
       status: 'active',
       structureId: structureB.id,
     },
-  });
+  ).returning())[0];
 
   createdStructureIds.push(structureA.id, structureB.id);
   createdProUserIds.push(proUserA.id, proUserB.id);
@@ -220,34 +209,34 @@ async function createProFixture() {
 
 describe('P9-D readiness monitor + pro timeoff contract', () => {
   it('GET /api/monitor/pro-rdv returns 200 with required table checks and technical headers', async () => {
-    prisma.$queryRaw = async (query) => {
-      const sql = getSqlFromQuery(query);
+    vi.spyOn(db, 'execute').mockImplementation(async (query) => {
+      const sqlStr = getSqlFromQuery(query);
 
-      if (sql.includes('information_schema.tables')) {
-        return [
+      if (sqlStr.includes('information_schema.tables')) {
+        return { rows: [
           { table_name: 'ProRdvService' },
           { table_name: 'ProAvailabilityRule' },
           { table_name: 'ProAppointment' },
           { table_name: 'ProTimeOff' },
-        ];
+        ]};
       }
 
-      if (sql.includes('to_regclass')) {
-        return [{ migrations_regclass: 'public._prisma_migrations' }];
+      if (sqlStr.includes('to_regclass')) {
+        return { rows: [{ migrations_regclass: 'public._prisma_migrations' }] };
       }
 
-      if (sql.includes('FROM "_prisma_migrations"')) {
-        return [
+      if (sqlStr.includes('FROM "_prisma_migrations"')) {
+        return { rows: [
           {
             migration_name: '20260305000000_add_pro_rdv_core',
             finished_at: new Date(),
             rolled_back_at: null,
           },
-        ];
+        ]};
       }
 
-      return [];
-    };
+      return { rows: [] };
+    });
 
     const res = await invokeApi('/api/monitor/pro-rdv');
 
@@ -266,27 +255,27 @@ describe('P9-D readiness monitor + pro timeoff contract', () => {
   });
 
   it('GET /api/monitor/pro-rdv returns 503 when one required table is missing', async () => {
-    prisma.$queryRaw = async (query) => {
-      const sql = getSqlFromQuery(query);
+    vi.spyOn(db, 'execute').mockImplementation(async (query) => {
+      const sqlStr = getSqlFromQuery(query);
 
-      if (sql.includes('information_schema.tables')) {
-        return [
+      if (sqlStr.includes('information_schema.tables')) {
+        return { rows: [
           { table_name: 'ProRdvService' },
           { table_name: 'ProAvailabilityRule' },
           { table_name: 'ProAppointment' },
-        ];
+        ]};
       }
 
-      if (sql.includes('to_regclass')) {
-        return [{ migrations_regclass: 'public._prisma_migrations' }];
+      if (sqlStr.includes('to_regclass')) {
+        return { rows: [{ migrations_regclass: 'public._prisma_migrations' }] };
       }
 
-      if (sql.includes('FROM "_prisma_migrations"')) {
-        return [];
+      if (sqlStr.includes('FROM "_prisma_migrations"')) {
+        return { rows: [] };
       }
 
-      return [];
-    };
+      return { rows: [] };
+    });
 
     const res = await invokeApi('/api/monitor/pro-rdv');
 

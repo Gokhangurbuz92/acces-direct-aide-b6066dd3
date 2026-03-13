@@ -1,6 +1,8 @@
 import logger from '../../_utils/logger.js';
 import { getCronAuth } from '../../_utils/cronAuth.js';
-import prisma from '../../_utils/prisma.js';
+import { db } from '../../../src/db/index.js';
+import { Structure, ImportLog, SyncRun } from '../../../src/db/schema.js';
+import { eq, or } from 'drizzle-orm';
 import crypto from 'crypto';
 import { geocodeAddress } from '../../_utils/geocoder.js';
 import { withLock } from '../../_utils/pipelineLock.js';
@@ -168,7 +170,7 @@ export async function runIngestStructures({ limit, runId }) {
 
                 let sourceDocumentId = null;
                 try {
-                    const sourceDocument = await upsertSourceDocument(prisma, {
+                    const sourceDocument = await upsertSourceDocument(null, {
                         sourceUrl: dataset.url,
                         rawContent: JSON.stringify(item),
                         metadata: {
@@ -183,13 +185,11 @@ export async function runIngestStructures({ limit, runId }) {
                 }
 
                 // Check if exists
-                const existing = await prisma.structure.findFirst({
-                    where: {
-                        OR: [
-                            { raw_data_hash: hash },
-                            ...(normalizedSlug ? [{ slug: normalizedSlug }] : []),
-                        ]
-                    }
+                const existing = await db.query.Structure.findFirst({
+                    where: or(
+                        eq(Structure.raw_data_hash, hash),
+                        ...(normalizedSlug ? [eq(Structure.slug, normalizedSlug)] : [])
+                    )
                 });
 
                 if (existing) {
@@ -200,73 +200,62 @@ export async function runIngestStructures({ limit, runId }) {
                     if (unchanged) {
                         stats.skippedExisting++;
                     } else {
-                        await prisma.structure.update({
-                            where: { id: existing.id },
-                            data: {
-                                last_sync: new Date(),
-                                import_batch: runId,
-                                telephone: existing.telephone || val.telephone,
-                                email: existing.email || val.email,
-                                site_web: existing.site_web || val.site_web,
-                                raw_data_hash: hash,
-                                source_document_id: sourceDocumentId,
-                                slug: existing.slug || normalizedSlug || null,
-                            }
-                        });
+                        await db.update(Structure).set({
+                            last_sync: new Date(),
+                            import_batch: runId,
+                            telephone: existing.telephone || val.telephone,
+                            email: existing.email || val.email,
+                            site_web: existing.site_web || val.site_web,
+                            raw_data_hash: hash,
+                            source_document_id: sourceDocumentId,
+                            slug: existing.slug || normalizedSlug || null,
+                        }).where(eq(Structure.id, existing.id));
                         stats.updated++;
                     }
                 } else {
                     // CREATE - Valve 1: Ingest
-                    const newStructure = await prisma.structure.create({
-                        data: {
-                            nom: val.nom,
-                            slug: normalizedSlug || null,
-                            adresse: `${val.adresse} ${val.code_postal} ${val.ville}`.trim(),
-                            ville: val.ville,
-                            code_postal: val.code_postal,
-                            telephone: val.telephone,
-                            email: val.email,
-                            site_web: val.site_web,
-                            source_id: dataset.id,
-                            source_url: dataset.url,
-                            raw_data_hash: hash,
-                            source_document_id: sourceDocumentId,
-                            import_batch: runId,
-                            statut: "brouillon",
-                            import_status: "active"
-                        }
-                    });
+                    const [newStructure] = await db.insert(Structure).values({
+                        nom: val.nom,
+                        slug: normalizedSlug || null,
+                        adresse: `${val.adresse} ${val.code_postal} ${val.ville}`.trim(),
+                        ville: val.ville,
+                        code_postal: val.code_postal,
+                        telephone: val.telephone,
+                        email: val.email,
+                        site_web: val.site_web,
+                        source_id: dataset.id,
+                        source_url: dataset.url,
+                        raw_data_hash: hash,
+                        source_document_id: sourceDocumentId,
+                        import_batch: runId,
+                        statut: "brouillon",
+                        import_status: "active"
+                    }).returning();
 
                     // Valve 2: Enrich (Geocoding)
                     const geo = await geocodeAddress(`${val.adresse}, ${val.code_postal} ${val.ville}`);
                     if (geo && geo.score > 0.7) {
-                        await prisma.structure.update({
-                            where: { id: newStructure.id },
-                            data: {
-                                latitude: geo.lat,
-                                longitude: geo.lng,
-                                geoloc_status: "success",
-                                quality_score: 80
-                            }
-                        });
+                        await db.update(Structure).set({
+                            latitude: geo.lat,
+                            longitude: geo.lng,
+                            geoloc_status: "success",
+                            quality_score: 80
+                        }).where(eq(Structure.id, newStructure.id));
                     } else {
-                        await prisma.structure.update({
-                            where: { id: newStructure.id },
-                            data: { geoloc_status: "failed", quality_score: 40 }
-                        });
+                        await db.update(Structure).set({ 
+                            geoloc_status: "failed", 
+                            quality_score: 40 
+                        }).where(eq(Structure.id, newStructure.id));
                     }
 
                     // Valve 3: Publish
                     if (dataset.trust_level === "OFFICIAL") {
-                        const updated = await prisma.structure.findUnique({ where: { id: newStructure.id } });
-                        if (updated.quality_score >= 80) {
-                            await prisma.structure.update({
-                                where: { id: newStructure.id },
-                                data: {
-                                    statut: "actif",
-                                    published_at: new Date()
-                                }
-                            });
+                        const updated = await db.query.Structure.findFirst({ where: eq(Structure.id, newStructure.id) });
+                        if (updated && updated.quality_score >= 80) {
+                            await db.update(Structure).set({
+                                statut: "actif",
+                                published_at: new Date()
+                            }).where(eq(Structure.id, newStructure.id));
                         }
                     }
 
@@ -282,15 +271,13 @@ export async function runIngestStructures({ limit, runId }) {
 
     // Log the Run
     try {
-        await prisma.importLog.create({
-            data: {
-                source_name: 'CRON_STRUCTURES_ALSACE',
-                status: stats.errors.length > 0 ? 'PARTIAL' : 'SUCCESS',
-                items_new: stats.created,
-                items_total: stats.processed,
-                logs: stats.errors.length ? JSON.stringify(stats.errors) : null,
-                duration_ms: Date.now() - startTotal
-            }
+        await db.insert(ImportLog).values({
+            source_name: 'CRON_STRUCTURES_ALSACE',
+            status: stats.errors.length > 0 ? 'PARTIAL' : 'SUCCESS',
+            items_new: stats.created,
+            items_total: stats.processed,
+            logs: stats.errors.length ? JSON.stringify(stats.errors) : null,
+            duration_ms: Date.now() - startTotal
         });
     } catch (e) { logger.error("Log Create Failed", e); }
 
@@ -319,40 +306,32 @@ export default async function handler(req, res) {
         // Use distributed lock to prevent concurrent runs
 	        const stats = await withLock('ingest-structures', async () => {
 	            // Log sync run start
-	            await prisma.syncRun.create({
-	                data: {
-	                    id: runId,
-	                    source_id: null, // Multi-source run
-	                    status: 'running',
+	            await db.insert(SyncRun).values({
+	                id: runId,
+	                source_id: 'pipeline-structures', // Provide a valid string instead of null
+	                status: 'running',
                     started_at: new Date()
-                }
-            });
+                });
 
             try {
                 const result = await runIngestStructures({ limit, runId });
                 
                 // Update sync run with success
-                await prisma.syncRun.update({
-                    where: { id: runId },
-                    data: {
-                        status: result.errors.length > 0 ? 'partial' : 'success',
-                        ended_at: new Date(),
-                        error: result.errors.length > 0 ? result.errors.join('; ') : null,
-                        stats: result
-                    }
-                });
+                await db.update(SyncRun).set({
+                    status: result.errors.length > 0 ? 'partial' : 'success',
+                    ended_at: new Date(),
+                    error: result.errors.length > 0 ? result.errors.join('; ') : null,
+                    stats: result
+                }).where(eq(SyncRun.id, runId));
 
                 return result;
             } catch (error) {
                 // Update sync run with failure
-                await prisma.syncRun.update({
-                    where: { id: runId },
-                    data: {
-                        status: 'failed',
-                        ended_at: new Date(),
-                        error: getErrorMessage(error)
-                    }
-                });
+                await db.update(SyncRun).set({
+                    status: 'failed',
+                    ended_at: new Date(),
+                    error: getErrorMessage(error)
+                }).where(eq(SyncRun.id, runId));
                 throw error;
             }
         });

@@ -1,6 +1,8 @@
 import { checkRateLimit, getClientIp, getRateLimitStatus } from '../../_utils/rateLimit.js';
 import logger from '../../_utils/logger.js';
-import prisma from '../../_utils/prisma.js';
+import { db } from '../../../src/db/index.js';
+import { Actualite, AuditLog } from '../../../src/db/schema.js';
+import { inArray } from 'drizzle-orm';
 import { verifyAdmin } from '../../_utils/auth.js';
 /**
  * @param {import('../../_utils/http-types').ApiRequest} req
@@ -52,21 +54,17 @@ export default async function handler(req, res) {
                 return res.status(400).json({ error: 'Invalid Action' });
         }
 
-        const result = await prisma.actualite.updateMany({
-            where: { id: { in: ids } },
-            data: updateData
-        });
+        const updated = await db.update(Actualite).set(updateData).where(inArray(Actualite.id, ids)).returning({ id: Actualite.id });
+        const count = updated.length;
 
         // Audit Log
-        await prisma.auditLog.create({
-            data: {
-                action: `ADMIN_BULK_${action}`,
-                details: { count: result.count, ids },
-                timestamp: new Date()
-            }
+        await db.insert(AuditLog).values({
+            action: `ADMIN_BULK_${action}`,
+            details: { count, ids },
+            timestamp: new Date()
         });
 
-        return res.status(200).json({ success: true, count: result.count });
+        return res.status(200).json({ success: true, count });
 
     } catch (error) {
         logger.error('Admin Action Error:', error);

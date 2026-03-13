@@ -1,6 +1,8 @@
 import { env } from '../../_utils/env.js';
 import { signAdminSessionToken } from '../../_utils/auth.js';
-import prisma from '../../_utils/prisma.js';
+import { db } from '../../../src/db/index.js';
+import { AdminUser, CitizenUser } from '../../../src/db/schema.js';
+import { eq } from 'drizzle-orm';
 import { checkRateLimit, getRateLimitStatus } from '../../_utils/rateLimit.js';
 import {
     buildUserSessionCookie,
@@ -39,7 +41,7 @@ export default async function handler(req, res) {
         // Check if MFA is enabled for this admin
         let adminUser = null;
         try {
-            adminUser = await prisma.adminUser.findUnique({ where: { email } });
+            adminUser = await db.query.AdminUser.findFirst({ where: eq(AdminUser.email, email) });
         } catch {
             // If DB unavailable, fall through to token-based auth
         }
@@ -102,8 +104,8 @@ export default async function handler(req, res) {
     }
 
     try {
-        const user = await prisma.citizenUser.findUnique({
-            where: { email },
+        const user = await db.query.CitizenUser.findFirst({
+            where: eq(CitizenUser.email, email),
         });
 
         if (!user) {

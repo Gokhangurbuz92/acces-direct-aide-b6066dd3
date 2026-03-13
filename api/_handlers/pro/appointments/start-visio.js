@@ -1,7 +1,7 @@
 import logger from '../../../_utils/logger.js';
 import crypto from 'crypto';
-import { db } from '../../../src/db/index.js';
-import { ProAppointment } from '../../../src/db/schema.js';
+import { db } from '../../../../src/db/index.js';
+import { ProAppointment } from '../../../../src/db/schema.js';
 import { eq, and } from 'drizzle-orm';
 import { requireProAuth, requireProStructureContext } from '../../../_utils/auth.js';
 import { logProAudit } from '../../../_utils/auth.js';

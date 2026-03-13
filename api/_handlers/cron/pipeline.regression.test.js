@@ -7,16 +7,15 @@ import { getCronAuth } from '../../_utils/cronAuth.js';
 vi.mock('../../_utils/cronAuth.js');
 vi.mock('./ingest-structures.js');
 vi.mock('./ingest-aids.js');
-vi.mock('@prisma/client', () => {
+vi.mock('../../../src/db/index.js', () => {
     return {
-        PrismaClient: class {
-            constructor() {
-                this.importLog = { create: vi.fn() };
-                this.rssSource = { findMany: vi.fn().mockResolvedValue([]) };
-                this.actualite = { upsert: vi.fn(), findMany: vi.fn() };
-                this.structure = { upsert: vi.fn(), findFirst: vi.fn(), create: vi.fn(), update: vi.fn(), findUnique: vi.fn() };
-                this.aide = { upsert: vi.fn(), findUnique: vi.fn(), create: vi.fn(), update: vi.fn() };
-            }
+        db: {
+            insert: vi.fn(() => ({
+                values: vi.fn().mockResolvedValue([{}]),
+            })),
+            query: {
+                RssSource: { findMany: vi.fn().mockResolvedValue([]) },
+            },
         }
     };
 });

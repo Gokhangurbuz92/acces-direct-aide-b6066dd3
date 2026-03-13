@@ -1,6 +1,8 @@
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import apiHandler from '../../api/index.js';
-import prisma from '../../api/_utils/prisma.js';
+import { db } from '../../src/db/index.js';
+import * as schema from '../../src/db/schema.js';
+import { eq, sql } from 'drizzle-orm';
 
 /**
  * @param {{
@@ -93,22 +95,22 @@ async function invokeApi(url, options = {}) {
 
 describe('P8-F monitor ingestion freshness endpoint contract', () => {
   const originalThreshold = process.env.MONITOR_INGEST_FRESHNESS_MAX_AGE_HOURS;
-  /** @type {typeof prisma.sourceDocument.findFirst} */
+  /** @type {typeof db.query.SourceDocument.findFirst} */
   let originalFindFirst;
 
   beforeEach(() => {
     process.env.MONITOR_INGEST_FRESHNESS_MAX_AGE_HOURS = '48';
-    originalFindFirst = prisma.sourceDocument.findFirst;
+    originalFindFirst = db.query.SourceDocument.findFirst;
   });
 
   afterEach(() => {
-    prisma.sourceDocument.findFirst = originalFindFirst;
+    db.query.SourceDocument.findFirst = originalFindFirst;
     if (originalThreshold == null) delete process.env.MONITOR_INGEST_FRESHNESS_MAX_AGE_HOURS;
     else process.env.MONITOR_INGEST_FRESHNESS_MAX_AGE_HOURS = originalThreshold;
   });
 
   it('returns 200 when latest SourceDocument is within threshold', async () => {
-    prisma.sourceDocument.findFirst = async () => ({
+    db.query.SourceDocument.findFirst = async () => ({
       fetched_at: new Date(),
     });
 
@@ -129,7 +131,7 @@ describe('P8-F monitor ingestion freshness endpoint contract', () => {
 
   it('returns 503 stale when latest fetch is older than threshold', async () => {
     process.env.MONITOR_INGEST_FRESHNESS_MAX_AGE_HOURS = '1';
-    prisma.sourceDocument.findFirst = async () => ({
+    db.query.SourceDocument.findFirst = async () => ({
       fetched_at: new Date(Date.now() - 5 * 3600000),
     });
 
@@ -148,7 +150,7 @@ describe('P8-F monitor ingestion freshness endpoint contract', () => {
   });
 
   it('returns 503 missing when no SourceDocument exists', async () => {
-    prisma.sourceDocument.findFirst = async () => null;
+    db.query.SourceDocument.findFirst = async () => null;
 
     const res = await invokeApi('/api/monitor/ingestion-freshness');
 
@@ -172,7 +174,7 @@ describe('P8-F monitor ingestion freshness endpoint contract', () => {
   });
 
   it('returns 503 error with safe payload when DB check crashes', async () => {
-    prisma.sourceDocument.findFirst = async () => {
+    db.query.SourceDocument.findFirst = async () => {
       throw new Error('sensitive db internals');
     };
 

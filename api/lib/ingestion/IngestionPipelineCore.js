@@ -1,10 +1,18 @@
-import prisma from '../../_utils/prisma.js';
 import * as Sentry from '@sentry/node';
 import { logger } from '../logger.js';
 import crypto from 'crypto';
 import { computeContentHash } from '../../_utils/contentHash.js';
 import { ensureSlugOrNull } from '../../_utils/slug.js';
 import { upsertSourceDocument } from '../../_utils/sourceDocument.js';
+import { db } from '../../../src/db/index.js';
+import { Aide, Demarche, Structure, SyncRun, ImportLog, SourceDocument } from '../../../src/db/schema.js';
+import { eq, and, or, count } from 'drizzle-orm';
+
+const MODEL_MAP = {
+    'aide': Aide,
+    'demarche': Demarche,
+    'structure': Structure
+};
 
 export class IngestionPipelineCore {
     /**
@@ -24,12 +32,14 @@ export class IngestionPipelineCore {
         maxDurationMs = 270_000,
         batchSize = 15
     }) {
+        if (!MODEL_MAP[modelName]) throw new Error(`Model ${modelName} not configured in Drizzle mapper`);
         this.modelName = modelName;
         this.schema = schema;
         this.connector = connector;
         this.runId = runId;
         this.maxDurationMs = maxDurationMs;
         this.batchSize = batchSize;
+        this.dbTable = MODEL_MAP[modelName];
         
         this.stats = {
             fetched: 0,
@@ -198,7 +208,7 @@ export class IngestionPipelineCore {
         // 1. Source Document Creation/Enrichment
         let sourceDocumentId = null;
         try {
-            const sourceDoc = await upsertSourceDocument(prisma, {
+            const sourceDoc = await upsertSourceDocument(null, {
                 sourceUrl: data.source_url || url,
                 rawContent: typeof rawContent === 'string' ? rawContent.slice(0, 20000) : JSON.stringify(rawContent),
                 metadata: {
@@ -213,16 +223,13 @@ export class IngestionPipelineCore {
         }
 
         // 2. Locate existing record to determine created vs updated vs skipped
-        const existing = await prisma[this.modelName].findFirst({
-            where: {
-                OR: [
-                    ...(data.external_id ? [{ externalId: data.external_id }] : []), // Precise lookup
-                    ...(baseSlug ? [{ slug: baseSlug }] : []), // Fallback
-                    ...(data.source_url ? [{ source_url_exact: data.source_url }] : []), // Secondary fallback
-                    ...(data.source_url ? [{ source_url: data.source_url }] : []),
-                ]
-            }
-        });
+        const qOr = [];
+        if (data.external_id && 'externalId' in this.dbTable) qOr.push(eq(this.dbTable.externalId, data.external_id));
+        if (baseSlug) qOr.push(eq(this.dbTable.slug, baseSlug));
+        if (data.source_url && 'source_url_exact' in this.dbTable) qOr.push(eq(this.dbTable.source_url_exact, data.source_url));
+        if (data.source_url && 'source_url' in this.dbTable) qOr.push(eq(this.dbTable.source_url, data.source_url));
+
+        const existing = await db.select().from(this.dbTable).where(or(...qOr)).limit(1).then(r => r[0] || null);
 
         const dbRecordConfig = {
             ...normalizedItem,
@@ -247,15 +254,14 @@ export class IngestionPipelineCore {
             if (existing.content_hash !== contentHash || existing.source_document_id !== sourceDocumentId) {
                 // Texts have changed! Must invalidate embeddings 
                 // Because embedding generation is often async or cron-triggered elsewhere.
-                if (this.modelName === 'aide' || this.modelName === 'demarche' || this.modelName === 'structure') {
-                    // Force the pgvector column to null to signal that it needs re-embedding
+                // Make sure we only set the property if it logically can be null for embedding
+                if ('embedding' in dbRecordConfig) {
                     dbRecordConfig.embedding = null; 
                 }
 
-                await prisma[this.modelName].update({
-                    where: { id: existing.id },
-                    data: dbRecordConfig
-                });
+                await db.update(this.dbTable)
+                    .set(dbRecordConfig)
+                    .where(eq(this.dbTable.id, existing.id));
                 this.stats.updated++;
             } else {
                 // Completely unchanged -> Skip DB write
@@ -263,20 +269,21 @@ export class IngestionPipelineCore {
             }
         } else {
             let finalSlug = baseSlug;
-            if (finalSlug && (await prisma[this.modelName].count({ where: { slug: finalSlug } })) > 0) {
-                finalSlug = ensureSlugOrNull(`${finalSlug}-${contentHash.slice(0, 6)}`);
+            if (finalSlug) {
+                const slC = await db.select({ value: count() }).from(this.dbTable).where(eq(this.dbTable.slug, finalSlug));
+                if (slC[0].value > 0) {
+                    finalSlug = ensureSlugOrNull(`${finalSlug}-${contentHash.slice(0, 6)}`);
+                }
             }
             
             dbRecordConfig.slug = finalSlug;
             dbRecordConfig.published_at = new Date();
             dbRecordConfig.retrieved_at = new Date(); // first sight
-            if (data.external_id) {
+            if (data.external_id && 'externalId' in dbRecordConfig) {
                 dbRecordConfig.externalId = data.external_id;
             }
 
-            await prisma[this.modelName].create({
-                data: dbRecordConfig
-            });
+            await db.insert(this.dbTable).values(dbRecordConfig);
             this.stats.created++;
         }
     }
@@ -311,37 +318,33 @@ export class IngestionPipelineCore {
 
         // Phase 4: Full Traceability into ImportLog & SyncRun
         try {
-            await prisma.importLog.create({
-                data: {
-                    run_id: this.runId,
-                    source_name: `CRON_${this.modelName.toUpperCase()}_${this.connector.name.toUpperCase()}`,
-                    status: status,
-                    items_new: this.stats.created,
-                    items_updated: this.stats.updated,
-                    items_skipped: this.stats.skippedExisting,
-                    items_total: this.stats.processed,
-                    error_count: this.stats.errors.length,
-                    logs: this.stats.errors.length > 0 ? JSON.stringify(this.stats.errors.slice(0, 50)) : null,
-                    duration_ms: durationTotal
-                }
+            await db.insert(ImportLog).values({
+                run_id: this.runId,
+                source_name: `CRON_${this.modelName.toUpperCase()}_${this.connector.name.toUpperCase()}`,
+                status: status,
+                items_new: this.stats.created,
+                items_updated: this.stats.updated,
+                items_skipped: this.stats.skippedExisting,
+                items_total: this.stats.processed,
+                error_count: this.stats.errors.length,
+                logs: this.stats.errors.length > 0 ? JSON.stringify(this.stats.errors.slice(0, 50)) : null,
+                duration_ms: durationTotal
             });
 
-            await prisma.syncRun.create({
-                data: {
-                    id: crypto.randomUUID(),
-                    source_id: `pipeline-${this.connector.name}`,
-                    status: status.toLowerCase(),
-                    started_at: new Date(startTimeMs),
-                    ended_at: new Date(),
-                    stats: {
-                        fetched: this.stats.fetched,
-                        processed: this.stats.processed,
-                        created: this.stats.created,
-                        updated: this.stats.updated,
-                        skipped: this.stats.skippedExisting,
-                        errors: this.stats.errors.slice(0, 20),
-                        processing_stage_ms: this.stats.durationByStage
-                    }
+            await db.insert(SyncRun).values({
+                id: crypto.randomUUID(),
+                source_id: `pipeline-${this.connector.name}`,
+                status: status.toLowerCase(),
+                started_at: new Date(startTimeMs),
+                ended_at: new Date(),
+                stats: {
+                    fetched: this.stats.fetched,
+                    processed: this.stats.processed,
+                    created: this.stats.created,
+                    updated: this.stats.updated,
+                    skipped: this.stats.skippedExisting,
+                    errors: this.stats.errors.slice(0, 20),
+                    processing_stage_ms: this.stats.durationByStage
                 }
             });
         } catch (traceErr) {

@@ -1,7 +1,9 @@
 
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { runIngestAids } from '../../api/_handlers/cron/ingest-aids.js';
-import prisma from '../../api/_utils/prisma.js';
+import { db } from '../../src/db/index.js';
+import * as schema from '../../src/db/schema.js';
+import { eq, sql } from 'drizzle-orm';
 
 // Mock Prisma
 vi.mock('../../api/_utils/prisma.js', () => ({

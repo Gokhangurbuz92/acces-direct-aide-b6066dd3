@@ -25,7 +25,7 @@ vi.mock('../../api/lib/crypto.js', () => ({
 }));
 
 // Mock Prisma
-const mPrisma = vi.hoisted(() => ({
+const db = vi.hoisted(() => ({
   aide: {
     findFirst: vi.fn(),
     findMany: vi.fn(),

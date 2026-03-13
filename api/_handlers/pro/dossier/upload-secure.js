@@ -1,6 +1,8 @@
 import logger from '../../../_utils/logger.js';
 // @ts-nocheck
-import prisma from '../../../_utils/prisma.js';
+import { db } from '../../../../src/db/index.js';
+import { SharedDiagnostic } from '../../../../src/db/schema.js';
+import { eq } from 'drizzle-orm';
 import { requireProAuth, requireProStructureContext } from '../../../_utils/auth.js';
 import { logProAudit } from '../../../_utils/auth.js';
 /**
@@ -34,8 +36,8 @@ async function handler(req, res) {
         }
 
         // Verify the shared diagnostic exists
-        const shared = await prisma.sharedDiagnostic.findUnique({
-            where: { id: shareId },
+        const shared = await db.query.SharedDiagnostic.findFirst({
+            where: eq(SharedDiagnostic.id, shareId),
         });
 
         if (!shared) {
@@ -61,15 +63,12 @@ async function handler(req, res) {
 
         existingFiles.push(fileEntry);
 
-        await prisma.sharedDiagnostic.update({
-            where: { id: shareId },
-            data: {
-                results: {
-                    ...currentResults,
-                    _files: existingFiles,
-                },
+        await db.update(SharedDiagnostic).set({
+            results: {
+                ...currentResults,
+                _files: existingFiles,
             },
-        });
+        }).where(eq(SharedDiagnostic.id, shareId));
 
         // Audit log
         const ip = req.headers?.['x-forwarded-for'] || req.socket?.remoteAddress || 'unknown';

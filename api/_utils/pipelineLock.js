@@ -10,7 +10,7 @@ const LOCK_PREFIX = 'pipeline:lock:';
  * @param {number} ttlSeconds - Lock TTL in seconds (default: 20 minutes)
  * @returns {Promise<string|null>} Lock ID if acquired, null if already locked
  */
-export async function acquireLock(pipelineName, ttlSeconds = LOCK_TTL_SECONDS) {
+console.log("\n[DEBUG] KV IS:", kv, "\n"); export async function acquireLock(pipelineName, ttlSeconds = LOCK_TTL_SECONDS) {
     const lockKey = `${LOCK_PREFIX}${pipelineName}`;
     const lockId = `${Date.now()}-${Math.random().toString(36).substring(7)}`;
     
@@ -29,7 +29,7 @@ export async function acquireLock(pipelineName, ttlSeconds = LOCK_TTL_SECONDS) {
         logger.info({ pipelineName, lockId, ttl: ttlSeconds }, 'Pipeline lock acquired');
         return lockId;
     } catch (error) {
-        logger.error({ pipelineName, error: error.message }, 'Failed to acquire lock');
+        logger.error({ pipelineName, error: String(error.stack) }, 'Failed to acquire lock');
         throw error;
     }
 }

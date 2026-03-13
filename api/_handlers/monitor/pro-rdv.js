@@ -1,6 +1,6 @@
 import logger from '../../_utils/logger.js';
 import { randomUUID } from 'crypto';
-import prisma from '../../_utils/prisma.js';
+
 import { env } from '../../_utils/env.js';
 import { applyNoIndex } from '../../_utils/robots.js';
 import Sentry from '../../_utils/sentry.js';
@@ -30,7 +30,7 @@ export default async function handler(req, res) {
   }
 
   try {
-    const readiness = await getProRdvReadiness(prisma);
+    const readiness = await getProRdvReadiness();
     const ok = readiness.ok;
 
     if (!ok) {

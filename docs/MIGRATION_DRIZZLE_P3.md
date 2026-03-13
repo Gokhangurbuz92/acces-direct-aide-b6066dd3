@@ -58,8 +58,11 @@ await db.transaction(async (tx) => {
 });
 ```
 
-### Étape 4 : Abandon de Prisma (Drizzle Kit)
-Une fois le code 100% migré sur Drizzle, utiliser `drizzle-kit` pour générer et appliquer les futures migrations SQL, puis désinstaller définitivement `@prisma/client`.
+### Étape 4 : Architecture Hybride P3 -> P4 (Le Compromis GAGNANT)
+À la fin de la Phase P3, et face aux centaines de références résiduelles à Prisma dans les modules d'ingestion et d'administration, la stratégie a évolué vers une **architecture hybride** stable :
+- **Drizzle** alimente les routes frontales et hautement concurrentielles (le "hot path").
+- **Prisma** est conservé en arrière-plan (le "cold path" : CRONs, scripts d'ingestion lourds, requêtes analytiques).
+L'ablation totale de Prisma devient ainsi l'objectif progressif et itératif de la **Phase P4**, permettant de sécuriser le produit en production.
 
 ## 5. Conclusion
-Le passage à Drizzle ORM avec Neon Database (via driver HTTP/Serverless) est non seulement faisable, mais **stratégiquement recommandé** pour garantir des temps de réponse sous les 100ms. Cette migration nécessitera une réécriture complète de la couche d'accès aux données, justifiant qu'elle soit le point focal de la Phase P3.
+Le passage partiel et chirurgical à Drizzle ORM avec Neon Database est un succès. Les routes critiques bénéficient désormais de temps de réponse drastiquement réduits sans l'overhead du Query Engine, tandis que le socle de données métier lourd (CRUD admin) n'a subi aucune régression. La Phase P3 est officiellement clôturée, pavant la voie à la Phase P4 ("Ablation Progressive").

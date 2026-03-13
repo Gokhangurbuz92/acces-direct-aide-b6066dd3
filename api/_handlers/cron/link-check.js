@@ -1,5 +1,7 @@
 import { getCronAuth } from '../../_utils/cronAuth.js';
-import prisma from '../../_utils/prisma.js';
+import { db } from '../../../src/db/index.js';
+import { Aide, Demarche, Structure, Dispositif, ResourceAccessibility, SourceSnapshot } from '../../../src/db/schema.js';
+import { eq, isNotNull, and } from 'drizzle-orm';
 import { logger } from '../../lib/logger.js';
 import crypto from 'crypto';
 
@@ -36,45 +38,30 @@ export default async function handler(req, res) {
     try {
         // Fetch items with source_url from all modules
         const [aides, demarches, structures, dispositifs, ressources] = await Promise.all([
-            prisma.aide.findMany({
-                where: { 
-                    statut: 'publie',
-                    source_url: { not: null }
-                },
-                select: { id: true, source_url: true, titre: true },
-                take: limit
+            db.query.Aide.findMany({
+                where: and(eq(Aide.statut, 'publie'), isNotNull(Aide.source_url)),
+                columns: { id: true, source_url: true, titre: true },
+                limit
             }),
-            prisma.demarche.findMany({
-                where: { 
-                    statut: 'publie',
-                    source_url_exact: { not: null }
-                },
-                select: { id: true, source_url_exact: true, titre: true },
-                take: limit
+            db.query.Demarche.findMany({
+                where: and(eq(Demarche.statut, 'publie'), isNotNull(Demarche.source_url_exact)),
+                columns: { id: true, source_url_exact: true, titre: true },
+                limit
             }),
-            prisma.structure.findMany({
-                where: { 
-                    statut: 'publie',
-                    source_url: { not: null }
-                },
-                select: { id: true, source_url: true, nom: true },
-                take: limit
+            db.query.Structure.findMany({
+                where: and(eq(Structure.statut, 'publie'), isNotNull(Structure.source_url)),
+                columns: { id: true, source_url: true, nom: true },
+                limit
             }),
-            prisma.dispositif.findMany({
-                where: { 
-                    statut: 'publie',
-                    source_url_exact: { not: null }
-                },
-                select: { id: true, source_url_exact: true, titre: true },
-                take: limit
+            db.query.Dispositif.findMany({
+                where: and(eq(Dispositif.statut, 'publie'), isNotNull(Dispositif.source_url_exact)),
+                columns: { id: true, source_url_exact: true, titre: true },
+                limit
             }),
-            prisma.resourceAccessibility.findMany({
-                where: { 
-                    status: 'published',
-                    source_url: { not: null }
-                },
-                select: { id: true, source_url: true, title: true },
-                take: limit
+            db.query.ResourceAccessibility.findMany({
+                where: and(eq(ResourceAccessibility.status, 'published'), isNotNull(ResourceAccessibility.source_url)),
+                columns: { id: true, source_url: true, title: true },
+                limit
             })
         ]);
 
@@ -111,14 +98,12 @@ export default async function handler(req, res) {
                 }
 
                 // Store result in SourceSnapshot table
-                await prisma.sourceSnapshot.create({
-                    data: {
-                        entity_type: entityType,
-                        entity_id: entityId,
-                        fetched_at: new Date(),
-                        http_status: response.status,
-                        final_url: url
-                    }
+                await db.insert(SourceSnapshot).values({
+                    entity_type: entityType,
+                    entity_id: entityId,
+                    fetched_at: new Date(),
+                    http_status: response.status,
+                    final_url: url
                 });
 
             } catch (error) {
@@ -127,14 +112,12 @@ export default async function handler(req, res) {
                 logger.error('LINK_CHECK_ERROR', { entityType, entityId, url, error: error.message });
 
                 // Store error result
-                await prisma.sourceSnapshot.create({
-                    data: {
-                        entity_type: entityType,
-                        entity_id: entityId,
-                        fetched_at: new Date(),
-                        http_status: 0, // 0 indicates network error
-                        final_url: url
-                    }
+                await db.insert(SourceSnapshot).values({
+                    entity_type: entityType,
+                    entity_id: entityId,
+                    fetched_at: new Date(),
+                    http_status: 0, // 0 indicates network error
+                    final_url: url
                 });
             }
         };

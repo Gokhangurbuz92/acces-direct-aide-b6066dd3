@@ -1,4 +1,7 @@
-import prisma from './prisma.js';
+import { db } from '../../src/db/index.js';
+import * as schema from '../../src/db/schema.js';
+import { EntityVersion } from '../../src/db/schema.js';
+import { eq } from 'drizzle-orm';
 import logger from './logger.js';
 
 /**
@@ -10,20 +13,22 @@ import logger from './logger.js';
 export async function createSnapshot(type, id, actorEmail) {
     try {
         const modelName = type.toLowerCase();
-        const entity = await prisma[modelName].findUnique({
-            where: { id: String(id) }
+        const modelKey = Object.keys(schema).find(k => k.toLowerCase() === modelName);
+        if (!modelKey || !db.query[modelKey]) return;
+        const model = schema[modelKey];
+
+        const entity = await db.query[modelKey].findFirst({
+            where: eq(model.id, String(id))
         });
 
         if (!entity) return;
 
-        await prisma.entityVersion.create({
-            data: {
-                entity_type: type,
-                entity_id: String(id),
-                snapshot_json: entity,
-                actor_email: actorEmail,
-                reason: 'Auto-snapshot before update'
-            }
+        await db.insert(EntityVersion).values({
+            entity_type: type,
+            entity_id: String(id),
+            snapshot_json: entity,
+            actor_email: actorEmail,
+            reason: 'Auto-snapshot before update'
         });
     } catch (e) {
         logger.error(`Failed to create snapshot for ${type}:${id}`, e);
@@ -36,8 +41,8 @@ export async function createSnapshot(type, id, actorEmail) {
  * @param {string} actorEmail - Email of the person restoring
  */
 export async function restoreVersion(versionId, actorEmail) {
-    const version = await prisma.entityVersion.findUnique({
-        where: { id: versionId }
+    const version = await db.query.EntityVersion.findFirst({
+        where: eq(EntityVersion.id, versionId)
     });
 
     if (!version) throw new Error('Version not found');
@@ -48,10 +53,11 @@ export async function restoreVersion(versionId, actorEmail) {
     await createSnapshot(version.entity_type, version.entity_id, actorEmail);
 
     // Restore the data
-    const restored = await prisma[modelName].update({
-        where: { id: version.entity_id },
-        data: version.snapshot_json
-    });
+    const modelKey = Object.keys(schema).find(k => k.toLowerCase() === modelName);
+    const model = schema[modelKey];
+    
+    // update returns array. Let's return the first updated element.
+    const [restored] = await db.update(model).set(version.snapshot_json).where(eq(model.id, version.entity_id)).returning();
 
     return restored;
 }

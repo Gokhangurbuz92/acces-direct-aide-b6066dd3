@@ -1,5 +1,7 @@
 import logger from '../../_utils/logger.js';
-import prisma from '../../_utils/prisma.js';
+import { db } from '../../../src/db/index.js';
+import { Invitation } from '../../../src/db/schema.js';
+import { eq, and, isNull } from 'drizzle-orm';
 import { logProAudit } from '../../_utils/auth.js';
 import { AUTH_ROLE, requireProRole, requireProStructureContext } from '../../_utils/auth.js';
 import crypto from 'crypto';
@@ -24,8 +26,12 @@ async function handler(req, res) {
     }
 
     try {
-        const invitation = await prisma.invitation.findFirst({
-            where: { id: invitationId, structureId, used_at: null },
+        const invitation = await db.query.Invitation.findFirst({
+            where: and(
+                eq(Invitation.id, invitationId),
+                eq(Invitation.structureId, structureId),
+                isNull(Invitation.used_at)
+            ),
         });
 
         if (!invitation) {
@@ -36,10 +42,10 @@ async function handler(req, res) {
         const newToken = crypto.randomBytes(32).toString('hex');
         const newExpiry = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
 
-        await prisma.invitation.update({
-            where: { id: invitationId },
-            data: { token: newToken, expires_at: newExpiry },
-        });
+        await db.update(Invitation).set({
+            token: newToken,
+            expires_at: newExpiry,
+        }).where(eq(Invitation.id, invitationId));
 
         logger.info(`[MOCK EMAIL] Invitation re-sent to ${invitation.email} with new token [REDACTED]`);
 

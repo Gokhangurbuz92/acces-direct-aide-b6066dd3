@@ -1,6 +1,8 @@
 import logger from '../../_utils/logger.js';
 // @ts-nocheck
-import prisma from '../../_utils/prisma.js';
+import { db } from '../../../src/db/index.js';
+import { AuditLog, ProUser } from '../../../src/db/schema.js';
+import { eq, and, sql, inArray, count } from 'drizzle-orm';
 import { AUTH_ROLE, requireProRole, requireProStructureContext } from '../../_utils/auth.js';
 
 /**
@@ -28,27 +30,27 @@ async function handler(req, res) {
     const actionFilter = url.searchParams.get('action');
 
     try {
-        const whereClause = {
-            details: { path: ['structureId'], equals: structureId },
-            ...(actionFilter ? { action: actionFilter } : {}),
-        };
+        let whereConditions = [sql`${AuditLog.details}->>'structureId' = ${structureId}`];
+        if (actionFilter) {
+            whereConditions.push(eq(AuditLog.action, actionFilter));
+        }
 
-        const [logs, totalCount] = await Promise.all([
-            prisma.auditLog.findMany({
-                where: whereClause,
-                orderBy: { timestamp: 'desc' },
-                skip: (page - 1) * limit,
-                take: limit,
+        const [logs, totalCountRes] = await Promise.all([
+            db.query.AuditLog.findMany({
+                where: and(...whereConditions),
+                orderBy: (al, { desc }) => [desc(al.timestamp)],
+                offset: (page - 1) * limit,
+                limit: limit,
             }),
-            prisma.auditLog.count({ where: whereClause }),
+            db.select({ count: count() }).from(AuditLog).where(and(...whereConditions)),
         ]);
+        const totalCount = totalCountRes[0].count;
 
-        // Enrich with user emails
-        const actorIds = [...new Set(logs.map((l) => l.actor_id).filter(Boolean))];
+        const actorIds = [...new Set(logs.map((l) => l.actorId).filter(Boolean))];
         const actors = actorIds.length > 0
-            ? await prisma.proUser.findMany({
-                where: { id: { in: actorIds } },
-                select: { id: true, email: true },
+            ? await db.query.ProUser.findMany({
+                where: inArray(ProUser.id, actorIds),
+                columns: { id: true, email: true },
             })
             : [];
 
@@ -58,11 +60,11 @@ async function handler(req, res) {
         const entries = logs.map((log) => ({
             id: log.id,
             action: log.action,
-            actorId: log.actor_id,
-            actorEmail: actorMap[log.actor_id] || null,
-            details: log.details,
+            actorId: log.actorId,
+            actorEmail: actorMap[log.actorId] || null,
+            details: typeof log.details === 'string' ? JSON.parse(log.details) : log.details,
             timestamp: log.timestamp,
-            ipHash: log.ip_hash,
+            ipHash: log.ipHash,
         }));
 
         return res.status(200).json({

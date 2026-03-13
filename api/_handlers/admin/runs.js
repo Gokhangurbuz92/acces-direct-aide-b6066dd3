@@ -1,6 +1,7 @@
 import { checkRateLimit, getClientIp, getRateLimitStatus } from '../../_utils/rateLimit.js';
 import logger from '../../_utils/logger.js';
-import prisma from '../../_utils/prisma.js';
+import { db } from '../../../src/db/index.js';
+import { ImportLog } from '../../../src/db/schema.js';
 import { verifyAdmin } from '../../_utils/auth.js';
 /**
  * @param {import('../../_utils/http-types').ApiRequest} req
@@ -23,9 +24,9 @@ export default async function handler(req, res) {
     }
 
     try {
-        const logs = await prisma.importLog.findMany({
-            orderBy: { createdAt: 'desc' },
-            take: 50
+        const logs = await db.query.ImportLog.findMany({
+            orderBy: (il, { desc }) => [desc(il.createdAt)],
+            limit: 50
         });
 
         return res.status(200).json({ data: logs });

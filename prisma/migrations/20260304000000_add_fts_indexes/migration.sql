@@ -17,5 +17,3 @@ CREATE INDEX IF NOT EXISTS demarche_fts_idx ON "Demarche" USING GIN (
   to_tsvector('french', coalesce("titre",'') || ' ' || coalesce("description_courte",''))
 );
 
--- ConversationLog: metadata field for analytics enrichment
-ALTER TABLE "ConversationLog" ADD COLUMN IF NOT EXISTS "metadata" JSONB;

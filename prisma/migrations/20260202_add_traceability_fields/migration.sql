@@ -22,7 +22,3 @@ ALTER TABLE "Dispositif" ADD COLUMN IF NOT EXISTS "retrieved_at" TIMESTAMP(3);
 ALTER TABLE "Dispositif" ADD COLUMN IF NOT EXISTS "last_checked_at" TIMESTAMP(3);
 ALTER TABLE "Dispositif" ADD COLUMN IF NOT EXISTS "source_last_modified" TIMESTAMP(3);
 
--- ResourceAccessibility: Add retrieved_at, last_checked_at, source_last_modified
-ALTER TABLE "ResourceAccessibility" ADD COLUMN IF NOT EXISTS "retrieved_at" TIMESTAMP(3);
-ALTER TABLE "ResourceAccessibility" ADD COLUMN IF NOT EXISTS "last_checked_at" TIMESTAMP(3);
-ALTER TABLE "ResourceAccessibility" ADD COLUMN IF NOT EXISTS "source_last_modified" TIMESTAMP(3);

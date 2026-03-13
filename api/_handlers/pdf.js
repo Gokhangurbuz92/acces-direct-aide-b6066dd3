@@ -1,5 +1,4 @@
 import crypto from 'crypto';
-import { PDFDocument, StandardFonts, rgb } from 'pdf-lib';
 import * as Sentry from '@sentry/node';
 
 import prisma from '../_utils/prisma.js';
@@ -11,8 +10,6 @@ import { logger } from '../lib/logger.js';
 const A4_WIDTH = 595.28;
 const A4_HEIGHT = 841.89;
 const PAGE_MARGIN = 48;
-const BODY_COLOR = rgb(0.13, 0.16, 0.2);
-const MUTED_COLOR = rgb(0.36, 0.4, 0.47);
 const UUID_LIKE_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
 /**
@@ -208,6 +205,11 @@ async function loadDemarche(identifier) {
  * }} payload
  */
 async function renderPdf(payload) {
+  const { PDFDocument, StandardFonts, rgb } = await import('pdf-lib');
+  
+  const BODY_COLOR = rgb(0.13, 0.16, 0.2);
+  const MUTED_COLOR = rgb(0.36, 0.4, 0.47);
+
   const pdfDoc = await PDFDocument.create();
   const fontRegular = await pdfDoc.embedFont(StandardFonts.Helvetica);
   const fontBold = await pdfDoc.embedFont(StandardFonts.HelveticaBold);

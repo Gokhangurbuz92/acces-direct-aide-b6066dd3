@@ -1,9 +1,10 @@
 import logger from '../../../_utils/logger.js';
-import prisma from '../../../_utils/prisma.js';
-import { signProToken, logProAudit } from '../../../lib/pro-auth.js';
+import { db } from '../../../src/db/index.js';
+import { eq } from 'drizzle-orm';
+import { signProToken, logProAudit } from '../../../_utils/auth.js';
 import { checkRateLimit, getClientIp } from '../../../_utils/rateLimit.js';
 import { verifyCode } from '../../../lib/totp.js';
-import { verifyJwt } from '../../../lib/pro-auth.js';
+import { verifyJwt } from '../../../_utils/auth.js';
 import { env } from '../../../_utils/env.js';
 
 /**
@@ -57,8 +58,8 @@ export default async function handler(req, res) {
         }
 
         // Load user with MFA secret
-        const user = await prisma.proUser.findUnique({
-            where: { id: payload.userId },
+        const user = await db.query.ProUser.findFirst({
+            where: (u, { eq }) => eq(u.id, payload.userId),
         });
 
         if (!user || !user.mfa_enabled || !user.mfa_secret) {

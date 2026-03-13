@@ -2,7 +2,7 @@ import logger from '../../_utils/logger.js';
 import { env } from '../../_utils/env.js';
 // @ts-nocheck
 import prisma from '../../_utils/prisma.js';
-import { logProAudit } from '../../lib/pro-auth.js';
+import { logProAudit } from '../../_utils/auth.js';
 import { sendMail } from '../../_utils/mailer.js';
 
 /**

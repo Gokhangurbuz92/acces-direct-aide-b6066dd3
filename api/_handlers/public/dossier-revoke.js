@@ -1,7 +1,7 @@
 import logger from '../../_utils/logger.js';
 // @ts-nocheck
 import prisma from '../../_utils/prisma.js';
-import { logProAudit } from '../../lib/pro-auth.js';
+import { logProAudit } from '../../_utils/auth.js';
 
 /**
  * Dossier Revoke API (Citizen-facing)

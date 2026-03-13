@@ -1,9 +1,10 @@
 import logger from '../../../_utils/logger.js';
-import bcrypt from 'bcryptjs';
+import { verifyPassword } from '../../../_utils/user-auth.js';
 import jwt from 'jsonwebtoken';
-import { signProToken, logProAudit } from '../../../lib/pro-auth.js';
+import { signProToken, logProAudit } from '../../../_utils/auth.js';
 import { checkRateLimit, getClientIp, getRateLimitStatus } from '../../../_utils/rateLimit.js';
-import prisma from '../../../_utils/prisma.js';
+import { db } from '../../../src/db/index.js';
+import { eq } from 'drizzle-orm';
 import { env } from '../../../_utils/env.js';
 /**
  * @param {import('../../../_utils/http-types').ApiRequest} req
@@ -41,8 +42,7 @@ export default async function handler(req, res) {
     }
 
     try {
-        const users = await prisma.proUser.findMany({ where: { email } });
-        const targetUser = users[0]; // Pick first for now.
+        const targetUser = await db.query.ProUser.findFirst({ where: (u, { eq }) => eq(u.email, email) });
 
         const authError = () => res.status(401).json({ error: "Invalid credentials" });
 
@@ -57,7 +57,7 @@ export default async function handler(req, res) {
             return res.status(403).json({ error: "Account disabled" });
         }
 
-        const isValid = await bcrypt.compare(password, targetUser.password_hash);
+        const isValid = await verifyPassword(password, targetUser.password_hash);
 
         if (!isValid) {
             await logProAudit('LOGIN_FAILED', targetUser.id, targetUser.structureId, { reason: 'Bad password' }, ip);

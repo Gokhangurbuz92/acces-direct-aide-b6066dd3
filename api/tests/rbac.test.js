@@ -19,7 +19,7 @@ vi.mock('../_utils/rateLimit.js', () => ({
 }));
 
 // Import AFTER mocks and env setup
-import { requireAuth, ROLE, signProToken } from '../lib/pro-auth.js';
+import { requireAuth, ROLE, signProToken } from '../_utils/auth.js';
 
 describe('RBAC Middleware', () => {
     /** @typedef {import('../_utils/http-types').ApiRequest} ApiRequest */

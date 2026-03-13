@@ -7,6 +7,8 @@ ALTER TABLE "Actualite"
 CREATE INDEX IF NOT EXISTS "Actualite_source_document_id_idx"
   ON "Actualite"("source_document_id");
 
+ALTER TABLE "SourceDocument" ADD COLUMN IF NOT EXISTS "source_url" TEXT;
+
 CREATE INDEX IF NOT EXISTS "SourceDocument_source_url_idx"
   ON "SourceDocument"("source_url");
 

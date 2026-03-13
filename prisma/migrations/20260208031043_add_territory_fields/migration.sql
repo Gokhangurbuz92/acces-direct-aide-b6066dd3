@@ -1,14 +1,17 @@
 -- AlterTable: Add territory filtering fields to Aide
+ALTER TABLE "Aide" ADD COLUMN "territory_scope" TEXT;
 ALTER TABLE "Aide" ADD COLUMN "region_codes" TEXT[] DEFAULT '{}';
 ALTER TABLE "Aide" ADD COLUMN "department_codes" TEXT[] DEFAULT '{}';
 ALTER TABLE "Aide" ADD COLUMN "insee_codes" TEXT[] DEFAULT '{}';
 
 -- AlterTable: Add territory filtering fields to Demarche
+ALTER TABLE "Demarche" ADD COLUMN "territory_scope" TEXT;
 ALTER TABLE "Demarche" ADD COLUMN "region_codes" TEXT[] DEFAULT '{}';
 ALTER TABLE "Demarche" ADD COLUMN "department_codes" TEXT[] DEFAULT '{}';
 ALTER TABLE "Demarche" ADD COLUMN "insee_codes" TEXT[] DEFAULT '{}';
 
 -- AlterTable: Add territory filtering fields to Structure
+ALTER TABLE "Structure" ADD COLUMN "territory_scope" TEXT;
 ALTER TABLE "Structure" ADD COLUMN "region_codes" TEXT[] DEFAULT '{}';
 ALTER TABLE "Structure" ADD COLUMN "department_codes" TEXT[] DEFAULT '{}';
 ALTER TABLE "Structure" ADD COLUMN "insee_codes" TEXT[] DEFAULT '{}';

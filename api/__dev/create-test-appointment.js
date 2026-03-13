@@ -1,7 +1,7 @@
 import prisma from '../_utils/prisma.js';
 import { hash, encrypt } from '../lib/crypto.js';
 import crypto from 'crypto';
-import bcrypt from 'bcryptjs';
+import { hashPasswordSync } from '../_utils/user-auth.js';
 import { env } from '../_utils/env.js';
 import { logger } from '../lib/logger.js';
 /**
@@ -20,7 +20,7 @@ export default async function handler(req, res) {
     try {
         const email = 'pro-turnkey@test.com';
         const passwordText = 'DevPass123!';
-        const passwordHash = bcrypt.hashSync(passwordText, 10);
+        const passwordHash = hashPasswordSync(passwordText);
 
         // Structure
         const STRUCTURE_SLUG = "structure-turnkey-demo";

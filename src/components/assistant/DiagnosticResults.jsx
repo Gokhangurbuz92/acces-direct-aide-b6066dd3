@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
-import { CheckCircle2, XCircle, Eye, RefreshCw, RotateCcw } from 'lucide-react';
+import { CheckCircle2, XCircle, Eye, RefreshCw, RotateCcw, Share2, Copy, Check } from 'lucide-react';
 import DiagnosticTraceModal from './DiagnosticTraceModal';
 
 /**
@@ -20,9 +20,46 @@ export default function DiagnosticResults({
 }) {
     const [falcToggles, setFalcToggles] = useState({});
     const [showTrace, setShowTrace] = useState(false);
+    const [isSharing, setIsSharing] = useState(false);
+    const [shareUrl, setShareUrl] = useState(null);
+    const [copied, setCopied] = useState(false);
 
     const toggleFalc = (code) => {
         setFalcToggles((prev) => ({ ...prev, [code]: !prev[code] }));
+    };
+
+    const handleShare = async () => {
+        setIsSharing(true);
+        try {
+            const res = await fetch('/api/share/create', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    situation: answers,
+                    results: { rights, period, meta }
+                })
+            });
+            if (!res.ok) throw new Error('Failed to create share link');
+            const data = await res.json();
+            const fullUrl = `${window.location.origin}${data.shareUrl}`;
+            setShareUrl(fullUrl);
+        } catch (error) {
+            console.error('Share error:', error);
+            // In a real app we'd show a toast here
+            alert("Erreur lors de la création du lien de partage.");
+        } finally {
+            setIsSharing(false);
+        }
+    };
+
+    const handleCopy = async () => {
+        try {
+            await navigator.clipboard.writeText(shareUrl);
+            setCopied(true);
+            setTimeout(() => setCopied(false), 2000);
+        } catch (e) {
+            console.error('Failed to copy', e);
+        }
     };
 
     if (isLoading) {
@@ -72,10 +109,32 @@ export default function DiagnosticResults({
                     <h2 className="text-lg font-semibold text-slate-900">Vos droits estimés</h2>
                     <p className="text-xs text-slate-600">Période : {period} • Source : OpenFisca</p>
                 </div>
-                <Button type="button" variant="outline" size="sm" onClick={onRestart} className="gap-2">
-                    <RotateCcw className="h-4 w-4" /> Recommencer
-                </Button>
+                <div className="flex gap-2">
+                    <Button type="button" variant="outline" size="sm" onClick={handleShare} disabled={isSharing} className="gap-2">
+                        <Share2 className="h-4 w-4" /> Partager
+                    </Button>
+                    <Button type="button" variant="outline" size="sm" onClick={onRestart} className="gap-2">
+                        <RotateCcw className="h-4 w-4" /> Recommencer
+                    </Button>
+                </div>
             </div>
+
+            {shareUrl && (
+                <div className="mb-4 rounded-xl border border-blue-200 bg-blue-50 p-4">
+                    <p className="mb-2 text-sm font-medium text-blue-900">
+                        Votre lien de partage (valide 7 jours) :
+                    </p>
+                    <div className="flex items-center gap-2">
+                        <code className="flex-1 rounded-md bg-white p-2 text-xs text-slate-700 font-mono border border-blue-100 overflow-hidden text-ellipsis whitespace-nowrap">
+                            {shareUrl}
+                        </code>
+                        <Button type="button" variant="secondary" size="sm" onClick={handleCopy} className="shrink-0 gap-2">
+                            {copied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
+                            {copied ? 'Copié !' : 'Copier'}
+                        </Button>
+                    </div>
+                </div>
+            )}
 
             {/* Eligible rights */}
             {eligibleRights.length > 0 && (

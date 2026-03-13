@@ -1,9 +1,11 @@
 import logger from '../../../_utils/logger.js';
 import { kv } from '../../../_utils/kv.js';
-import bcrypt from 'bcryptjs';
+import { hashPassword } from '../../../_utils/user-auth.js';
 import { checkRateLimit } from '../../../_utils/rateLimit.js';
-import { logProAudit } from '../../../lib/pro-auth.js';
-import prisma from '../../../_utils/prisma.js';
+import { logProAudit } from '../../../_utils/auth.js';
+import { db } from '../../../src/db/index.js';
+import { ProUser } from '../../../src/db/schema.js';
+import { eq } from 'drizzle-orm';
 /**
  * @param {import('../../../_utils/http-types').ApiRequest} req
  * @param {import('../../../_utils/http-types').ApiResponse} res
@@ -42,12 +44,11 @@ export default async function handler(req, res) {
 
         const { userId } = data;
 
-        const hashedPassword = await bcrypt.hash(password, 10);
+        const hashedPassword = await hashPassword(password);
 
-        const user = await prisma.proUser.update({
-            where: { id: userId },
-            data: { password_hash: hashedPassword }
-        });
+        const [user] = await db.update(ProUser).set({
+            password_hash: hashedPassword
+        }).where(eq(ProUser.id, userId)).returning();
 
         await kv.del(key);
         await logProAudit('RESET_SUCCESS', user.id, user.structureId, {}, ip);

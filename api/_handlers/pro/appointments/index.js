@@ -1,4 +1,6 @@
-import prisma from '../../../_utils/prisma.js';
+import { db } from '../../../src/db/index.js';
+import { ProAppointment, ProRdvService, ProAvailabilityRule } from '../../../src/db/schema.js';
+import { eq, inArray, lt, gt, and, gte, lte, count, desc, asc } from 'drizzle-orm';
 import { requireProStructureContext } from '../../../_utils/auth.js';
 import {
   ACTIVE_APPOINTMENT_STATUSES,
@@ -90,27 +92,23 @@ async function handler(req, res) {
     const from = req.query.from ? new Date(String(req.query.from)) : null;
     const to = req.query.to ? new Date(String(req.query.to)) : null;
 
-    /** @type {Record<string, any>} */
-    const where = { structureId: proCtx.structureId };
-    if (id) where.id = id;
-    if (status) where.status = status;
-    if (from || to) {
-      where.startAt = {
-        ...(from && !Number.isNaN(from.getTime()) ? { gte: from } : {}),
-        ...(to && !Number.isNaN(to.getTime()) ? { lte: to } : {}),
-      };
-    }
+    const conditions = [eq(ProAppointment.structureId, proCtx.structureId)];
+    if (id) conditions.push(eq(ProAppointment.id, id));
+    if (status) conditions.push(eq(ProAppointment.status, status));
+    if (from && !Number.isNaN(from.getTime())) conditions.push(gte(ProAppointment.startAt, from));
+    if (to && !Number.isNaN(to.getTime())) conditions.push(lte(ProAppointment.startAt, to));
+    const whereFilter = and(...conditions);
 
-    const [total, appointments] = await prisma.$transaction([
-      prisma.proAppointment.count({ where }),
-      prisma.proAppointment.findMany({
-        where,
-        skip,
-        take: pageSize,
-        orderBy: { startAt: 'asc' },
-        include: {
+    const [totalRes, appointments] = await Promise.all([
+      db.select({ value: count() }).from(ProAppointment).where(whereFilter),
+      db.query.ProAppointment.findMany({
+        where: whereFilter,
+        offset: skip,
+        limit: pageSize,
+        orderBy: (pa, { asc }) => [asc(pa.startAt)],
+        with: {
           service: {
-            select: {
+            columns: {
               id: true,
               name: true,
             },
@@ -118,6 +116,7 @@ async function handler(req, res) {
         },
       }),
     ]);
+    const total = totalRes[0]?.value || 0;
 
     return res.status(200).json({
       items: appointments.map(serialize),
@@ -145,8 +144,8 @@ async function handler(req, res) {
       return res.status(400).json({ error: 'Invalid startAt' });
     }
 
-    const service = await prisma.proRdvService.findUnique({
-      where: { id: serviceId },
+    const service = await db.query.ProRdvService.findFirst({
+      where: (s, { eq }) => eq(s.id, serviceId),
     });
     if (!service) return res.status(404).json({ error: 'Service not found' });
     if (service.structureId !== proCtx.structureId) {
@@ -158,12 +157,12 @@ async function handler(req, res) {
     const rangeStart = startOfUtcDay(startAt);
     const rangeEnd = endOfUtcDay(startAt);
 
-    const rules = await prisma.proAvailabilityRule.findMany({
-      where: {
-        structureId: proCtx.structureId,
-        isActive: true,
-      },
-      orderBy: [{ weekday: 'asc' }, { startTime: 'asc' }],
+    const rules = await db.query.ProAvailabilityRule.findMany({
+      where: (r, { and, eq }) => and(
+        eq(r.structureId, proCtx.structureId),
+        eq(r.isActive, true)
+      ),
+      orderBy: (r, { asc }) => [asc(r.weekday), asc(r.startTime)],
     });
 
     const slotAllowed = isSlotWithinRules({
@@ -175,17 +174,17 @@ async function handler(req, res) {
       return res.status(409).json({ error: 'Slot is not available' });
     }
 
-    const conflictResult = await prisma.$transaction(async (tx /** @type {any} */) => {
-      const existing = await tx.proAppointment.findMany({
-        where: {
-          structureId: proCtx.structureId,
-          status: { in: ACTIVE_APPOINTMENT_STATUSES },
-          startAt: { lt: endAt },
-          endAt: { gt: startAt },
-        },
-        include: {
+    const conflictResult = await db.transaction(async (tx) => {
+      const existing = await tx.query.ProAppointment.findMany({
+        where: (pa, { and, eq, inArray, lt, gt }) => and(
+          eq(pa.structureId, proCtx.structureId),
+          inArray(pa.status, ACTIVE_APPOINTMENT_STATUSES),
+          lt(pa.startAt, endAt),
+          gt(pa.endAt, startAt)
+        ),
+        with: {
           service: {
-            select: {
+            columns: {
               bufferBeforeMinutes: true,
               bufferAfterMinutes: true,
             },
@@ -202,32 +201,32 @@ async function handler(req, res) {
       const hasConflict = busyWindows.some((window) => requestedWindow.start < window.end && window.start < requestedWindow.end);
       if (hasConflict) return { conflict: true, appointment: null };
 
-      const appointment = await tx.proAppointment.create({
-        data: {
-          structureId: proCtx.structureId,
-          serviceId: service.id,
-          startAt,
-          endAt,
-          status: 'booked',
-          beneficiaryName,
-          beneficiaryPhone,
-          notes,
-          createdByProUserId: proCtx.userId,
-        },
-        include: {
+      const [appointment] = await tx.insert(ProAppointment).values({
+        structureId: proCtx.structureId,
+        serviceId: service.id,
+        startAt,
+        endAt,
+        status: 'booked',
+        beneficiaryName,
+        beneficiaryPhone,
+        notes,
+        createdByProUserId: proCtx.userId,
+      }).returning();
+
+      const fullAppointment = await tx.query.ProAppointment.findFirst({
+        where: (pa, { eq }) => eq(pa.id, appointment.id),
+        with: {
           service: {
-            select: {
+            columns: {
               id: true,
               name: true,
             },
           },
         },
       });
-      return { conflict: false, appointment };
+      return { conflict: false, appointment: fullAppointment };
     }, {
-      isolationLevel: 'Serializable',
-      maxWait: 5000,
-      timeout: 10000
+      isolationLevel: 'serializable'
     });
 
     if (conflictResult.conflict || !conflictResult.appointment) {
@@ -255,10 +254,10 @@ async function handler(req, res) {
       return res.status(400).json({ error: 'status must be cancelled or done' });
     }
 
-    const existing = await prisma.proAppointment.findUnique({
-      where: { id },
-      include: {
-        service: { select: { id: true, name: true } },
+    const existing = await db.query.ProAppointment.findFirst({
+      where: (pa, { eq }) => eq(pa.id, id),
+      with: {
+        service: { columns: { id: true, name: true } },
       },
     });
     if (!existing) return res.status(404).json({ error: 'Appointment not found' });
@@ -275,11 +274,12 @@ async function handler(req, res) {
       return res.status(200).json({ ok: true, item: serialize(existing) });
     }
 
-    const updated = await prisma.proAppointment.update({
-      where: { id },
-      data: updates,
-      include: {
-        service: { select: { id: true, name: true } },
+    await db.update(ProAppointment).set(updates).where(eq(ProAppointment.id, id));
+
+    const updated = await db.query.ProAppointment.findFirst({
+      where: (pa, { eq }) => eq(pa.id, id),
+      with: {
+        service: { columns: { id: true, name: true } },
       },
     });
     return res.status(200).json({ ok: true, item: serialize(updated) });

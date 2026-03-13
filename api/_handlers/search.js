@@ -1,5 +1,5 @@
 import logger from '../_utils/logger.js';
-import prisma from '../_utils/prisma.js';
+import { db } from '../../src/db/index.js';
 import { checkRateLimit, getClientIp } from '../_utils/rateLimit.js';
 import { hybridSearchSchema } from '../_utils/validators.js';
 import { searchAidesHybrid } from '../lib/hybrid-search.js';
@@ -21,7 +21,10 @@ export default async function handler(req, res) {
     const ip = getClientIp(req);
     const rateLimit = await checkRateLimit('SEARCH_AIDES', ip);
     if (!rateLimit.allowed) {
-      return res.status(rateLimit.status || 429).json(rateLimit.error);
+      return res.status(429).json({ 
+        error: "Trop de requêtes.",
+        message: "Pour garantir l'accès à tous, veuillez patienter une minute."
+      });
     }
 
     const validation = hybridSearchSchema.safeParse(req.body || {});
@@ -42,7 +45,7 @@ export default async function handler(req, res) {
     }
 
     // 1. Search Aides (existing hybrid search)
-    const { items: aideItems, total: aideTotal, weakResult } = await searchAidesHybrid(prisma, {
+    const { items: aideItems, total: aideTotal, weakResult } = await searchAidesHybrid({
       query: payload.query,
       category: payload.category,
       situations: payload.situations,
@@ -55,15 +58,13 @@ export default async function handler(req, res) {
     const queryLike = `%${payload.query}%`;
     let demarches = [];
     try {
-      demarches = await prisma.demarche.findMany({
-        where: {
-          OR: [
-            { titre: { contains: payload.query, mode: 'insensitive' } },
-            { description_courte: { contains: payload.query, mode: 'insensitive' } },
-            { contenu: { contains: payload.query, mode: 'insensitive' } },
-          ],
-        },
-        select: {
+      demarches = await db.query.Demarche.findMany({
+        where: (d, { or, ilike }) => or(
+          ilike(d.titre, queryLike),
+          ilike(d.description_courte, queryLike),
+          ilike(d.contenu_detaille, queryLike)
+        ),
+        columns: {
           id: true,
           slug: true,
           titre: true,
@@ -71,7 +72,7 @@ export default async function handler(req, res) {
           categorie: true,
           summary_falc: true,
         },
-        take: 5,
+        limit: 5,
       });
     } catch (e) {
       logger.warn('[search] demarches search failed:', e.message);
@@ -80,15 +81,13 @@ export default async function handler(req, res) {
     // 3. Search Structures (simple text search)
     let structures = [];
     try {
-      structures = await prisma.structure.findMany({
-        where: {
-          OR: [
-            { nom: { contains: payload.query, mode: 'insensitive' } },
-            { description_courte: { contains: payload.query, mode: 'insensitive' } },
-            { ville: { contains: payload.query, mode: 'insensitive' } },
-          ],
-        },
-        select: {
+      structures = await db.query.Structure.findMany({
+        where: (s, { or, ilike }) => or(
+          ilike(s.nom, queryLike),
+          ilike(s.description_courte, queryLike),
+          ilike(s.ville, queryLike)
+        ),
+        columns: {
           id: true,
           slug: true,
           nom: true,
@@ -97,7 +96,7 @@ export default async function handler(req, res) {
           ville: true,
           code_postal: true,
         },
-        take: 5,
+        limit: 5,
       });
     } catch (e) {
       logger.warn('[search] structures search failed:', e.message);
@@ -106,15 +105,15 @@ export default async function handler(req, res) {
     // 4. Search Actualités (simple text search)
     let actualites = [];
     try {
-      actualites = await prisma.actualite.findMany({
-        where: {
-          statut: 'publie',
-          OR: [
-            { titre: { contains: payload.query, mode: 'insensitive' } },
-            { resume: { contains: payload.query, mode: 'insensitive' } },
-          ],
-        },
-        select: {
+      actualites = await db.query.Actualite.findMany({
+        where: (a, { and, or, ilike, eq }) => and(
+          eq(a.statut, 'publie'),
+          or(
+            ilike(a.titre, queryLike),
+            ilike(a.resume, queryLike)
+          )
+        ),
+        columns: {
           id: true,
           slug: true,
           titre: true,
@@ -123,8 +122,8 @@ export default async function handler(req, res) {
           date_publication: true,
           summary_falc: true,
         },
-        take: 5,
-        orderBy: { date_publication: 'desc' },
+        limit: 5,
+        orderBy: (a, { desc }) => [desc(a.date_publication)],
       });
     } catch (e) {
       logger.warn('[search] actualites search failed:', e.message);

@@ -3,7 +3,7 @@ import prisma from '../../../_utils/prisma.js';
 import crypto from 'crypto';
 import { hash } from '../../../lib/crypto.js';
 
-import { checkRateLimit } from '../../../lib/pro-auth.js';
+import { checkRateLimit } from '../../../_utils/auth.js';
 /**
  * @param {import('../../../_utils/http-types').ApiRequest} req
  * @param {import('../../../_utils/http-types').ApiResponse} res

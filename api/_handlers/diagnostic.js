@@ -10,7 +10,9 @@ import * as Sentry from '@sentry/node';
 import { calculate, trace as traceCall, isAvailable } from '../lib/openfiscaClient.js';
 import { buildTestCase, parseResults, getCurrentPeriod } from '../lib/openfiscaMapping.js';
 import { checkRateLimit } from '../_utils/rateLimit.js';
-import prisma from '../_utils/prisma.js';
+import { db } from '../../src/db/index.js';
+import { SyncRun } from '../../src/db/schema.js';
+import { eq } from 'drizzle-orm';
 import crypto from 'crypto';
 
 // Simple input validation — we use manual checks to avoid adding a Zod dependency
@@ -72,15 +74,13 @@ async function handleDiagnostic(req, res) {
     // ── Phase 2: SyncRun tracing ──
     let syncRunId = null;
     try {
-        const run = await prisma.syncRun.create({
-            data: {
-                id: crypto.randomUUID(),
-                source_id: 'openfisca-diagnostic',
-                status: 'running',
-                started_at: new Date(),
-                stats: { requestId },
-            },
-        });
+        const [run] = await db.insert(SyncRun).values({
+            id: crypto.randomUUID(),
+            source_id: 'openfisca-diagnostic',
+            status: 'running',
+            started_at: new Date(),
+            stats: { requestId },
+        }).returning({ id: SyncRun.id });
         syncRunId = run.id;
     } catch {
         // SyncRun logging must never break the diagnostic flow
@@ -151,20 +151,17 @@ async function handleDiagnostic(req, res) {
         // ── Phase 2: SyncRun success ──
         if (syncRunId) {
             try {
-                await prisma.syncRun.update({
-                    where: { id: syncRunId },
-                    data: {
-                        status: 'success',
-                        ended_at: new Date(),
-                        stats: {
-                            requestId,
-                            duration_ms: duration,
-                            rightsCount: rights.length,
-                            eligibleCount: rights.filter(r => r.eligible).length,
-                            variables: rights.map(r => r.code),
-                        },
+                await db.update(SyncRun).set({
+                    status: 'success',
+                    ended_at: new Date(),
+                    stats: {
+                        requestId,
+                        duration_ms: duration,
+                        rightsCount: rights.length,
+                        eligibleCount: rights.filter(r => r.eligible).length,
+                        variables: rights.map(r => r.code),
                     },
-                });
+                }).where(eq(SyncRun.id, syncRunId));
             } catch {
                 // SyncRun update must never break the response
             }
@@ -192,15 +189,12 @@ async function handleDiagnostic(req, res) {
         // ── Phase 2: SyncRun failure ──
         if (syncRunId) {
             try {
-                await prisma.syncRun.update({
-                    where: { id: syncRunId },
-                    data: {
-                        status: 'failed',
-                        ended_at: new Date(),
-                        error: `${err.code || 'UNKNOWN'}: ${err.message}`.slice(0, 500),
-                        stats: { requestId, duration_ms: duration },
-                    },
-                });
+                await db.update(SyncRun).set({
+                    status: 'failed',
+                    ended_at: new Date(),
+                    error: `${err.code || 'UNKNOWN'}: ${err.message}`.slice(0, 500),
+                    stats: { requestId, duration_ms: duration },
+                }).where(eq(SyncRun.id, syncRunId));
             } catch {
                 // SyncRun update must never break the error response
             }

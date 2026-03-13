@@ -9,6 +9,7 @@ import { useFalc } from "@/contexts/FalcContext";
 const NAV_ITEMS = [
   { label: "Accueil", to: "/" },
   { label: "Mon Assistant", to: "/orientation" },
+  { label: "Simulateur", to: "/diagnostic" },
   { label: "Les Aides", to: "/aides" },
   { label: "Démarches", to: "/demarches" },
   { label: "Lieux d'accueil", to: "/annuaire" },

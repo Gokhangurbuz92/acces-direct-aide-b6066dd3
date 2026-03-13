@@ -4,7 +4,7 @@ process.env.JWT_SECRET = 'test-jwt-secret';
 process.env.ADMIN_TOKEN = 'test-admin-token';
 
 import { verifyAdmin } from '../_utils/auth.js';
-import { signProToken, ROLE } from '../lib/pro-auth.js';
+import { signProToken, ROLE } from '../_utils/auth.js';
 
 describe('Admin Security', () => {
     it('should reject Pro token accessing Admin', () => {

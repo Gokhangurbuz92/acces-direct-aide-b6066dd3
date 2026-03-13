@@ -1,6 +1,6 @@
 import prisma from '../../_utils/prisma.js';
 import { requireProAuth } from '../../_utils/auth.js';
-import { logProAudit } from '../../lib/pro-auth.js';
+import { logProAudit } from '../../_utils/auth.js';
 import { generateSecret, verifyCode, buildOtpauthUrl } from '../../lib/totp.js';
 
 /**

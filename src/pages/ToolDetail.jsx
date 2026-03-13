@@ -3,6 +3,7 @@ import { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import SEO from '@/components/SEO';
 import { Download, ExternalLink } from 'lucide-react';
+import { sanitizeHtml } from '@/lib/sanitize';
 
 export default function ToolDetail() {
     const { slug } = useParams();
@@ -53,7 +54,7 @@ export default function ToolDetail() {
                 <div className="grid md:grid-cols-3 gap-8">
                     <div className="md:col-span-2 prose max-w-none text-gray-800">
                         {tool.contenu_html ? (
-                            <div dangerouslySetInnerHTML={{ __html: tool.contenu_html }} />
+                            <div dangerouslySetInnerHTML={{ __html: sanitizeHtml(tool.contenu_html) }} />
                         ) : (
                             <p className="italic text-gray-500">Pas de description détaillée disponible.</p>
                         )}

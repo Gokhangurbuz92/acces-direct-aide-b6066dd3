@@ -2,7 +2,7 @@ import logger from '../../../_utils/logger.js';
 import prisma from '../../../_utils/prisma.js';
 import { addMinutes, parseISO } from 'date-fns';
 import { encrypt, hash } from '../../../lib/crypto.js';
-import { checkRateLimit } from '../../../lib/pro-auth.js'; // Reuse or move to shared
+import { checkRateLimit } from '../../../_utils/auth.js'; // Reuse or move to shared
 /**
  * @param {import('../../../_utils/http-types').ApiRequest} req
  * @param {import('../../../_utils/http-types').ApiResponse} res

@@ -3,7 +3,7 @@ import busboy from 'busboy';
 import { encryptBuffer, encrypt, hash } from '../lib/crypto.js';
 import { storage } from '../lib/storage.js';
 import prisma from '../_utils/prisma.js';
-import { verifyProToken } from '../lib/pro-auth.js';
+import { verifyProToken } from '../_utils/auth.js';
 
 export const config = {
     api: {

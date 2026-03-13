@@ -1,9 +1,11 @@
 import logger from '../../../_utils/logger.js';
 // @ts-nocheck
-import bcrypt from 'bcryptjs';
-import { signProToken, logProAudit } from '../../../lib/pro-auth.js';
+import { hashPassword } from '../../../_utils/user-auth.js';
+import { signProToken, logProAudit } from '../../../_utils/auth.js';
 import { checkRateLimit, getClientIp } from '../../../_utils/rateLimit.js';
-import prisma from '../../../_utils/prisma.js';
+import { db } from '../../../src/db/index.js';
+import { Invitation, ProUser } from '../../../src/db/schema.js';
+import { eq, and } from 'drizzle-orm';
 
 /**
  * Register via Invitation Token
@@ -27,9 +29,9 @@ export default async function handler(req, res) {
             return res.status(400).json({ error: 'Token manquant' });
         }
 
-        const invitation = await prisma.invitation.findUnique({
-            where: { token },
-            include: { structure: { select: { id: true, nom: true } } },
+        const invitation = await db.query.Invitation.findFirst({
+            where: (i, { eq }) => eq(i.token, token),
+            with: { structure: { columns: { id: true, nom: true } } },
         });
 
         if (!invitation) {
@@ -76,9 +78,9 @@ export default async function handler(req, res) {
 
     try {
         // 1. Find and validate invitation
-        const invitation = await prisma.invitation.findUnique({
-            where: { token },
-            include: { structure: { select: { id: true, nom: true } } },
+        const invitation = await db.query.Invitation.findFirst({
+            where: (i, { eq }) => eq(i.token, token),
+            with: { structure: { columns: { id: true, nom: true } } },
         });
 
         if (!invitation) {
@@ -94,37 +96,31 @@ export default async function handler(req, res) {
         }
 
         // 2. Check if email already exists in this structure
-        const existingUser = await prisma.proUser.findFirst({
-            where: { email: invitation.email, structureId: invitation.structureId },
+        const existingUser = await db.query.ProUser.findFirst({
+            where: (u, { eq, and }) => and(eq(u.email, invitation.email), eq(u.structureId, invitation.structureId)),
         });
 
         if (existingUser) {
             // Mark invitation as used to avoid confusion
-            await prisma.invitation.update({
-                where: { id: invitation.id },
-                data: { used_at: new Date() },
-            });
+            await db.update(Invitation).set({ used_at: new Date() }).where(eq(Invitation.id, invitation.id));
             return res.status(409).json({ error: 'Un compte existe déjà avec cet email.' });
         }
 
         // 3. Create user + mark invitation in a transaction
-        const hashedPassword = await bcrypt.hash(password, 10);
+        const hashedPassword = await hashPassword(password);
 
-        const result = await prisma.$transaction(async (tx) => {
-            const user = await tx.proUser.create({
-                data: {
-                    email: invitation.email,
-                    password_hash: hashedPassword,
-                    role: invitation.role || 'PRO',
-                    status: 'active',
-                    structureId: invitation.structureId,
-                },
-            });
+        const result = await db.transaction(async (tx) => {
+            const [user] = await tx.insert(ProUser).values({
+                email: invitation.email,
+                password_hash: hashedPassword,
+                role: invitation.role || 'PRO',
+                status: 'active',
+                structureId: invitation.structureId,
+            }).returning();
 
-            await tx.invitation.update({
-                where: { id: invitation.id },
-                data: { used_at: new Date() },
-            });
+            await tx.update(Invitation).set({
+                used_at: new Date()
+            }).where(eq(Invitation.id, invitation.id));
 
             return user;
         });

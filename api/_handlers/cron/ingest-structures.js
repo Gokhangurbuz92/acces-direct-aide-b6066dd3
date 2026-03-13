@@ -7,6 +7,7 @@ import { withLock } from '../../_utils/pipelineLock.js';
 import { computeContentHash } from '../../_utils/contentHash.js';
 import { ensureSlugOrNull } from '../../_utils/slug.js';
 import { upsertSourceDocument } from '../../_utils/sourceDocument.js';
+import { StructureIngestSchema } from '../../lib/ingestion/validators.js';
 
 const DATASETS = [
     {
@@ -130,16 +131,39 @@ export async function runIngestStructures({ limit, runId }) {
                 const ville = f.commune || f.ville || "Strasbourg";
                 const cp = (f.code_postal || f.cp || "").toString();
 
-                const hash = computeContentHash({
-                    nom,
-                    fullAdresse,
-                    ville,
-                    cp,
-                    email: f.mail || f.email || null,
+                // Zod Validation Shield
+                const validationTarget = {
+                    nom: nom?.trim(),
+                    adresse: fullAdresse?.trim() || "Inconnue", // Ensure an address exists or fallback safely
+                    ville: ville?.trim(),
+                    code_postal: cp?.trim(),
                     telephone: f.tel || f.telephone || null,
-                    site: f.url || f.site_internet || null,
+                    email: f.mail || f.email || null,
+                    site_web: f.url || f.site_internet || null,
+                    source_id: dataset.id,
+                    source_url: dataset.url,
+                };
+                
+                const parsed = StructureIngestSchema.safeParse(validationTarget);
+                if (!parsed.success) {
+                    const errorIssues = parsed.error.issues.map(i => `${i.path.join('.')}: ${i.message}`).join(', ');
+                    stats.errors.push(`Record validation fail: ${nom} - ${errorIssues}`);
+                    logger.warn(`INGEST_STRUCTURE_VALIDATION_ERROR`, { nom, errors: errorIssues });
+                    continue;
+                }
+                
+                const val = parsed.data;
+
+                const hash = computeContentHash({
+                    nom: val.nom,
+                    fullAdresse: val.adresse,
+                    ville: val.ville,
+                    cp: val.code_postal,
+                    email: val.email,
+                    telephone: val.telephone,
+                    site: val.site_web,
                 });
-                const baseSlug = ensureSlugOrNull(nom);
+                const baseSlug = ensureSlugOrNull(val.nom);
                 const normalizedSlug = ensureSlugOrNull(`${baseSlug || 'structure'}-${hash.substring(0, 6)}`);
 
                 let sourceDocumentId = null;
@@ -181,9 +205,9 @@ export async function runIngestStructures({ limit, runId }) {
                             data: {
                                 last_sync: new Date(),
                                 import_batch: runId,
-                                telephone: existing.telephone || f.tel || f.telephone || null,
-                                email: existing.email || f.mail || f.email || null,
-                                site_web: existing.site_web || f.url || f.site_internet || null,
+                                telephone: existing.telephone || val.telephone,
+                                email: existing.email || val.email,
+                                site_web: existing.site_web || val.site_web,
                                 raw_data_hash: hash,
                                 source_document_id: sourceDocumentId,
                                 slug: existing.slug || normalizedSlug || null,
@@ -195,14 +219,14 @@ export async function runIngestStructures({ limit, runId }) {
                     // CREATE - Valve 1: Ingest
                     const newStructure = await prisma.structure.create({
                         data: {
-                            nom,
+                            nom: val.nom,
                             slug: normalizedSlug || null,
-                            adresse: `${fullAdresse} ${cp} ${ville}`.trim(),
-                            ville,
-                            code_postal: cp,
-                            telephone: f.tel || f.telephone || null,
-                            email: f.mail || f.email || null,
-                            site_web: f.url || f.site_internet || null,
+                            adresse: `${val.adresse} ${val.code_postal} ${val.ville}`.trim(),
+                            ville: val.ville,
+                            code_postal: val.code_postal,
+                            telephone: val.telephone,
+                            email: val.email,
+                            site_web: val.site_web,
                             source_id: dataset.id,
                             source_url: dataset.url,
                             raw_data_hash: hash,
@@ -214,7 +238,7 @@ export async function runIngestStructures({ limit, runId }) {
                     });
 
                     // Valve 2: Enrich (Geocoding)
-                    const geo = await geocodeAddress(`${fullAdresse}, ${cp} ${ville}`);
+                    const geo = await geocodeAddress(`${val.adresse}, ${val.code_postal} ${val.ville}`);
                     if (geo && geo.score > 0.7) {
                         await prisma.structure.update({
                             where: { id: newStructure.id },

@@ -2,6 +2,7 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import { Send, ShieldCheck, Lock, Clock, AlertCircle, Loader2, Sparkles, AlertTriangle, MessageSquarePlus } from 'lucide-react';
 import { cryptoE2EE } from '@/lib/crypto-messaging.js';
 import { Button } from '@/components/ui/button';
+import { sanitizeHtml } from '@/lib/sanitize';
 
 /**
  * SecureChat
@@ -281,7 +282,7 @@ export default function SecureChat({ shareId, senderId, receiverId }) {
                                             <p className="font-bold text-indigo-900 mb-2 flex items-center gap-1.5 border-b border-indigo-50 pb-1">
                                                 <Sparkles size={12} /> Résumé psychologique
                                             </p>
-                                            <div dangerouslySetInnerHTML={{ __html: aiResult.replace(/\n\n/g, '<br/>').replace(/\*/g, '') }} />
+                                            <div dangerouslySetInnerHTML={{ __html: sanitizeHtml(aiResult.replace(/\n\n/g, '<br/>').replace(/\*/g, '')) }} />
                                         </div>
                                     )}
 

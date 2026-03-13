@@ -33,17 +33,10 @@ const logger = pino({
     // Redact sensitive keys if necessary
     redact: {
         paths: [
-            'req.headers.authorization',
-            'req.headers.cookie',
-            'headers.authorization',
-            'headers.cookie',
-            'authorization',
-            'cookie',
-            'password',
-            'token',
-            'secret',
+            'email', 'citizenEmail', 'password', 'token', 'req.headers.authorization',
+            'mfaSecret', 'outlookToken', 'phone'
         ],
-        remove: true
+        censor: '[MASQUÉ - RGPD]'
     }
 });
 

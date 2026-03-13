@@ -1,4 +1,3 @@
-import { GoogleGenerativeAI } from "@google/generative-ai";
 import { readFileSync } from 'fs';
 import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
@@ -11,9 +10,10 @@ const __dirname = dirname(__filename);
 
 /** @type {import('@google/generative-ai').GoogleGenerativeAI | null} */
 let genAI = null;
+let GoogleGenerativeAI_lib = null;
 
-/** @returns {import('@google/generative-ai').GoogleGenerativeAI} */
-function getGenAI() {
+/** @returns {Promise<import('@google/generative-ai').GoogleGenerativeAI>} */
+async function getGenAI() {
     if (genAI) return genAI;
 
     const apiKey = env.ai.geminiKey;
@@ -21,7 +21,12 @@ function getGenAI() {
         throw new Error('[env] Missing required environment variable: GEMINI_API_KEY (or GOOGLE_API_KEY)');
     }
 
-    genAI = new GoogleGenerativeAI(apiKey);
+    if (!GoogleGenerativeAI_lib) {
+        const mod = await import('@google/generative-ai');
+        GoogleGenerativeAI_lib = mod.GoogleGenerativeAI;
+    }
+
+    genAI = new GoogleGenerativeAI_lib(apiKey);
     return genAI;
 }
 
@@ -61,7 +66,8 @@ function loadRulePack(id) {
  */
 async function fetchRagContext(message, limit = 5) {
     try {
-        const embedModel = getGenAI().getGenerativeModel({ model: 'gemini-embedding-001' });
+        const genAIClient = await getGenAI();
+        const embedModel = genAIClient.getGenerativeModel({ model: 'gemini-embedding-001' });
         const embedResult = await embedModel.embedContent(message);
         const vector = embedResult.embedding.values;
         const vectorStr = `[${vector.join(',')}]`;
@@ -172,7 +178,8 @@ async function fetchLexicalContext(message, limit = 5) {
  */
 export async function generateText(prompt, options = {}) {
     const modelName = options.model || 'gemini-2.0-flash';
-    const model = getGenAI().getGenerativeModel({
+    const genAIClient = await getGenAI();
+    const model = genAIClient.getGenerativeModel({
         model: modelName,
         generationConfig: {
             temperature: options.temperature ?? 0.1,
@@ -207,7 +214,8 @@ export async function chatWithRulePack(message, history = []) {
 
     // ── 2. Try Gemini chat generation ──
     try {
-        const model = getGenAI().getGenerativeModel({
+        const genAIClient = await getGenAI();
+        const model = genAIClient.getGenerativeModel({
             model: "gemini-2.0-flash",
             generationConfig: {
                 temperature: 0.2,

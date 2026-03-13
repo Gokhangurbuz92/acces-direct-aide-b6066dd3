@@ -91,9 +91,9 @@ export default async function handler(req, res) {
     const ip = getClientIp(req);
     const limit = await checkRateLimit('ASSISTANT_CHAT', ip);
     if (!limit.allowed) {
-        return res.status(getRateLimitStatus(limit)).json({
-            ...(limit.error || { error: 'rate_limited' }),
-            requestId,
+        return res.status(429).json({ 
+            error: "Trop de requêtes.",
+            message: "Pour garantir l'accès à tous, veuillez patienter une minute."
         });
     }
 

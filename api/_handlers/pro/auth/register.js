@@ -1,8 +1,10 @@
 import logger from '../../../_utils/logger.js';
-import bcrypt from 'bcryptjs';
-import { signProToken, logProAudit } from '../../../lib/pro-auth.js';
+import { hashPassword } from '../../../_utils/user-auth.js';
+import { signProToken, logProAudit } from '../../../_utils/auth.js';
 import { checkRateLimit, getClientIp } from '../../../_utils/rateLimit.js';
-import prisma from '../../../_utils/prisma.js';
+import { db } from '../../../src/db/index.js';
+import { Structure, ProUser } from '../../../src/db/schema.js';
+import { eq } from 'drizzle-orm';
 
 function slugify(text) {
     return text.toString().toLowerCase()
@@ -37,8 +39,8 @@ export default async function handler(req, res) {
 
     try {
         // Check if email exists
-        const existingUser = await prisma.proUser.findFirst({
-            where: { email }
+        const existingUser = await db.query.ProUser.findFirst({
+            where: (u, { eq }) => eq(u.email, email)
         });
 
         if (existingUser) {
@@ -50,34 +52,30 @@ export default async function handler(req, res) {
         if (!slug) slug = `structure-${Date.now()}`;
 
         // Ensure slug uniqueness
-        const existingStructure = await prisma.structure.findUnique({ where: { slug } });
+        const existingStructure = await db.query.Structure.findFirst({ where: (s, { eq }) => eq(s.slug, slug) });
         if (existingStructure) {
             slug = `${slug}-${Math.random().toString(36).substring(2, 7)}`;
         }
 
-        const hashedPassword = await bcrypt.hash(password, 10);
+        const hashedPassword = await hashPassword(password);
 
         // Transaction to ensure atomicity
-        const result = await prisma.$transaction(async (prisma) => {
-            const structure = await prisma.structure.create({
-                data: {
-                    nom: structureName,
-                    slug: slug,
-                    status: 'actif',
-                    statut: 'brouillon',
-                    is_pro_enabled: true // Enable pro module immediately
-                }
-            });
+        const result = await db.transaction(async (tx) => {
+            const [structure] = await tx.insert(Structure).values({
+                nom: structureName,
+                slug: slug,
+                status: 'actif',
+                statut: 'brouillon',
+                is_pro_enabled: true // Enable pro module immediately
+            }).returning();
 
-            const user = await prisma.proUser.create({
-                data: {
-                    email,
-                    password_hash: hashedPassword,
-                    role: 'STRUCTURE_ADMIN',
-                    status: 'active',
-                    structureId: structure.id
-                }
-            });
+            const [user] = await tx.insert(ProUser).values({
+                email,
+                password_hash: hashedPassword,
+                role: 'STRUCTURE_ADMIN',
+                status: 'active',
+                structureId: structure.id
+            }).returning();
 
             return { structure, user };
         });

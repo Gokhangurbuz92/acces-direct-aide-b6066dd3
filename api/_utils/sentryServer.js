@@ -80,7 +80,33 @@ if (dsn) {
     release,
     tracesSampleRate: 1.0,
     beforeSend(event) {
-      return scrubRequest(event);
+      let scrubbedEvent = scrubRequest(event);
+      
+      // 👇 Filtre Zero-Knowledge (PII Scrubbing)
+      if (scrubbedEvent.user) {
+        delete scrubbedEvent.user.email;
+        delete scrubbedEvent.user.ip_address;
+        if (scrubbedEvent.user.id) scrubbedEvent.user.id = "[MASQUÉ-RGPD]";
+      }
+      
+      // Nettoyage supplémentaire des Headers et URL
+      if (scrubbedEvent.request) {
+        if (scrubbedEvent.request.url && scrubbedEvent.request.url.includes('?')) {
+          scrubbedEvent.request.url = scrubbedEvent.request.url.split('?')[0] + '?pii=scrubbed';
+        }
+        if (scrubbedEvent.request.headers) {
+          delete scrubbedEvent.request.headers['authorization'];
+          delete scrubbedEvent.request.headers['cookie'];
+          delete scrubbedEvent.request.headers['x-forwarded-for'];
+        }
+      }
+
+      // Sécurité Back-end : Empêcher la fuite des variables d'environnement
+      if (scrubbedEvent.contexts && scrubbedEvent.contexts.runtime) {
+        delete scrubbedEvent.contexts.runtime.env;
+      }
+
+      return scrubbedEvent;
     },
   });
 }

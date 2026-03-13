@@ -33,6 +33,35 @@ export async function initSentry() {
         "accesdirectaide.fr",
         "www.accesdirectaide.fr",
       ],
+
+      // 👇 Filtre Zero-Knowledge (PII Scrubbing)
+      beforeSend(event) {
+        // 1. Anonymisation stricte de l'identité du citoyen/pro
+        if (event.user) {
+          delete event.user.email;
+          delete event.user.ip_address;
+          if (event.user.id) event.user.id = "[MASQUÉ-RGPD]";
+        }
+        
+        // 2. Nettoyage absolu de la requête HTTP
+        if (event.request) {
+          if (event.request.url && event.request.url.includes('?')) {
+            event.request.url = event.request.url.split('?')[0] + '?pii=scrubbed';
+          }
+          if (event.request.headers) {
+            delete event.request.headers['authorization'];
+            delete event.request.headers['cookie'];
+            delete event.request.headers['x-forwarded-for'];
+          }
+        }
+
+        // 3. Sécurité Back-end : Empêcher la fuite des variables d'environnement
+        if (event.contexts && event.contexts.runtime) {
+          delete event.contexts.runtime.env;
+        }
+
+        return event;
+      },
     });
 
     sentryRef.current = Sentry;

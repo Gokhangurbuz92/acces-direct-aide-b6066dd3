@@ -139,6 +139,17 @@ async function handler(req, res) {
     if (effectiveParams.id || effectiveParams.slug) {
       const structure = await db.query.Structure.findFirst({
         where: effectiveParams.id ? eq(Structure.id, effectiveParams.id) : eq(Structure.slug, effectiveParams.slug),
+        columns: {
+          raw_data_hash: false,
+          content_hash: false,
+          import_batch: false,
+          import_status: false,
+          geoloc_status: false,
+          source_last_modified: false,
+          retrieved_at: false,
+          last_checked_at: false,
+          source_document_id: false,
+        },
         with: {
           proServices: true,
           rdvSettings: {

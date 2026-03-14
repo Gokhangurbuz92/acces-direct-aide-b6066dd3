@@ -1,7 +1,7 @@
 import logger from '../../../_utils/logger.js';
 import { db } from '../../../../src/db/index.js';
 import { ProMessage } from '../../../../src/db/schema.js';
-import { eq, desc, asc } from 'drizzle-orm';
+import { eq, desc, asc, sql } from 'drizzle-orm';
 import { requireProAuth, requireProStructureContext } from '../../../_utils/auth.js';
 import { encryptMessage, decryptMessage } from '../../../lib/messaging-crypto.js';
 

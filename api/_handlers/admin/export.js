@@ -18,7 +18,11 @@ export default async function handler(req, res) {
     if (req.method !== 'GET') return res.status(405).json({ error: 'Method not allowed' });
     if (!verifyAdmin(req)) return res.status(401).json({ error: 'Unauthorized' });
 
-    const modelName = entity?.toLowerCase();
+    const url = new URL(req.url, `https://${req.headers.host}`);
+    const entity = url.searchParams.get('entity');
+    if (!entity) return res.status(400).json({ error: 'Missing entity parameter' });
+
+    const modelName = entity.toLowerCase();
     const modelKey = Object.keys(schema).find(k => k.toLowerCase() === modelName);
     const model = modelKey ? schema[modelKey] : null;
     if (!model || !db.query[modelKey]) return res.status(400).json({ error: 'Invalid entity' });

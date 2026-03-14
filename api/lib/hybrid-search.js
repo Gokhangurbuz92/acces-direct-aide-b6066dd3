@@ -128,13 +128,13 @@ function buildAideFilters({ category, situations, geoScope }) {
           FROM "_AideToLifeSituation" relation
           JOIN "LifeSituation" situation ON situation.id = relation."B"
           WHERE relation."A" = a.id
-            AND situation.slug IN (${Prisma.join(situations)})
+            AND situation.slug IN (${sql.join(situations)})
         )
       )
     `);
   }
 
-  return sql`${Prisma.join(filters, sql.raw(' AND '))}`;
+  return sql`${sql.join(filters, sql.raw(' AND '))}`;
 }
 
 function normalizeRows(rows) {

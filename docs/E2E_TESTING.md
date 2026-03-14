@@ -22,6 +22,21 @@ USE_MOCKS=true npx playwright test --ui
 > [!NOTE]
 > Si vous lancez `npx playwright test` sans `USE_MOCKS`, les tests tenteront de taper sur la véritable base de données locale.
 
+### Mode Intégration (Neon Branch)
+
+Pour exécuter les tests E2E contre une **vraie base de données Neon** (branche éphémère), utilisez le projet `integration` avec l'URL de prévisualisation Vercel :
+
+```bash
+# Cibler une preview Vercel (la DB Neon branch est auto-injectée)
+PLAYWRIGHT_BASE_URL=https://my-pr-123.vercel.app npx playwright test --project=integration
+
+# En CI (GitHub Actions), PLAYWRIGHT_BASE_URL est injecté automatiquement par Vercel
+npx playwright test --project=integration
+```
+
+> [!IMPORTANT]
+> Le projet `integration` exécute un sous-ensemble de tests (smoke, vital-paths, aides-flow, booking) sans mocks. Les mocks ne sont PAS chargés car `USE_MOCKS` n'est pas défini.
+
 ## 🏗️ Architecture des Mocks
 
 ### 1. Mocks Globaux (`e2e/_mocks/publicApiMocks.js`)

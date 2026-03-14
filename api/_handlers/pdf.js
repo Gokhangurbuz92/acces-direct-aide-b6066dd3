@@ -1,8 +1,7 @@
 import crypto from 'crypto';
-import { PDFDocument, StandardFonts, rgb } from 'pdf-lib';
 import * as Sentry from '@sentry/node';
 
-import prisma from '../_utils/prisma.js';
+import { db } from '../../src/db/index.js';
 import { applyNoStore } from '../_utils/cache.js';
 import { buildProvenance } from '../_utils/provenance.js';
 import { htmlToPlainText } from '../_utils/html-text.js';
@@ -11,8 +10,6 @@ import { logger } from '../lib/logger.js';
 const A4_WIDTH = 595.28;
 const A4_HEIGHT = 841.89;
 const PAGE_MARGIN = 48;
-const BODY_COLOR = rgb(0.13, 0.16, 0.2);
-const MUTED_COLOR = rgb(0.36, 0.4, 0.47);
 const UUID_LIKE_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
 /**
@@ -121,21 +118,18 @@ function getFreshnessLabel(verifiedAt) {
  */
 function buildIdentifierWhere(identifier) {
   if (UUID_LIKE_REGEX.test(identifier)) {
-    return { OR: [{ slug: identifier }, { id: identifier }] };
+    return (t, { eq, or, and: andOp }) => andOp(or(eq(t.slug, identifier), eq(t.id, identifier)), eq(t.statut, 'publie'));
   }
-  return { slug: identifier };
+  return (t, { eq, and: andOp }) => andOp(eq(t.slug, identifier), eq(t.statut, 'publie'));
 }
 
 /**
  * @param {string} identifier
  */
 async function loadAide(identifier) {
-  return prisma.aide.findFirst({
-    where: {
-      ...buildIdentifierWhere(identifier),
-      statut: 'publie',
-    },
-    select: {
+  return db.query.Aide.findFirst({
+    where: buildIdentifierWhere(identifier),
+    columns: {
       id: true,
       slug: true,
       titre: true,
@@ -151,8 +145,10 @@ async function loadAide(identifier) {
       date_verification: true,
       source_name: true,
       source_url: true,
+    },
+    with: {
       sourceDocument: {
-        select: {
+        columns: {
           fetched_at: true,
           source_url: true,
         },
@@ -165,12 +161,9 @@ async function loadAide(identifier) {
  * @param {string} identifier
  */
 async function loadDemarche(identifier) {
-  return prisma.demarche.findFirst({
-    where: {
-      ...buildIdentifierWhere(identifier),
-      statut: 'publie',
-    },
-    select: {
+  return db.query.Demarche.findFirst({
+    where: buildIdentifierWhere(identifier),
+    columns: {
       id: true,
       slug: true,
       titre: true,
@@ -184,8 +177,10 @@ async function loadDemarche(identifier) {
       lien_officiel: true,
       date_verification: true,
       source_url: true,
+    },
+    with: {
       sourceDocument: {
-        select: {
+        columns: {
           fetched_at: true,
           source_url: true,
         },
@@ -208,6 +203,11 @@ async function loadDemarche(identifier) {
  * }} payload
  */
 async function renderPdf(payload) {
+  const { PDFDocument, StandardFonts, rgb } = await import('pdf-lib');
+  
+  const BODY_COLOR = rgb(0.13, 0.16, 0.2);
+  const MUTED_COLOR = rgb(0.36, 0.4, 0.47);
+
   const pdfDoc = await PDFDocument.create();
   const fontRegular = await pdfDoc.embedFont(StandardFonts.Helvetica);
   const fontBold = await pdfDoc.embedFont(StandardFonts.HelveticaBold);

@@ -1,7 +1,8 @@
 import logger from '../_utils/logger.js';
 import { randomUUID } from 'crypto';
 import { HeadBucketCommand, S3Client } from '@aws-sdk/client-s3';
-import prisma from '../_utils/prisma.js';
+import { db } from '../../src/db/index.js';
+import { sql } from 'drizzle-orm';
 import { env } from '../_utils/env.js';
 import { verifyAdmin } from '../_utils/auth.js';
 import { getCronAuth } from '../_utils/cronAuth.js';
@@ -43,7 +44,7 @@ function withTimeout(promise, ms, label) {
 async function checkDb() {
   const start = Date.now();
   try {
-    await withTimeout(prisma.$queryRaw`SELECT 1`, TIMEOUT_MS, 'db');
+    await withTimeout(db.execute(sql`SELECT 1`), TIMEOUT_MS, 'db');
     return { ok: true, durationMs: Date.now() - start };
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
@@ -148,16 +149,16 @@ export default async function handler(req, res) {
     return res.status(401).json({ error: 'Unauthorized', requestId });
   }
 
-  const db = await checkDb();
+  const dbCheck = await checkDb();
   const kvCheck = await checkKv(requestId);
   const storage = await checkStorage();
-  const cronActualites = await getActualitesCronFreshness(prisma);
+  const cronActualites = await getActualitesCronFreshness();
   const cronHardFail = cronActualites.state === 'error';
 
   const geminiKeyPresent = Boolean(env.ai.geminiKey);
 
   const overallOk =
-    db.ok === true &&
+    dbCheck.ok === true &&
     (kvCheck.ok === true || kvCheck.ok === 'skipped') &&
     (storage.ok === true || storage.ok === 'skipped') &&
     !cronHardFail;
@@ -166,7 +167,7 @@ export default async function handler(req, res) {
     ok: overallOk,
     requestId,
     deps: {
-      db,
+      db: dbCheck,
       kv: kvCheck,
       storage,
       cron: {
@@ -185,7 +186,7 @@ export default async function handler(req, res) {
     logger.warn(
       {
         requestId,
-        db: db.ok,
+        db: dbCheck.ok,
         kv: kvCheck.ok,
         storage: storage.ok,
         cronActualitesState: cronActualites.state,

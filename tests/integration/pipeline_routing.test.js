@@ -1,5 +1,9 @@
+import { vi } from "vitest";
+vi.stubEnv("KV_REST_API_URL", "http://localhost");
+vi.stubEnv("KV_REST_API_TOKEN", "mock-token");
 
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+
+import { describe, it, expect, beforeEach } from 'vitest';
 import pipelineHandler from '../../api/_handlers/cron/pipeline.js';
 import { runIngestStructures } from '../../api/_handlers/cron/ingest-structures.js';
 import { runIngestAids } from '../../api/_handlers/cron/ingest-aids.js';
@@ -25,18 +29,23 @@ vi.mock('../../api/_handlers/cron/ingest-aids.js', () => ({
     }),
     default: vi.fn()
 }));
-vi.mock('@prisma/client', () => {
-    const MockPrismaClient = vi.fn();
-    MockPrismaClient.prototype.rssSource = {
-        upsert: vi.fn(),
-        findMany: vi.fn().mockResolvedValue([]),
-    };
-    MockPrismaClient.prototype.importLog = {
-        create: vi.fn(),
-    };
-    MockPrismaClient.prototype.$disconnect = vi.fn();
-    return { PrismaClient: MockPrismaClient };
-});
+// Mock DB
+const mockDb = vi.hoisted(() => ({
+    query: {
+        RssSource: {
+            findMany: vi.fn().mockResolvedValue([]),
+        }
+    },
+    insert: vi.fn().mockReturnValue({
+        values: vi.fn().mockReturnValue({
+            onConflictDoUpdate: vi.fn()
+        })
+    })
+}));
+
+vi.mock('../../src/db/index.js', () => ({
+    db: mockDb
+}));
 
 // Setup req/res mocks
 const createMocks = (query = {}, headers = {}) => {

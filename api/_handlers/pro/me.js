@@ -1,6 +1,8 @@
 import logger from '../../_utils/logger.js';
 import { requireProAuth, requireProStructureContext } from '../../_utils/auth.js';
-import prisma from '../../_utils/prisma.js';
+import { db } from '../../../src/db/index.js';
+import { ProUser } from '../../../src/db/schema.js';
+import { eq, and } from 'drizzle-orm';
 /**
  * @param {import('../../_utils/http-types').ApiRequest} req
  * @param {import('../../_utils/http-types').ApiResponse} res
@@ -15,12 +17,12 @@ async function handler(req, res) {
         const proCtx = requireProStructureContext(req, res);
         if (!proCtx) return;
 
-        const user = await prisma.proUser.findFirst({
-            where: {
-                id: proCtx.userId,
-                structureId: proCtx.structureId,
-            },
-            include: { structure: true }
+        const user = await db.query.ProUser.findFirst({
+            where: and(
+                eq(ProUser.id, proCtx.userId),
+                eq(ProUser.structureId, proCtx.structureId)
+            ),
+            with: { structure: true }
         });
 
         if (!user) {

@@ -1,6 +1,7 @@
 import logger from '../../_utils/logger.js';
 import { randomUUID } from 'crypto';
-import prisma from '../../_utils/prisma.js';
+import { db } from '../../../src/db/index.js';
+import { sql } from 'drizzle-orm';
 import { kv } from '../../_utils/kv.js';
 import { env } from '../../_utils/env.js';
 import { applyNoIndex } from '../../_utils/robots.js';
@@ -31,7 +32,7 @@ function withTimeout(promise, ms) {
 async function probeDb() {
   const startedAt = Date.now();
   try {
-    await withTimeout(prisma.$queryRaw`SELECT 1`, TIMEOUT_MS);
+    await withTimeout(db.execute(sql`SELECT 1`), TIMEOUT_MS);
     return { ok: true, durationMs: Date.now() - startedAt };
   } catch {
     return { ok: false, durationMs: Date.now() - startedAt };

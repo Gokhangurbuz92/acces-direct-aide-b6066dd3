@@ -1,7 +1,8 @@
 import logger from '../../_utils/logger.js';
 // @ts-nocheck
 import { requireProAuth } from '../../_utils/auth.js';
-import prisma from '../../_utils/prisma.js';
+import { db } from '../../../src/db/index.js';
+import { ReviewQueueItem } from '../../../src/db/schema.js';
 /**
  * Agent Discovery API (Pro-only)
  *
@@ -81,8 +82,7 @@ async function handler(req, res) {
             for (const item of findings) {
                 try {
                     const entityId = `discovery-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
-                    await prisma.reviewQueueItem.create({
-                        data: {
+                    await db.insert(ReviewQueueItem).values({
                             entityType: 'AIDE',
                             entityId,
                             title: String(item.title || 'Sans titre').slice(0, 255),
@@ -97,7 +97,6 @@ async function handler(req, res) {
                                 discoveredBy: req.user?.userId || 'system',
                                 discoveredAt: new Date().toISOString(),
                             },
-                        },
                     });
                     submitted++;
                 } catch (dbErr) {

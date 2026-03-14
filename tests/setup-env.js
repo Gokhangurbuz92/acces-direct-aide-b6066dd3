@@ -10,10 +10,17 @@ process.env.ADMIN_TOKEN = process.env.ADMIN_TOKEN || 'test-admin-token';
 process.env.BYPASS_SECRET = process.env.BYPASS_SECRET || 'test-bypass-secret';
 
 // Ensure tests never talk to external KV/Upstash.
-process.env.KV_REST_API_URL = '';
-process.env.KV_REST_API_TOKEN = '';
+process.env.KV_REST_API_URL = process.env.KV_REST_API_URL || 'http://localhost';
+process.env.KV_REST_API_TOKEN = process.env.KV_REST_API_TOKEN || 'dummy_token';
 process.env.UPSTASH_KV_KV_REST_API_URL = '';
 process.env.UPSTASH_KV_KV_REST_API_TOKEN = '';
+process.env.UPSTASH_REDIS_REST_URL = '';
+process.env.UPSTASH_REDIS_REST_TOKEN = '';
+
+process.env.STORAGE_ENDPOINT = process.env.STORAGE_ENDPOINT || 'http://localhost';
+process.env.STORAGE_BUCKET = process.env.STORAGE_BUCKET || 'dummy';
+process.env.STORAGE_ACCESS_KEY_ID = process.env.STORAGE_ACCESS_KEY_ID || 'dummy';
+process.env.STORAGE_SECRET_ACCESS_KEY = process.env.STORAGE_SECRET_ACCESS_KEY || 'dummy';
 process.env.UPSTASH_REDIS_REST_URL = '';
 process.env.UPSTASH_REDIS_REST_TOKEN = '';
 
@@ -39,3 +46,38 @@ console.error = (...args) => {
 console.warn = (...args) => {
     originalWarn(...args);
 };
+
+// --- Drizzle Universal Teardown ---
+import { afterEach } from 'vitest';
+import { sql } from 'drizzle-orm';
+import { db } from '../src/db/index.js';
+
+export async function resetDatabase() {
+  // Récupère toutes les tables du schéma public
+  const { rows: tablenames } = await db.execute(
+    sql`SELECT tablename FROM pg_tables WHERE schemaname='public'`
+  );
+
+  const tables = tablenames
+   .map(({ tablename }) => tablename)
+   .filter((name) => name !== '__drizzle_migrations') // Protège l'historique de Drizzle Kit
+   .map((name) => `"public"."${name}"`)
+   .join(', ');
+
+  try {
+    if (tables.length > 0) {
+      // Vide toutes les tables en cascade pour ignorer les contraintes de clés étrangères lors du nettoyage
+      await db.execute(sql`TRUNCATE TABLE ${sql.raw(tables)} CASCADE;`);
+    }
+  } catch (error) {
+    console.error('Erreur lors du nettoyage de la base de données de test:', error);
+  }
+}
+
+// Hook Vitest à exécuter après chaque test
+afterEach(async () => {
+  // Only run teardown if we have a real DB connection (not skipped)
+  if (!process.env.SKIP_DB_SETUP && (process.env.DATABASE_URL_TEST || process.env.DATABASE_URL)) {
+    await resetDatabase();
+  }
+});

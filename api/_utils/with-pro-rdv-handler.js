@@ -99,6 +99,7 @@ export function withProRdvHandler(handlerName, handler) {
           method,
           statusCode,
           structureId,
+          err: error.stack,
         },
         'pro.rdv.handler.error',
       );

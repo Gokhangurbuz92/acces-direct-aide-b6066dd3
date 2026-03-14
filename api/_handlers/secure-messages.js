@@ -1,6 +1,8 @@
 import logger from '../_utils/logger.js';
 // @ts-nocheck
-import prisma from '../_utils/prisma.js';
+import { db } from '../../src/db/index.js';
+import * as schema from '../../src/db/schema.js';
+import { eq } from 'drizzle-orm';
 
 /**
  * Secure Messages API Handler
@@ -26,13 +28,11 @@ export default async function handler(req, res) {
                 return res.status(400).json({ error: 'Identifiant de partage requis' });
             }
 
-            const messages = await prisma.rdvConversationMessage.findMany({
-                where: {
-                    conversationId: shareId,
-                },
-                orderBy: { createdAt: 'asc' },
-                take: 50,
-                select: {
+            const messages = await db.query.RdvConversationMessage.findMany({
+                where: (m, { eq }) => eq(m.conversationId, shareId),
+                orderBy: (m, { asc }) => [asc(m.createdAt)],
+                limit: 50,
+                columns: {
                     id: true,
                     senderType: true,
                     senderCitizenUserId: true,
@@ -62,8 +62,8 @@ export default async function handler(req, res) {
             }
 
             // Verify conversation exists
-            const conversation = await prisma.rdvConversation.findUnique({
-                where: { id: shareId },
+            const conversation = await db.query.RdvConversation.findFirst({
+                where: (c, { eq }) => eq(c.id, shareId),
             });
 
             if (!conversation) {
@@ -74,21 +74,18 @@ export default async function handler(req, res) {
             const isCitizen = conversation.citizenUserId === senderId;
             const senderType = isCitizen ? 'USER' : 'PRO';
 
-            const newMessage = await prisma.rdvConversationMessage.create({
-                data: {
-                    conversationId: shareId,
-                    senderType,
-                    senderCitizenUserId: isCitizen ? senderId : null,
-                    senderProUserId: !isCitizen ? senderId : null,
-                    body: encryptedContent, // Opaque encrypted blob — server cannot read
-                },
-            });
+            const [newMessage] = await db.insert(schema.RdvConversationMessage).values({
+                conversationId: shareId,
+                senderType,
+                senderCitizenUserId: isCitizen ? senderId : null,
+                senderProUserId: !isCitizen ? senderId : null,
+                body: encryptedContent, // Opaque encrypted blob — server cannot read
+            }).returning();
 
             // Update conversation timestamp
-            await prisma.rdvConversation.update({
-                where: { id: shareId },
-                data: { lastMessageAt: newMessage.createdAt },
-            });
+            await db.update(schema.RdvConversation).set({
+                lastMessageAt: newMessage.createdAt,
+            }).where(eq(schema.RdvConversation.id, shareId));
 
             return res.status(201).json({
                 ok: true,

@@ -1,74 +1,96 @@
-import { generateUniqueSlug, ensureSlug } from '../api/lib/slug.js';
 import { describe, test, expect, beforeEach, vi } from 'vitest';
 
-// Mock Prisma
-const mockPrisma = {
-    aide: {
-        findFirst: vi.fn()
+vi.stubEnv("KV_REST_API_URL", "http://localhost");
+vi.stubEnv("KV_REST_API_TOKEN", "mock-token");
+
+// Mock the Drizzle db module
+const mockSelect = vi.fn();
+const mockFrom = vi.fn();
+const mockWhere = vi.fn();
+const mockLimit = vi.fn();
+const mockThen = vi.fn();
+
+vi.mock('../src/db/index.js', () => ({
+    db: {
+        select: (...args) => {
+            mockSelect(...args);
+            return {
+                from: (...a) => {
+                    mockFrom(...a);
+                    return {
+                        where: (...w) => {
+                            mockWhere(...w);
+                            return {
+                                limit: (...l) => {
+                                    mockLimit(...l);
+                                    return {
+                                        then: (cb) => mockThen().then(cb),
+                                    };
+                                },
+                            };
+                        },
+                    };
+                },
+            };
+        },
     },
-    structure: {
-        findFirst: vi.fn()
-    }
-};
+}));
+
+import { generateUniqueSlug, ensureSlug } from '../api/lib/slug.js';
 
 beforeEach(() => {
     vi.clearAllMocks();
+    // Default: no collision (no existing row found)
+    mockThen.mockResolvedValue([]);
 });
 
 describe('generateUniqueSlug', () => {
     test('should generate a simple slug from title', async () => {
-        mockPrisma.aide.findFirst.mockResolvedValue(null); // No collision
-        const slug = await generateUniqueSlug(mockPrisma, 'aide', 'Ma  Super   Aide  ');
+        const slug = await generateUniqueSlug('aide', 'Ma  Super   Aide  ');
         expect(slug).toBe('ma-super-aide');
     });
 
     test('should handle accents and special characters', async () => {
-        mockPrisma.aide.findFirst.mockResolvedValue(null);
-        const slug = await generateUniqueSlug(mockPrisma, 'aide', 'L\'été à Noël : ça coûte cher !');
+        const slug = await generateUniqueSlug('aide', "L'été à Noël : ça coûte cher !");
         expect(slug).toBe('l-ete-a-noel-ca-coute-cher');
     });
 
     test('should handle collisions by adding a suffix', async () => {
         // First call returns existing item, second call returns null (unique)
-        mockPrisma.aide.findFirst
-            .mockResolvedValueOnce({ id: 'existing-id' })
-            .mockResolvedValueOnce(null);
+        mockThen
+            .mockResolvedValueOnce([{ id: 'existing-id' }])
+            .mockResolvedValueOnce([]);
 
-        const slug = await generateUniqueSlug(mockPrisma, 'aide', 'Collision');
-
-        expect(mockPrisma.aide.findFirst).toHaveBeenCalledTimes(2);
-        expect(mockPrisma.aide.findFirst).toHaveBeenCalledWith(expect.objectContaining({ where: { slug: 'collision' } }));
-        expect(mockPrisma.aide.findFirst).toHaveBeenCalledWith(expect.objectContaining({ where: { slug: 'collision-1' } }));
+        const slug = await generateUniqueSlug('aide', 'Collision');
         expect(slug).toBe('collision-1');
     });
 
     test('should truncate overly long titles', async () => {
-        mockPrisma.aide.findFirst.mockResolvedValue(null);
         const longTitle = 'a'.repeat(300);
-        const slug = await generateUniqueSlug(mockPrisma, 'aide', longTitle);
-
-        expect(slug.length).toBeLessThanOrEqual(200); // Truncated length might vary slightly due to slugify, but input is cap at 200
+        const slug = await generateUniqueSlug('aide', longTitle);
+        expect(slug.length).toBeLessThanOrEqual(200);
     });
 
     test('should return "item" fallback for empty resulting slug', async () => {
-        mockPrisma.aide.findFirst.mockResolvedValue(null);
-        const slug = await generateUniqueSlug(mockPrisma, 'aide', '???');
+        const slug = await generateUniqueSlug('aide', '???');
         expect(slug).toBe('item');
+    });
+
+    test('should throw on unknown model', async () => {
+        await expect(generateUniqueSlug('unknown', 'test')).rejects.toThrow('Unknown model');
     });
 });
 
 describe('ensureSlug', () => {
     test('should return existing slug if present', async () => {
         const item = { id: '1', slug: 'existing-slug', titre: 'Ignore Me' };
-        const result = await ensureSlug(mockPrisma, 'aide', item);
+        const result = await ensureSlug('aide', item);
         expect(result).toBe('existing-slug');
-        expect(mockPrisma.aide.findFirst).not.toHaveBeenCalled();
     });
 
     test('should generate new slug if missing', async () => {
-        mockPrisma.aide.findFirst.mockResolvedValue(null);
         const item = { id: '1', slug: null, titre: 'New Item' };
-        const result = await ensureSlug(mockPrisma, 'aide', item);
+        const result = await ensureSlug('aide', item);
         expect(result).toBe('new-item');
     });
 });

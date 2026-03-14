@@ -1,5 +1,7 @@
 import logger from '../../../_utils/logger.js';
-import prisma from '../../../_utils/prisma.js';
+import { db } from '../../../../src/db/index.js';
+import { Appointment } from '../../../../src/db/schema.js';
+import { eq } from 'drizzle-orm';
 import { hash } from '../../../lib/crypto.js';
 /**
  * @param {import('../../../_utils/http-types').ApiRequest} req
@@ -15,8 +17,8 @@ export default async function handler(req, res) {
     if (!id || !token) return res.status(400).json({ error: "Missing ID or token" });
 
     try {
-        const appointment = await prisma.appointment.findUnique({
-            where: { id }
+        const appointment = await db.query.Appointment.findFirst({
+            where: eq(Appointment.id, id)
         });
 
         if (!appointment) return res.status(404).json({ error: "Not found" });
@@ -25,10 +27,7 @@ export default async function handler(req, res) {
             return res.status(403).json({ error: "Invalid token" });
         }
 
-        await prisma.appointment.update({
-            where: { id },
-            data: { status: 'cancelled' }
-        });
+        await db.update(Appointment).set({ status: 'cancelled' }).where(eq(Appointment.id, id));
 
         return res.status(200).json({ success: true });
 

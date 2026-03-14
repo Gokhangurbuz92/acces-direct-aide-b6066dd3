@@ -1,9 +1,11 @@
 import logger from '../../../_utils/logger.js';
-import prisma from '../../../_utils/prisma.js';
+import { db } from '../../../../src/db/index.js';
+import { Appointment, AuditLog } from '../../../../src/db/schema.js';
+import { eq } from 'drizzle-orm';
 import crypto from 'crypto';
 import { hash } from '../../../lib/crypto.js';
 
-import { checkRateLimit } from '../../../lib/pro-auth.js';
+import { checkRateLimit } from '../../../_utils/auth.js';
 /**
  * @param {import('../../../_utils/http-types').ApiRequest} req
  * @param {import('../../../_utils/http-types').ApiResponse} res
@@ -23,9 +25,9 @@ export default async function handler(req, res) {
     if (!limit.allowed) return res.status(429).json({ error: "Too many attempts" });
 
     try {
-        const appointment = await prisma.appointment.findUnique({
-            where: { id: appointmentId },
-            include: { service: true, structure: true }
+        const appointment = await db.query.Appointment.findFirst({
+            where: eq(Appointment.id, appointmentId),
+            with: { service: true, structure: true }
         });
 
         if (!appointment) return res.status(404).json({ error: "Appointment not found" });
@@ -41,10 +43,7 @@ export default async function handler(req, res) {
 
         // Check Expiry
         if (new Date() > new Date(appointment.lock_expires_at)) {
-            await prisma.appointment.update({
-                where: { id: appointmentId },
-                data: { status: 'expired' }
-            });
+            await db.update(Appointment).set({ status: 'expired' }).where(eq(Appointment.id, appointmentId));
             return res.status(410).json({ error: "Lock expired" });
         }
 
@@ -53,27 +52,22 @@ export default async function handler(req, res) {
         const cancelTokenHash = hash(cancelToken);
 
         // Confirm
-        await prisma.appointment.update({
-            where: { id: appointmentId },
-            data: {
+        await db.update(Appointment).set({
                 status: 'confirmed',
                 cancel_token_hash: cancelTokenHash
-            }
-        });
+        }).where(eq(Appointment.id, appointmentId));
 
         // Send Email (Mocked for now as per Lot 5 MVP, user says "console" if resend disabled)
         logger.info(`📧 SEND EMAIL to Beneficiary: Booking Confirmed for ${appointment.start_at}.`);
         logger.info(`🔗 Cancel Link: /cancel?token=${cancelToken}`);
 
         // Audit
-        await prisma.auditLog.create({
-            data: {
+        await db.insert(AuditLog).values({
                 action: 'BOOK_CONFIRMED',
-                actor: 'beneficiary',
-                entity: 'Appointment',
-                entity_id: appointmentId,
-                details: { structureId: appointment.structureId }
-            }
+                actorId: 'beneficiary', // actor instead of actorId in older models maybe? AuditLog schema has actorId
+                entityType: 'Appointment',
+                entityId: appointmentId,
+                details: JSON.stringify({ structureId: appointment.structureId }) // Convert to JSON string
         });
 
         return res.status(200).json({

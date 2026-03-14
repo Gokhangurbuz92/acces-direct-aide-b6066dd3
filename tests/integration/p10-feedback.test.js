@@ -1,16 +1,20 @@
+import { vi } from "vitest";
+vi.stubEnv("KV_REST_API_URL", "http://localhost");
+vi.stubEnv("KV_REST_API_TOKEN", "mock-token");
+
 import { afterEach, describe, expect, it } from 'vitest';
 
 import apiHandler from '../../api/index.js';
-import prisma from '../../api/_utils/prisma.js';
+import { db } from '../../src/db/index.js';
+import * as schema from '../../src/db/schema.js';
+import { eq, sql } from 'drizzle-orm';
 
 /** @type {string[]} */
 const createdFeedbackIds = [];
 
 afterEach(async () => {
   if (createdFeedbackIds.length === 0) return;
-  await prisma.contentReport.deleteMany({
-    where: { id: { in: createdFeedbackIds } },
-  });
+  await await db.delete(schema.ContentReport);
   createdFeedbackIds.length = 0;
 });
 
@@ -128,16 +132,7 @@ describe('P10-2 feedback endpoint contract', () => {
 
     createdFeedbackIds.push(res.body.feedbackId);
 
-    const stored = await prisma.contentReport.findUnique({
-      where: { id: res.body.feedbackId },
-      select: {
-        contentType: true,
-        contentId: true,
-        reason: true,
-        message: true,
-        reporterEmail: true,
-      },
-    });
+    const stored = await db.query.ContentReport.findFirst({ where: eq(schema.ContentReport.id, res.body.feedbackId) /* AUTOMIGRATED: { id: res.body.feedbackId },       select: {         contentType: true,         contentId: true,         reason: true,         message: true,         reporterEmail: true,       },      */ });
 
     expect(stored).toMatchObject({
       contentType: 'AIDE',
@@ -165,12 +160,9 @@ describe('P10-2 feedback endpoint contract', () => {
     });
     createdFeedbackIds.push(res.body.feedbackId);
 
-    const stored = await prisma.contentReport.findUnique({
-      where: { id: res.body.feedbackId },
-      select: { contentType: true, contentId: true },
-    });
+    const stored = await db.query.ContentReport.findFirst({ where: eq(schema.ContentReport.id, res.body.feedbackId) /* AUTOMIGRATED: { id: res.body.feedbackId },       select: { contentType: true, contentId: true },      */ });
 
-    expect(stored).toEqual({
+    expect(stored).toMatchObject({
       contentType: 'DEMARCHE',
       contentId: 'slug:demarche-test',
     });

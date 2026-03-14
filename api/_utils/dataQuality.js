@@ -1,5 +1,8 @@
-import prisma from './prisma.js';
+import { db as defaultDb } from '../../src/db/index.js';
+import { Aide, Demarche, Structure, Actualite, ReviewQueueItem } from '../../src/db/schema.js';
+import { isNull, isNotNull, asc, desc, eq, and } from 'drizzle-orm';
 import { env } from './env.js';
+import { randomUUID } from 'crypto';
 
 export const REVIEW_QUEUE_OPEN_STATUS = 'open';
 
@@ -90,10 +93,10 @@ function createCandidate(entityType, entityId, entitySlug, title, reason, severi
 
 /**
  * @param {Record<string, unknown>} details
- * @returns {import('@prisma/client').Prisma.InputJsonValue}
+ * @returns {object}
  */
 function toJsonDetails(details) {
-  return /** @type {import('@prisma/client').Prisma.InputJsonValue} */ (details);
+  return /** @type {object} */ (details);
 }
 
 /**
@@ -431,213 +434,225 @@ function buildActualiteCandidates(actualite) {
 }
 
 /**
- * @param {import('@prisma/client').PrismaClient} prismaClient
+ * @param {import('drizzle-orm/pg-core').PgDatabase<any>} dbClient
  * @param {number} limit
  */
-async function loadAidesForReview(prismaClient, limit) {
-  const missing = await prismaClient.aide.findMany({
-    where: { date_verification: null },
-    select: {
+async function loadAidesForReview(dbClient, limit) {
+  const missing = await dbClient.query.Aide.findMany({
+    where: isNull(Aide.date_verification),
+    columns: {
       id: true,
       slug: true,
       titre: true,
       date_verification: true,
       documents_necessaires: true,
       source_document_id: true,
+    },
+    with: {
       sourceDocument: {
-        select: {
+        columns: {
           source_url: true,
         },
       },
     },
-    orderBy: { updatedAt: 'desc' },
-    take: limit,
+    orderBy: (t, { desc }) => [desc(t.updatedAt)],
+    limit,
   });
 
   const remaining = Math.max(0, limit - missing.length);
   if (remaining === 0) return missing;
 
-  const oldest = await prismaClient.aide.findMany({
-    where: { date_verification: { not: null } },
-    select: {
+  const oldest = await dbClient.query.Aide.findMany({
+    where: isNotNull(Aide.date_verification),
+    columns: {
       id: true,
       slug: true,
       titre: true,
       date_verification: true,
       documents_necessaires: true,
       source_document_id: true,
+    },
+    with: {
       sourceDocument: {
-        select: {
+        columns: {
           source_url: true,
         },
       },
     },
-    orderBy: { date_verification: 'asc' },
-    take: remaining,
+    orderBy: (t, { asc }) => [asc(t.date_verification)],
+    limit: remaining,
   });
 
   return [...missing, ...oldest];
 }
 
 /**
- * @param {import('@prisma/client').PrismaClient} prismaClient
+ * @param {import('drizzle-orm/pg-core').PgDatabase<any>} dbClient
  * @param {number} limit
  */
-async function loadDemarchesForReview(prismaClient, limit) {
-  const missing = await prismaClient.demarche.findMany({
-    where: { date_verification: null },
-    select: {
+async function loadDemarchesForReview(dbClient, limit) {
+  const missing = await dbClient.query.Demarche.findMany({
+    where: isNull(Demarche.date_verification),
+    columns: {
       id: true,
       slug: true,
       titre: true,
       date_verification: true,
       source_document_id: true,
+    },
+    with: {
       sourceDocument: {
-        select: {
+        columns: {
           source_url: true,
         },
       },
     },
-    orderBy: { updatedAt: 'desc' },
-    take: limit,
+    orderBy: (t, { desc }) => [desc(t.updatedAt)],
+    limit,
   });
 
   const remaining = Math.max(0, limit - missing.length);
   if (remaining === 0) return missing;
 
-  const oldest = await prismaClient.demarche.findMany({
-    where: { date_verification: { not: null } },
-    select: {
+  const oldest = await dbClient.query.Demarche.findMany({
+    where: isNotNull(Demarche.date_verification),
+    columns: {
       id: true,
       slug: true,
       titre: true,
       date_verification: true,
       source_document_id: true,
+    },
+    with: {
       sourceDocument: {
-        select: {
+        columns: {
           source_url: true,
         },
       },
     },
-    orderBy: { date_verification: 'asc' },
-    take: remaining,
+    orderBy: (t, { asc }) => [asc(t.date_verification)],
+    limit: remaining,
   });
 
   return [...missing, ...oldest];
 }
 
 /**
- * @param {import('@prisma/client').PrismaClient} prismaClient
+ * @param {import('drizzle-orm/pg-core').PgDatabase<any>} dbClient
  * @param {number} limit
  */
-async function loadStructuresForReview(prismaClient, limit) {
-  const missing = await prismaClient.structure.findMany({
-    where: { date_verification: null },
-    select: {
+async function loadStructuresForReview(dbClient, limit) {
+  const missing = await dbClient.query.Structure.findMany({
+    where: isNull(Structure.date_verification),
+    columns: {
       id: true,
       slug: true,
       nom: true,
       date_verification: true,
       source_document_id: true,
+    },
+    with: {
       sourceDocument: {
-        select: {
+        columns: {
           source_url: true,
         },
       },
     },
-    orderBy: { updatedAt: 'desc' },
-    take: limit,
+    orderBy: (t, { desc }) => [desc(t.updatedAt)],
+    limit,
   });
 
   const remaining = Math.max(0, limit - missing.length);
   if (remaining === 0) return missing;
 
-  const oldest = await prismaClient.structure.findMany({
-    where: { date_verification: { not: null } },
-    select: {
+  const oldest = await dbClient.query.Structure.findMany({
+    where: isNotNull(Structure.date_verification),
+    columns: {
       id: true,
       slug: true,
       nom: true,
       date_verification: true,
       source_document_id: true,
+    },
+    with: {
       sourceDocument: {
-        select: {
+        columns: {
           source_url: true,
         },
       },
     },
-    orderBy: { date_verification: 'asc' },
-    take: remaining,
+    orderBy: (t, { asc }) => [asc(t.date_verification)],
+    limit: remaining,
   });
 
   return [...missing, ...oldest];
 }
 
 /**
- * @param {import('@prisma/client').PrismaClient} prismaClient
+ * @param {import('drizzle-orm/pg-core').PgDatabase<any>} dbClient
  * @param {number} limit
  */
-async function loadRecentActualites(prismaClient, limit) {
-  return prismaClient.actualite.findMany({
-    select: {
+async function loadRecentActualites(dbClient, limit) {
+  return dbClient.query.Actualite.findMany({
+    columns: {
       id: true,
       slug: true,
       titre: true,
       source_document_id: true,
+    },
+    with: {
       sourceDocument: {
-        select: {
+        columns: {
           source_url: true,
         },
       },
     },
-    orderBy: { date_publication: 'desc' },
-    take: limit,
+    orderBy: (t, { desc }) => [desc(t.date_publication)],
+    limit,
   });
 }
 
 /**
- * @param {import('@prisma/client').PrismaClient} prismaClient
+ * @param {import('drizzle-orm/pg-core').PgDatabase<any>} dbClient
  * @param {ReturnType<typeof createCandidate>} candidate
  */
-async function upsertOpenCandidate(prismaClient, candidate) {
-  const where = {
-    entityType_entityId_reason_status: {
-      entityType: candidate.entityType,
-      entityId: candidate.entityId,
-      reason: candidate.reason,
-      status: REVIEW_QUEUE_OPEN_STATUS,
-    },
-  };
+async function upsertOpenCandidate(dbClient, candidate) {
+  const whereCondition = and(
+    eq(ReviewQueueItem.entityType, candidate.entityType.toUpperCase()),
+    eq(ReviewQueueItem.entityId, candidate.entityId),
+    eq(ReviewQueueItem.reason, candidate.reason),
+    eq(ReviewQueueItem.status, REVIEW_QUEUE_OPEN_STATUS.toUpperCase()),
+  );
 
-  const existing = await prismaClient.reviewQueueItem.findUnique({
-    where,
-    select: { id: true },
+  const existingRows = await dbClient.query.ReviewQueueItem.findMany({
+    where: whereCondition,
+    columns: { id: true },
+    limit: 1,
   });
 
-  if (existing) {
-    await prismaClient.reviewQueueItem.update({
-      where: { id: existing.id },
-      data: {
-        entitySlug: candidate.entitySlug,
-        title: candidate.title,
-        severity: candidate.severity,
-        details: toJsonDetails(candidate.details),
-      },
-    });
+  if (existingRows.length > 0) {
+    await dbClient.update(ReviewQueueItem).set({
+      entitySlug: candidate.entitySlug,
+      title: candidate.title,
+      severity: candidate.severity,
+      details: toJsonDetails(candidate.details),
+      updatedAt: new Date(),
+    }).where(eq(ReviewQueueItem.id, existingRows[0].id));
     return 'updated';
   }
 
-  await prismaClient.reviewQueueItem.create({
-    data: {
-      entityType: candidate.entityType,
-      entityId: candidate.entityId,
-      entitySlug: candidate.entitySlug,
-      title: candidate.title,
-      reason: candidate.reason,
-      severity: candidate.severity,
-      status: REVIEW_QUEUE_OPEN_STATUS,
-      details: toJsonDetails(candidate.details),
-    },
+  await dbClient.insert(ReviewQueueItem).values({
+    id: randomUUID(),
+    createdAt: new Date(),
+    updatedAt: new Date(),
+    entityType: candidate.entityType.toUpperCase(),
+    entityId: candidate.entityId,
+    entitySlug: candidate.entitySlug,
+    title: candidate.title,
+    reason: candidate.reason,
+    severity: candidate.severity,
+    status: REVIEW_QUEUE_OPEN_STATUS.toUpperCase(),
+    details: toJsonDetails(candidate.details),
   });
   return 'created';
 }
@@ -652,12 +667,12 @@ function increment(counter, key) {
 
 /**
  * @param {{
- *   prismaClient?: import('@prisma/client').PrismaClient,
+ *   db?: import('drizzle-orm/pg-core').PgDatabase<any>,
  *   limitPerType?: number,
  * }} options
  */
 export async function scanDataQuality(options = {}) {
-  const prismaClient = options.prismaClient || prisma;
+  const dbClient = options.db || defaultDb;
   const defaultLimit = env.dataQuality.reviewScanLimitPerType;
   const effectiveLimit = toBoundedPositiveInt(options.limitPerType, defaultLimit);
 
@@ -668,10 +683,10 @@ export async function scanDataQuality(options = {}) {
   };
 
   const [aides, demarches, structures, actualites] = await Promise.all([
-    loadAidesForReview(prismaClient, effectiveLimit),
-    loadDemarchesForReview(prismaClient, effectiveLimit),
-    loadStructuresForReview(prismaClient, effectiveLimit),
-    loadRecentActualites(prismaClient, effectiveLimit),
+    loadAidesForReview(dbClient, effectiveLimit),
+    loadDemarchesForReview(dbClient, effectiveLimit),
+    loadStructuresForReview(dbClient, effectiveLimit),
+    loadRecentActualites(dbClient, effectiveLimit),
   ]);
 
   /** @type {Array<ReturnType<typeof createCandidate>>} */
@@ -715,7 +730,7 @@ export async function scanDataQuality(options = {}) {
   const byEntityType = {};
 
   for (const candidate of candidates) {
-    const action = await upsertOpenCandidate(prismaClient, candidate);
+    const action = await upsertOpenCandidate(dbClient, candidate);
     if (action === 'created') created += 1;
     else updated += 1;
 
@@ -724,9 +739,11 @@ export async function scanDataQuality(options = {}) {
     increment(byEntityType, candidate.entityType);
   }
 
-  const openTotal = await prismaClient.reviewQueueItem.count({
-    where: { status: REVIEW_QUEUE_OPEN_STATUS },
+  const openTotalRows = await dbClient.query.ReviewQueueItem.findMany({
+    where: eq(ReviewQueueItem.status, REVIEW_QUEUE_OPEN_STATUS.toUpperCase()),
+    columns: { id: true }
   });
+  const openTotal = openTotalRows.length;
 
   return {
     scanned: {

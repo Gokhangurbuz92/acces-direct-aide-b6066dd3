@@ -1,5 +1,11 @@
+import { vi } from "vitest";
+vi.stubEnv("KV_REST_API_URL", "http://localhost");
+vi.stubEnv("KV_REST_API_TOKEN", "mock-token");
+
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
-import prisma from '../../api/_utils/prisma.js';
+import { db } from '../../src/db/index.js';
+import * as schema from '../../src/db/schema.js';
+import { eq, sql } from 'drizzle-orm';
 import apiHandler from '../../api/index.js';
 import { __clearTestOutbox, __getTestOutbox } from '../../api/_utils/mailer.js';
 
@@ -142,9 +148,7 @@ beforeEach(() => {
 afterEach(async () => {
   __clearTestOutbox();
   if (createdEmails.length > 0) {
-    await prisma.citizenUser.deleteMany({
-      where: { email: { in: createdEmails } },
-    });
+    await await db.delete(schema.CitizenUser);
   }
   createdEmails.length = 0;
 

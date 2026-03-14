@@ -4,22 +4,13 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 process.env.JWT_SECRET = 'test-secret';
 
 // Mock dependencies
-vi.mock('@prisma/client', () => {
-    class PrismaClient {
-        constructor() {
-            this.auditLog = { create: vi.fn() };
-            this.proUser = { findUnique: vi.fn() };
-        }
-    }
-    return { PrismaClient };
-});
 
 vi.mock('../_utils/rateLimit.js', () => ({
     checkRateLimit: vi.fn().mockResolvedValue({ allowed: true })
 }));
 
 // Import AFTER mocks and env setup
-import { requireAuth, ROLE, signProToken } from '../lib/pro-auth.js';
+import { requireAuth, ROLE, signProToken } from '../_utils/auth.js';
 
 describe('RBAC Middleware', () => {
     /** @typedef {import('../_utils/http-types').ApiRequest} ApiRequest */

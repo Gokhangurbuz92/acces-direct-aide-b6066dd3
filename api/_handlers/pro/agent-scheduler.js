@@ -1,6 +1,7 @@
 import logger from '../../_utils/logger.js';
 // @ts-nocheck
-import prisma from '../../_utils/prisma.js';
+import { db } from '../../../src/db/index.js';
+import { ReviewQueueItem, AuditLog } from '../../../src/db/schema.js';
 import { requireProAuth } from '../../_utils/auth.js';
 /**
  * Agent Scheduler API (Pro-only)
@@ -69,22 +70,20 @@ async function handler(req, res) {
         for (const item of validated) {
             try {
                 const entityId = `sched-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
-                await prisma.reviewQueueItem.create({
-                    data: {
+                await db.insert(ReviewQueueItem).values({
                         entityType: 'AIDE',
                         entityId,
                         title: String(item.title || 'Sans titre').slice(0, 255),
                         reason: 'AI_SCHEDULED_DISCOVERY',
                         severity: 'LOW',
                         status: 'OPEN',
-                        details: {
+                        details: JSON.stringify({
                             source: item.source || 'Gemini Search',
                             summary: item.summary || '',
                             category,
                             confidence: item.confidence,
                             scheduledBy: req.user?.userId || 'system',
-                        },
-                    },
+                        }),
                 });
                 submitted++;
             } catch {
@@ -93,8 +92,7 @@ async function handler(req, res) {
         }
 
         // 4. Audit trail
-        await prisma.auditLog.create({
-            data: {
+        await db.insert(AuditLog).values({
                 action: 'AI_HIVE_ENRICHMENT_CYCLE',
                 entityId: poleId,
                 entityType: 'CONTENT_FACTORY',
@@ -107,7 +105,6 @@ async function handler(req, res) {
                     aiPowered: Boolean(apiKey),
                 }),
                 ipHash: 'AI_ORCHESTRATOR',
-            },
         });
 
         return res.status(200).json({

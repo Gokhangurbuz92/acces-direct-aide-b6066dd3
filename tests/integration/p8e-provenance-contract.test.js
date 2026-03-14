@@ -1,6 +1,13 @@
+import { vi } from "vitest";
+vi.stubEnv("KV_REST_API_URL", "http://localhost");
+vi.stubEnv("KV_REST_API_TOKEN", "mock-token");
+
 import { afterEach, describe, expect, it } from 'vitest';
 import apiHandler from '../../api/index.js';
-import prisma from '../../api/_utils/prisma.js';
+import { db } from '../../src/db/index.js';
+import * as schema from '../../src/db/schema.js';
+import { eq, sql } from 'drizzle-orm';
+import crypto from 'crypto';
 
 /** @type {{ aideIds: string[], sourceDocumentIds: string[] }} */
 const created = {
@@ -10,10 +17,10 @@ const created = {
 
 afterEach(async () => {
   if (created.aideIds.length > 0) {
-    await prisma.aide.deleteMany({ where: { id: { in: created.aideIds } } });
+    await await db.delete(schema.Aide);
   }
   if (created.sourceDocumentIds.length > 0) {
-    await prisma.sourceDocument.deleteMany({ where: { id: { in: created.sourceDocumentIds } } });
+    await await db.delete(schema.SourceDocument);
   }
   created.aideIds = [];
   created.sourceDocumentIds = [];
@@ -114,31 +121,32 @@ describe('P8-E provenance public contract', () => {
     const fetchedAt = new Date('2026-02-01T08:00:00.000Z');
     const verifiedAt = new Date('2026-01-15T08:00:00.000Z');
 
-    const sourceDocument = await prisma.sourceDocument.create({
-      data: {
+    const sourceDocument = await (await db.insert(schema.SourceDocument).values({
+        id: crypto.randomUUID(),
+        createdAt: new Date(),
+        updatedAt: new Date(),
         source_url: sourceUrl,
         fetched_at: fetchedAt,
         content_hash: `p8e-${suffix}`,
         raw_content: '<html>private raw payload</html>',
         metadata: { parserVersion: 'test' },
-      },
-      select: { id: true },
-    });
+      }).returning({ id: schema.SourceDocument.id }))[0];
     created.sourceDocumentIds.push(sourceDocument.id);
 
-    const aide = await prisma.aide.create({
-      data: {
+    const aide = await (await db.insert(schema.Aide).values({
+        id: crypto.randomUUID(),
+        createdAt: new Date(),
+        updatedAt: new Date(),
         slug,
         titre: `Aide provenance ${suffix}`,
         territoires: ['national'],
         documents_necessaires: ['piece-identite'],
         statut: 'publie',
+        est_urgent: false,
         date_verification: verifiedAt,
         published_at: new Date('2099-01-01T00:00:00.000Z'),
         source_document_id: sourceDocument.id,
-      },
-      select: { id: true, slug: true },
-    });
+      }).returning({ id: schema.Aide.id, slug: schema.Aide.slug }))[0];
     created.aideIds.push(aide.id);
 
     const detailRes = await invokeApi(`/api/aides/${encodeURIComponent(aide.slug)}`);

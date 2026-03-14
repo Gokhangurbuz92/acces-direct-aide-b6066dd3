@@ -2,7 +2,9 @@ import logger from '../../_utils/logger.js';
 import crypto from 'crypto';
 import { getCronAuth, getHeader } from '../../_utils/cronAuth.js';
 import { withLock } from '../../_utils/pipelineLock.js';
-import prisma from '../../_utils/prisma.js';
+import { db } from '../../../src/db/index.js';
+import { CronRun } from '../../../src/db/schema.js';
+import { eq, desc, and } from 'drizzle-orm';
 import { env } from '../../_utils/env.js';
 import Sentry from '../../_utils/sentry.js';
 import { kv } from '../../_utils/kv.js';
@@ -129,30 +131,28 @@ async function recordSkippedRun(params) {
   const finishedAt = new Date();
   const durationMs = Math.max(0, Date.now() - params.startedAtMs);
 
-  const created = await prisma.cronRun.create({
-    data: {
-      job: 'actualites',
-      status: 'skipped',
-      trigger: params.trigger,
-      skipReason: params.reason,
-      startedAt: new Date(params.startedAtMs),
-      finishedAt,
-      durationMs,
-      requestId: params.requestId,
-      vercelEnv: env.runtime.vercelEnv,
-      release: env.sentry.release,
-      metrics: {
-        runId: params.runId,
-        reason: params.reason,
-        mode: params.mode ?? null,
-        limit: params.limit ?? null,
-        lockTtlMs: params.lockTtlMs ?? null,
-        cooldownMs: params.cooldownMs ?? null,
-        lastSuccessAt: params.lastSuccessAt ? params.lastSuccessAt.toISOString() : null,
-      },
+  const [created] = await db.insert(CronRun).values({
+    job: 'actualites',
+    status: 'skipped',
+    trigger: params.trigger,
+    skipReason: params.reason,
+    startedAt: new Date(params.startedAtMs),
+    finishedAt,
+    durationMs,
+    requestId: params.requestId,
+    vercelEnv: env.runtime.vercelEnv,
+    release: env.sentry.release,
+    metrics: {
+      runId: params.runId,
+      reason: params.reason,
+      mode: params.mode ?? null,
+      limit: params.limit ?? null,
+      lockTtlMs: params.lockTtlMs ?? null,
+      cooldownMs: params.cooldownMs ?? null,
+      lastSuccessAt: params.lastSuccessAt ? params.lastSuccessAt.toISOString() : null,
     },
-    select: { id: true },
-  });
+    updatedAt: new Date(),
+  }).returning({ id: CronRun.id });
 
   return created.id;
 }
@@ -246,14 +246,14 @@ export default async function handler(req, res) {
     // Defense-in-depth: if KV is unavailable or the lock is manually cleared,
     // still avoid thrashing the ingestion pipeline too frequently.
     try {
-      const lastSuccess = await prisma.cronRun.findFirst({
-        where: { job: 'actualites', status: 'success' },
-        orderBy: { startedAt: 'desc' },
-        select: { startedAt: true },
+      const lastSuccess = await db.query.CronRun.findFirst({
+        where: and(eq(CronRun.job, 'actualites'), eq(CronRun.status, 'success')),
+        orderBy: (cr, { desc }) => [desc(cr.startedAt)],
+        columns: { startedAt: true },
       });
 
       if (lastSuccess) {
-        const ageMs = Date.now() - lastSuccess.startedAt.getTime();
+        const ageMs = Date.now() - new Date(lastSuccess.startedAt).getTime();
         if (ageMs >= 0 && ageMs < CRON_COOLDOWN_MS) {
           let cronRunId = null;
           try {
@@ -297,22 +297,21 @@ export default async function handler(req, res) {
     let cronRunId = null;
 
     const stats = await withLock('ingest-actualites-rss', async () => {
-      const created = await prisma.cronRun.create({
-        data: {
-          job: 'actualites',
-          status: 'running',
-          trigger,
-          requestId,
-          vercelEnv: env.runtime.vercelEnv,
-          release: env.sentry.release,
-          metrics: {
-            runId,
-            mode: mode ?? null,
-            limit: limit ?? null,
-          },
+      const [created] = await db.insert(CronRun).values({
+        job: 'actualites',
+        status: 'running',
+        trigger,
+        requestId,
+        startedAt: new Date(startedAtMs),
+        vercelEnv: env.runtime.vercelEnv,
+        release: env.sentry.release,
+        metrics: {
+          runId,
+          mode: mode ?? null,
+          limit: limit ?? null,
         },
-        select: { id: true },
-      });
+        updatedAt: new Date(),
+      }).returning({ id: CronRun.id });
 
       cronRunId = created.id;
 
@@ -320,47 +319,41 @@ export default async function handler(req, res) {
         const result = await runIngestActualitesRss({ limit, runId });
         const durationMs = Date.now() - startedAtMs;
 
-        await prisma.cronRun.update({
-          where: { id: created.id },
-          data: {
-            status: 'success',
-            trigger,
-            finishedAt: new Date(),
-            durationMs,
-            metrics: {
-              runId,
-              mode: mode ?? null,
-              limit: limit ?? null,
-              fetched: result?.fetched ?? null,
-              processed: result?.processed ?? null,
-              created: result?.created ?? null,
-              updated: result?.updated ?? null,
-              skippedExisting: result?.skippedExisting ?? null,
-              errorCount: Array.isArray(result?.errors) ? result.errors.length : null,
-            },
+        await db.update(CronRun).set({
+          status: 'success',
+          trigger,
+          finishedAt: new Date(),
+          durationMs,
+          metrics: {
+            runId,
+            mode: mode ?? null,
+            limit: limit ?? null,
+            fetched: result?.fetched ?? null,
+            processed: result?.processed ?? null,
+            created: result?.created ?? null,
+            updated: result?.updated ?? null,
+            skippedExisting: result?.skippedExisting ?? null,
+            errorCount: Array.isArray(result?.errors) ? result.errors.length : null,
           },
-        });
+        }).where(eq(CronRun.id, created.id));
 
         return result;
       } catch (err) {
         const durationMs = Date.now() - startedAtMs;
         const message = err instanceof Error ? err.message : String(err);
 
-        await prisma.cronRun.update({
-          where: { id: created.id },
-          data: {
-            status: 'failed',
-            trigger,
-            finishedAt: new Date(),
-            durationMs,
-            errorSample: message.slice(0, 500),
-            metrics: {
-              runId,
-              mode: mode ?? null,
-              limit: limit ?? null,
-            },
+        await db.update(CronRun).set({
+          status: 'failed',
+          trigger,
+          finishedAt: new Date(),
+          durationMs,
+          errorSample: message.slice(0, 500),
+          metrics: {
+            runId,
+            mode: mode ?? null,
+            limit: limit ?? null,
           },
-        });
+        }).where(eq(CronRun.id, created.id));
 
         throw err;
       }
@@ -379,6 +372,7 @@ export default async function handler(req, res) {
     });
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
+    console.error("CRON HANDLER CRASHED:", err?.stack || err);
     if (message.includes('already running')) {
       return res.status(409).json({ error: 'Pipeline already running', runId });
     }

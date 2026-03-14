@@ -1,4 +1,7 @@
-import prisma from '../../_utils/prisma.js';
+import crypto from 'node:crypto';
+import { db } from '../../../src/db/index.js';
+import { StructureRdvSettings, Structure } from '../../../src/db/schema.js';
+import { eq } from 'drizzle-orm';
 import { AUTH_ROLE, requireProStructureContext } from '../../_utils/auth.js';
 import { getProRdvReadiness } from '../../_utils/pro-rdv-readiness.js';
 import { withProRdvHandler } from '../../_utils/with-pro-rdv-handler.js';
@@ -77,26 +80,28 @@ function serialize(row) {
  * @param {string} structureId
  */
 async function getOrCreateSettings(structureId) {
-  let settings = await prisma.structureRdvSettings.findUnique({
-    where: { structureId },
+  let settings = await db.query.StructureRdvSettings.findFirst({
+    where: eq(StructureRdvSettings.structureId, structureId),
   });
 
   if (settings) return settings;
 
-  const structure = await prisma.structure.findUnique({
-    where: { id: structureId },
-    select: { id: true, is_pro_enabled: true },
+  const structure = await db.query.Structure.findFirst({
+    where: eq(Structure.id, structureId),
+    columns: { id: true, is_pro_enabled: true },
   });
 
   const initialPublished = Boolean(structure?.is_pro_enabled);
-  settings = await prisma.structureRdvSettings.create({
-    data: {
+  const [newSettings] = await db.insert(StructureRdvSettings).values({
+      id: crypto.randomUUID(),
       structureId,
       isPublished: initialPublished,
       bookingMode: 'IN_PERSON',
+      updatedAt: new Date(),
       ...(initialPublished ? { publishedAt: new Date() } : {}),
-    },
-  });
+  }).returning();
+  
+  settings = newSettings;
 
   return settings;
 }
@@ -160,7 +165,8 @@ async function handler(req, res) {
     : current.contactPhone;
 
   if (requestedPublished && !current.isPublished) {
-    const readiness = await getProRdvReadiness(prisma);
+    // getProRdvReadiness is currently coupled with prisma. Will refactor there. For now pass db.
+    const readiness = await getProRdvReadiness(db);
     if (!readiness.ok) {
       return res.status(409).json({
         error: 'rdv_not_ready',
@@ -182,24 +188,18 @@ async function handler(req, res) {
   }
 
   const now = new Date();
-  const updated = await prisma.$transaction(async (tx) => {
-    const settings = await tx.structureRdvSettings.update({
-      where: { id: current.id },
-      data: {
+  const updated = await db.transaction(async (tx) => {
+    const [settings] = await tx.update(StructureRdvSettings).set({
         isPublished: requestedPublished,
         bookingMode: nextBookingMode,
         contactEmail: nextContactEmail || null,
         contactPhone: nextContactPhone || null,
         publishedAt: requestedPublished ? current.publishedAt || now : current.publishedAt,
-      },
-    });
+    }).where(eq(StructureRdvSettings.id, current.id)).returning();
 
-    await tx.structure.update({
-      where: { id: structureId },
-      data: {
+    await tx.update(Structure).set({
         is_pro_enabled: requestedPublished,
-      },
-    });
+    }).where(eq(Structure.id, structureId));
 
     return settings;
   });

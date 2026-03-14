@@ -1,6 +1,8 @@
 import { resolveAuthContext } from '../../_utils/auth.js';
 import { env } from '../../_utils/env.js';
-import prisma from '../../_utils/prisma.js';
+import { db } from '../../../src/db/index.js';
+import { CitizenUser } from '../../../src/db/schema.js';
+import { eq } from 'drizzle-orm';
 import { getUserSessionTokenFromRequest, verifyUserSessionToken } from '../../_utils/user-auth.js';
 /**
  * @param {import('../../_utils/http-types').ApiRequest} req
@@ -52,9 +54,9 @@ export default async function handler(req, res) {
         return res.status(401).json({ error: 'Unauthorized' });
     }
 
-    const user = await prisma.citizenUser.findUnique({
-        where: { id: userClaims.userId },
-        select: {
+    const user = await db.query.CitizenUser.findFirst({
+        where: eq(CitizenUser.id, userClaims.userId),
+        columns: {
             id: true,
             email: true,
             emailVerifiedAt: true,

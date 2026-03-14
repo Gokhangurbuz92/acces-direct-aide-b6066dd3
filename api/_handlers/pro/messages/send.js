@@ -1,5 +1,7 @@
 import logger from '../../../_utils/logger.js';
-import prisma from '../../../_utils/prisma.js';
+import { db } from '../../../../src/db/index.js';
+import { ProMessage } from '../../../../src/db/schema.js';
+import { eq, desc, asc, sql } from 'drizzle-orm';
 import { requireProAuth, requireProStructureContext } from '../../../_utils/auth.js';
 import { encryptMessage, decryptMessage } from '../../../lib/messaging-crypto.js';
 
@@ -33,14 +35,12 @@ async function handler(req, res) {
         try {
             const { content: encrypted, iv } = encryptMessage(content.trim());
 
-            const message = await prisma.proMessage.create({
-                data: {
+            const [message] = await db.insert(ProMessage).values({
                     conversationId,
                     senderId: proCtx.userId,
                     contentEncrypted: encrypted,
                     iv,
-                },
-            });
+            }).returning();
 
             return res.status(201).json({
                 ok: true,
@@ -65,15 +65,16 @@ async function handler(req, res) {
         const limit = Math.min(100, Math.max(1, parseInt(url.searchParams.get('limit') || '50', 10)));
 
         try {
-            const [messages, totalCount] = await Promise.all([
-                prisma.proMessage.findMany({
-                    where: { conversationId },
-                    orderBy: { createdAt: 'asc' },
-                    skip: (page - 1) * limit,
-                    take: limit,
+            const [messages, totalCountObj] = await Promise.all([
+                db.query.ProMessage.findMany({
+                    where: eq(ProMessage.conversationId, conversationId),
+                    orderBy: [asc(ProMessage.createdAt)],
+                    limit: limit,
+                    offset: (page - 1) * limit,
                 }),
-                prisma.proMessage.count({ where: { conversationId } }),
+                db.execute(db.select({ count: sql`count(*)` }).from(ProMessage).where(eq(ProMessage.conversationId, conversationId)))
             ]);
+            const totalCount = Number(totalCountObj.rows ? totalCountObj.rows[0].count : totalCountObj[0].count);
 
             const items = messages.map((m) => ({
                 id: m.id,

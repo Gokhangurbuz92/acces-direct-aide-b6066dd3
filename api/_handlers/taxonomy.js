@@ -1,4 +1,6 @@
-import prisma from '../_utils/prisma.js';
+import { db } from '../../src/db/index.js';
+import * as schema from '../../src/db/schema.js';
+import { eq, sql, and, asc, count, inArray } from 'drizzle-orm';
 import { checkRateLimit, getClientIp } from '../_utils/rateLimit.js';
 import { logger } from '../lib/logger.js';
 import { createRequire } from 'module';
@@ -28,39 +30,59 @@ export default async function handler(req, res) {
     }
 
     try {
-        const categories = await prisma.aidCategory.findMany({
-            orderBy: { label: 'asc' },
-            include: {
-                _count: {
-                    select: {
-                        aides: { where: { statut: 'publie' } },
-                        demarches: { where: { statut: 'publie' } }
-                    }
-                }
-            }
+        const [rawCategories, rawSituations, rawAidSituations] = await Promise.all([
+            db.query.AidCategory.findMany({ orderBy: [asc(schema.AidCategory.label)] }),
+            db.query.LifeSituation.findMany({ orderBy: [asc(schema.LifeSituation.label)] }),
+            db.query.Situation.findMany({ orderBy: [asc(schema.Situation.label)] }),
+        ]);
+
+        // Fetch counts efficiently using group by equivalent for published Aides and Demarches
+        // Or if simple enough, construct the counts manually
+        const [aidesAgg, demarchesAgg] = await Promise.all([
+             db.select({
+                 category: schema.Aide.categorie,
+                 situation: schema.Aide.frequentation,
+                 count: count()
+             })
+             .from(schema.Aide)
+             .where(eq(schema.Aide.statut, 'publie'))
+             .groupBy(schema.Aide.categorie, schema.Aide.frequentation),
+             
+             db.select({
+                 category: schema.Demarche.categorie,
+                 situation: schema.Demarche.frequentation,
+                 count: count()
+             })
+             .from(schema.Demarche)
+             .where(eq(schema.Demarche.statut, 'publie'))
+             .groupBy(schema.Demarche.categorie, schema.Demarche.frequentation),
+        ]);
+
+        const categories = rawCategories.map(cat => {
+             const aidesCount = aidesAgg.filter(a => a.category === cat.slug).reduce((acc, a) => acc + Number(a.count), 0);
+             const demarchesCount = demarchesAgg.filter(d => d.category === cat.slug).reduce((acc, d) => acc + Number(d.count), 0);
+             return { ...cat, _count: { aides: aidesCount, demarches: demarchesCount } };
         });
 
-        const situations = await prisma.lifeSituation.findMany({
-            orderBy: { label: 'asc' },
-            include: {
-                _count: {
-                    select: {
-                        aides: { where: { statut: 'publie' } },
-                        demarches: { where: { statut: 'publie' } }
-                    }
-                }
-            }
+        const situations = rawSituations.map(sit => {
+             const aidesCount = aidesAgg.filter(a => a.situation === sit.slug).reduce((acc, a) => acc + Number(a.count), 0);
+             const demarchesCount = demarchesAgg.filter(d => d.situation === sit.slug).reduce((acc, d) => acc + Number(d.count), 0);
+             return { ...sit, _count: { aides: aidesCount, demarches: demarchesCount } };
         });
 
-        const aidSituations = await prisma.situation.findMany({
-            orderBy: { label: 'asc' },
-            include: {
-                _count: {
-                    select: {
-                        aidRelations: { where: { aid: { statut: 'publie' } } }
-                    }
-                }
-            }
+        // 3rd query: AidSituation relations -> count of published aides
+        const aidRels = await db.select({
+              situationId: schema.AidSituation.situationId,
+              count: count()
+        })
+        .from(schema.AidSituation)
+        .leftJoin(schema.Aide, eq(schema.AidSituation.aidId, schema.Aide.id))
+        .where(eq(schema.Aide.statut, 'publie'))
+        .groupBy(schema.AidSituation.situationId);
+
+        const aidSituations = rawAidSituations.map(s => {
+             const matchingRel = aidRels.find(rel => rel.situationId === s.id);
+             return { ...s, _count: { aidRelations: matchingRel ? Number(matchingRel.count) : 0 } };
         });
 
         // Merge DB categories with taxonomy.json to ensure all 13 are present
@@ -108,7 +130,7 @@ export default async function handler(req, res) {
             }))
         });
     } catch (error) {
-        // Fallback: if Prisma fails (unseeded tables, connection error),
+        // Fallback: if DB query fails (unseeded tables, connection error),
         // return taxonomy.json directly so the UI always has categories
         logger.warn('Taxonomy DB query failed, falling back to taxonomy.json', { error: error.message });
         return res.status(200).json({

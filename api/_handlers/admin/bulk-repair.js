@@ -1,6 +1,8 @@
 import { checkRateLimit, getClientIp, getRateLimitStatus } from '../../_utils/rateLimit.js';
 import logger from '../../_utils/logger.js';
-import prisma from '../../_utils/prisma.js';
+import { db } from '../../../src/db/index.js';
+import { ReviewQueueItem } from '../../../src/db/schema.js';
+import { eq, and } from 'drizzle-orm';
 import { verifyAdmin } from '../../_utils/auth.js';
 import { generateText } from '../../lib/gemini.js';
 const MAX_BATCH_SIZE = 25;
@@ -34,13 +36,10 @@ export default async function handler(req, res) {
 
     try {
         // 1. Fetch open items matching the requested severity
-        const itemsToRepair = await prisma.reviewQueueItem.findMany({
-            where: {
-                severity: String(severity),
-                status: 'open',
-            },
-            orderBy: { createdAt: 'asc' },
-            take: safeLimit,
+        const itemsToRepair = await db.query.ReviewQueueItem.findMany({
+            where: and(eq(ReviewQueueItem.severity, String(severity)), eq(ReviewQueueItem.status, 'open')),
+            orderBy: (ri, { asc }) => [asc(ri.createdAt)],
+            limit: safeLimit,
         });
 
         if (itemsToRepair.length === 0) {
@@ -89,9 +88,7 @@ Ne mets aucun texte avant ou après le JSON.`;
                 const cleanJson = responseText.replace(/```json|```/g, '').trim();
                 const suggestion = JSON.parse(cleanJson);
 
-                await prisma.reviewQueueItem.update({
-                    where: { id: item.id },
-                    data: {
+                await db.update(ReviewQueueItem).set({
                         details: {
                             ...(typeof item.details === 'object' && item.details !== null
                                 ? item.details
@@ -100,8 +97,7 @@ Ne mets aucun texte avant ou après le JSON.`;
                             repaired_at: new Date().toISOString(),
                         },
                         status: 'resolved_by_ai',
-                    },
-                });
+                }).where(eq(ReviewQueueItem.id, item.id));
 
                 successCount++;
                 results.push({ id: item.id, title: item.title, status: 'repaired' });

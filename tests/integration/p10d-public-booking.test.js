@@ -1,7 +1,13 @@
+import { vi } from "vitest";
+vi.stubEnv("KV_REST_API_URL", "http://localhost");
+vi.stubEnv("KV_REST_API_TOKEN", "mock-token");
+
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 
 import apiHandler from '../../api/index.js';
-import prisma from '../../api/_utils/prisma.js';
+import { db } from '../../src/db/index.js';
+import * as schema from '../../src/db/schema.js';
+import { eq, sql } from 'drizzle-orm';
 import { __clearTestOutbox, __getTestOutbox } from '../../api/_utils/mailer.js';
 import { buildUserSessionCookie, signUserSessionToken } from '../../api/_utils/user-auth.js';
 
@@ -159,25 +165,25 @@ beforeEach(() => {
 
 afterEach(async () => {
   if (createdAppointmentIds.length > 0) {
-    await prisma.proAppointment.deleteMany({ where: { id: { in: createdAppointmentIds } } });
+    await await db.delete(schema.ProAppointment);
   }
   if (createdTimeOffIds.length > 0) {
-    await prisma.proTimeOff.deleteMany({ where: { id: { in: createdTimeOffIds } } });
+    await await db.delete(schema.ProTimeOff);
   }
   if (createdRuleIds.length > 0) {
-    await prisma.proAvailabilityRule.deleteMany({ where: { id: { in: createdRuleIds } } });
+    await await db.delete(schema.ProAvailabilityRule);
   }
   if (createdServiceIds.length > 0) {
-    await prisma.proRdvService.deleteMany({ where: { id: { in: createdServiceIds } } });
+    await await db.delete(schema.ProRdvService);
   }
   if (createdSettingsIds.length > 0) {
-    await prisma.structureRdvSettings.deleteMany({ where: { id: { in: createdSettingsIds } } });
+    await await db.delete(schema.StructureRdvSettings);
   }
   if (createdUserIds.length > 0) {
-    await prisma.citizenUser.deleteMany({ where: { id: { in: createdUserIds } } });
+    await await db.delete(schema.CitizenUser);
   }
   if (createdStructureIds.length > 0) {
-    await prisma.structure.deleteMany({ where: { id: { in: createdStructureIds } } });
+    await await db.delete(schema.Structure);
   }
 
   createdAppointmentIds = [];
@@ -199,8 +205,7 @@ async function createPublicBookingFixture() {
   const suffix = `${Date.now()}-${Math.random().toString(16).slice(2, 8)}`;
   const testDate = getNextMondayDate();
 
-  const structure = await prisma.structure.create({
-    data: {
+  const structure = await (await db.insert(schema.Structure).values({
       nom: `P10D Structure ${suffix}`,
       slug: `p10d-structure-${suffix}`,
       statut: 'actif',
@@ -212,22 +217,21 @@ async function createPublicBookingFixture() {
       department_codes: [],
       insee_codes: [],
       is_pro_enabled: true,
+      accessibilite_pmr: false,
     },
-  });
+  ).returning())[0];
   createdStructureIds.push(structure.id);
 
-  const settings = await prisma.structureRdvSettings.create({
-    data: {
+  const settings = await (await db.insert(schema.StructureRdvSettings).values({
       structureId: structure.id,
       isPublished: true,
       bookingMode: 'IN_PERSON',
       publishedAt: new Date(),
     },
-  });
+  ).returning())[0];
   createdSettingsIds.push(settings.id);
 
-  const service = await prisma.proRdvService.create({
-    data: {
+  const service = await (await db.insert(schema.ProRdvService).values({
       structureId: structure.id,
       name: 'Accompagnement social',
       durationMinutes: 30,
@@ -235,11 +239,10 @@ async function createPublicBookingFixture() {
       bufferAfterMinutes: 0,
       isActive: true,
     },
-  });
+  ).returning())[0];
   createdServiceIds.push(service.id);
 
-  const rule = await prisma.proAvailabilityRule.create({
-    data: {
+  const rule = await (await db.insert(schema.ProAvailabilityRule).values({
       structureId: structure.id,
       weekday: 1,
       startTime: '09:00',
@@ -247,11 +250,10 @@ async function createPublicBookingFixture() {
       timezone: 'Europe/Paris',
       isActive: true,
     },
-  });
+  ).returning())[0];
   createdRuleIds.push(rule.id);
 
-  const busy = await prisma.proAppointment.create({
-    data: {
+  const busy = await (await db.insert(schema.ProAppointment).values({
       structureId: structure.id,
       serviceId: service.id,
       startAt: new Date(`${testDate}T09:30:00.000Z`),
@@ -259,35 +261,32 @@ async function createPublicBookingFixture() {
       status: 'confirmed',
       beneficiaryName: 'Occuped Slot',
     },
-  });
+  ).returning())[0];
   createdAppointmentIds.push(busy.id);
 
-  const timeOff = await prisma.proTimeOff.create({
-    data: {
+  const timeOff = await (await db.insert(schema.ProTimeOff).values({
       structureId: structure.id,
       startAt: new Date(`${testDate}T10:30:00.000Z`),
       endAt: new Date(`${testDate}T11:00:00.000Z`),
       reason: 'Fermeture',
     },
-  });
+  ).returning())[0];
   createdTimeOffIds.push(timeOff.id);
 
-  const citizen = await prisma.citizenUser.create({
-    data: {
+  const citizen = await (await db.insert(schema.CitizenUser).values({
       email: `citizen-${suffix}@test.local`,
       passwordHash: 'hash',
       emailVerifiedAt: new Date(),
     },
-  });
+  ).returning())[0];
   createdUserIds.push(citizen.id);
 
-  const unverifiedCitizen = await prisma.citizenUser.create({
-    data: {
+  const unverifiedCitizen = await (await db.insert(schema.CitizenUser).values({
       email: `unverified-${suffix}@test.local`,
       passwordHash: 'hash',
       emailVerifiedAt: null,
     },
-  });
+  ).returning())[0];
   createdUserIds.push(unverifiedCitizen.id);
 
   return {
@@ -395,13 +394,12 @@ describe('P10-D public booking flow', () => {
     expect(outbox[0].attachments[0]?.contentType).toContain('text/calendar');
     expect(String(outbox[0].attachments[0]?.content || '')).toContain('BEGIN:VCALENDAR');
 
-    const otherUser = await prisma.citizenUser.create({
-      data: {
+    const otherUser = await (await db.insert(schema.CitizenUser).values({
         email: `owner-other-${Date.now()}@test.local`,
         passwordHash: 'hash',
         emailVerifiedAt: new Date(),
       },
-    });
+    ).returning())[0];
     createdUserIds.push(otherUser.id);
 
     const otherCookie = buildUserCookie(otherUser);

@@ -1,6 +1,8 @@
 import logger from '../../_utils/logger.js';
 // @ts-nocheck
-import prisma from '../../_utils/prisma.js';
+import { db } from '../../../src/db/index.js';
+import { ProAppointment, ProRdvService, RdvConversation, SharedDiagnostic, ProUser, RdvNotificationLog, ConversationLog } from '../../../src/db/schema.js';
+import { eq, and, gte, ne, not, inArray, count, desc, asc, sql } from 'drizzle-orm';
 import { AUTH_ROLE, requireProRole, requireProStructureContext } from '../../_utils/auth.js';
 
 /**
@@ -41,32 +43,34 @@ async function handler(req, res) {
         }
 
         // 1. Total appointments in period
-        const totalAppointments = await prisma.proAppointment.count({
-            where: {
-                structureId,
-                startAt: { gte: startDate },
-            },
-        });
+        const totalAppointmentsRes = await db.select({ count: count() }).from(ProAppointment).where(
+            and(
+                eq(ProAppointment.structureId, structureId),
+                gte(ProAppointment.startAt, startDate)
+            )
+        );
+        const totalAppointments = totalAppointmentsRes[0].count;
 
         // 2. Appointments by status
-        const byStatus = await prisma.proAppointment.groupBy({
-            by: ['status'],
-            where: {
-                structureId,
-                startAt: { gte: startDate },
-            },
-            _count: { id: true },
-        });
+        const byStatus = await db.select({
+            status: ProAppointment.status,
+            _count: { id: count() }
+        }).from(ProAppointment).where(
+            and(
+                eq(ProAppointment.structureId, structureId),
+                gte(ProAppointment.startAt, startDate)
+            )
+        ).groupBy(ProAppointment.status);
 
         // 3. Daily activity (appointments per day)
-        const appointments = await prisma.proAppointment.findMany({
-            where: {
-                structureId,
-                startAt: { gte: startDate },
-                status: { not: 'cancelled' },
-            },
-            select: { startAt: true },
-            orderBy: { startAt: 'asc' },
+        const appointments = await db.query.ProAppointment.findMany({
+            where: and(
+                eq(ProAppointment.structureId, structureId),
+                gte(ProAppointment.startAt, startDate),
+                not(eq(ProAppointment.status, 'cancelled')) // Handle status not cancelled properly
+            ),
+            columns: { startAt: true },
+            orderBy: (pa, { asc }) => [asc(pa.startAt)],
         });
 
         // Group by day
@@ -81,22 +85,23 @@ async function handler(req, res) {
         }));
 
         // 4. By service (themes)
-        const byService = await prisma.proAppointment.groupBy({
-            by: ['serviceId'],
-            where: {
-                structureId,
-                startAt: { gte: startDate },
-                status: { not: 'cancelled' },
-            },
-            _count: { id: true },
-        });
+        const byService = await db.select({
+            serviceId: ProAppointment.serviceId,
+            _count: { id: count() }
+        }).from(ProAppointment).where(
+            and(
+                eq(ProAppointment.structureId, structureId),
+                gte(ProAppointment.startAt, startDate),
+                not(eq(ProAppointment.status, 'cancelled'))
+            )
+        ).groupBy(ProAppointment.serviceId);
 
         // Enrich service names
-        const serviceIds = byService.map((s) => s.serviceId);
+        const serviceIds = byService.map((s) => s.serviceId).filter(Boolean); // Filter nulls just in case
         const services = serviceIds.length > 0
-            ? await prisma.proRdvService.findMany({
-                where: { id: { in: serviceIds } },
-                select: { id: true, label: true },
+            ? await db.query.ProRdvService.findMany({
+                where: inArray(ProRdvService.id, serviceIds),
+                columns: { id: true, label: true },
             })
             : [];
 
@@ -109,47 +114,54 @@ async function handler(req, res) {
         }));
 
         // 5. Conversations count
-        const conversationsCount = await prisma.rdvConversation.count({
-            where: {
-                structureId,
-                createdAt: { gte: startDate },
-            },
-        });
+        const conversationsCountRes = await db.select({ count: count() }).from(RdvConversation).where(
+            and(
+                eq(RdvConversation.structureId, structureId),
+                gte(RdvConversation.createdAt, startDate)
+            )
+        );
+        const conversationsCount = conversationsCountRes[0].count;
 
         // 6. Shared diagnostics count
-        const diagnosticsCount = await prisma.sharedDiagnostic.count({
-            where: {
-                createdAt: { gte: startDate },
-            },
-        });
+        const diagnosticsCountRes = await db.select({ count: count() }).from(SharedDiagnostic).where(
+            gte(SharedDiagnostic.createdAt, startDate)
+        );
+        const diagnosticsCount = diagnosticsCountRes[0].count;
 
         // 7. Active team size
-        const teamSize = await prisma.proUser.count({
-            where: { structureId, status: 'active' },
-        });
+        const teamSizeRes = await db.select({ count: count() }).from(ProUser).where(
+            and(eq(ProUser.structureId, structureId), eq(ProUser.status, 'active'))
+        );
+        const teamSize = teamSizeRes[0].count;
 
         // 8. Cancelled count
         const cancelledCount = byStatus.find((s) => s.status === 'cancelled')?._count?.id || 0;
         const completedCount = totalAppointments - cancelledCount;
 
         // 9. SMS Notification Impact (Phase 3 — No-show prevention)
-        const smsNotifications = await prisma.rdvNotificationLog.count({
-            where: {
-                conversation: { structureId },
-                sentAt: { gte: startDate },
-            },
-        });
+        // Need to inner join RdvConversation on rdv_notification_logs.conversation_id to check structureId
+        const smsNotificationsRes = await db.select({ count: count() }).from(RdvNotificationLog)
+            .innerJoin(RdvConversation, eq(RdvNotificationLog.conversationId, RdvConversation.id))
+            .where(
+                and(
+                    eq(RdvConversation.structureId, structureId),
+                    gte(RdvNotificationLog.sentAt, startDate)
+                )
+            );
+        const smsNotifications = smsNotificationsRes[0].count;
+        
         // DITP estimation: SMS reminders reduce no-shows by ~35%
         const noShowCount = byStatus.find((s) => s.status === 'noshow' || s.status === 'NOSHOW')?._count?.id || 0;
         const avoidedNoShows = Math.round(smsNotifications * 0.35);
 
         // 10. Boussole Sociale — Orientation sessions
-        const compassSessions = await prisma.conversationLog.count({
-            where: {
-                searchMode: 'compass',
-                createdAt: { gte: startDate },
-            },
-        });
+        const compassSessionsRes = await db.select({ count: count() }).from(ConversationLog).where(
+            and(
+                eq(ConversationLog.searchMode, 'compass'),
+                gte(ConversationLog.createdAt, startDate)
+            )
+        );
+        const compassSessions = compassSessionsRes[0].count;
 
         return res.status(200).json({
             ok: true,

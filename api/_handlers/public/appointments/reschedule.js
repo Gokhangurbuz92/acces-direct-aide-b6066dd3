@@ -1,5 +1,7 @@
 import logger from '../../../_utils/logger.js';
-import prisma from '../../../_utils/prisma.js';
+import { db } from '../../../../src/db/index.js';
+import { Appointment } from '../../../../src/db/schema.js';
+import { eq, and, ne, inArray, lt, gt } from 'drizzle-orm';
 import { hash } from '../../../lib/crypto.js';
 /**
  * Appointment Reschedule (Public)
@@ -28,9 +30,9 @@ export default async function handler(req, res) {
     }
 
     try {
-        const appointment = await prisma.appointment.findUnique({
-            where: { id },
-            include: { service: { select: { duration_minutes: true } } },
+        const appointment = await db.query.Appointment.findFirst({
+            where: eq(Appointment.id, id),
+            with: { service: { columns: { duration_minutes: true } } },
         });
 
         if (!appointment) {
@@ -50,14 +52,14 @@ export default async function handler(req, res) {
         const newEnd = new Date(newDate.getTime() + durationMs);
 
         // Check for conflicts in the same structure
-        const conflict = await prisma.appointment.findFirst({
-            where: {
-                id: { not: id },
-                structureId: appointment.structureId,
-                status: { in: ['confirmed', 'locked'] },
-                start_at: { lt: newEnd },
-                end_at: { gt: newDate },
-            },
+        const conflict = await db.query.Appointment.findFirst({
+            where: and(
+                ne(Appointment.id, id),
+                eq(Appointment.structureId, appointment.structureId),
+                inArray(Appointment.status, ['confirmed', 'locked']),
+                lt(Appointment.start_at, newEnd),
+                gt(Appointment.end_at, newDate)
+            ),
         });
 
         if (conflict) {
@@ -65,14 +67,11 @@ export default async function handler(req, res) {
         }
 
         // Update the appointment
-        await prisma.appointment.update({
-            where: { id },
-            data: {
+        await db.update(Appointment).set({
                 start_at: newDate,
                 end_at: newEnd,
                 status: 'confirmed',
-            },
-        });
+        }).where(eq(Appointment.id, id));
 
         logger.info(`[Reschedule] Appointment ${id} rescheduled to ${newStartAt}`);
 

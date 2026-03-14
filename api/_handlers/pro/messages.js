@@ -1,5 +1,7 @@
 import logger from '../../_utils/logger.js';
-import prisma from '../../_utils/prisma.js';
+import { db } from '../../../src/db/index.js';
+import { Appointment, Message } from '../../../src/db/schema.js';
+import { eq, desc, and, ne, isNull, sql } from 'drizzle-orm';
 import { requireProAuth, requireProStructureContext } from '../../_utils/auth.js';
 import { encrypt, decrypt, generateAttachmentToken } from '../../lib/crypto.js';
 import { storage } from '../../lib/storage.js';
@@ -18,8 +20,8 @@ async function handler(req, res) {
     if (!appointmentId) return res.status(400).json({ error: "Missing appointmentId" });
 
     // RBAC: Check structure ownership
-    const appointment = await prisma.appointment.findUnique({
-        where: { id: appointmentId }
+    const appointment = await db.query.Appointment.findFirst({
+        where: eq(Appointment.id, appointmentId)
     });
 
     if (!appointment) return res.status(404).json({ error: "Not found" });
@@ -31,16 +33,17 @@ async function handler(req, res) {
         const pageInt = Math.max(1, parseInt(page));
         const limitInt = Math.min(100, Math.max(1, parseInt(pageSize)));
 
-        const [messages, total] = await Promise.all([
-            prisma.message.findMany({
-                where: { appointmentId },
-                orderBy: { createdAt: 'desc' },
-                skip: (pageInt - 1) * limitInt,
-                take: limitInt,
-                include: { attachments: true }
+        const [messages, totalRes] = await Promise.all([
+            db.query.Message.findMany({
+                where: eq(Message.appointmentId, appointmentId),
+                orderBy: [desc(Message.createdAt)],
+                limit: limitInt,
+                offset: (pageInt - 1) * limitInt,
+                with: { attachments: true }
             }),
-            prisma.message.count({ where: { appointmentId } })
+            db.select({ count: sql`count(*)` }).from(Message).where(eq(Message.appointmentId, appointmentId))
         ]);
+        const total = Number(totalRes[0].count);
 
         const mapped = messages.map(m => ({
             id: m.id,
@@ -72,14 +75,12 @@ async function handler(req, res) {
         const { content } = req.body;
         if (!content) return res.status(400).json({ error: "Empty content" });
 
-        const msg = await prisma.message.create({
-            data: {
+        const [msg] = await db.insert(Message).values({
                 appointmentId: appointment.id,
                 sender: 'PRO',
                 content_encrypted: encrypt(content),
                 read_at: null
-            }
-        });
+        }).returning();
 
         return res.status(201).json({ success: true, messageId: msg.id });
     }
@@ -88,14 +89,13 @@ async function handler(req, res) {
         // Mark as read
         const { action } = req.body;
         if (action === 'read_all') {
-            await prisma.message.updateMany({
-                where: {
-                    appointmentId: appointment.id,
-                    sender: { not: 'PRO' }, // Mark messages from Beneficiary as read
-                    read_at: null
-                },
-                data: { read_at: new Date() }
-            });
+            await db.update(Message).set({ read_at: new Date() }).where(
+                and(
+                    eq(Message.appointmentId, appointment.id),
+                    ne(Message.sender, 'PRO'),
+                    isNull(Message.read_at)
+                )
+            );
             return res.status(200).json({ success: true });
         }
         return res.status(400).json({ error: "Invalid action" });
@@ -105,9 +105,9 @@ async function handler(req, res) {
         const { messageId } = req.body; // or query
         if (!messageId) return res.status(400).json({ error: "Missing messageId" });
 
-        const message = await prisma.message.findUnique({
-            where: { id: messageId },
-            include: { attachments: true }
+        const message = await db.query.Message.findFirst({
+            where: eq(Message.id, messageId),
+            with: { attachments: true }
         });
 
         if (!message) return res.status(404).json({ error: "Message not found" });
@@ -120,7 +120,7 @@ async function handler(req, res) {
             }
         }
 
-        await prisma.message.delete({ where: { id: messageId } });
+        await db.delete(Message).where(eq(Message.id, messageId));
         return res.status(200).json({ success: true });
     }
 

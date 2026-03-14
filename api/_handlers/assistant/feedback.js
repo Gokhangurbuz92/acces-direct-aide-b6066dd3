@@ -1,5 +1,7 @@
 import logger from '../../_utils/logger.js';
-import prisma from '../../_utils/prisma.js';
+import { db } from '../../../src/db/index.js';
+import { ConversationLog } from '../../../src/db/schema.js';
+import { eq } from 'drizzle-orm';
 
 /**
  * POST /api/assistant/feedback
@@ -25,25 +27,21 @@ export default async function handler(req, res) {
     }
 
     try {
-        await prisma.conversationLog.update({
-            where: { id: logId },
-            data: {
-                rating,
-                userComment: comment ? String(comment).slice(0, 500) : null,
-            },
-        });
+        const updated = await db.update(ConversationLog).set({
+            rating,
+            userComment: comment ? String(comment).slice(0, 500) : null,
+        }).where(eq(ConversationLog.id, logId)).returning();
 
-        return res.status(200).json({ success: true });
-    } catch (error) {
-        logger.error('[Feedback Error]:', error);
-
-        // If the log doesn't exist, return a soft error
-        if (error.code === 'P2025') {
+        if (!updated.length) {
             return res.status(404).json({
                 error: 'not_found',
                 message: 'Ce log de conversation est introuvable.',
             });
         }
+
+        return res.status(200).json({ success: true });
+    } catch (error) {
+        logger.error('[Feedback Error]:', error);
 
         return res.status(500).json({
             error: 'update_failed',

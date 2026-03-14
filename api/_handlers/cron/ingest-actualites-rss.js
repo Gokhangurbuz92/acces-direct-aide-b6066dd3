@@ -3,7 +3,9 @@ import crypto from 'crypto';
 import fs from 'fs';
 import path from 'path';
 
-import prisma from '../../_utils/prisma.js';
+import { db } from '../../../src/db/index.js';
+import { Actualite, RssSource, SourceDocument } from '../../../src/db/schema.js';
+import { eq } from 'drizzle-orm';
 import { env } from '../../_utils/env.js';
 import { computeContentHash, computeRawContentHash } from '../../_utils/contentHash.js';
 import { ensureSlugOrNull } from '../../_utils/slug.js';
@@ -121,7 +123,6 @@ function buildActualiteSlug(baseSlug, canonicalHash) {
 
 /**
  * @param {{
- *   prismaClient?: import('@prisma/client').PrismaClient,
  *   source: { id: string, name: string },
  *   feedUrl: string,
  *   category: string | null,
@@ -133,7 +134,6 @@ function buildActualiteSlug(baseSlug, canonicalHash) {
  * @returns {Promise<{ action: 'created' | 'updated' | 'skipped' }>}
  */
 export async function upsertActualiteFromFeedItem(input) {
-  const prismaClient = input.prismaClient || prisma;
   const title = safeString(input.item?.title) || 'Sans titre';
   const canonicalUrl = safeString(input.item?.link) || safeString(input.item?.guid);
   if (!canonicalUrl) {
@@ -166,7 +166,7 @@ export async function upsertActualiteFromFeedItem(input) {
   });
 
   let sourceDocumentId = null;
-  const sourceDocument = await upsertSourceDocument(prismaClient, {
+  const sourceDocument = await upsertSourceDocument({
     sourceUrl: canonicalUrl,
     rawContent: JSON.stringify({
       title,
@@ -187,9 +187,9 @@ export async function upsertActualiteFromFeedItem(input) {
   });
   sourceDocumentId = sourceDocument.id;
 
-  const existing = await prismaClient.actualite.findFirst({
-    where: { canonical_url: canonicalUrl },
-    select: {
+  const existing = await db.query.Actualite.findFirst({
+    where: eq(Actualite.canonical_url, canonicalUrl),
+    columns: {
       id: true,
       slug: true,
       raw_data_hash: true,
@@ -215,62 +215,52 @@ export async function upsertActualiteFromFeedItem(input) {
       }
     : {};
 
-  await prismaClient.actualite.upsert({
-    where: { canonical_url: canonicalUrl },
-    update: {
-      titre: title,
-      slug: finalSlug,
-      contenu,
-      resume,
-      canonical_url: canonicalUrl,
-      lien_url: canonicalUrl,
-      url: canonicalUrl,
-      source_url: canonicalUrl,
-      guid: safeString(input.item?.guid) || canonicalUrl,
-      source_id: input.source.id,
-      source_name: input.source.name,
-      source_nom: input.source.name,
-      fetched_at: now,
-      date_publication: publishedAt,
-      raw_data_hash: entityPayloadHash,
-      dedupe_hash: canonicalHash,
-      ingest_batch: input.runId,
-      categorie: input.category || undefined,
-      territoire: input.territory || undefined,
-      type_actu: 'info',
-      source_document_id: sourceDocumentId,
-      ...publicationData,
-    },
-    create: {
-      titre: title,
-      slug: finalSlug,
-      contenu,
-      resume,
-      canonical_url: canonicalUrl,
-      lien_url: canonicalUrl,
-      url: canonicalUrl,
-      source_url: canonicalUrl,
-      guid: safeString(input.item?.guid) || canonicalUrl,
-      source_id: input.source.id,
-      source_name: input.source.name,
-      source_nom: input.source.name,
-      fetched_at: now,
-      date_publication: publishedAt,
-      raw_data_hash: entityPayloadHash,
-      dedupe_hash: canonicalHash,
-      ingest_batch: input.runId,
-      categorie: input.category || undefined,
-      territoire: input.territory || undefined,
-      type_actu: 'info',
-      statut: input.isOfficial ? 'publie' : 'brouillon',
-      auto_publish: input.isOfficial,
-      published_at: input.isOfficial ? publishedAt : null,
-      falc_status: 'pending',
-      quality_score: input.isOfficial ? 60 : 40,
-      score_fiabilite: input.isOfficial ? 95 : 40,
-      tags: [],
-      source_document_id: sourceDocumentId,
-    },
+  const insertData = {
+    id: crypto.randomUUID(),
+    createdAt: now,
+    titre: title,
+    slug: finalSlug,
+    contenu,
+    resume,
+    canonical_url: canonicalUrl,
+    lien_url: canonicalUrl,
+    url: canonicalUrl,
+    source_url: canonicalUrl,
+    guid: safeString(input.item?.guid) || canonicalUrl,
+    source_id: input.source.id,
+    source_name: input.source.name,
+    source_nom: input.source.name,
+    fetched_at: now,
+    date_publication: publishedAt,
+    raw_data_hash: entityPayloadHash,
+    dedupe_hash: canonicalHash,
+    ingest_batch: input.runId,
+    categorie: input.category || null,
+    territoire: input.territory || null,
+    type_actu: 'info',
+    source_document_id: sourceDocumentId,
+    ...publicationData,
+    statut: input.isOfficial ? 'publie' : 'brouillon',
+    auto_publish: input.isOfficial,
+    published_at: input.isOfficial ? publishedAt : null,
+    falc_status: 'pending',
+    quality_score: input.isOfficial ? 60 : 40,
+    score_fiabilite: input.isOfficial ? 95 : 40,
+    tags: [],
+    departements: [],
+    key_points_falc: [],
+    est_important: false,
+    updatedAt: now,
+  };
+
+  const updateData = {
+    ...insertData,
+  };
+
+
+  await db.insert(Actualite).values(insertData).onConflictDoUpdate({
+    target: [Actualite.canonical_url],
+    set: updateData,
   });
 
   return { action: existing ? 'updated' : 'created' };
@@ -356,10 +346,17 @@ export async function runIngestActualitesRss({ limit, runId } = {}) {
     const enabled = typeof src?.enabled === 'boolean' ? src.enabled : true;
 
     try {
-      await prisma.rssSource.upsert({
-        where: { feed_url: feedUrl },
-        update: { name, domain, trust_level: trustLevel, enabled },
-        create: { name, feed_url: feedUrl, domain, trust_level: trustLevel, enabled },
+      await db.insert(RssSource).values({
+        name,
+        feed_url: feedUrl,
+        domain,
+        trust_level: trustLevel,
+        enabled,
+        error_count: 0,
+        updatedAt: new Date(),
+      }).onConflictDoUpdate({
+        target: [RssSource.feed_url],
+        set: { name, domain, trust_level: trustLevel, enabled, updatedAt: new Date() },
       });
     } catch (e) {
       stats.errors.push(`${name}: seed failed - ${getErrorMessage(e)}`);
@@ -369,7 +366,9 @@ export async function runIngestActualitesRss({ limit, runId } = {}) {
   /** @type {Array<{ id: string, name: string, feed_url: string, trust_level: string }>} */
   let dbSources = [];
   try {
-    dbSources = await prisma.rssSource.findMany({ where: { enabled: true } });
+    dbSources = await db.query.RssSource.findMany({
+      where: eq(RssSource.enabled, true),
+    });
   } catch (e) {
     stats.errors.push(`rssSource.findMany failed - ${getErrorMessage(e)}`);
     return stats;

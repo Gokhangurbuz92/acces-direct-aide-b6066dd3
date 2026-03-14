@@ -1,6 +1,8 @@
 import { checkRateLimit, getClientIp, getRateLimitStatus } from '../../_utils/rateLimit.js';
 import logger from '../../_utils/logger.js';
-import prisma from '../../_utils/prisma.js';
+import { db } from '../../../src/db/index.js';
+import { PartnershipRequest } from '../../../src/db/schema.js';
+import { eq } from 'drizzle-orm';
 import { verifyAdmin } from '../../_utils/auth.js';
 
 /**
@@ -23,9 +25,9 @@ export default async function handler(req, res) {
 
     try {
         if (method === 'GET') {
-            const requests = await prisma.partnershipRequest.findMany({
-                orderBy: { createdAt: 'desc' },
-                take: 100
+            const requests = await db.query.PartnershipRequest.findMany({
+                orderBy: (pr, { desc }) => [desc(pr.createdAt)],
+                limit: 100
             });
             return res.json(requests);
         }
@@ -34,10 +36,7 @@ export default async function handler(req, res) {
             const { id, status } = req.body;
             if (!id || !status) return res.status(400).json({ error: "Missing fields" });
 
-            const updated = await prisma.partnershipRequest.update({
-                where: { id },
-                data: { status }
-            });
+            const [updated] = await db.update(PartnershipRequest).set({ status }).where(eq(PartnershipRequest.id, id)).returning();
             return res.json(updated);
         }
 

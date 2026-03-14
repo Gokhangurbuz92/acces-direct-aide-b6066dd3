@@ -1,5 +1,6 @@
 import logger from '../../_utils/logger.js';
-import prisma from '../../_utils/prisma.js';
+import { db } from '../../../src/db/index.js';
+import { PartnershipRequest } from '../../../src/db/schema.js';
 import crypto from 'crypto';
 
 // In-memory rate limiter (for demo/MVP, usually Redis/KV)
@@ -60,8 +61,7 @@ export default async function handler(req, res) {
     try {
         const ipHash = crypto.createHash('sha256').update(ip).digest('hex');
 
-        const request = await prisma.partnershipRequest.create({
-            data: {
+        const [request] = await db.insert(PartnershipRequest).values({
                 structureName,
                 city,
                 type,
@@ -71,8 +71,7 @@ export default async function handler(req, res) {
                 consent: Boolean(consent),
                 ip_hash: ipHash,
                 status: 'pending'
-            }
-        });
+        }).returning();
 
         return res.status(200).json({ success: true, id: request.id });
     } catch (e) {

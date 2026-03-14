@@ -1,5 +1,7 @@
 import { checkRateLimit, getClientIp, getRateLimitStatus } from '../../_utils/rateLimit.js';
-import prisma from '../../_utils/prisma.js';
+import { db } from '../../../src/db/index.js';
+import * as schema from '../../../src/db/schema.js';
+import { eq } from 'drizzle-orm';
 import Busboy from 'busboy';
 import { parse } from 'csv-parse/sync';
 import { verifyAdmin } from '../../_utils/auth.js';
@@ -52,8 +54,9 @@ export default async function handler(req, res) {
             }
 
             const modelName = entityType.toLowerCase();
-            const model = prisma[modelName];
-            if (!model) {
+            const modelKey = Object.keys(schema).find(k => k.toLowerCase() === modelName);
+            const model = modelKey ? schema[modelKey] : null;
+            if (!model || !db.query[modelKey]) {
                 res.status(400).json({ error: 'Invalid entity type' });
                 return resolve();
             }
@@ -84,22 +87,22 @@ export default async function handler(req, res) {
 
                         data.updatedBy = 'admin-import';
 
-                        const where = {};
-                        if (data.id) where.id = data.id;
-                        else if (data.slug) where.slug = data.slug;
+                        const whereClauses = [];
+                        if (data.id) whereClauses.push(eq(model.id, data.id));
+                        else if (data.slug) whereClauses.push(eq(model.slug, data.slug));
 
-                        if (where.id || where.slug) {
-                             const exists = await model.findFirst({ where });
+                        if (whereClauses.length > 0) {
+                             const exists = await db.query[modelKey].findFirst({ where: whereClauses[0] });
                              if (exists) {
                                  delete data.id;
-                                 await model.update({ where: { id: exists.id }, data });
+                                 await db.update(model).set(data).where(eq(model.id, exists.id));
                                  report.updated++;
                              } else {
-                                 await model.create({ data });
+                                 await db.insert(model).values(data);
                                  report.created++;
                              }
                         } else {
-                             await model.create({ data });
+                             await db.insert(model).values(data);
                              report.created++;
                         }
 

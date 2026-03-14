@@ -1,4 +1,5 @@
-import { Prisma } from '@prisma/client';
+import { sql } from 'drizzle-orm';
+import { db } from '../../src/db/index.js';
 
 const RRF_K = 60;
 const LEXICAL_CANDIDATE_MULTIPLIER = 5;
@@ -18,14 +19,14 @@ function toVectorLiteral(values) {
   return `[${values.map((value) => Number(value).toFixed(8)).join(',')}]`;
 }
 
-async function getSearchCapabilities(prisma) {
+async function getSearchCapabilities() {
   const now = Date.now();
   if (now - capabilityCache.checkedAt < CAPABILITY_CACHE_TTL_MS) {
     return capabilityCache;
   }
 
   try {
-    const rows = await prisma.$queryRaw`
+    const rows = await db.execute(sql`
       SELECT
         EXISTS (
           SELECT 1
@@ -55,9 +56,10 @@ async function getSearchCapabilities(prisma) {
           FROM pg_extension
           WHERE extname = 'unaccent'
         ) AS has_unaccent_extension
-    `;
+    `);
 
-    const row = rows?.[0] || {};
+    const actualRows = rows.rows || rows;
+    const row = actualRows?.[0] || {};
     capabilityCache = {
       checkedAt: now,
       hasEmbeddingColumn: Boolean(row.has_embedding_column),
@@ -82,7 +84,7 @@ async function getSearchCapabilities(prisma) {
 
 function buildAideFilters({ category, situations, geoScope }) {
   const filters = [
-    Prisma.sql`
+    sql`
       (
         a."status_code" = 'PUBLISHED'::"AidStatus"
         OR (a."status_code" = 'DRAFT'::"AidStatus" AND a."statut" = 'publie')
@@ -92,7 +94,7 @@ function buildAideFilters({ category, situations, geoScope }) {
 
   if (category) {
     const categorySlug = String(category).toLowerCase();
-    filters.push(Prisma.sql`
+    filters.push(sql`
       (
         a."category_code" = CAST(${category} AS "AidCategoryCode")
         OR a."theme" = ${categorySlug}
@@ -108,31 +110,31 @@ function buildAideFilters({ category, situations, geoScope }) {
   }
 
   if (geoScope) {
-    filters.push(Prisma.sql`a."geo_scope" = ${geoScope}`);
+    filters.push(sql`a."geo_scope" = ${geoScope}`);
   }
 
   if (situations && situations.length > 0) {
-    filters.push(Prisma.sql`
+    filters.push(sql`
       (
         EXISTS (
           SELECT 1
           FROM "AidSituation" relation
           JOIN "Situation" situation ON situation.id = relation."situationId"
           WHERE relation."aidId" = a.id
-            AND situation.code IN (${Prisma.join(situations)})
+            AND situation.code IN (${sql.join(situations)})
         )
         OR EXISTS (
           SELECT 1
           FROM "_AideToLifeSituation" relation
           JOIN "LifeSituation" situation ON situation.id = relation."B"
           WHERE relation."A" = a.id
-            AND situation.slug IN (${Prisma.join(situations)})
+            AND situation.slug IN (${sql.join(situations)})
         )
       )
     `);
   }
 
-  return Prisma.sql`${Prisma.join(filters, ' AND ')}`;
+  return sql`${sql.join(filters, sql.raw(' AND '))}`;
 }
 
 function normalizeRows(rows) {
@@ -150,35 +152,35 @@ function normalizeRows(rows) {
   }));
 }
 
-export async function searchAidesHybrid(prisma, params) {
+export async function searchAidesHybrid(params) {
   const { query, category, situations = [], geoScope, limit = 10, embedding = null } = params;
   const lexicalLimit = Math.max(limit * LEXICAL_CANDIDATE_MULTIPLIER, limit);
   const semanticLimit = Math.max(limit * SEMANTIC_CANDIDATE_MULTIPLIER, limit);
   const filters = buildAideFilters({ category, situations, geoScope });
   const vectorLiteral = Array.isArray(embedding) && embedding.length > 0 ? toVectorLiteral(embedding) : null;
 
-  const capabilities = await getSearchCapabilities(prisma);
+  const capabilities = await getSearchCapabilities();
   const semanticReady = vectorLiteral
     ? capabilities.hasEmbeddingColumn && capabilities.hasVectorExtension
     : false;
 
   const tsQuery = capabilities.hasUnaccentExtension
-    ? Prisma.sql`websearch_to_tsquery('french', unaccent(${query}))`
-    : Prisma.sql`websearch_to_tsquery('french', ${query})`;
+    ? sql`websearch_to_tsquery('french', unaccent(${query}))`
+    : sql`websearch_to_tsquery('french', ${query})`;
 
   const canUseTsContent = capabilities.hasTsContentColumn;
   const canUseSearchVector = capabilities.hasSearchVectorColumn;
 
   const lexicalVector = canUseTsContent && canUseSearchVector
-    ? Prisma.sql`(COALESCE(a."ts_content", to_tsvector('french', '')) || COALESCE(a."search_vector", to_tsvector('french', '')))`
+    ? sql`(COALESCE(a."ts_content", to_tsvector('french', '')) || COALESCE(a."search_vector", to_tsvector('french', '')))`
     : canUseTsContent
-      ? Prisma.sql`COALESCE(a."ts_content", to_tsvector('french', ''))`
+      ? sql`COALESCE(a."ts_content", to_tsvector('french', ''))`
       : canUseSearchVector
-        ? Prisma.sql`COALESCE(a."search_vector", to_tsvector('french', ''))`
+        ? sql`COALESCE(a."search_vector", to_tsvector('french', ''))`
         : null;
 
   const lexicalCte = lexicalVector
-    ? Prisma.sql`
+    ? sql`
       lexical AS (
         SELECT
           a.id,
@@ -192,7 +194,7 @@ export async function searchAidesHybrid(prisma, params) {
         LIMIT ${lexicalLimit}
       )
     `
-    : Prisma.sql`
+    : sql`
       lexical AS (
         SELECT
           a.id,
@@ -209,7 +211,7 @@ export async function searchAidesHybrid(prisma, params) {
     `;
 
   const semanticCte = semanticReady
-    ? Prisma.sql`
+    ? sql`
       semantic AS (
         SELECT
           a.id,
@@ -221,7 +223,7 @@ export async function searchAidesHybrid(prisma, params) {
         LIMIT ${semanticLimit}
       )
     `
-    : Prisma.sql`
+    : sql`
       semantic AS (
         SELECT
           NULL::text AS id,
@@ -231,7 +233,7 @@ export async function searchAidesHybrid(prisma, params) {
       )
     `;
 
-  const fusionSql = Prisma.sql`
+  const fusionSql = sql`
     WITH
       ${lexicalCte},
       ${semanticCte},
@@ -264,7 +266,8 @@ export async function searchAidesHybrid(prisma, params) {
     LIMIT ${limit}
   `;
 
-  const rows = await prisma.$queryRaw(fusionSql);
+  const result = await db.execute(fusionSql);
+  const rows = result.rows || result;
   const items = normalizeRows(rows);
 
   const topResult = items[0];

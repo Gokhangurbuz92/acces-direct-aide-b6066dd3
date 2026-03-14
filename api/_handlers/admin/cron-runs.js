@@ -1,5 +1,7 @@
 import { checkRateLimit, getClientIp, getRateLimitStatus } from '../../_utils/rateLimit.js';
-import prisma from '../../_utils/prisma.js';
+import { db } from '../../../src/db/index.js';
+import { CronRun } from '../../../src/db/schema.js';
+import { eq } from 'drizzle-orm';
 import { verifyAdmin } from '../../_utils/auth.js';
 
 /**
@@ -48,8 +50,8 @@ export default async function handler(req, res) {
 
   const id = extractIdFromPath(req.url, req.headers?.host);
   if (id) {
-    const item = await prisma.cronRun.findUnique({
-      where: { id },
+    const item = await db.query.CronRun.findFirst({
+      where: eq(CronRun.id, id),
     });
 
     if (!item) return res.status(404).json({ error: 'Not found' });
@@ -61,11 +63,11 @@ export default async function handler(req, res) {
   const rawLimit = req.query?.limit ? Number.parseInt(String(req.query.limit), 10) : 50;
   const limit = Number.isFinite(rawLimit) ? Math.min(Math.max(rawLimit, 1), 200) : 50;
 
-  const items = await prisma.cronRun.findMany({
-    where: job ? { job } : undefined,
-    orderBy: { startedAt: 'desc' },
-    take: limit,
-    select: {
+  const items = await db.query.CronRun.findMany({
+    where: job ? eq(CronRun.job, job) : undefined,
+    orderBy: (cr, { desc }) => [desc(cr.startedAt)],
+    limit: limit,
+    columns: {
       id: true,
       job: true,
       status: true,

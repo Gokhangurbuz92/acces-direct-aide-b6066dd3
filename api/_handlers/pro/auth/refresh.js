@@ -1,6 +1,6 @@
 import logger from '../../../_utils/logger.js';
 import jwt from 'jsonwebtoken';
-import { signProToken, verifyProToken, logProAudit } from '../../../lib/pro-auth.js';
+import { signProToken, verifyProToken, logProAudit } from '../../../_utils/auth.js';
 import { checkRateLimit, getClientIp, getRateLimitStatus } from '../../../_utils/rateLimit.js';
 import { env } from '../../../_utils/env.js';
 

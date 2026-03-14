@@ -1,6 +1,8 @@
 import { checkRateLimit, getClientIp, getRateLimitStatus } from '../../_utils/rateLimit.js';
 import logger from '../../_utils/logger.js';
-import prisma from '../../_utils/prisma.js';
+import { db } from '../../../src/db/index.js';
+import { Actualite } from '../../../src/db/schema.js';
+import { eq, count } from 'drizzle-orm';
 import { verifyAdmin } from '../../_utils/auth.js';
 /**
  * @param {import('../../_utils/http-types').ApiRequest} req
@@ -27,15 +29,16 @@ export default async function handler(req, res) {
     const skip = (page - 1) * limit;
 
     try {
-        const [items, total] = await Promise.all([
-            prisma.actualite.findMany({
-                where: { statut: status },
-                orderBy: { fetched_at: 'desc' },
-                take: Number(limit),
-                skip: Number(skip)
+        const [items, totalRes] = await Promise.all([
+            db.query.Actualite.findMany({
+                where: eq(Actualite.statut, status),
+                orderBy: (a, { desc }) => [desc(a.fetched_at)],
+                limit: Number(limit),
+                offset: Number(skip)
             }),
-            prisma.actualite.count({ where: { statut: status } })
+            db.select({ count: count() }).from(Actualite).where(eq(Actualite.statut, status))
         ]);
+        const total = totalRes[0].count;
 
         return res.status(200).json({
             data: items,

@@ -1,6 +1,8 @@
 import { checkRateLimit, getClientIp, getRateLimitStatus } from '../../_utils/rateLimit.js';
 import logger from '../../_utils/logger.js';
-import prisma from '../../_utils/prisma.js';
+import { db } from '../../../src/db/index.js';
+import { ReviewQueueItem } from '../../../src/db/schema.js';
+import { eq } from 'drizzle-orm';
 import { verifyAdmin } from '../../_utils/auth.js';
 import { generateText } from '../../lib/gemini.js';
 /**
@@ -35,8 +37,8 @@ export default async function handler(req, res) {
 
     try {
         // 1. Retrieve the review queue item
-        const reviewItem = await prisma.reviewQueueItem.findUnique({
-            where: { id: itemId },
+        const reviewItem = await db.query.ReviewQueueItem.findFirst({
+            where: eq(ReviewQueueItem.id, itemId),
         });
 
         if (!reviewItem) {
@@ -94,9 +96,7 @@ Ne mets aucun texte avant ou après le JSON.`;
         }
 
         // 4. Store suggestion in the review queue item (never touch the entity directly)
-        const updatedItem = await prisma.reviewQueueItem.update({
-            where: { id: itemId },
-            data: {
+        const [updatedItem] = await db.update(ReviewQueueItem).set({
                 details: {
                     ...(typeof reviewItem.details === 'object' && reviewItem.details !== null
                         ? reviewItem.details
@@ -105,8 +105,7 @@ Ne mets aucun texte avant ou après le JSON.`;
                     repaired_at: new Date().toISOString(),
                 },
                 status: 'resolved_by_ai',
-            },
-        });
+        }).where(eq(ReviewQueueItem.id, itemId)).returning();
 
         logger.info({ itemId, title: reviewItem.title }, 'hive_repair.success');
 

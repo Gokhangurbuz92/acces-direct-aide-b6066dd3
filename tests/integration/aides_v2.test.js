@@ -1,15 +1,20 @@
+import { vi } from "vitest";
+vi.stubEnv("KV_REST_API_URL", "http://localhost");
+vi.stubEnv("KV_REST_API_TOKEN", "mock-token");
 
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+
+import { describe, it, expect, beforeEach } from 'vitest';
 import handler from '../../api/_handlers/aides.js';
 
 // Mocks
-vi.mock('../../api/_utils/prisma.js', () => ({
-    default: {
-        aide: {
-            findFirst: vi.fn(),
-            findMany: vi.fn(),
-        },
-        $queryRaw: vi.fn()
+vi.mock('../../src/db/index.js', () => ({
+    db: {
+        query: {
+            Aide: {
+                findFirst: vi.fn(),
+                findMany: vi.fn(),
+            }
+        }
     }
 }));
 
@@ -34,7 +39,9 @@ vi.mock('../../api/lib/search-query.js', () => ({
 }));
 
 import { searchAides } from '../../api/lib/search-query.js';
-import prisma from '../../api/_utils/prisma.js';
+import { db } from '../../src/db/index.js';
+import * as schema from '../../src/db/schema.js';
+import { eq, sql } from 'drizzle-orm';
 
 describe('API /aides Integration', () => {
     beforeEach(() => {
@@ -76,9 +83,10 @@ describe('API /aides Integration', () => {
             facets: expect.any(Object),
             pagination: expect.any(Object)
         }));
-        expect(searchAides).toHaveBeenCalledWith(expect.anything(), expect.objectContaining({
+        expect(searchAides).toHaveBeenCalledWith(expect.objectContaining({
             q: 'test',
-            theme: 'logement'
+            theme: 'logement',
+            statut: 'publie'
         }));
     });
 
@@ -86,7 +94,7 @@ describe('API /aides Integration', () => {
         const req = { method: 'GET', url: '/api/aides', query: { id: '123' } };
         const res = mockRes();
 
-        prisma.aide.findFirst.mockResolvedValue({ id: '123', titre: 'Detail', statut: 'publie' });
+        db.query.Aide.findFirst.mockResolvedValue({ id: '123', titre: 'Detail', statut: 'publie' });
 
         await handler(req, res);
 
@@ -98,7 +106,7 @@ describe('API /aides Integration', () => {
         const req = { method: 'GET', url: '/api/aides', query: { id: '999' } };
         const res = mockRes();
 
-        prisma.aide.findFirst.mockResolvedValue(null);
+        db.query.Aide.findFirst.mockResolvedValue(null);
 
         await handler(req, res);
 

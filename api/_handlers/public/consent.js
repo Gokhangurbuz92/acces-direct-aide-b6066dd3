@@ -1,5 +1,6 @@
 import logger from '../../_utils/logger.js';
-import prisma from '../../_utils/prisma.js';
+import { db } from '../../../src/db/index.js';
+import { UpdateLog } from '../../../src/db/schema.js';
 /**
  * @param {import('../../_utils/http-types').ApiRequest} req
  * @param {import('../../_utils/http-types').ApiResponse} res
@@ -22,8 +23,7 @@ export default async function handler(req, res) {
         // The objective says "GDPR (Purge à 90j + API de log de consentement simple)".
         // I'll check if AuditLog is appropriate or use a generic Log entry.
 
-        await prisma.updateLog.create({
-            data: {
+        await db.insert(UpdateLog).values({
                 source_name: 'USER_CONSENT',
                 status: 'success',
                 raw_payload_json: {
@@ -33,7 +33,6 @@ export default async function handler(req, res) {
                     ip: req.headers['x-forwarded-for'] || req.socket.remoteAddress,
                     metadata
                 }
-            }
         });
 
         return res.status(200).json({ success: true, message: "Consent logged" });

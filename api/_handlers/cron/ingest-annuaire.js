@@ -10,7 +10,9 @@ import logger from '../../_utils/logger.js';
  */
 
 import { getCronAuth } from '../../_utils/cronAuth.js';
-import prisma from '../../_utils/prisma.js';
+import { db } from '../../../src/db/index.js';
+import { Structure, ImportLog } from '../../../src/db/schema.js';
+import { eq } from 'drizzle-orm';
 import crypto from 'crypto';
 import { computeContentHash } from '../../_utils/contentHash.js';
 import { ensureSlugOrNull } from '../../_utils/slug.js';
@@ -84,7 +86,7 @@ export async function runIngestAnnuaire({ limit, runId } = {}) {
                 // Source document for traceability
                 let sourceDocumentId = null;
                 try {
-                    const doc = await upsertSourceDocument(prisma, {
+                    const doc = await upsertSourceDocument({
                         sourceUrl: `https://finess.sante.gouv.fr/finess/detail.do?id=${item.numero_finess}`,
                         rawContent: JSON.stringify(item),
                         metadata: {
@@ -99,8 +101,8 @@ export async function runIngestAnnuaire({ limit, runId } = {}) {
                 }
 
                 // Idempotent upsert by numero_finess
-                const existing = await prisma.structure.findFirst({
-                    where: { numero_finess: item.numero_finess },
+                const existing = await db.query.Structure.findFirst({
+                    where: eq(Structure.numero_finess, item.numero_finess),
                 });
 
                 const data = {
@@ -124,30 +126,25 @@ export async function runIngestAnnuaire({ limit, runId } = {}) {
 
                 if (existing) {
                     if (existing.raw_data_hash !== hash) {
-                        await prisma.structure.update({
-                            where: { id: existing.id },
-                            data: {
-                                ...data,
-                                last_sync: new Date(),
-                            },
-                        });
+                        await db.update(Structure).set({
+                            ...data,
+                            last_sync: new Date(),
+                        }).where(eq(Structure.id, existing.id));
                         stats.updated++;
                     } else {
                         stats.skippedExisting++;
                     }
                 } else {
-                    await prisma.structure.create({
-                        data: {
-                            ...data,
-                            numero_finess: item.numero_finess,
-                            slug: slug || null,
-                            statut: 'actif', // FINESS = données officielles → publication directe
-                            published_at: new Date(),
-                            geoloc_status: item.latitude ? 'success' : 'pending',
-                            quality_score: item.latitude ? 80 : 60,
-                            import_status: 'active',
-                            last_sync: new Date(),
-                        },
+                    await db.insert(Structure).values({
+                        ...data,
+                        numero_finess: item.numero_finess,
+                        slug: slug || null,
+                        statut: 'actif', // FINESS = données officielles → publication directe
+                        published_at: new Date(),
+                        geoloc_status: item.latitude ? 'success' : 'pending',
+                        quality_score: item.latitude ? 80 : 60,
+                        import_status: 'active',
+                        last_sync: new Date(),
                     });
                     stats.created++;
                 }
@@ -192,7 +189,7 @@ export async function runIngestAnnuaire({ limit, runId } = {}) {
                 // Source document for traceability
                 let sourceDocumentId = null;
                 try {
-                    const doc = await upsertSourceDocument(prisma, {
+                    const doc = await upsertSourceDocument({
                         sourceUrl: `https://www.journal-officiel.gouv.fr/associations/detail-annonce/associations_b/${item.rna_id}`,
                         rawContent: JSON.stringify(item),
                         metadata: {
@@ -207,8 +204,8 @@ export async function runIngestAnnuaire({ limit, runId } = {}) {
                 }
 
                 // Idempotent upsert by rna_id
-                const existing = await prisma.structure.findFirst({
-                    where: { rna_id: item.rna_id },
+                const existing = await db.query.Structure.findFirst({
+                    where: eq(Structure.rna_id, item.rna_id),
                 });
 
                 const data = {
@@ -229,28 +226,23 @@ export async function runIngestAnnuaire({ limit, runId } = {}) {
 
                 if (existing) {
                     if (existing.raw_data_hash !== hash) {
-                        await prisma.structure.update({
-                            where: { id: existing.id },
-                            data: {
-                                ...data,
-                                last_sync: new Date(),
-                            },
-                        });
+                        await db.update(Structure).set({
+                            ...data,
+                            last_sync: new Date(),
+                        }).where(eq(Structure.id, existing.id));
                         stats.updated++;
                     } else {
                         stats.skippedExisting++;
                     }
                 } else {
-                    await prisma.structure.create({
-                        data: {
-                            ...data,
-                            rna_id: item.rna_id,
-                            slug: slug || null,
-                            statut: 'brouillon', // RNA = données non vérifiées → modération
-                            quality_score: 50,
-                            import_status: 'active',
-                            last_sync: new Date(),
-                        },
+                    await db.insert(Structure).values({
+                        ...data,
+                        rna_id: item.rna_id,
+                        slug: slug || null,
+                        statut: 'brouillon', // RNA = données non vérifiées → modération
+                        quality_score: 50,
+                        import_status: 'active',
+                        last_sync: new Date(),
                     });
                     stats.created++;
                 }
@@ -271,19 +263,17 @@ export async function runIngestAnnuaire({ limit, runId } = {}) {
     const durationTotal = Date.now() - startTotal;
 
     try {
-        await prisma.importLog.create({
-            data: {
-                run_id: runId,
-                source_name: 'CRON_ANNUAIRE',
-                status: stats.errors.length > 0 ? 'PARTIAL' : 'SUCCESS',
-                items_new: stats.created,
-                items_updated: stats.updated,
-                items_skipped: stats.skippedExisting,
-                items_total: stats.processed,
-                error_count: stats.errors.length,
-                logs: stats.errors.length ? JSON.stringify(stats.errors) : null,
-                duration_ms: durationTotal,
-            },
+        await db.insert(ImportLog).values({
+            run_id: runId,
+            source_name: 'CRON_ANNUAIRE',
+            status: stats.errors.length > 0 ? 'PARTIAL' : 'SUCCESS',
+            items_new: stats.created,
+            items_updated: stats.updated,
+            items_skipped: stats.skippedExisting,
+            items_total: stats.processed,
+            error_count: stats.errors.length,
+            logs: stats.errors.length ? JSON.stringify(stats.errors) : null,
+            duration_ms: durationTotal,
         });
     } catch (e) {
         logger.error('[ANNUAIRE] ImportLog failed:', getErrorMessage(e));

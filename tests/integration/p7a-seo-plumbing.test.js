@@ -1,9 +1,15 @@
+import { vi } from "vitest";
+vi.stubEnv("KV_REST_API_URL", "http://localhost");
+vi.stubEnv("KV_REST_API_TOKEN", "mock-token");
+
 import { describe, it, expect } from 'vitest';
 import fs from 'fs';
 import http from 'http';
 import path from 'path';
 import sitemapHandler from '../../api/_handlers/sitemap.js';
-import prisma from '../../api/_utils/prisma.js';
+import { db } from '../../src/db/index.js';
+import * as schema from '../../src/db/schema.js';
+import { eq, sql } from 'drizzle-orm';
 
 function createMockReq(overrides = {}) {
   return {
@@ -98,8 +104,8 @@ describe('P7-A SEO plumbing', () => {
   });
 
   it('GET /sitemap.xml returns 503 with minimal XML when DB is down', async () => {
-    const originalFindMany = prisma.aide.findMany;
-    prisma.aide.findMany = async () => {
+    const originalFindMany = db.query.Aide.findMany;
+    db.query.Aide.findMany = async () => {
       throw new Error('db is unavailable');
     };
 
@@ -115,7 +121,7 @@ describe('P7-A SEO plumbing', () => {
       expect(String(res.body)).not.toContain('db is unavailable');
       expect(String(res.body)).not.toContain('stack');
     } finally {
-      prisma.aide.findMany = originalFindMany;
+      db.query.Aide.findMany = originalFindMany;
     }
   });
 });

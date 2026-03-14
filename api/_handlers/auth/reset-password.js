@@ -1,4 +1,6 @@
-import prisma from '../../_utils/prisma.js';
+import { db } from '../../../src/db/index.js';
+import { AuthToken, CitizenUser } from '../../../src/db/schema.js';
+import { eq } from 'drizzle-orm';
 import { checkRateLimit, getRateLimitStatus } from '../../_utils/rateLimit.js';
 import { getClientIp, hashAuthToken, hashPassword } from '../../_utils/user-auth.js';
 
@@ -26,9 +28,9 @@ export default async function handler(req, res) {
 
   try {
     const tokenHash = hashAuthToken(token);
-    const row = await prisma.authToken.findUnique({
-      where: { tokenHash },
-      include: { user: true },
+    const row = await db.query.AuthToken.findFirst({
+      where: eq(AuthToken.tokenHash, tokenHash),
+      with: { user: true },
     });
 
     if (!row || row.type !== 'PASSWORD_RESET' || row.usedAt || row.expiresAt <= new Date() || !row.user) {
@@ -37,16 +39,10 @@ export default async function handler(req, res) {
 
     const passwordHash = await hashPassword(password);
 
-    await prisma.$transaction([
-      prisma.citizenUser.update({
-        where: { id: row.userId },
-        data: { passwordHash },
-      }),
-      prisma.authToken.update({
-        where: { id: row.id },
-        data: { usedAt: new Date() },
-      }),
-    ]);
+    await db.transaction(async (tx) => {
+      await tx.update(CitizenUser).set({ passwordHash }).where(eq(CitizenUser.id, row.userId));
+      await tx.update(AuthToken).set({ usedAt: new Date() }).where(eq(AuthToken.id, row.id));
+    });
 
     return res.status(200).json({ ok: true });
   } catch {

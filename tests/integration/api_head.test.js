@@ -1,28 +1,27 @@
+import { vi } from "vitest";
+vi.stubEnv("KV_REST_API_URL", "http://localhost");
+vi.stubEnv("KV_REST_API_TOKEN", "mock-token");
 
-import { describe, it, expect, vi } from 'vitest';
+
+import { describe, it, expect } from 'vitest';
 import aidesHandler from '../../api/_handlers/aides.js';
 
-// Mock Prisma
-const { mockFindFirst, mockFindMany } = vi.hoisted(() => {
-    return {
-        mockFindFirst: vi.fn(),
-        mockFindMany: vi.fn()
-    }
-});
-
-vi.mock('@prisma/client', () => {
-    return {
-        PrismaClient: class {
-            constructor() {
-                this.aide = {
-                    findFirst: mockFindFirst,
-                    findMany: mockFindMany,
-                    count: vi.fn().mockResolvedValue(0)
-                };
-            }
+// Mock DB
+const mockDb = vi.hoisted(() => ({
+    query: {
+        Aide: {
+            findFirst: vi.fn(),
+            findMany: vi.fn(),
         }
-    }
-});
+    },
+    select: vi.fn().mockReturnValue({
+        from: vi.fn().mockReturnValue([{ count: 0 }])
+    }),
+}));
+
+vi.mock('../../src/db/index.js', () => ({
+    db: mockDb
+}));
 
 vi.mock('../../api/_utils/rateLimit.js', () => ({
     checkRateLimit: vi.fn().mockResolvedValue({ allowed: true }),
@@ -35,7 +34,7 @@ vi.mock('../../api/lib/search-query.js', () => ({
 
 describe('API HEAD Support', () => {
     it('should return 200 for HEAD request on /api/aides', async () => {
-        mockFindFirst.mockResolvedValue({ id: 1, slug: 'aide-test', statut: 'publie' });
+        mockDb.query.Aide.findFirst.mockResolvedValue({ id: 1, slug: 'aide-test', statut: 'publie' });
 
         const req = {
             method: 'HEAD',

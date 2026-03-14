@@ -1,0 +1,4 @@
+# .gitleaksignore
+# Test fixture dummy encryption keys (not real secrets)
+66228ef5c011f9cf2a87254157d15c9b9c581e20:api/lib/messaging-crypto.test.js:generic-api-key:7
+66228ef5c011f9cf2a87254157d15c9b9c581e20:api/lib/crypto.test.ts:generic-api-key:7

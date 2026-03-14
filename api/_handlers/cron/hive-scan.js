@@ -2,7 +2,8 @@ import logger from '../../_utils/logger.js';
 import { randomUUID } from 'crypto';
 import { getCronAuth, getHeader } from '../../_utils/cronAuth.js';
 import { env } from '../../_utils/env.js';
-import prisma from '../../_utils/prisma.js';
+import { db } from '../../../src/db/index.js';
+import { ReviewQueueItem, CronRun } from '../../../src/db/schema.js';
 
 /**
  * Hive Scan — Automated AI discovery cron
@@ -121,21 +122,19 @@ export default async function handler(req, res) {
                 for (const item of findings) {
                     try {
                         const entityId = `cron-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
-                        await prisma.reviewQueueItem.create({
-                            data: {
-                                entityType: 'AIDE',
-                                entityId,
-                                title: String(item.title || 'Sans titre').slice(0, 255),
-                                reason: 'CRON_HIVE_SCAN',
-                                severity: 'LOW',
-                                status: 'OPEN',
-                                details: {
-                                    source: item.source || 'Google Search',
-                                    summary: item.summary || '',
-                                    category,
-                                    aiGenerated: true,
-                                    discoveredAt: new Date().toISOString(),
-                                },
+                        await db.insert(ReviewQueueItem).values({
+                            entityType: 'AIDE',
+                            entityId,
+                            title: String(item.title || 'Sans titre').slice(0, 255),
+                            reason: 'CRON_HIVE_SCAN',
+                            severity: 'LOW',
+                            status: 'OPEN',
+                            details: {
+                                source: item.source || 'Google Search',
+                                summary: item.summary || '',
+                                category,
+                                aiGenerated: true,
+                                discoveredAt: new Date().toISOString(),
                             },
                         });
                         created++;
@@ -158,18 +157,16 @@ export default async function handler(req, res) {
         const finishedAt = new Date();
         const durationMs = finishedAt.getTime() - startedAt.getTime();
 
-        await prisma.cronRun.create({
-            data: {
-                job: 'HIVE_SCAN',
-                status: 'success',
-                trigger: vercelCronOk ? 'vercel' : 'manual',
-                startedAt,
-                finishedAt,
-                durationMs,
-                requestId,
-                vercelEnv: env.runtime.vercelEnv || null,
-                metrics: { totalFound, perCategory },
-            },
+        await db.insert(CronRun).values({
+            job: 'HIVE_SCAN',
+            status: 'success',
+            trigger: vercelCronOk ? 'vercel' : 'manual',
+            startedAt,
+            finishedAt,
+            durationMs,
+            requestId,
+            vercelEnv: env.runtime.vercelEnv || null,
+            metrics: { totalFound, perCategory },
         });
 
         return res.status(200).json({
@@ -186,18 +183,16 @@ export default async function handler(req, res) {
         logger.error({ requestId, error: error.message }, 'cron.hive_scan.fatal');
 
         try {
-            await prisma.cronRun.create({
-                data: {
-                    job: 'HIVE_SCAN',
-                    status: 'failed',
-                    trigger: vercelCronOk ? 'vercel' : 'manual',
-                    startedAt,
-                    finishedAt,
-                    durationMs,
-                    requestId,
-                    vercelEnv: env.runtime.vercelEnv || null,
-                    errorSample: String(error.message).slice(0, 500),
-                },
+            await db.insert(CronRun).values({
+                job: 'HIVE_SCAN',
+                status: 'failed',
+                trigger: vercelCronOk ? 'vercel' : 'manual',
+                startedAt,
+                finishedAt,
+                durationMs,
+                requestId,
+                vercelEnv: env.runtime.vercelEnv || null,
+                errorSample: String(error.message).slice(0, 500),
             });
         } catch {
             // If even the error logging fails, we still return gracefully

@@ -1,6 +1,7 @@
-import prisma from '../_utils/prisma.js';
+import { db } from '../../src/db/index.js';
+import { AidCategory } from '../../src/db/schema.js';
+import { eq, asc, count } from 'drizzle-orm';
 import { verifyAdmin } from '../_utils/auth.js';
-import { createEntity, updateEntity, deleteEntity } from '../_utils/crud.js';
 /**
  * @param {import('../_utils/http-types').ApiRequest} req
  * @param {import('../_utils/http-types').ApiResponse} res
@@ -13,28 +14,46 @@ export default async function handler(req, res) {
 
     verifyAdmin(req);
 
-    // CRUD
-    if (req.method === 'POST') return createEntity(req, res, prisma.aidCategory);
-    if (req.method === 'PUT') return updateEntity(req, res, prisma.aidCategory);
-    if (req.method === 'DELETE') return deleteEntity(req, res, prisma.aidCategory);
+    // CRUD (Write operations via Query Builder)
+    if (req.method === 'POST') {
+        if (!verifyAdmin(req)) return res.status(401).json({ error: "Unauthorized" });
+        const [item] = await db.insert(AidCategory).values(req.body).returning();
+        return res.status(201).json(item);
+    }
+    if (req.method === 'PUT') {
+        if (!verifyAdmin(req)) return res.status(401).json({ error: "Unauthorized" });
+        const { id: updateId, ...data } = req.body;
+        if (!updateId) return res.status(400).json({ error: "Missing ID" });
+        const [item] = await db.update(AidCategory).set(data).where(eq(AidCategory.id, updateId)).returning();
+        return res.status(200).json(item);
+    }
+    if (req.method === 'DELETE') {
+        if (!verifyAdmin(req)) return res.status(401).json({ error: "Unauthorized" });
+        const deleteId = req.body?.id || req.query?.id;
+        if (!deleteId) return res.status(400).json({ error: "Missing ID" });
+        await db.delete(AidCategory).where(eq(AidCategory.id, deleteId));
+        return res.status(200).json({ success: true });
+    }
 
     // GET
     if (req.method === 'GET') {
         if (id || slug) {
-            const item = await prisma.aidCategory.findFirst({
-                 where: id ? { id: String(id) } : { slug: String(slug) }
+            const item = await db.query.AidCategory.findFirst({
+                 where: id
+                    ? (t, { eq }) => eq(t.id, String(id))
+                    : (t, { eq }) => eq(t.slug, String(slug)),
             });
             if (!item) return res.status(404).json({ error: "Not found" });
             return res.status(200).json(item);
         }
 
-        const items = await prisma.aidCategory.findMany({
-            take: PAGE_SIZE,
-            skip: OFFSET,
-            orderBy: { label: 'asc' }
+        const items = await db.query.AidCategory.findMany({
+            orderBy: (t, { asc }) => [asc(t.label)],
+            limit: PAGE_SIZE,
+            offset: OFFSET,
         });
 
-        const total = await prisma.aidCategory.count();
+        const [{ value: total }] = await db.select({ value: count() }).from(AidCategory);
 
         return res.status(200).json({
             items,

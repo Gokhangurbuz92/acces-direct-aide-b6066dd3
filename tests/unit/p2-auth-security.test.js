@@ -1,4 +1,8 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { vi } from "vitest";
+vi.stubEnv("KV_REST_API_URL", "http://localhost");
+vi.stubEnv("KV_REST_API_TOKEN", "mock-token");
+
+import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import jwt from 'jsonwebtoken';
 
 /**
@@ -133,7 +137,7 @@ describe('P2 Auth — Refresh Token', () => {
     });
 
     it('should re-issue a fresh token from a valid pro JWT', async () => {
-        const { verifyProToken, signProToken } = await import('../../api/lib/pro-auth.js');
+        const { verifyProToken, signProToken } = await import('../../api/_utils/auth.js');
 
         const originalToken = createTestProToken();
         const claims = verifyProToken(originalToken);
@@ -161,7 +165,7 @@ describe('P2 Auth — Refresh Token', () => {
     });
 
     it('should reject a standard verify on an expired token', async () => {
-        const { verifyProToken } = await import('../../api/lib/pro-auth.js');
+        const { verifyProToken } = await import('../../api/_utils/auth.js');
 
         const expiredToken = createExpiredProToken(120); // expired 2 min ago
         const claims = verifyProToken(expiredToken);

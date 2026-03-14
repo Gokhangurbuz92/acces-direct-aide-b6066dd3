@@ -1,4 +1,6 @@
-import prisma from '../../_utils/prisma.js';
+import { db } from '../../../src/db/index.js';
+import { ProAvailabilityRule } from '../../../src/db/schema.js';
+import { eq } from 'drizzle-orm';
 import { requireProStructureContext } from '../../_utils/auth.js';
 import { normalizeAvailabilityRules, rulesToSlotsJson, slotsJsonToRules } from '../../_utils/pro-rdv.js';
 import { withProRdvHandler } from '../../_utils/with-pro-rdv-handler.js';
@@ -21,9 +23,9 @@ async function handler(req, res) {
   if (!proCtx) return;
 
   if (req.method === 'GET') {
-    const rules = await prisma.proAvailabilityRule.findMany({
-      where: { structureId: proCtx.structureId },
-      orderBy: [{ weekday: 'asc' }, { startTime: 'asc' }],
+    const rules = await db.query.ProAvailabilityRule.findMany({
+      where: eq(ProAvailabilityRule.structureId, proCtx.structureId),
+      orderBy: (pr, { asc }) => [asc(pr.weekday), asc(pr.startTime)],
     });
 
     return res.status(200).json({
@@ -62,22 +64,20 @@ async function handler(req, res) {
       return res.status(400).json({ error: 'rules or slots_json is required' });
     }
 
-    await prisma.$transaction(async (tx /** @type {any} */) => {
-      await tx.proAvailabilityRule.deleteMany({
-        where: { structureId: proCtx.structureId },
-      });
+    await db.transaction(async (tx) => {
+      await tx.delete(ProAvailabilityRule).where(eq(ProAvailabilityRule.structureId, proCtx.structureId));
 
       if (normalizedRules.length > 0) {
-        await tx.proAvailabilityRule.createMany({
-          data: normalizedRules.map((rule) => ({
-            structureId: proCtx.structureId,
-            weekday: rule.weekday,
-            startTime: rule.startTime,
-            endTime: rule.endTime,
-            timezone: rule.timezone || timezone,
-            isActive: rule.isActive !== false,
-          })),
-        });
+        await tx.insert(ProAvailabilityRule).values(
+            normalizedRules.map((rule) => ({
+              structureId: proCtx.structureId,
+              weekday: rule.weekday,
+              startTime: rule.startTime,
+              endTime: rule.endTime,
+              timezone: rule.timezone || timezone,
+              isActive: rule.isActive !== false,
+            }))
+        );
       }
     });
 

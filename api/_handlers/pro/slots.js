@@ -1,4 +1,6 @@
-import prisma from '../../_utils/prisma.js';
+import { db } from '../../../src/db/index.js';
+import { ProRdvService, ProAvailabilityRule, ProAppointment, ProTimeOff } from '../../../src/db/schema.js';
+import { eq, inArray, lt, gt, and } from 'drizzle-orm';
 import { requireProStructureContext } from '../../_utils/auth.js';
 import {
   ACTIVE_APPOINTMENT_STATUSES,
@@ -36,30 +38,36 @@ async function handler(req, res) {
     return res.status(400).json({ error: error instanceof Error ? error.message : 'Invalid date range' });
   }
 
-  const service = await prisma.proRdvService.findUnique({
-    where: { id: serviceId },
+  const service = await db.query.ProRdvService.findFirst({
+    where: eq(ProRdvService.id, serviceId),
   });
   if (!service) return res.status(404).json({ error: 'Service not found' });
   if (service.structureId !== proCtx.structureId) return res.status(403).json({ error: 'Forbidden' });
 
-  const rules = await prisma.proAvailabilityRule.findMany({
-    where: {
-      structureId: proCtx.structureId,
-      isActive: true,
-    },
-    orderBy: [{ weekday: 'asc' }, { startTime: 'asc' }],
+  const rules = await db.query.ProAvailabilityRule.findMany({
+    where: and(
+      eq(ProAvailabilityRule.structureId, proCtx.structureId),
+      eq(ProAvailabilityRule.isActive, true)
+    ),
+    orderBy: (par, { asc }) => [asc(par.weekday), asc(par.startTime)],
   });
 
-  const appointments = await prisma.proAppointment.findMany({
-    where: {
-      structureId: proCtx.structureId,
-      status: { in: ACTIVE_APPOINTMENT_STATUSES },
-      startAt: { lt: range.to },
-      endAt: { gt: range.from },
+  const appointments = await db.query.ProAppointment.findMany({
+    where: and(
+      eq(ProAppointment.structureId, proCtx.structureId),
+      inArray(ProAppointment.status, ACTIVE_APPOINTMENT_STATUSES),
+      lt(ProAppointment.startAt, range.to),
+      gt(ProAppointment.endAt, range.from)
+    ),
+    columns: {
+      id: true,
+      startAt: true,
+      endAt: true,
+      status: true,
     },
-    include: {
+    with: {
       service: {
-        select: {
+        columns: {
           bufferBeforeMinutes: true,
           bufferAfterMinutes: true,
         },
@@ -67,13 +75,13 @@ async function handler(req, res) {
     },
   });
 
-  const timeOffs = await prisma.proTimeOff.findMany({
-    where: {
-      structureId: proCtx.structureId,
-      startAt: { lt: range.to },
-      endAt: { gt: range.from },
-    },
-    select: {
+  const timeOffs = await db.query.ProTimeOff.findMany({
+    where: and(
+      eq(ProTimeOff.structureId, proCtx.structureId),
+      lt(ProTimeOff.startAt, range.to),
+      gt(ProTimeOff.endAt, range.from)
+    ),
+    columns: {
       startAt: true,
       endAt: true,
     },

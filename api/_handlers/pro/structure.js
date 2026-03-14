@@ -1,6 +1,8 @@
 import logger from '../../_utils/logger.js';
-import prisma from '../../_utils/prisma.js';
-import { logProAudit } from '../../lib/pro-auth.js';
+import { db } from '../../../src/db/index.js';
+import { Structure, StructureRdvSettings } from '../../../src/db/schema.js';
+import { eq } from 'drizzle-orm';
+import { logProAudit } from '../../_utils/auth.js';
 import { AUTH_ROLE, requireProRole, requireProStructureContext } from '../../_utils/auth.js';
 /**
  * @param {import('../../_utils/http-types').ApiRequest} req
@@ -20,37 +22,29 @@ async function handler(req, res) {
     const { summary_falc, is_pro_enabled } = req.body;
 
     try {
-        const updated = await prisma.$transaction(async (tx) => {
-            const structure = await tx.structure.update({
-                where: { id: structureId },
-                data: {
+        const updated = await db.transaction(async (tx) => {
+            const [structure] = await tx.update(Structure).set({
                     summary_falc,
                     is_pro_enabled
-                }
-            });
+            }).where(eq(Structure.id, structureId)).returning();
 
             if (typeof is_pro_enabled === 'boolean') {
-                const existing = await tx.structureRdvSettings.findUnique({
-                    where: { structureId },
-                    select: { id: true, publishedAt: true },
+                const existing = await tx.query.StructureRdvSettings.findFirst({
+                    where: eq(StructureRdvSettings.structureId, structureId),
+                    columns: { id: true, publishedAt: true },
                 });
 
                 if (existing) {
-                    await tx.structureRdvSettings.update({
-                        where: { id: existing.id },
-                        data: {
+                    await tx.update(StructureRdvSettings).set({
                             isPublished: is_pro_enabled,
                             publishedAt: is_pro_enabled ? existing.publishedAt || new Date() : existing.publishedAt,
-                        },
-                    });
+                    }).where(eq(StructureRdvSettings.id, existing.id));
                 } else {
-                    await tx.structureRdvSettings.create({
-                        data: {
+                    await tx.insert(StructureRdvSettings).values({
                             structureId,
                             isPublished: is_pro_enabled,
                             bookingMode: 'IN_PERSON',
                             ...(is_pro_enabled ? { publishedAt: new Date() } : {}),
-                        },
                     });
                 }
             }

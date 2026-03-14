@@ -1,6 +1,8 @@
 import logger from '../../_utils/logger.js';
 // @ts-nocheck
-import prisma from '../../_utils/prisma.js';
+import { db } from '../../../src/db/index.js';
+import { SharedDiagnostic } from '../../../src/db/schema.js';
+import { eq } from 'drizzle-orm';
 import { requireProAuth, requireProStructureContext } from '../../_utils/auth.js';
 import crypto from 'crypto';
 /**
@@ -27,8 +29,8 @@ async function handler(req, res) {
     }
 
     try {
-        const dossier = await prisma.sharedDiagnostic.findUnique({
-            where: { id: shareId },
+        const dossier = await db.query.SharedDiagnostic.findFirst({
+            where: eq(SharedDiagnostic.id, shareId),
         });
 
         if (!dossier) {

@@ -1,5 +1,7 @@
 import { checkRateLimit, getClientIp, getRateLimitStatus } from '../../../_utils/rateLimit.js';
-import prisma from '../../../_utils/prisma.js';
+import { db } from '../../../../src/db/index.js';
+import { ProUser, Beneficiary, Invitation } from '../../../../src/db/schema.js';
+import { eq } from 'drizzle-orm';
 import { verifyAdmin } from '../../../_utils/auth.js';
 import { hash } from '../../../lib/crypto.js';
 import { logger } from '../../../lib/logger.js';
@@ -33,42 +35,44 @@ export default async function handler(req, res) {
         const hashedEmail = hash(email);
 
         // 1. ProUser
-        const proUser = await prisma.proUser.findFirst({
-            where: { email },
-            select: {
+        const proUser = await db.query.ProUser.findFirst({
+            where: eq(ProUser.email, email),
+            columns: {
                 id: true,
                 email: true,
                 role: true,
                 status: true,
                 createdAt: true,
-                structure: { select: { nom: true, siret: true } }
+            },
+            with: {
+                structure: { columns: { nom: true, siret: true } }
             }
         });
 
         // 2. Beneficiary (via Hash)
-        const beneficiaries = await prisma.beneficiary.findMany({
-            where: { contact_hash: hashedEmail },
-            include: {
+        const beneficiaries = await db.query.Beneficiary.findMany({
+            where: eq(Beneficiary.contact_hash, hashedEmail),
+            with: {
                 appointments: {
-                    select: {
+                    columns: {
                         start_at: true,
                         end_at: true,
                         status: true,
-                        structure: { select: { nom: true } }
-                    }
+                    },
+                    with: { structure: { columns: { nom: true } } }
                 }
             }
         });
 
         // 3. Invitations
-        const invitations = await prisma.invitation.findMany({
-            where: { email },
-            select: {
+        const invitations = await db.query.Invitation.findMany({
+            where: eq(Invitation.email, email),
+            columns: {
                 id: true,
                 role: true,
                 expires_at: true,
-                structure: { select: { nom: true } }
-            }
+            },
+            with: { structure: { columns: { nom: true } } }
         });
 
         logger.info(`GDPR Export requested for ${email}`, {

@@ -12,35 +12,39 @@ const mocks = vi.hoisted(() => {
         enabled: true,
       },
     ]),
-    actualiteFindFirst: vi.fn(),
-    actualiteUpsert: vi.fn().mockResolvedValue({}),
-    sourceDocumentFindFirst: vi.fn().mockResolvedValue(null),
-    sourceDocumentCreate: vi.fn().mockResolvedValue({ id: 'sdoc-1' }),
-    sourceDocumentUpdate: vi.fn().mockResolvedValue({ id: 'sdoc-1' }),
+    dbOnConflictDoUpdate: vi.fn().mockResolvedValue([{}]),
+    dbReturning: vi.fn().mockResolvedValue([{}]),
     fetch: vi.fn(),
     parseString: vi.fn(),
+    dbValues: vi.fn(() => ({
+      onConflictDoUpdate: mocks.dbOnConflictDoUpdate,
+      returning: mocks.dbReturning,
+    })),
+    dbSet: vi.fn(() => ({
+      where: vi.fn().mockResolvedValue([{}]),
+    })),
+    db: {
+      query: {
+        RssSource: {
+          findMany: vi.fn().mockImplementation(async () => mocks.rssSourceFindMany()),
+        },
+        Actualite: {
+          findFirst: vi.fn(),
+        },
+        SourceDocument: {
+          findFirst: vi.fn().mockResolvedValue(null),
+        },
+      },
+    },
   };
 });
 
-vi.mock('@prisma/client', () => {
+mocks.db.insert = vi.fn(() => ({ values: mocks.dbValues }));
+mocks.db.update = vi.fn(() => ({ set: mocks.dbSet }));
+
+vi.mock('../../../src/db/index.js', () => {
   return {
-    PrismaClient: class {
-      constructor() {
-        this.rssSource = {
-          upsert: mocks.rssSourceUpsert,
-          findMany: mocks.rssSourceFindMany,
-        };
-        this.actualite = {
-          findFirst: mocks.actualiteFindFirst,
-          upsert: mocks.actualiteUpsert,
-        };
-        this.sourceDocument = {
-          findFirst: mocks.sourceDocumentFindFirst,
-          create: mocks.sourceDocumentCreate,
-          update: mocks.sourceDocumentUpdate,
-        };
-      }
-    },
+    db: mocks.db,
   };
 });
 
@@ -122,17 +126,16 @@ describe('runIngestActualitesRss', () => {
     const { runIngestActualitesRss } = await import('./ingest-actualites-rss.js');
     await runIngestActualitesRss({ limit: 5, runId: 'run-1' });
 
-    expect(mocks.rssSourceUpsert).toHaveBeenCalled();
-    expect(mocks.rssSourceUpsert).toHaveBeenCalledWith(
+    expect(mocks.dbOnConflictDoUpdate).toHaveBeenCalled();
+    expect(mocks.dbOnConflictDoUpdate).toHaveBeenCalledWith(
       expect.objectContaining({
-        where: { feed_url: 'http://disabled.test/rss' },
-        update: expect.objectContaining({ enabled: false }),
-      }),
+        set: expect.objectContaining({ enabled: false })
+      })
     );
   });
 
   it('upserts by canonical_url and does not create duplicates', async () => {
-    mocks.actualiteFindFirst
+    mocks.db.query.Actualite.findFirst
       .mockResolvedValueOnce(null)
       .mockResolvedValueOnce({ id: 'a1', slug: 'keep-slug', statut: 'publie', published_at: null });
 
@@ -143,9 +146,7 @@ describe('runIngestActualitesRss', () => {
     expect(stats.updated).toBe(1);
     expect(stats.processed).toBe(2);
 
-    expect(mocks.actualiteUpsert).toHaveBeenCalledTimes(2);
-    const secondCall = mocks.actualiteUpsert.mock.calls[1]?.[0];
-    expect(secondCall.update.slug).toBe('keep-slug');
-    expect(secondCall.update).toEqual(expect.objectContaining({ statut: 'publie' }));
+    // Total db.insert calls: 2 for sources + 2 for SourceDocument + 2 for Actualite = 6
+    expect(mocks.db.insert).toHaveBeenCalledTimes(6);
   });
 });

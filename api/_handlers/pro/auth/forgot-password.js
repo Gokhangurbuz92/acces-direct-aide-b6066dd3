@@ -2,8 +2,9 @@ import logger from '../../../_utils/logger.js';
 import { kv } from '../../../_utils/kv.js';
 import crypto from 'crypto';
 import { checkRateLimit } from '../../../_utils/rateLimit.js';
-import { logProAudit } from '../../../lib/pro-auth.js';
-import prisma from '../../../_utils/prisma.js';
+import { logProAudit } from '../../../_utils/auth.js';
+import { db } from '../../../../src/db/index.js';
+import { eq } from 'drizzle-orm';
 import { env } from '../../../_utils/env.js';
 /**
  * @param {import('../../../_utils/http-types').ApiRequest} req
@@ -30,8 +31,8 @@ export default async function handler(req, res) {
     }
 
     try {
-        const user = await prisma.proUser.findFirst({
-            where: { email }
+        const user = await db.query.ProUser.findFirst({
+            where: (u, { eq }) => eq(u.email, email)
         });
 
         if (!user) {

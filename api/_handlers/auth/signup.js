@@ -1,4 +1,6 @@
-import prisma from '../../_utils/prisma.js';
+import { db } from '../../../src/db/index.js';
+import { CitizenUser, AuthToken } from '../../../src/db/schema.js';
+import { eq, and, isNull } from 'drizzle-orm';
 import { checkRateLimit, getRateLimitStatus } from '../../_utils/rateLimit.js';
 import { sendMail } from '../../_utils/mailer.js';
 import {
@@ -44,17 +46,16 @@ export default async function handler(req, res) {
   }
 
   try {
-    let user = await prisma.citizenUser.findUnique({ where: { email } });
+    let user = await db.query.CitizenUser.findFirst({ where: eq(CitizenUser.email, email) });
 
     if (!user) {
       const passwordHash = await hashPassword(password);
-      user = await prisma.citizenUser.create({
-        data: {
+      const [newUser] = await db.insert(CitizenUser).values({
           email,
           passwordHash,
           phone: phone || null,
-        },
-      });
+      }).returning();
+      user = newUser;
     }
 
     if (user.emailVerifiedAt) {
@@ -68,24 +69,21 @@ export default async function handler(req, res) {
     const tokenHash = hashAuthToken(rawToken);
     const expiresAt = new Date(Date.now() + VERIFY_TOKEN_TTL_MS);
 
-    await prisma.$transaction([
-      prisma.authToken.updateMany({
-        where: {
-          userId: user.id,
-          type: 'EMAIL_VERIFY',
-          usedAt: null,
-        },
-        data: { usedAt: new Date() },
-      }),
-      prisma.authToken.create({
-        data: {
+    await db.transaction(async (tx) => {
+      await tx.update(AuthToken).set({ usedAt: new Date() }).where(
+        and(
+          eq(AuthToken.userId, user.id),
+          eq(AuthToken.type, 'EMAIL_VERIFY'),
+          isNull(AuthToken.usedAt)
+        )
+      );
+      await tx.insert(AuthToken).values({
           userId: user.id,
           type: 'EMAIL_VERIFY',
           tokenHash,
           expiresAt,
-        },
-      }),
-    ]);
+      });
+    });
 
     const verifyUrl = buildAppUrl(`/api/auth/verify-email?token=${encodeURIComponent(rawToken)}&next=${encodeURIComponent(nextPath)}`);
     const text = [

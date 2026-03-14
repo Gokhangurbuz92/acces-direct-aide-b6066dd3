@@ -1,7 +1,10 @@
 import { checkRateLimit, getClientIp, getRateLimitStatus } from '../../_utils/rateLimit.js';
 import logger from '../../_utils/logger.js';
-import prisma from '../../_utils/prisma.js';
+import { db } from '../../../src/db/index.js';
+import { Actualite, AuditLog } from '../../../src/db/schema.js';
+import { inArray } from 'drizzle-orm';
 import { verifyAdmin } from '../../_utils/auth.js';
+import { adminBulkActionSchema } from '../../../src/db/drizzle-schemas.js';
 /**
  * @param {import('../../_utils/http-types').ApiRequest} req
  * @param {import('../../_utils/http-types').ApiResponse} res
@@ -22,11 +25,12 @@ export default async function handler(req, res) {
         return res.status(401).json({ error: 'Unauthorized: Admin Token Required' });
     }
 
-    const { action, ids } = req.body;
-
-    if (!ids || !Array.isArray(ids) || ids.length === 0) {
-        return res.status(400).json({ error: 'Invalid IDs' });
+    const parseResult = adminBulkActionSchema.safeParse(req.body);
+    if (!parseResult.success) {
+        return res.status(400).json({ error: 'Invalid payload', details: parseResult.error.flatten() });
     }
+
+    const { action, ids } = parseResult.data;
 
     try {
         let updateData = {};
@@ -52,21 +56,17 @@ export default async function handler(req, res) {
                 return res.status(400).json({ error: 'Invalid Action' });
         }
 
-        const result = await prisma.actualite.updateMany({
-            where: { id: { in: ids } },
-            data: updateData
-        });
+        const updated = await db.update(Actualite).set(updateData).where(inArray(Actualite.id, ids)).returning({ id: Actualite.id });
+        const count = updated.length;
 
         // Audit Log
-        await prisma.auditLog.create({
-            data: {
-                action: `ADMIN_BULK_${action}`,
-                details: { count: result.count, ids },
-                timestamp: new Date()
-            }
+        await db.insert(AuditLog).values({
+            action: `ADMIN_BULK_${action}`,
+            details: { count, ids },
+            timestamp: new Date()
         });
 
-        return res.status(200).json({ success: true, count: result.count });
+        return res.status(200).json({ success: true, count });
 
     } catch (error) {
         logger.error('Admin Action Error:', error);

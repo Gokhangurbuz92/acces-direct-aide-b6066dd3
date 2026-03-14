@@ -1,5 +1,7 @@
 import logger from '../../_utils/logger.js';
-import prisma from '../../_utils/prisma.js';
+import { db } from '../../../src/db/index.js';
+import { Appointment, Message } from '../../../src/db/schema.js';
+import { eq, or, and, count } from 'drizzle-orm';
 import { hash, encrypt, decrypt, generateAttachmentToken } from '../../lib/crypto.js';
 /**
  * @param {import('../../_utils/http-types').ApiRequest} req
@@ -14,13 +16,11 @@ export default async function handler(req, res) {
         const tokenHash = hash(token);
 
         // Fetch Appointment
-        const appointment = await prisma.appointment.findFirst({
-            where: {
-                OR: [
-                    { access_token_hash: tokenHash },
-                    { cancel_token_hash: tokenHash }
-                ]
-            }
+        const appointment = await db.query.Appointment.findFirst({
+            where: or(
+                eq(Appointment.access_token_hash, tokenHash),
+                eq(Appointment.cancel_token_hash, tokenHash)
+            )
         });
 
         if (!appointment) return res.status(401).json({ error: "Invalid token" });
@@ -30,16 +30,17 @@ export default async function handler(req, res) {
             const pageInt = Math.max(1, parseInt(page));
             const limitInt = Math.min(100, Math.max(1, parseInt(pageSize)));
 
-            const [messages, total] = await Promise.all([
-                prisma.message.findMany({
-                    where: { appointmentId: appointment.id },
-                    orderBy: { createdAt: 'desc' },
-                    skip: (pageInt - 1) * limitInt,
-                    take: limitInt,
-                    include: { attachments: true }
-                }),
-                prisma.message.count({ where: { appointmentId: appointment.id } })
+            const [totalRes, messages] = await Promise.all([
+                db.select({ count: count() }).from(Message).where(eq(Message.appointmentId, appointment.id)),
+                db.query.Message.findMany({
+                    where: eq(Message.appointmentId, appointment.id),
+                    orderBy: (m, { desc }) => [desc(m.createdAt)],
+                    offset: (pageInt - 1) * limitInt,
+                    limit: limitInt,
+                    with: { attachments: true }
+                })
             ]);
+            const total = totalRes[0].count;
 
             const mapped = messages.map(m => ({
                 id: m.id,
@@ -76,14 +77,12 @@ export default async function handler(req, res) {
 
             const encrypted = encrypt(content);
 
-            const msg = await prisma.message.create({
-                data: {
+            const [msg] = await db.insert(Message).values({
                     appointmentId: appointment.id,
                     sender: 'BENEFICIARY',
                     content_encrypted: encrypted,
                     read_at: null
-                }
-            });
+            }).returning();
 
             return res.status(201).json({ success: true, messageId: msg.id });
         }
@@ -91,14 +90,11 @@ export default async function handler(req, res) {
         if (req.method === 'PATCH') {
             const { action } = req.body;
             if (action === 'read_all') {
-                await prisma.message.updateMany({
-                    where: {
-                        appointmentId: appointment.id,
-                        sender: 'PRO', // Mark messages from PRO as read
-                        read_at: null
-                    },
-                    data: { read_at: new Date() }
-                });
+                await db.update(Message).set({ read_at: new Date() }).where(and(
+                        eq(Message.appointmentId, appointment.id),
+                        eq(Message.sender, 'PRO') // Mark messages from PRO as read
+                        // read_at: null logic handles null
+                ));
                 return res.status(200).json({ success: true });
             }
             return res.status(400).json({ error: "Invalid action" });

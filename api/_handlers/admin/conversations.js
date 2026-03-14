@@ -1,6 +1,8 @@
 import { checkRateLimit, getClientIp, getRateLimitStatus } from '../../_utils/rateLimit.js';
 import logger from '../../_utils/logger.js';
-import prisma from '../../_utils/prisma.js';
+import { db } from '../../../src/db/index.js';
+import { ConversationLog } from '../../../src/db/schema.js';
+import { eq, desc, and, isNotNull, count } from 'drizzle-orm';
 import { verifyAdmin } from '../../_utils/auth.js';
 
 /**
@@ -36,20 +38,21 @@ export default async function handler(req, res) {
         const limitParam = url.searchParams.get('limit');
         const limit = format === 'csv' ? 10000 : Math.min(parseInt(limitParam) || 50, 100);
 
-        const where = {};
+        const conditions = [];
         if (mode && mode !== 'all') {
-            where.searchMode = mode;
+            conditions.push(eq(ConversationLog.searchMode, mode));
         }
         if (ratingParam) {
-            where.rating = parseInt(ratingParam);
+            conditions.push(eq(ConversationLog.rating, parseInt(ratingParam)));
         }
+        const whereClause = conditions.length > 0 ? and(...conditions) : undefined;
 
         // --- CSV Export ---
         if (format === 'csv') {
-            const logs = await prisma.conversationLog.findMany({
-                where,
-                orderBy: { createdAt: 'desc' },
-                take: limit,
+            const logs = await db.query.ConversationLog.findMany({
+                where: whereClause,
+                orderBy: (c, { desc }) => [desc(c.createdAt)],
+                limit: limit,
             });
 
             const BOM = '\uFEFF'; // UTF-8 BOM for Excel
@@ -72,20 +75,19 @@ export default async function handler(req, res) {
 
         // --- JSON Response ---
         const [logs, modeGroups, feedbackGroups] = await Promise.all([
-            prisma.conversationLog.findMany({
-                where,
-                orderBy: { createdAt: 'desc' },
-                take: limit,
+            db.query.ConversationLog.findMany({
+                where: whereClause,
+                orderBy: (c, { desc }) => [desc(c.createdAt)],
+                limit: limit,
             }),
-            prisma.conversationLog.groupBy({
-                by: ['searchMode'],
-                _count: { id: true },
-            }),
-            prisma.conversationLog.groupBy({
-                by: ['rating'],
-                _count: { id: true },
-                where: { rating: { not: null } },
-            }),
+            db.select({
+                searchMode: ConversationLog.searchMode,
+                _count: { id: count(ConversationLog.id) },
+            }).from(ConversationLog).groupBy(ConversationLog.searchMode),
+            db.select({
+                rating: ConversationLog.rating,
+                _count: { id: count(ConversationLog.id) },
+            }).from(ConversationLog).where(isNotNull(ConversationLog.rating)).groupBy(ConversationLog.rating),
         ]);
 
         const modeStats = {

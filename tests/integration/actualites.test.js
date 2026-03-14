@@ -1,4 +1,8 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { vi } from "vitest";
+vi.stubEnv("KV_REST_API_URL", "http://localhost");
+vi.stubEnv("KV_REST_API_TOKEN", "mock-token");
+
+import { describe, it, expect, beforeEach } from 'vitest';
 import actualitesHandler from '../../api/_handlers/actualites.js';
 
 // Mock Auth
@@ -14,27 +18,27 @@ vi.mock('../../api/_utils/crud.js', () => ({
     handleAdminDelete: vi.fn(),
 }));
 
-// Mock Prisma
-const mPrisma = vi.hoisted(() => ({
-    actualite: {
-        findFirst: vi.fn(),
-        findMany: vi.fn(),
-        count: vi.fn(),
-        create: vi.fn(),
-        update: vi.fn(),
-        delete: vi.fn(),
+// Mock DB
+const mockDb = vi.hoisted(() => ({
+    query: {
+        Actualite: {
+            findFirst: vi.fn(),
+            findMany: vi.fn(),
+        }
     },
+    select: vi.fn().mockImplementation(() => {
+        const fromFn = vi.fn().mockReturnThis();
+        const whereFn = vi.fn().mockResolvedValue([{ count: 0 }]);
+        return { from: fromFn, where: whereFn };
+    }),
+    insert: vi.fn(),
+    update: vi.fn(),
+    delete: vi.fn(),
 }));
 
-vi.mock('@prisma/client', () => {
-    return {
-        PrismaClient: class {
-            constructor() {
-                return mPrisma;
-            }
-        }
-    };
-});
+vi.mock('../../src/db/index.js', () => ({
+    db: mockDb
+}));
 
 describe('Actualites API Handler', () => {
     let req, res;
@@ -56,8 +60,10 @@ describe('Actualites API Handler', () => {
     });
 
     it('should return 200 with items on success', async () => {
-        mPrisma.actualite.count.mockResolvedValue(1);
-        mPrisma.actualite.findMany.mockResolvedValue([{ id: '1', titre: 'News' }]);
+        const fromFn = vi.fn().mockReturnThis();
+        const whereFn = vi.fn().mockResolvedValue([{ count: 1 }]);
+        mockDb.select.mockReturnValue({ from: fromFn, where: whereFn });
+        mockDb.query.Actualite.findMany.mockResolvedValue([{ id: '1', titre: 'News' }]);
 
         await actualitesHandler(req, res);
 
@@ -83,8 +89,10 @@ describe('Actualites API Handler', () => {
 
     it('should fall back to empty list on DB error (Resilience)', async () => {
         // Simulate DB crash
-        mPrisma.actualite.count.mockRejectedValue(new Error('DB Connection Failed'));
-        mPrisma.actualite.findMany.mockRejectedValue(new Error('DB Connection Failed'));
+        const fromFn = vi.fn().mockReturnThis();
+        const whereFn = vi.fn().mockRejectedValue(new Error('DB Connection Failed'));
+        mockDb.select.mockReturnValue({ from: fromFn, where: whereFn });
+        mockDb.query.Actualite.findMany.mockRejectedValue(new Error('DB Connection Failed'));
 
         await actualitesHandler(req, res);
 
@@ -100,8 +108,10 @@ describe('Actualites API Handler', () => {
 
     it('should handle HEAD request as GET to avoid 401', async () => {
         req.method = 'HEAD';
-        mPrisma.actualite.count.mockResolvedValue(0);
-        mPrisma.actualite.findMany.mockResolvedValue([]);
+        const fromFn = vi.fn().mockReturnThis();
+        const whereFn = vi.fn().mockResolvedValue([{ count: 0 }]);
+        mockDb.select.mockReturnValue({ from: fromFn, where: whereFn });
+        mockDb.query.Actualite.findMany.mockResolvedValue([]);
 
         await actualitesHandler(req, res);
 

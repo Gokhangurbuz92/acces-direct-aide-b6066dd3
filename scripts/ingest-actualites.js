@@ -1,4 +1,3 @@
-import prisma from '../api/_utils/prisma.js';
 import { runIngestActualitesRss } from '../api/_handlers/cron/ingest-actualites-rss.js';
 
 function parseLimit(argv) {
@@ -27,7 +26,6 @@ async function main() {
   });
 
   if (errorCount > 0) {
-    // Print only short, non-sensitive messages (no tokens/keys).
     console.warn('[actualites][ingest] some sources/items failed. See logs for details.');
     process.exitCode = 1;
   }
@@ -37,8 +35,4 @@ main()
   .catch((err) => {
     console.error('[actualites][ingest] fatal error', err?.message || err);
     process.exitCode = 1;
-  })
-  .finally(async () => {
-    await prisma.$disconnect().catch(() => {});
   });
-

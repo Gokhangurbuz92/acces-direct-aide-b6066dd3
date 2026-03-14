@@ -1,5 +1,4 @@
 import { randomUUID } from 'crypto';
-import prisma from '../../_utils/prisma.js';
 import { getActualitesCronFreshness } from '../../_utils/cron-freshness.js';
 import { applyNoIndex } from '../../_utils/robots.js';
 
@@ -16,7 +15,7 @@ export default async function handler(req, res) {
   }
 
   const requestId = typeof req.requestId === 'string' ? req.requestId : randomUUID();
-  const freshness = await getActualitesCronFreshness(prisma);
+  const freshness = await getActualitesCronFreshness();
   const isFresh = freshness.state === 'fresh';
 
   res.setHeader('x-request-id', requestId);

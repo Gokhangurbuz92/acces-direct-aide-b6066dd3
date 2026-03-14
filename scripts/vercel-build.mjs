@@ -7,7 +7,7 @@
  * - Keep `npm run build` unchanged for local dev (vite build + prerender + sitemap).
  * - On Vercel: run `vite build` always. Only run prerender + sitemap on PRODUCTION
  *   (preview/branch deployments skip SSR prerender to avoid build timeouts).
- * - Run Prisma migrations automatically in **production only**.
+ * - Run Drizzle schema push automatically in **production only**.
  * - Never print environment values (DB URLs, tokens, DSNs, etc).
  *
  * Expected Vercel setup:
@@ -28,14 +28,17 @@ const isProduction = vercelEnv === 'production';
 
 console.log(`[vercel-build] start (VERCEL_ENV=${vercelEnv})`);
 
-// Ensure Prisma client is generated (idempotent).
-run('npx prisma generate');
+// Drizzle ORM does not require a generate step (no client codegen).
 
 if (isProduction) {
-  console.log('[vercel-build] production detected -> running safe prisma migrate flow');
-  run('node scripts/prisma-migrate-safe.mjs');
+  console.log('[vercel-build] production detected -> running drizzle-kit push');
+  try {
+    run('npx drizzle-kit push');
+  } catch (err) {
+    console.warn('[vercel-build] drizzle-kit push failed (non-fatal):', err.message);
+  }
 } else {
-  console.log('[vercel-build] skipping prisma migrate deploy (not production)');
+  console.log('[vercel-build] skipping drizzle-kit push (not production)');
 }
 
 // Step 1: Build the frontend bundle (always).

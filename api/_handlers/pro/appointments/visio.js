@@ -1,6 +1,8 @@
 import logger from '../../../_utils/logger.js';
-import prisma from '../../../_utils/prisma.js';
-import { logProAudit } from '../../../lib/pro-auth.js';
+import { db } from '../../../../src/db/index.js';
+import { Appointment } from '../../../../src/db/schema.js';
+import { eq } from 'drizzle-orm';
+import { logProAudit } from '../../../_utils/auth.js';
 import { requireProAuth, requireProStructureContext } from '../../../_utils/auth.js';
 /**
  * @param {import('../../../_utils/http-types').ApiRequest} req
@@ -19,8 +21,8 @@ async function handler(req, res) {
     }
 
     try {
-        const appointment = await prisma.appointment.findUnique({
-            where: { id: appointmentId }
+        const appointment = await db.query.Appointment.findFirst({
+            where: (a, { eq }) => eq(a.id, appointmentId)
         });
 
         if (!appointment) return res.status(404).json({ error: "Appointment not found" });
@@ -33,13 +35,10 @@ async function handler(req, res) {
             visio_url
         };
 
-        await prisma.appointment.update({
-            where: { id: appointmentId },
-            data: {
-                mode: 'visio',
-                metadata
-            }
-        });
+        await db.update(Appointment).set({
+            mode: 'visio',
+            metadata
+        }).where(eq(Appointment.id, appointmentId));
 
         await logProAudit('VISIO_LINK_UPDATED', proCtx.userId, proCtx.structureId, { appointmentId, visio_url }, req.headers['x-forwarded-for']);
 

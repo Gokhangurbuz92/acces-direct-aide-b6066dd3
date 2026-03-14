@@ -1,4 +1,6 @@
-import prisma from '../_utils/prisma.js';
+import { db } from '../../src/db/index.js';
+import { sql, eq } from 'drizzle-orm';
+import * as schema from '../../src/db/schema.js';
 import { searchDemarchesSchema } from '../_utils/validators.js';
 import { searchDemarches } from '../lib/search-query.js';
 import { verifyAdmin } from '../_utils/auth.js';
@@ -116,28 +118,29 @@ export default async function handler(req, res) {
 
         // 1. Single Item
         if (effectiveParams.id || effectiveParams.slug) {
-            const demarche = await prisma.demarche.findFirst({
-                where: effectiveParams.id ? { id: effectiveParams.id } : { slug: effectiveParams.slug },
-                include: {
-                    category: true,
-                    situations: true,
-                    sourceDocument: {
-                        select: {
-                            fetched_at: true,
-                            source_url: true,
-                        },
+            const demarcheObj = await db.query.Demarche.findFirst({
+                where: effectiveParams.id
+                    ? eq(schema.Demarche.id, effectiveParams.id)
+                    : eq(schema.Demarche.slug, effectiveParams.slug),
+                with: {
+                    category: {
+                        columns: { id: true, slug: true, label: true },
                     },
-                }
+                    sourceDocument: {
+                        columns: { fetched_at: true, source_url: true },
+                    },
+                },
             });
 
-            if (!demarche) return res.status(404).json({ error: "Démarche non trouvée" });
-            if (!isAdmin && demarche.statut !== 'publie') {
+            if (!demarcheObj) return res.status(404).json({ error: "Démarche non trouvée" });
+            if (!isAdmin && demarcheObj.statut !== 'publie') {
                 return res.status(404).json({ error: "Démarche non trouvée" });
             }
-            if (!isAdmin && isTestDemarcheTitle(demarche.titre)) {
+            if (!isAdmin && isTestDemarcheTitle(demarcheObj.titre)) {
                 return res.status(404).json({ error: "Démarche non trouvée" });
             }
-            const { sourceDocument, ...safeDemarche } = demarche;
+
+            const { sourceDocument, ...safeDemarche } = demarcheObj;
             return res.status(200).json({
                 ...safeDemarche,
                 provenance: buildProvenance({
@@ -150,7 +153,7 @@ export default async function handler(req, res) {
 
         // 2. Search / List
         logger.info('SEARCH_DEMARCHES_START', { requestId, path: req.url, query: rawQuery });
-        const { items, total } = await searchDemarches(prisma, {
+        const { items, total } = await searchDemarches({
             ...effectiveParams,
             hideTestContent: !isAdmin,
         });

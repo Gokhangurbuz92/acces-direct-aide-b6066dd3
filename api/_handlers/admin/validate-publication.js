@@ -1,16 +1,19 @@
 import { checkRateLimit, getClientIp, getRateLimitStatus } from '../../_utils/rateLimit.js';
 import logger from '../../_utils/logger.js';
-import prisma from '../../_utils/prisma.js';
+import { db } from '../../../src/db/index.js';
+import { Aide, Demarche, Structure, Actualite } from '../../../src/db/schema.js';
+import { eq } from 'drizzle-orm';
 import { validateForPublication, generateValidationReport } from '../../lib/publication-validator.js';
 import Sentry from '../../_utils/sentry.js';
 import { env } from '../../_utils/env.js';
 import { verifyAdmin } from '../../_utils/auth.js';
+import { validatePublicationSchema } from '../../../src/db/drizzle-schemas.js';
 
 const ENTITY_MODELS = {
-  aide: prisma.aide,
-  demarche: prisma.demarche,
-  structure: prisma.structure,
-  actualite: prisma.actualite,
+  aide: Aide,
+  demarche: Demarche,
+  structure: Structure,
+  actualite: Actualite,
 };
 
 /**
@@ -49,24 +52,21 @@ export default async function handler(req, res) {
       return res.status(405).json({ error: 'Method not allowed' });
     }
 
-    const { entityType, entityId } = req.body || {};
-
-    // Validation
-    if (!entityType || !ENTITY_MODELS[entityType]) {
+    const parseResult = validatePublicationSchema.safeParse(req.body);
+    if (!parseResult.success) {
       return res.status(400).json({
-        error: 'Invalid entity type',
-        validTypes: Object.keys(ENTITY_MODELS),
+        error: 'Invalid payload',
+        details: parseResult.error.flatten(),
       });
     }
 
-    if (!entityId) {
-      return res.status(400).json({ error: 'Entity ID is required' });
-    }
+    const { entityType, entityId } = parseResult.data;
 
     // Fetch the entity
     const model = ENTITY_MODELS[entityType];
-    const entity = await model.findUnique({
-      where: { id: entityId },
+    const uppercaseKey = entityType.charAt(0).toUpperCase() + entityType.slice(1);
+    const entity = await db.query[uppercaseKey].findFirst({
+      where: eq(model.id, entityId),
     });
 
     if (!entity) {

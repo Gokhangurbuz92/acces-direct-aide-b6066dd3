@@ -216,6 +216,7 @@ async function createProFixture() {
       department_codes: [],
       insee_codes: [],
       is_pro_enabled: true,
+      accessibilite_pmr: false,
     },
   ).returning())[0];
   const structureB = await (await db.insert(schema.Structure).values({
@@ -230,6 +231,7 @@ async function createProFixture() {
       department_codes: [],
       insee_codes: [],
       is_pro_enabled: true,
+      accessibilite_pmr: false,
     },
   ).returning())[0];
 

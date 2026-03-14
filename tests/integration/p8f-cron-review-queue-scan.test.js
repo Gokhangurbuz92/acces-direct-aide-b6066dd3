@@ -170,6 +170,7 @@ describe('P8-F cron review queue scan endpoint contract', () => {
         titre: 'P8F cron scan candidate',
         slug: `p8f-cron-scan-${Date.now()}`,
         statut: 'publie',
+        est_urgent: false,
         territoires: ['national'],
         documents_necessaires: [],
         date_verification: null,

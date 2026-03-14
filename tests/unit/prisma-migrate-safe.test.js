@@ -1,3 +1,7 @@
+import { vi } from "vitest";
+vi.stubEnv("KV_REST_API_URL", "http://localhost");
+vi.stubEnv("KV_REST_API_TOKEN", "mock-token");
+
 import { describe, expect, it } from 'vitest';
 import { extractPrismaErrorCode, shouldAutoRecoverP3009 } from '../../scripts/prisma-migrate-safe.mjs';
 

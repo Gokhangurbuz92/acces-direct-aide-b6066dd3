@@ -1,3 +1,7 @@
+import { vi } from "vitest";
+vi.stubEnv("KV_REST_API_URL", "http://localhost");
+vi.stubEnv("KV_REST_API_TOKEN", "mock-token");
+
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import monitorCoreHandler from '../../api/monitor/core.js';
 import { db } from '../../src/db/index.js';
@@ -105,6 +109,10 @@ async function invokeApi(url, options = {}) {
 }
 
 describe('P8-B monitor core endpoint contract', () => {
+  let originalKvSet;
+  let originalKvGet;
+  let originalKvDel;
+
   beforeEach(() => {
     vi.restoreAllMocks();
     originalKvSet = kv.set;

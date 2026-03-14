@@ -30,7 +30,7 @@ export default async function handler(req, res) {
     }
 
     try {
-        // Raw SQL because Prisma can't select/filter on Unsupported("vector") types
+        // Raw SQL because Drizzle can't select/filter on Unsupported("vector") column types
         const aidesRes = await db.execute(sql`
             SELECT
                 id,

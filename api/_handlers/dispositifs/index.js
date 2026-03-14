@@ -1,5 +1,5 @@
 import logger from '../../_utils/logger.js';
-import prisma from '../../_utils/prisma.js';
+import { db } from '../../../src/db/index.js';
 /**
  * @param {import('../../_utils/http-types').ApiRequest} req
  * @param {import('../../_utils/http-types').ApiResponse} res
@@ -18,14 +18,13 @@ export default async function handler(req, res) {
     try {
         // 1. Single Item Lookup
         if (id || slug) {
-            const where = {
-                statut: 'publie'
-            };
-            if (id) where.id = id;
-            if (slug) where.slug = slug;
-
-            const dispositif = await prisma.dispositif.findFirst({
-                where
+            const dispositif = await db.query.Dispositif.findFirst({
+                where: (t, { eq, and }) => {
+                    const conditions = [eq(t.statut, 'publie')];
+                    if (id) conditions.push(eq(t.id, id));
+                    if (slug) conditions.push(eq(t.slug, slug));
+                    return conditions.length === 1 ? conditions[0] : and(...conditions);
+                },
             });
 
             if (!dispositif) {
@@ -36,26 +35,21 @@ export default async function handler(req, res) {
         }
 
         // 2. List Lookup
-        const where = {
-            statut: 'publie'
-        };
-
-        if (departement) {
-            where.departement = departement;
-        }
-
-        if (publicCible) {
-            where.public = {
-                has: publicCible
-            };
-        }
-
-        const dispositifs = await prisma.dispositif.findMany({
-            where,
-            orderBy: { titre: 'asc' }
+        const dispositifs = await db.query.Dispositif.findMany({
+            where: (t, { eq, and }) => {
+                const conditions = [eq(t.statut, 'publie')];
+                if (departement) conditions.push(eq(t.departement, departement));
+                return conditions.length === 1 ? conditions[0] : and(...conditions);
+            },
+            orderBy: (t, { asc }) => [asc(t.titre)],
         });
 
-        return res.status(200).json(dispositifs);
+        // Post-filter for array `has` (Drizzle relational API doesn't support it)
+        const filtered = publicCible
+            ? dispositifs.filter(d => Array.isArray(d.public) && d.public.includes(publicCible))
+            : dispositifs;
+
+        return res.status(200).json(filtered);
     } catch (error) {
         logger.error("Dispositifs API Error", error);
         return res.status(500).json({ error: 'Failed to fetch dispositifs' });

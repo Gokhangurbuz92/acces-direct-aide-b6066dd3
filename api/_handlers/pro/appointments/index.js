@@ -225,8 +225,6 @@ async function handler(req, res) {
         },
       });
       return { conflict: false, appointment: fullAppointment };
-    }, {
-      isolationLevel: 'serializable'
     });
 
     if (conflictResult.conflict || !conflictResult.appointment) {

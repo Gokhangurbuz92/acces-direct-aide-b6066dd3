@@ -1,3 +1,7 @@
+import { vi } from "vitest";
+vi.stubEnv("KV_REST_API_URL", "http://localhost");
+vi.stubEnv("KV_REST_API_TOKEN", "mock-token");
+
 /**
  * P2 Aides API Integration (DB-backed)
  *

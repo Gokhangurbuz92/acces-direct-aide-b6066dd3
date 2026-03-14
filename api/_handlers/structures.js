@@ -1,5 +1,7 @@
 import logger from '../_utils/logger.js';
-import prisma from '../_utils/prisma.js';
+import { db } from '../../src/db/index.js';
+import { Structure } from '../../src/db/schema.js';
+import { eq } from 'drizzle-orm';
 import { checkRateLimit, getClientIp } from '../_utils/rateLimit.js';
 import { searchStructuresSchema } from '../_utils/validators.js';
 import { searchStructures } from '../lib/search-query.js';
@@ -135,18 +137,18 @@ async function handler(req, res) {
 
     // 1. Single Item (ID or Slug)
     if (effectiveParams.id || effectiveParams.slug) {
-      const structure = await prisma.structure.findFirst({
-        where: effectiveParams.id ? { id: effectiveParams.id } : { slug: effectiveParams.slug },
-        include: {
+      const structure = await db.query.Structure.findFirst({
+        where: effectiveParams.id ? eq(Structure.id, effectiveParams.id) : eq(Structure.slug, effectiveParams.slug),
+        with: {
           proServices: true,
           rdvSettings: {
-            select: {
+            columns: {
               isPublished: true,
               bookingMode: true,
             },
           },
           sourceDocument: {
-            select: {
+            columns: {
               fetched_at: true,
               source_url: true,
             },

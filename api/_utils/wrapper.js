@@ -1,5 +1,4 @@
 import { ZodError } from 'zod';
-import { Prisma } from '@prisma/client';
 import SentryClient from './sentry.js';
 import { AppError, errorCodes } from './errors.js';
 import crypto from 'crypto';
@@ -86,22 +85,27 @@ export function createHandler(handler, schemas = {}) {
           details: err.errors
         };
       }
-      // 3. Prisma Error
-      else if (err instanceof Prisma.PrismaClientKnownRequestError) {
-        // P2002: Unique constraint failed
-        // P2025: Record not found
-        if (err.code === 'P2002') {
+      // 3. PostgreSQL / Drizzle database error
+      // Drizzle wraps pg driver errors in DrizzleQueryError — the native
+      // PostgreSQL error code lives on error.cause, not on error directly.
+      else if (err?.cause?.code || (typeof err?.code === 'string' && /^[0-9]{5}$/.test(err.code))) {
+        const pgCode = err.cause?.code || err.code;
+        // 23505: Unique constraint violation (was Prisma P2002)
+        if (pgCode === '23505') {
           statusCode = 409;
           errorResponse.code = errorCodes.CONFLICT;
           errorResponse.message = "Ressource déjà existante.";
-        } else if (err.code === 'P2025') {
+        }
+        // 23503: Foreign key violation (record not found reference)
+        else if (pgCode === '23503') {
           statusCode = 404;
           errorResponse.code = errorCodes.NOT_FOUND;
           errorResponse.message = "Ressource non trouvée.";
-        } else {
-          // Other Prisma errors
+        }
+        // Other DB errors
+        else {
           if (env.runtime.vercelEnv !== 'production') {
-            errorResponse.details = err.code;
+            errorResponse.details = pgCode;
           }
         }
       }

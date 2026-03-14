@@ -10,10 +10,17 @@ process.env.ADMIN_TOKEN = process.env.ADMIN_TOKEN || 'test-admin-token';
 process.env.BYPASS_SECRET = process.env.BYPASS_SECRET || 'test-bypass-secret';
 
 // Ensure tests never talk to external KV/Upstash.
-process.env.KV_REST_API_URL = 'http://localhost';
-process.env.KV_REST_API_TOKEN = 'dummy_token';
+process.env.KV_REST_API_URL = process.env.KV_REST_API_URL || 'http://localhost';
+process.env.KV_REST_API_TOKEN = process.env.KV_REST_API_TOKEN || 'dummy_token';
 process.env.UPSTASH_KV_KV_REST_API_URL = '';
 process.env.UPSTASH_KV_KV_REST_API_TOKEN = '';
+process.env.UPSTASH_REDIS_REST_URL = '';
+process.env.UPSTASH_REDIS_REST_TOKEN = '';
+
+process.env.STORAGE_ENDPOINT = process.env.STORAGE_ENDPOINT || 'http://localhost';
+process.env.STORAGE_BUCKET = process.env.STORAGE_BUCKET || 'dummy';
+process.env.STORAGE_ACCESS_KEY_ID = process.env.STORAGE_ACCESS_KEY_ID || 'dummy';
+process.env.STORAGE_SECRET_ACCESS_KEY = process.env.STORAGE_SECRET_ACCESS_KEY || 'dummy';
 process.env.UPSTASH_REDIS_REST_URL = '';
 process.env.UPSTASH_REDIS_REST_TOKEN = '';
 
@@ -70,7 +77,7 @@ export async function resetDatabase() {
 // Hook Vitest à exécuter après chaque test
 afterEach(async () => {
   // Only run teardown if we have a real DB connection (not skipped)
-  if (!process.env.SKIP_DB_SETUP && process.env.DATABASE_URL_TEST) {
+  if (!process.env.SKIP_DB_SETUP && (process.env.DATABASE_URL_TEST || process.env.DATABASE_URL)) {
     await resetDatabase();
   }
 });

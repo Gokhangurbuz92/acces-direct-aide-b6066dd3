@@ -1,7 +1,15 @@
-import { describe, it, expect, beforeEach, afterEach } from 'vitest';
+import { vi } from "vitest";
+vi.stubEnv("KV_REST_API_URL", "http://localhost");
+vi.stubEnv("KV_REST_API_TOKEN", "mock-token");
+
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
+import crypto from 'crypto';
 import { db } from '../../src/db/index.js';
 import * as schema from '../../src/db/schema.js';
 import { eq, sql } from 'drizzle-orm';
+
+vi.stubEnv('KV_REST_API_URL', 'mock-url');
+vi.stubEnv('KV_REST_API_TOKEN', 'mock-token');
 
 function mockReq(overrides = {}) {
   return {
@@ -61,6 +69,7 @@ describe('P6-B+ Admin cron-runs API', () => {
 
   it('lists recent cron runs when authorized', async () => {
     const run = await (await db.insert(schema.CronRun).values({
+        id: crypto.randomUUID(),
         job: 'actualites',
         status: 'success',
         trigger: 'manual',
@@ -69,9 +78,7 @@ describe('P6-B+ Admin cron-runs API', () => {
         durationMs: 10,
         metrics: { fetched: 1 },
         updatedAt: new Date(),
-      },
-      select: { id: true },
-    ).returning())[0];
+      }).returning({ id: schema.CronRun.id }))[0];
     createdIds.push(run.id);
 
     const { default: handler } = await import('../../api/_handlers/admin/cron-runs.js');
@@ -97,6 +104,7 @@ describe('P6-B+ Admin cron-runs API', () => {
 
   it('returns a cron run detail when authorized', async () => {
     const run = await (await db.insert(schema.CronRun).values({
+        id: crypto.randomUUID(),
         job: 'actualites',
         status: 'skipped',
         trigger: 'external',
@@ -106,9 +114,7 @@ describe('P6-B+ Admin cron-runs API', () => {
         durationMs: 10,
         errorSample: 'boom',
         updatedAt: new Date(),
-      },
-      select: { id: true },
-    ).returning())[0];
+      }).returning({ id: schema.CronRun.id }))[0];
     createdIds.push(run.id);
 
     const { default: handler } = await import('../../api/_handlers/admin/cron-runs.js');

@@ -1,26 +1,38 @@
+import { vi } from "vitest";
+vi.stubEnv("KV_REST_API_URL", "http://localhost");
+vi.stubEnv("KV_REST_API_TOKEN", "mock-token");
+
 import { db } from '../../src/db/index.js';
 import * as schema from '../../src/db/schema.js';
 import { eq, inArray, and, or, sql } from 'drizzle-orm';
 import { describe, it, expect, beforeAll, vi, beforeEach } from 'vitest';
 
 // 1. Define Hoisted Mocks
-const { mockFindFirst, mockFindMany, mockCount } = vi.hoisted(() => {
+const { mockFindFirst, mockFindMany, mockCountFn } = vi.hoisted(() => {
+    const mockCountFn = vi.fn().mockResolvedValue([{ count: 0 }]);
     return {
         mockFindFirst: vi.fn(),
         mockFindMany: vi.fn(),
-        mockCount: vi.fn()
+        mockCountFn
     };
 });
 
-// 2. Mock Prisma
-vi.mock('../../api/_utils/db.query.Js', () => {
+// 2. Mock Drizzle
+vi.mock('../../src/db/index.js', () => {
     return {
-        default: {
-            resourceAccessibility: {
-                findFirst: mockFindFirst,
-                findMany: mockFindMany,
-                count: mockCount
-            }
+        db: {
+            query: {
+                ResourceAccessibility: {
+                    findFirst: mockFindFirst,
+                    findMany: mockFindMany
+                }
+            },
+            select: vi.fn(() => ({
+                from: vi.fn(() => ({
+                    where: mockCountFn, // Assuming it uses where
+                    ...mockCountFn // Fallback if no where
+                }))
+            }))
         }
     };
 });
@@ -44,7 +56,7 @@ describe('Ressources API Handler', () => {
 
         // Setup default mock returns
         mockFindMany.mockResolvedValue([]);
-        mockCount.mockResolvedValue(0);
+        mockCountFn.mockResolvedValue([{ count: 0 }]);
         mockFindFirst.mockResolvedValue(null);
 
         // Mock response object
@@ -95,7 +107,7 @@ describe('Ressources API Handler', () => {
 
         // Mock data
         mockFindMany.mockResolvedValue([{ id: 'res-1', slug: 'res-1' }]);
-        mockCount.mockResolvedValue(1);
+        mockCountFn.mockResolvedValue([{ count: 1 }]);
 
         await handler(mockReq, mockRes);
         

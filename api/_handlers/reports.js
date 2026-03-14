@@ -1,9 +1,8 @@
 import logger from '../_utils/logger.js';
-import { PrismaClient } from '@prisma/client';
-import Sentry from '../_utils/sentry.js';
-import { env } from '../_utils/env.js';
-
-const prisma = new PrismaClient();
+import crypto from 'node:crypto';
+import { db } from '../../src/db/index.js';
+import * as schema from '../../src/db/schema.js';
+import { eq, desc, count } from 'drizzle-orm';
 
 // Valid content types and reasons (matching Prisma enums)
 const VALID_CONTENT_TYPES = ['AIDE', 'DEMARCHE', 'STRUCTURE', 'ACTUALITE'];
@@ -60,18 +59,16 @@ export default async function handler(req, res) {
                 return res.status(400).json({ error: 'reporterEmail must be a valid email address' });
             }
 
-            // Create the report
-            const report = await prisma.contentReport.create({
-                data: {
-                    contentType,
-                    contentId,
-                    reason,
-                    message: message || null,
-                    pageUrl: pageUrl || null,
-                    reporterEmail: reporterEmail || null,
-                    status: 'NEW'
-                }
-            });
+            const [report] = await db.insert(schema.ContentReport).values({
+                id: crypto.randomUUID(),
+                contentType,
+                contentId,
+                reason,
+                message: message || null,
+                pageUrl: pageUrl || null,
+                reporterEmail: reporterEmail || null,
+                status: 'NEW'
+            }).returning();
 
             log.info({
                 msg: 'Content report created',
@@ -111,15 +108,29 @@ export default async function handler(req, res) {
             }
 
             // Fetch reports with pagination
-            const [reports, total] = await Promise.all([
-                prisma.contentReport.findMany({
-                    where,
-                    orderBy: { createdAt: 'desc' },
-                    skip: (page - 1) * limit,
-                    take: limit
+            let conditions = undefined;
+            if (Object.keys(where).length > 0) {
+               const conditionArr = [];
+               if (where.status) conditionArr.push(eq(schema.ContentReport.status, where.status));
+               if (where.contentType) conditionArr.push(eq(schema.ContentReport.contentType, where.contentType));
+               
+               if (conditionArr.length === 1) conditions = conditionArr[0];
+               else {
+                   const { and } = await import('drizzle-orm');
+                   conditions = and(...conditionArr);
+               }
+            }
+
+            const [reports, totalRes] = await Promise.all([
+                db.query.ContentReport.findMany({
+                    where: conditions,
+                    orderBy: [desc(schema.ContentReport.createdAt)],
+                    offset: (page - 1) * limit,
+                    limit: limit
                 }),
-                prisma.contentReport.count({ where })
+                db.select({ count: count() }).from(schema.ContentReport).where(conditions)
             ]);
+            const total = Number(totalRes[0].count);
 
             return res.status(200).json({
                 reports,
@@ -155,10 +166,11 @@ export default async function handler(req, res) {
             }
 
             // Update the report
-            const report = await prisma.contentReport.update({
-                where: { id: reportId },
-                data: { status }
-            });
+            const updatedRows = await db.update(schema.ContentReport).set({ status }).where(eq(schema.ContentReport.id, reportId)).returning();
+            if (updatedRows.length === 0) {
+                 return res.status(404).json({ error: 'Report not found' });
+            }
+            const report = updatedRows[0];
 
             log.info({
                 msg: 'Content report updated',
@@ -178,11 +190,10 @@ export default async function handler(req, res) {
 
     } catch (error) {
         log.error({ msg: 'Reports handler error', error: error.message, stack: error.stack });
-        Sentry.captureException(error);
-
-        if (error.code === 'P2025') {
-            return res.status(404).json({ error: 'Report not found' });
-        }
+        try {
+           const Sentry = (await import('../_utils/sentry.js')).default;
+           Sentry.captureException(error);
+        } catch(e) {}
 
         return res.status(500).json({
             error: 'Internal server error',

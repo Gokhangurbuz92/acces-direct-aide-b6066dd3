@@ -1,8 +1,25 @@
+import { vi } from "vitest";
+vi.stubEnv("KV_REST_API_URL", "http://localhost");
+vi.stubEnv("KV_REST_API_TOKEN", "mock-token");
+
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import apiHandler from '../../api/index.js';
 import { db } from '../../src/db/index.js';
 import * as schema from '../../src/db/schema.js';
+
+vi.stubEnv('KV_REST_API_URL', 'mock-url');
+vi.stubEnv('KV_REST_API_TOKEN', 'mock-token');
+vi.mock('@vercel/kv', () => ({
+  createClient: vi.fn(),
+  kv: {
+    get: vi.fn().mockResolvedValue(null),
+    set: vi.fn().mockResolvedValue('OK'),
+    incr: vi.fn().mockResolvedValue(1),
+  }
+}));
+
 import { eq, sql } from 'drizzle-orm';
+import crypto from 'crypto';
 
 /**
  * @param {{
@@ -147,6 +164,9 @@ describe('P8-F cron review queue scan endpoint contract', () => {
 
   it('returns 200 with summary when authorized via Bearer cron secret', async () => {
     const aide = await (await db.insert(schema.Aide).values({
+        id: crypto.randomUUID(),
+        createdAt: new Date(),
+        updatedAt: new Date(),
         titre: 'P8F cron scan candidate',
         slug: `p8f-cron-scan-${Date.now()}`,
         statut: 'publie',
@@ -154,9 +174,7 @@ describe('P8-F cron review queue scan endpoint contract', () => {
         documents_necessaires: [],
         date_verification: null,
         source_url: null,
-      },
-      select: { id: true },
-    ).returning())[0];
+      }).returning({ id: schema.Aide.id }))[0];
     createdAideIds.push(aide.id);
 
     const res = await invokeApi('/api/cron/review-queue/scan', {

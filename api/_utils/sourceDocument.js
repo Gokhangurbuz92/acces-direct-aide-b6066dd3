@@ -3,6 +3,7 @@ import { env } from './env.js';
 import { db } from '../../src/db/index.js';
 import { SourceDocument } from '../../src/db/schema.js';
 import { and, eq, desc } from 'drizzle-orm';
+import { randomUUID } from 'crypto';
 
 /**
  * @param {unknown} value
@@ -71,6 +72,7 @@ export async function upsertSourceDocument(unusedPrismaClient, input) {
   }
 
   const [created] = await db.insert(SourceDocument).values({
+    id: randomUUID(),
     source_url: sourceUrl,
     fetched_at: new Date(),
     content_hash: contentHash,

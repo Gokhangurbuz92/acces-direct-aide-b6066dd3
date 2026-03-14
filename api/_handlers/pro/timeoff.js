@@ -1,3 +1,4 @@
+import crypto from 'node:crypto';
 import { db } from '../../../src/db/index.js';
 import { ProTimeOff } from '../../../src/db/schema.js';
 import { eq, and, gt, lt, gte, lte, asc } from 'drizzle-orm';
@@ -77,10 +78,13 @@ async function handler(req, res) {
     if (rangeError) return res.status(400).json({ error: rangeError });
 
     const [created] = await db.insert(ProTimeOff).values({
+        id: crypto.randomUUID(),
         structureId: proCtx.structureId,
         startAt: /** @type {Date} */ (startAt),
         endAt: /** @type {Date} */ (endAt),
         reason: reason || null,
+        createdAt: new Date(),
+        updatedAt: new Date(),
     }).returning();
 
     return res.status(201).json({ ok: true, item: serialize(created) });
@@ -120,6 +124,7 @@ async function handler(req, res) {
         startAt: /** @type {Date} */ (nextStartAt),
         endAt: /** @type {Date} */ (nextEndAt),
         reason: nextReason || null,
+        updatedAt: new Date(),
     }).where(eq(ProTimeOff.id, id)).returning();
 
     return res.status(200).json({ ok: true, item: serialize(updated) });

@@ -1,5 +1,7 @@
 import logger from '../_utils/logger.js';
-import prisma from '../_utils/prisma.js';
+import { db } from '../../src/db/index.js';
+import { ToolboxItem } from '../../src/db/schema.js';
+import { eq, desc } from 'drizzle-orm';
 import jwt from 'jsonwebtoken';
 import { env } from '../_utils/env.js';
 
@@ -47,9 +49,9 @@ export default async function handler(req, res) {
         if (method === 'GET') {
             // 1. FACETS
             if (isFacets) {
-                const items = await prisma.toolboxItem.findMany({
-                    where: { statut: 'publie' },
-                    select: { categorie: true, publics: true, type: true }
+                const items = await db.query.ToolboxItem.findMany({
+                    where: (t, { eq }) => eq(t.statut, 'publie'),
+                    columns: { categorie: true, publics: true, type: true },
                 });
                 const categories = [...new Set(items.map(i => i.categorie).filter(Boolean))].sort();
                 const publics = [...new Set(items.flatMap(i => i.publics || []))].sort();
@@ -61,29 +63,51 @@ export default async function handler(req, res) {
             // 2. DETAIL (SLUG)
             const slugToFind = possibleSlug || req.query.slug;
             if (slugToFind) {
-                const item = await prisma.toolboxItem.findUnique({ where: { slug: slugToFind } });
+                const item = await db.query.ToolboxItem.findFirst({
+                    where: (t, { eq }) => eq(t.slug, slugToFind),
+                });
                 if (!item) return res.status(404).json({ error: "Not found" });
                 if (item.statut !== 'publie' && !isAdmin(req)) return res.status(403).json({ error: "Access denied" });
                 return res.json(item);
             }
 
             // 3. LIST
-            const where = {};
             const viewingAsAdmin = req.query.admin === 'true' && isAdmin(req);
 
-            if (!viewingAsAdmin) where.statut = 'publie';
-            else if (statut) where.statut = statut;
+            /** @type {((t: any, ops: any) => any) | undefined} */
+            let whereClause;
+            if (!viewingAsAdmin) {
+                whereClause = (t, { eq: eqOp, and: andOp }) => {
+                    const conditions = [eqOp(t.statut, 'publie')];
+                    if (categorie) conditions.push(eqOp(t.categorie, categorie));
+                    if (type) conditions.push(eqOp(t.type, type));
+                    return conditions.length === 1 ? conditions[0] : andOp(...conditions);
+                };
+            } else {
+                whereClause = (t, { eq: eqOp, and: andOp }) => {
+                    const conditions = [];
+                    if (statut) conditions.push(eqOp(t.statut, statut));
+                    if (categorie) conditions.push(eqOp(t.categorie, categorie));
+                    if (type) conditions.push(eqOp(t.type, type));
+                    if (conditions.length === 0) return undefined;
+                    return conditions.length === 1 ? conditions[0] : andOp(...conditions);
+                };
+            }
 
-            if (categorie) where.categorie = categorie;
-            if (type) where.type = type;
-            if (publicFilter) where.publics = { has: publicFilter };
-
-            const items = await prisma.toolboxItem.findMany({
-                where,
-                orderBy: { published_at: 'desc' },
-                take: 50
+            // Note: Prisma `has` filter for array fields is not directly
+            // available in Drizzle relational API. The publicFilter is
+            // handled post-query for now.
+            const items = await db.query.ToolboxItem.findMany({
+                where: whereClause,
+                orderBy: (t, { desc }) => [desc(t.published_at)],
+                limit: 50,
             });
-            return res.json(items);
+
+            const filtered = publicFilter
+                ? items.filter(i => Array.isArray(i.publics) && i.publics.includes(publicFilter))
+                : items;
+
+            return res.json(filtered);
         }
 
         if (!isAdmin(req)) return res.status(401).json({ error: "Unauthorized" });
@@ -91,36 +115,35 @@ export default async function handler(req, res) {
         if (method === 'POST') {
             const data = req.body;
             const finalSlug = data.slug || data.titre.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
-            if (await prisma.toolboxItem.findUnique({ where: { slug: finalSlug } })) return res.status(409).json({ error: "Slug exists" });
-
-            const item = await prisma.toolboxItem.create({
-                data: {
-                    ...data,
-                    slug: finalSlug,
-                    publics: data.publics || [],
-                    published_at: data.statut === 'publie' ? new Date() : null
-                }
+            const existing = await db.query.ToolboxItem.findFirst({
+                where: (t, { eq }) => eq(t.slug, finalSlug),
+                columns: { id: true },
             });
+            if (existing) return res.status(409).json({ error: "Slug exists" });
+
+            const [item] = await db.insert(ToolboxItem).values({
+                ...data,
+                slug: finalSlug,
+                publics: data.publics || [],
+                published_at: data.statut === 'publie' ? new Date() : null,
+            }).returning();
             return res.json(item);
         }
 
         if (method === 'PUT') {
             const { id, ...data } = req.body;
             if (!id) return res.status(400).json({ error: "ID required" });
-            const item = await prisma.toolboxItem.update({
-                where: { id },
-                data: {
-                    ...data,
-                    published_at: data.statut === 'publie' ? (data.published_at || new Date()) : null
-                }
-            });
+            const [item] = await db.update(ToolboxItem).set({
+                ...data,
+                published_at: data.statut === 'publie' ? (data.published_at || new Date()) : null,
+            }).where(eq(ToolboxItem.id, id)).returning();
             return res.json(item);
         }
 
         if (method === 'DELETE') {
             const { id } = req.query;
             if (!id) return res.status(400).json({ error: "ID required" });
-            await prisma.toolboxItem.delete({ where: { id } });
+            await db.delete(ToolboxItem).where(eq(ToolboxItem.id, id));
             return res.json({ success: true });
         }
 

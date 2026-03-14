@@ -2,7 +2,10 @@ import logger from '../_utils/logger.js';
 import busboy from 'busboy';
 import { encryptBuffer, encrypt, hash } from '../lib/crypto.js';
 import { storage } from '../lib/storage.js';
-import prisma from '../_utils/prisma.js';
+import crypto from 'node:crypto';
+import { db } from '../../src/db/index.js';
+import { Appointment, Message, Attachment } from '../../src/db/schema.js';
+import { eq } from 'drizzle-orm';
 import { verifyProToken } from '../_utils/auth.js';
 
 export const config = {
@@ -61,8 +64,8 @@ export default async function handler(req, res) {
                 const { appointmentId, access_token } = fields;
 
                 // Fetch Appointment first to check logic
-                const appointment = await prisma.appointment.findUnique({
-                    where: { id: appointmentId }
+                const appointment = await db.query.Appointment.findFirst({
+                    where: eq(Appointment.id, appointmentId)
                 });
 
                 if (!appointment) return resolve(res.status(404).json({ error: "Appointment not found" }));
@@ -97,23 +100,27 @@ export default async function handler(req, res) {
                 // Store Blob
                 const storageKey = await storage.upload(encryptedBuffer, mimeType);
 
-                // Create Message + Attachment
-                const message = await prisma.message.create({
-                    data: {
+                // Create Message + Attachment inside a transaction
+                const message = await db.transaction(async (tx) => {
+                    const [msg] = await tx.insert(Message).values({
+                        id: crypto.randomUUID(),
                         appointmentId: appointment.id,
                         sender: senderRole,
                         content_encrypted: encrypt("[Pièce jointe]"),
                         read_at: null, // Unread by default
-                        attachments: {
-                            create: {
-                                filename_encrypted: encrypt(fileName),
-                                mime_type: mimeType,
-                                size_bytes: fileBuffer.length,
-                                storage_key: storageKey
-                            }
-                        }
-                    },
-                    include: { attachments: true }
+                    }).returning();
+
+                    const [att] = await tx.insert(Attachment).values({
+                        id: crypto.randomUUID(),
+                        messageId: msg.id,
+                        filename_encrypted: encrypt(fileName),
+                        mime_type: mimeType,
+                        size_bytes: fileBuffer.length,
+                        storage_key: storageKey
+                    }).returning();
+
+                    msg.attachments = [att];
+                    return msg;
                 });
 
                 return resolve(res.status(201).json({ success: true, messageId: message.id, attachment: message.attachments[0] }));

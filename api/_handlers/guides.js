@@ -1,5 +1,7 @@
 import logger from '../_utils/logger.js';
-import prisma from '../_utils/prisma.js';
+import { db } from '../../src/db/index.js';
+import { Guide } from '../../src/db/schema.js';
+import { eq, desc } from 'drizzle-orm';
 import jwt from 'jsonwebtoken';
 import { env } from '../_utils/env.js';
 
@@ -57,9 +59,9 @@ export default async function handler(req, res) {
         if (method === 'GET') {
             // 1. FACETS
             if (isFacets) {
-                const guides = await prisma.guide.findMany({
-                    where: { statut: 'publie' },
-                    select: { categorie: true, publics: true, contexte: true }
+                const guides = await db.query.Guide.findMany({
+                    where: (t, { eq }) => eq(t.statut, 'publie'),
+                    columns: { categorie: true, publics: true, contexte: true },
                 });
 
                 const categories = [...new Set(guides.map(g => g.categorie).filter(Boolean))].sort();
@@ -73,8 +75,8 @@ export default async function handler(req, res) {
             // 2. DETAIL (SLUG)
             const slugToFind = possibleSlug || query.slug;
             if (slugToFind) {
-                const guide = await prisma.guide.findUnique({
-                    where: { slug: slugToFind },
+                const guide = await db.query.Guide.findFirst({
+                    where: (t, { eq }) => eq(t.slug, slugToFind),
                 });
 
                 if (!guide) return res.status(404).json({ error: "Not found" });
@@ -85,25 +87,38 @@ export default async function handler(req, res) {
             }
 
             // 3. LIST
-            const where = {};
             const viewingAsAdmin = query.admin === 'true' && isAdmin(req);
 
+            /** @type {((t: any, ops: any) => any) | undefined} */
+            let whereClause;
             if (!viewingAsAdmin) {
-                where.statut = 'publie';
-            } else if (statut) {
-                where.statut = statut;
+                whereClause = (t, { eq: eqOp, and: andOp }) => {
+                    const conditions = [eqOp(t.statut, 'publie')];
+                    if (categorie) conditions.push(eqOp(t.categorie, categorie));
+                    return conditions.length === 1 ? conditions[0] : andOp(...conditions);
+                };
+            } else {
+                whereClause = (t, { eq: eqOp, and: andOp }) => {
+                    const conditions = [];
+                    if (statut) conditions.push(eqOp(t.statut, statut));
+                    if (categorie) conditions.push(eqOp(t.categorie, categorie));
+                    if (conditions.length === 0) return undefined;
+                    return conditions.length === 1 ? conditions[0] : andOp(...conditions);
+                };
             }
 
-            if (categorie) where.categorie = categorie;
-            if (publicFilter) where.publics = { has: publicFilter };
-            if (query.contexte) where.contexte = { has: query.contexte };
-
-            const guides = await prisma.guide.findMany({
-                where,
-                orderBy: { published_at: 'desc' },
-                take: 50
+            const guides = await db.query.Guide.findMany({
+                where: whereClause,
+                orderBy: (t, { desc }) => [desc(t.published_at)],
+                limit: 50,
             });
-            return res.json(guides);
+
+            // Post-filter for array `has` (Drizzle relational API doesn't support it)
+            let filtered = guides;
+            if (publicFilter) filtered = filtered.filter(g => Array.isArray(g.publics) && g.publics.includes(publicFilter));
+            if (query.contexte) filtered = filtered.filter(g => Array.isArray(g.contexte) && g.contexte.includes(query.contexte));
+
+            return res.json(filtered);
         }
 
         // --- ADMIN WRITE ---
@@ -113,24 +128,25 @@ export default async function handler(req, res) {
 
         if (method === 'POST') {
             const data = req.body;
-            // Generate Slug if missing
             const finalSlug = data.slug || data.titre.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
 
-            if (await prisma.guide.findUnique({ where: { slug: finalSlug } })) {
+            const existing = await db.query.Guide.findFirst({
+                where: (t, { eq }) => eq(t.slug, finalSlug),
+                columns: { id: true },
+            });
+            if (existing) {
                 return res.status(409).json({ error: "Slug already exists" });
             }
 
-            const guide = await prisma.guide.create({
-                data: {
-                    ...data,
-                    slug: finalSlug,
-                    publics: data.publics || [],
-                    contexte: data.contexte || [],
-                    mots_cles: data.mots_cles || [],
-                    sources_urls: data.sources_urls || [],
-                    published_at: data.statut === 'publie' ? new Date() : null
-                }
-            });
+            const [guide] = await db.insert(Guide).values({
+                ...data,
+                slug: finalSlug,
+                publics: data.publics || [],
+                contexte: data.contexte || [],
+                mots_cles: data.mots_cles || [],
+                sources_urls: data.sources_urls || [],
+                published_at: data.statut === 'publie' ? new Date() : null,
+            }).returning();
             return res.json(guide);
         }
 
@@ -138,20 +154,17 @@ export default async function handler(req, res) {
             const { id, ...data } = req.body;
             if (!id) return res.status(400).json({ error: "ID required" });
 
-            const guide = await prisma.guide.update({
-                where: { id },
-                data: {
-                    ...data,
-                    published_at: data.statut === 'publie' ? (data.published_at || new Date()) : null
-                }
-            });
+            const [guide] = await db.update(Guide).set({
+                ...data,
+                published_at: data.statut === 'publie' ? (data.published_at || new Date()) : null,
+            }).where(eq(Guide.id, id)).returning();
             return res.json(guide);
         }
 
         if (method === 'DELETE') {
             const { id } = query;
             if (!id) return res.status(400).json({ error: "ID required" });
-            await prisma.guide.delete({ where: { id } });
+            await db.delete(Guide).where(eq(Guide.id, id));
             return res.json({ success: true });
         }
 

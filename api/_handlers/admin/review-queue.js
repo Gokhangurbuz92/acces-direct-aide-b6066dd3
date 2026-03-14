@@ -162,24 +162,15 @@ export default async function handler(req, res) {
       const cursor = req.query?.cursor ? String(req.query.cursor).trim() : null;
 
       const conditions = [];
-      if (status) conditions.push(eq(ReviewQueueItem.status, status));
-      if (entityType) conditions.push(eq(ReviewQueueItem.entityType, entityType));
+      if (status) conditions.push(eq(ReviewQueueItem.status, status.toUpperCase()));
+      if (entityType) conditions.push(eq(ReviewQueueItem.entityType, entityType.toUpperCase()));
       if (reason) conditions.push(eq(ReviewQueueItem.reason, reason));
+      let selectQuery = db.select().from(ReviewQueueItem).$dynamic();
+      if (conditions.length > 0) {
+        selectQuery = selectQuery.where(and(...conditions));
+      }
+      const items = await selectQuery.orderBy(desc(ReviewQueueItem.createdAt), desc(ReviewQueueItem.id)).limit(limit + 1);
 
-      const items = await db.query.ReviewQueueItem.findMany({
-        where: conditions.length > 0 ? and(...conditions) : undefined,
-        ...(cursor && cursor.length === 36 // naive check for uuid-like length or similar if you rely on DB string
-          ? {
-              where: conditions.length > 0 ? and(...conditions, eq(ReviewQueueItem.id, cursor)) : eq(ReviewQueueItem.id, cursor),
-              // Wait, cursor pagination in Drizzle query is not "cursor: {id}". 
-              // We'll mimic skip with offset for now if cursor matched, but usually relies on offsets or manual '<' filters.
-              // To safely translate Prisma's `cursor` without rewriting the whole pagination logic:
-              // Actually, since this is an admin panel, we can just use offset if needed, or query manually. Let's just pass `where` and `orderBy`.
-            }
-          : {}),
-        orderBy: (ri, { desc }) => [desc(ri.createdAt), desc(ri.id)],
-        limit: limit + 1,
-      });
 
       let nextCursor = null;
       if (items.length > limit) {
@@ -190,6 +181,7 @@ export default async function handler(req, res) {
       return res.status(200).json({
         ok: true,
         requestId,
+        _debugSQL: selectQuery.toSQL(),
         items,
         pagination: {
           limit,
@@ -208,10 +200,7 @@ export default async function handler(req, res) {
           return res.status(400).json({ error: 'Invalid bulk payload', requestId });
         }
 
-        const existing = await db.query.ReviewQueueItem.findMany({
-          where: inArray(ReviewQueueItem.id, ids),
-          columns: { id: true, status: true },
-        });
+        const existing = await db.select({ id: ReviewQueueItem.id, status: ReviewQueueItem.status }).from(ReviewQueueItem).where(inArray(ReviewQueueItem.id, ids));
 
         const updatableIds = existing
           .filter(/** @param {{ id: string, status: string }} item */ (item) => item.status === 'open')

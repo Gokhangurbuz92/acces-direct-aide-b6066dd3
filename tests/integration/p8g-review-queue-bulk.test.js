@@ -1,10 +1,25 @@
+import { vi } from "vitest";
+vi.stubEnv("KV_REST_API_URL", "http://localhost");
+vi.stubEnv("KV_REST_API_TOKEN", "mock-token");
+
 import { randomUUID } from 'crypto';
-import { afterEach, describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import apiHandler from '../../api/index.js';
 import { db } from '../../src/db/index.js';
 import * as schema from '../../src/db/schema.js';
 import { eq, sql } from 'drizzle-orm';
+
+vi.stubEnv('KV_REST_API_URL', 'mock-url');
+vi.stubEnv('KV_REST_API_TOKEN', 'mock-token');
+vi.mock('@vercel/kv', () => ({
+  createClient: vi.fn(),
+  kv: {
+    get: vi.fn().mockResolvedValue(null),
+    set: vi.fn().mockResolvedValue('OK'),
+    incr: vi.fn().mockResolvedValue(1),
+  }
+}));
 
 function adminAuthHeader() {
   return { authorization: `Bearer ${process.env.ADMIN_TOKEN}` };
@@ -156,22 +171,24 @@ describe('P8-G review queue bulk patch contract', () => {
 
     await (await db.insert(schema.ReviewQueueItem).values({
         id: openId,
+        createdAt: new Date(),
+        updatedAt: new Date(),
         entityType: 'aide',
         entityId: `p8g-open-${Date.now()}`,
         reason: 'P8G_BULK_OPEN',
         severity: 'P1',
         status: 'open',
-      },
-    ).returning())[0];
+      }).returning())[0];
     await (await db.insert(schema.ReviewQueueItem).values({
         id: resolvedId,
+        createdAt: new Date(),
+        updatedAt: new Date(),
         entityType: 'aide',
         entityId: `p8g-resolved-${Date.now()}`,
         reason: 'P8G_BULK_RESOLVED',
         severity: 'P1',
         status: 'resolved',
-      },
-    ).returning())[0];
+      }).returning())[0];
 
     const res = await invokeApi('/api/admin/review-queue/bulk', {
       method: 'PATCH',
@@ -195,8 +212,14 @@ describe('P8-G review queue bulk patch contract', () => {
     expect(String(res.getHeader('cache-control')).toLowerCase()).toContain('no-store');
     expect(res.getHeader('x-robots-tag')).toBe('noindex, nofollow');
 
-    const updatedOpen = await db.query.ReviewQueueItem.findFirst({ where: eq(schema.ReviewQueueItem.id, "TODO_FIX_WHERE") /* AUTOMIGRATED: { id: openId },       select: { status: true },      */ });
-    const unchangedResolved = await db.query.ReviewQueueItem.findFirst({ where: eq(schema.ReviewQueueItem.id, "TODO_FIX_WHERE") /* AUTOMIGRATED: { id: resolvedId },       select: { status: true },      */ });
+    const updatedOpen = await db.query.ReviewQueueItem.findFirst({
+      where: eq(schema.ReviewQueueItem.id, openId),
+      columns: { status: true }
+    });
+    const unchangedResolved = await db.query.ReviewQueueItem.findFirst({
+      where: eq(schema.ReviewQueueItem.id, resolvedId),
+      columns: { status: true }
+    });
 
     expect(updatedOpen?.status).toBe('resolved');
     expect(unchangedResolved?.status).toBe('resolved');

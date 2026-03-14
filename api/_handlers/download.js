@@ -1,5 +1,5 @@
 import logger from '../_utils/logger.js';
-import prisma from '../_utils/prisma.js';
+import { db } from '../../src/db/index.js';
 import { verifyAttachmentToken, decrypt, decryptBuffer } from '../lib/crypto.js';
 import { storage } from '../lib/storage.js';
 /**
@@ -17,8 +17,8 @@ export default async function handler(req, res) {
     if (!attachmentId) return res.status(403).json({ error: "Invalid or expired token" });
 
     try {
-        const attachment = await prisma.attachment.findUnique({
-            where: { id: attachmentId }
+        const attachment = await db.query.Attachment.findFirst({
+            where: (a, { eq }) => eq(a.id, attachmentId),
         });
 
         if (!attachment) return res.status(404).json({ error: "Attachment not found" });

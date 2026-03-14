@@ -1,6 +1,6 @@
 // @ts-nocheck
-import { Prisma } from '@prisma/client';
-import prisma from './prisma.js';
+import { db } from '../../src/db/index.js';
+import { RdvNotificationLog } from '../../src/db/schema.js';
 import { sendMail } from './mailer.js';
 import { buildAppUrl } from './user-auth.js';
 
@@ -140,16 +140,18 @@ export async function notifyConversationMessage(input) {
   }
 
   try {
-    await prisma.rdvNotificationLog.create({
-      data: {
-        kind: 'MESSAGE_EMAIL',
-        conversationId: input.conversationId,
-        messageId: input.messageId,
-        recipientType: input.recipientType,
-      },
+    await db.insert(RdvNotificationLog).values({
+      kind: 'MESSAGE_EMAIL',
+      conversationId: input.conversationId,
+      messageId: input.messageId,
+      recipientType: input.recipientType,
     });
   } catch (error) {
-    if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002') {
+    // Drizzle wraps pg driver errors in DrizzleQueryError — the native
+    // PostgreSQL error code lives on error.cause, not on error directly.
+    const pgCode = error?.cause?.code || error?.code;
+    // PostgreSQL 23505 = unique constraint violation (duplicate notification)
+    if (pgCode === '23505') {
       return { sent: false, skipped: true, reason: 'duplicate' };
     }
     throw error;

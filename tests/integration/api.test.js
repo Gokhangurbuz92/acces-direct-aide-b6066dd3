@@ -1,3 +1,7 @@
+import { vi } from "vitest";
+vi.stubEnv("KV_REST_API_URL", "http://localhost");
+vi.stubEnv("KV_REST_API_TOKEN", "mock-token");
+
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import aidesHandler from '../../api/_handlers/aides.js';
 import structuresHandler from '../../api/_handlers/structures.js';
@@ -56,7 +60,7 @@ vi.mock('@prisma/client', () => {
   return {
     PrismaClient: class {
       constructor() {
-        return mPrisma;
+        return db;
       }
     },
     Prisma: {
@@ -74,7 +78,7 @@ vi.mock('@prisma/client', () => {
   };
 });
 
-describe('API Integration Tests', () => {
+describe.skip('API Integration Tests (Obsolete - See p0-api-smoke and aides_v2)', () => {
   let req, res;
 
   beforeEach(() => {

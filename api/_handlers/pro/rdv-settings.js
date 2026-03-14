@@ -1,3 +1,4 @@
+import crypto from 'node:crypto';
 import { db } from '../../../src/db/index.js';
 import { StructureRdvSettings, Structure } from '../../../src/db/schema.js';
 import { eq } from 'drizzle-orm';
@@ -92,9 +93,11 @@ async function getOrCreateSettings(structureId) {
 
   const initialPublished = Boolean(structure?.is_pro_enabled);
   const [newSettings] = await db.insert(StructureRdvSettings).values({
+      id: crypto.randomUUID(),
       structureId,
       isPublished: initialPublished,
       bookingMode: 'IN_PERSON',
+      updatedAt: new Date(),
       ...(initialPublished ? { publishedAt: new Date() } : {}),
   }).returning();
   

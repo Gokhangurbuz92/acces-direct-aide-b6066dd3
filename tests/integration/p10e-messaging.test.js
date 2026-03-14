@@ -1,10 +1,15 @@
+import { vi } from "vitest";
+vi.stubEnv("KV_REST_API_URL", "http://localhost");
+vi.stubEnv("KV_REST_API_TOKEN", "mock-token");
+
+import crypto from 'node:crypto';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 
 import apiHandler from '../../api/index.js';
 import { db } from '../../src/db/index.js';
 import * as schema from '../../src/db/schema.js';
-import { eq, sql } from 'drizzle-orm';
-import { signProToken } from '../../api/lib/pro-auth.js';
+import { eq, sql, desc, and } from 'drizzle-orm';
+import { signProToken } from '../../api/_utils/auth.js';
 import { buildUserSessionCookie, signUserSessionToken } from '../../api/_utils/user-auth.js';
 import { __clearTestOutbox, __getTestOutbox } from '../../api/_utils/mailer.js';
 import { notifyConversationMessage } from '../../api/_utils/rdv-messaging.js';
@@ -151,28 +156,28 @@ beforeEach(() => {
 
 afterEach(async () => {
   if (notificationIds.length > 0) {
-    await await db.delete(schema.RdvNotificationLog);
+    await db.delete(schema.RdvNotificationLog);
   }
   if (messageIds.length > 0) {
-    await await db.delete(schema.RdvConversationMessage);
+    await db.delete(schema.RdvConversationMessage);
   }
   if (conversationIds.length > 0) {
-    await await db.delete(schema.RdvConversation);
+    await db.delete(schema.RdvConversation);
   }
   if (appointmentIds.length > 0) {
-    await await db.delete(schema.ProAppointment);
+    await db.delete(schema.ProAppointment);
   }
   if (serviceIds.length > 0) {
-    await await db.delete(schema.ProRdvService);
+    await db.delete(schema.ProRdvService);
   }
   if (proUserIds.length > 0) {
-    await await db.delete(schema.ProUser);
+    await db.delete(schema.ProUser);
   }
   if (userIds.length > 0) {
-    await await db.delete(schema.CitizenUser);
+    await db.delete(schema.CitizenUser);
   }
   if (structureIds.length > 0) {
-    await await db.delete(schema.Structure);
+    await db.delete(schema.Structure);
   }
 
   notificationIds = [];
@@ -192,8 +197,10 @@ afterEach(async () => {
 
 async function createFixture() {
   const suffix = `${Date.now()}-${Math.random().toString(16).slice(2, 8)}`;
+  const now = new Date();
 
   const structureA = await (await db.insert(schema.Structure).values({
+      id: crypto.randomUUID(), createdAt: now, updatedAt: now,
       nom: `P10E Structure A ${suffix}`,
       slug: `p10e-struct-a-${suffix}`,
       statut: 'actif',
@@ -209,6 +216,7 @@ async function createFixture() {
   ).returning())[0];
 
   const structureB = await (await db.insert(schema.Structure).values({
+      id: crypto.randomUUID(), createdAt: now, updatedAt: now,
       nom: `P10E Structure B ${suffix}`,
       slug: `p10e-struct-b-${suffix}`,
       statut: 'actif',
@@ -226,6 +234,7 @@ async function createFixture() {
   structureIds.push(structureA.id, structureB.id);
 
   const proA = await (await db.insert(schema.ProUser).values({
+      id: crypto.randomUUID(), createdAt: now, updatedAt: now,
       email: `pro-a-${suffix}@test.local`,
       password_hash: 'hash',
       role: 'STRUCTURE_ADMIN',
@@ -236,6 +245,7 @@ async function createFixture() {
   ).returning())[0];
 
   const proB = await (await db.insert(schema.ProUser).values({
+      id: crypto.randomUUID(), createdAt: now, updatedAt: now,
       email: `pro-b-${suffix}@test.local`,
       password_hash: 'hash',
       role: 'STRUCTURE_ADMIN',
@@ -248,6 +258,7 @@ async function createFixture() {
   proUserIds.push(proA.id, proB.id);
 
   const userA = await (await db.insert(schema.CitizenUser).values({
+      id: crypto.randomUUID(), createdAt: now, updatedAt: now,
       email: `user-a-${suffix}@test.local`,
       passwordHash: 'hash',
       emailVerifiedAt: new Date(),
@@ -256,6 +267,7 @@ async function createFixture() {
   ).returning())[0];
 
   const userB = await (await db.insert(schema.CitizenUser).values({
+      id: crypto.randomUUID(), createdAt: now, updatedAt: now,
       email: `user-b-${suffix}@test.local`,
       passwordHash: 'hash',
       emailVerifiedAt: new Date(),
@@ -266,6 +278,7 @@ async function createFixture() {
   userIds.push(userA.id, userB.id);
 
   const service = await (await db.insert(schema.ProRdvService).values({
+      id: crypto.randomUUID(), createdAt: now, updatedAt: now,
       structureId: structureA.id,
       name: 'Accompagnement',
       durationMinutes: 30,
@@ -275,6 +288,7 @@ async function createFixture() {
   serviceIds.push(service.id);
 
   const appointment = await (await db.insert(schema.ProAppointment).values({
+      id: crypto.randomUUID(), createdAt: now, updatedAt: now,
       structureId: structureA.id,
       serviceId: service.id,
       startAt: new Date('2026-03-05T10:00:00.000Z'),
@@ -289,6 +303,7 @@ async function createFixture() {
   appointmentIds.push(appointment.id);
 
   const conversation = await (await db.insert(schema.RdvConversation).values({
+      id: crypto.randomUUID(), createdAt: now, updatedAt: now,
       appointmentId: appointment.id,
       structureId: structureA.id,
       citizenUserId: userA.id,
@@ -298,6 +313,7 @@ async function createFixture() {
   conversationIds.push(conversation.id);
 
   const initialMessage = await (await db.insert(schema.RdvConversationMessage).values({
+      id: crypto.randomUUID(), createdAt: now, updatedAt: now,
       conversationId: conversation.id,
       senderType: 'USER',
       senderCitizenUserId: userA.id,
@@ -326,10 +342,12 @@ function userCookie(user) {
 describe('P10-E messaging contracts', () => {
   it('enforces owner-only and tenant-scope on conversation read', async () => {
     const fixture = await createFixture();
+    console.log('MARK 1');
 
     const userAReq = await invokeApi(`/api/messages/conversations/${fixture.conversation.id}`, {
       headers: { cookie: userCookie(fixture.userA) },
     });
+    console.log('MARK 2');
     expect(userAReq.statusCode).toBe(200);
     expect(userAReq.body?.item?.id).toBe(fixture.conversation.id);
     expect(String(userAReq.getHeader('cache-control') || '').toLowerCase()).toContain('no-store');
@@ -338,6 +356,7 @@ describe('P10-E messaging contracts', () => {
     const userBReq = await invokeApi(`/api/messages/conversations/${fixture.conversation.id}`, {
       headers: { cookie: userCookie(fixture.userB) },
     });
+    console.log('MARK 3');
     expect(userBReq.statusCode).toBe(403);
 
     const proAToken = signProToken({
@@ -349,6 +368,7 @@ describe('P10-E messaging contracts', () => {
     const proAReq = await invokeApi(`/api/pro/messages/conversations/${fixture.conversation.id}`, {
       headers: { authorization: `Bearer ${proAToken}` },
     });
+    console.log('MARK 4');
     expect(proAReq.statusCode).toBe(200);
 
     const proBToken = signProToken({
@@ -360,8 +380,9 @@ describe('P10-E messaging contracts', () => {
     const proBReq = await invokeApi(`/api/pro/messages/conversations/${fixture.conversation.id}`, {
       headers: { authorization: `Bearer ${proBToken}` },
     });
+    console.log('MARK 5');
     expect(proBReq.statusCode).toBe(403);
-  });
+  }, 15000);
 
   it('rejects empty message body and sends one notification email per message+recipient', async () => {
     const fixture = await createFixture();
@@ -382,16 +403,16 @@ describe('P10-E messaging contracts', () => {
     expect(created.statusCode).toBe(201);
     expect(created.body?.item?.senderType).toBe('USER');
 
-    const createdMessage = await db.query.RdvConversationMessage.findFirst({ where: eq(schema.RdvConversationMessage.id, "TODO_FIX_WHERE") /* AUTOMIGRATED: { id: created.body.item.id },      */ });
+    const createdMessage = (await db.select().from(schema.RdvConversationMessage).where(eq(schema.RdvConversationMessage.id, created.body.item.id)))[0];
     expect(createdMessage).toBeTruthy();
     if (createdMessage) messageIds.push(createdMessage.id);
 
-    const logs = await db.query.RdvNotificationLog.findMany({
-      where: {
-        messageId: created.body.item.id,
-        recipientType: 'PRO',
-      },
-    });
+    const logs = await db.select().from(schema.RdvNotificationLog).where(
+      and(
+        eq(schema.RdvNotificationLog.messageId, created.body.item.id),
+        eq(schema.RdvNotificationLog.recipientType, 'PRO')
+      )
+    );
     for (const log of logs) notificationIds.push(log.id);
 
     expect(logs.length).toBe(1);

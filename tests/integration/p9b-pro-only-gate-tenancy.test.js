@@ -1,3 +1,7 @@
+import { vi } from "vitest";
+vi.stubEnv("KV_REST_API_URL", "http://localhost");
+vi.stubEnv("KV_REST_API_TOKEN", "mock-token");
+
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 
 import apiHandler from '../../api/index.js';
@@ -6,7 +10,7 @@ import { db } from '../../src/db/index.js';
 import * as schema from '../../src/db/schema.js';
 import { eq, sql } from 'drizzle-orm';
 import { signAdminSessionToken } from '../../api/_utils/auth.js';
-import { signProToken } from '../../api/lib/pro-auth.js';
+import { signProToken } from '../../api/_utils/auth.js';
 
 /**
  * @param {{
@@ -301,7 +305,7 @@ describe('P9-B pro-only gate + tenancy foundation', () => {
 
     expect(res.statusCode).toBe(403);
 
-    const freshServiceB = await db.query.Service.findFirst({ where: eq(schema.Service.id, "TODO_FIX_WHERE") /* AUTOMIGRATED: { id: fixture.serviceB.id }  */ });
+    const freshServiceB = await db.query.Service.findFirst({ where: eq(schema.Service.id, fixture.serviceB.id) /* AUTOMIGRATED: { id: fixture.serviceB.id }  */ });
     expect(freshServiceB?.name).toBe('Service B');
   });
 });

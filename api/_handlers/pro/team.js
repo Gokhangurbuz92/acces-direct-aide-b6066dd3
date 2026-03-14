@@ -43,7 +43,7 @@ async function handler(req, res) {
 
             const invitations = await db.query.Invitation.findMany({
                 where: and(eq(Invitation.structureId, structureId), isNull(Invitation.used_at)),
-                orderBy: [desc(Invitation.created_at)],
+                orderBy: [desc(Invitation.createdAt)],
                 limit: 10,
             });
 

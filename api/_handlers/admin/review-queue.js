@@ -1,9 +1,11 @@
 import { checkRateLimit, getClientIp, getRateLimitStatus } from '../../_utils/rateLimit.js';
 import logger from '../../_utils/logger.js';
 import { randomUUID } from 'crypto';
-import { Prisma } from '@prisma/client';
-import prisma from '../../_utils/prisma.js';
+import { db } from '../../../src/db/index.js';
+import { ReviewQueueItem } from '../../../src/db/schema.js';
+import { eq, inArray, and, desc } from 'drizzle-orm';
 import { verifyAdmin } from '../../_utils/auth.js';
+import { reviewQueuePatchSchema, reviewQueueBulkPatchSchema } from '../../../src/db/drizzle-schemas.js';
 import {
   normalizeEntityType,
   normalizeReviewStatus,
@@ -142,7 +144,7 @@ export default async function handler(req, res) {
       const limitPerType = bodyLimit == null ? undefined : parseLimit(bodyLimit, 200);
 
       const summary = await scanDataQuality({
-        prismaClient: prisma,
+        db,
         limitPerType,
       });
 
@@ -160,23 +162,16 @@ export default async function handler(req, res) {
       const limit = parseLimit(req.query?.limit, 50);
       const cursor = req.query?.cursor ? String(req.query.cursor).trim() : null;
 
-      const where = {
-        status,
-        ...(entityType ? { entityType } : {}),
-        ...(reason ? { reason } : {}),
-      };
+      const conditions = [];
+      if (status) conditions.push(eq(ReviewQueueItem.status, status.toUpperCase()));
+      if (entityType) conditions.push(eq(ReviewQueueItem.entityType, entityType.toUpperCase()));
+      if (reason) conditions.push(eq(ReviewQueueItem.reason, reason));
+      let selectQuery = db.select().from(ReviewQueueItem).$dynamic();
+      if (conditions.length > 0) {
+        selectQuery = selectQuery.where(and(...conditions));
+      }
+      const items = await selectQuery.orderBy(desc(ReviewQueueItem.createdAt), desc(ReviewQueueItem.id)).limit(limit + 1);
 
-      const items = await prisma.reviewQueueItem.findMany({
-        where,
-        ...(cursor
-          ? {
-              cursor: { id: cursor },
-              skip: 1,
-            }
-          : {}),
-        orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
-        take: limit + 1,
-      });
 
       let nextCursor = null;
       if (items.length > limit) {
@@ -187,6 +182,7 @@ export default async function handler(req, res) {
       return res.status(200).json({
         ok: true,
         requestId,
+        _debugSQL: selectQuery.toSQL(),
         items,
         pagination: {
           limit,
@@ -197,34 +193,26 @@ export default async function handler(req, res) {
 
     if (req.method === 'PATCH') {
       if (isBulkPath(pathname)) {
-        const body = parseJsonBody(req.body);
-        const ids = parseBulkIds(/** @type {{ ids?: unknown }} */ (body).ids);
-        const nextStatus = parsePatchStatus(/** @type {{ status?: unknown }} */ (body).status);
-
-        if (!ids || !nextStatus) {
-          return res.status(400).json({ error: 'Invalid bulk payload', requestId });
+        const bulkResult = reviewQueueBulkPatchSchema.safeParse(parseJsonBody(req.body));
+        if (!bulkResult.success) {
+          return res.status(400).json({ error: 'Invalid bulk payload', requestId, details: bulkResult.error.flatten() });
         }
 
-        const existing = await prisma.reviewQueueItem.findMany({
-          where: { id: { in: ids } },
-          select: { id: true, status: true },
-        });
+        const { ids, status: nextStatus } = bulkResult.data;
+
+        const existing = await db.select({ id: ReviewQueueItem.id, status: ReviewQueueItem.status }).from(ReviewQueueItem).where(inArray(ReviewQueueItem.id, ids));
 
         const updatableIds = existing
           .filter(/** @param {{ id: string, status: string }} item */ (item) => item.status === 'open')
           .map(/** @param {{ id: string }} item */ (item) => item.id);
 
         const updateResult = updatableIds.length > 0
-          ? await prisma.reviewQueueItem.updateMany({
-              where: {
-                id: { in: updatableIds },
-                status: 'open',
-              },
-              data: { status: nextStatus },
-            })
-          : { count: 0 };
+          ? await db.update(ReviewQueueItem).set({ status: nextStatus }).where(
+              and(inArray(ReviewQueueItem.id, updatableIds), eq(ReviewQueueItem.status, 'open'))
+            ).returning({ id: ReviewQueueItem.id })
+          : [];
 
-        const updated = Number(updateResult?.count || 0);
+        const updated = updateResult.length;
         const existingCount = existing.length;
         const notFound = Math.max(0, ids.length - existingCount);
         const skipped = Math.max(0, existingCount - updated);
@@ -244,16 +232,17 @@ export default async function handler(req, res) {
         return res.status(400).json({ error: 'Missing review queue item id', requestId });
       }
 
-      const body = parseJsonBody(req.body);
-      const nextStatus = parsePatchStatus(/** @type {{ status?: unknown }} */ (body).status);
-      if (!nextStatus) {
-        return res.status(400).json({ error: 'Invalid status', requestId });
+      const patchResult = reviewQueuePatchSchema.safeParse(parseJsonBody(req.body));
+      if (!patchResult.success) {
+        return res.status(400).json({ error: 'Invalid status', requestId, details: patchResult.error.flatten() });
       }
 
-      const item = await prisma.reviewQueueItem.update({
-        where: { id: itemId },
-        data: { status: nextStatus },
-      });
+      const { status: nextStatus } = patchResult.data;
+
+      const [item] = await db.update(ReviewQueueItem).set({ status: nextStatus }).where(eq(ReviewQueueItem.id, itemId)).returning();
+      if (!item) {
+        return res.status(404).json({ error: 'Not found', requestId });
+      }
 
       return res.status(200).json({
         ok: true,
@@ -274,7 +263,7 @@ export default async function handler(req, res) {
       'admin.review_queue.error',
     );
 
-    if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2025') {
+    if (error instanceof Error && error.message.includes('Not found')) {
       return res.status(404).json({ error: 'Not found', requestId });
     }
 

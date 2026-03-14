@@ -1,0 +1,50 @@
+TX ERROR: Error: No transactions support in neon-http driver
+    at NeonHttpSession.transaction (file:///Users/gokhan/Dropbox/Mac/Downloads/acces-direct-aide-b6066dd3/node_modules/drizzle-orm/neon-http/session.js:152:11)
+    at NeonHttpDatabase.transaction (file:///Users/gokhan/Dropbox/Mac/Downloads/acces-direct-aide-b6066dd3/node_modules/drizzle-orm/pg-core/db.js:290:25)
+    at sendMessage (/Users/gokhan/Dropbox/Mac/Downloads/acces-direct-aide-b6066dd3/api/_handlers/messages.js:184:24)
+    at processTicksAndRejections (node:internal/process/task_queues:95:5)
+    at /Users/gokhan/Dropbox/Mac/Downloads/acces-direct-aide-b6066dd3/api/index.js:249:17
+    at handler (/Users/gokhan/Dropbox/Mac/Downloads/acces-direct-aide-b6066dd3/api/index.js:236:9)
+    at invokeApi (/Users/gokhan/Dropbox/Mac/Downloads/acces-direct-aide-b6066dd3/tests/integration/p10e-messaging.test.js:123:3)
+    at /Users/gokhan/Dropbox/Mac/Downloads/acces-direct-aide-b6066dd3/tests/integration/p10e-messaging.test.js:397:21
+    at file:///Users/gokhan/Dropbox/Mac/Downloads/acces-direct-aide-b6066dd3/node_modules/@vitest/runner/dist/index.js:915:20 | CODE: undefined | DETAIL: undefined | MSG: No transactions support in neon-http driver
+TX ERROR: Error: No transactions support in neon-http driver
+    at NeonHttpSession.transaction (file:///Users/gokhan/Dropbox/Mac/Downloads/acces-direct-aide-b6066dd3/node_modules/drizzle-orm/neon-http/session.js:152:11)
+    at NeonHttpDatabase.transaction (file:///Users/gokhan/Dropbox/Mac/Downloads/acces-direct-aide-b6066dd3/node_modules/drizzle-orm/pg-core/db.js:290:25)
+    at sendMessage (/Users/gokhan/Dropbox/Mac/Downloads/acces-direct-aide-b6066dd3/api/_handlers/messages.js:184:24)
+    at processTicksAndRejections (node:internal/process/task_queues:95:5)
+    at /Users/gokhan/Dropbox/Mac/Downloads/acces-direct-aide-b6066dd3/api/index.js:249:17
+    at handler (/Users/gokhan/Dropbox/Mac/Downloads/acces-direct-aide-b6066dd3/api/index.js:236:9)
+    at invokeApi (/Users/gokhan/Dropbox/Mac/Downloads/acces-direct-aide-b6066dd3/tests/integration/p10e-messaging.test.js:123:3)
+    at /Users/gokhan/Dropbox/Mac/Downloads/acces-direct-aide-b6066dd3/tests/integration/p10e-messaging.test.js:397:21
+    at file:///Users/gokhan/Dropbox/Mac/Downloads/acces-direct-aide-b6066dd3/node_modules/@vitest/runner/dist/index.js:915:20 | CODE: undefined | DETAIL: undefined | MSG: No transactions support in neon-http driver
+TX ERROR: Error: No transactions support in neon-http driver
+    at NeonHttpSession.transaction (file:///Users/gokhan/Dropbox/Mac/Downloads/acces-direct-aide-b6066dd3/node_modules/drizzle-orm/neon-http/session.js:152:11)
+    at NeonHttpDatabase.transaction (file:///Users/gokhan/Dropbox/Mac/Downloads/acces-direct-aide-b6066dd3/node_modules/drizzle-orm/pg-core/db.js:290:25)
+    at sendMessage (/Users/gokhan/Dropbox/Mac/Downloads/acces-direct-aide-b6066dd3/api/_handlers/messages.js:184:24)
+    at processTicksAndRejections (node:internal/process/task_queues:95:5)
+    at /Users/gokhan/Dropbox/Mac/Downloads/acces-direct-aide-b6066dd3/api/index.js:249:17
+    at handler (/Users/gokhan/Dropbox/Mac/Downloads/acces-direct-aide-b6066dd3/api/index.js:236:9)
+    at invokeApi (/Users/gokhan/Dropbox/Mac/Downloads/acces-direct-aide-b6066dd3/tests/integration/p10e-messaging.test.js:123:3)
+    at /Users/gokhan/Dropbox/Mac/Downloads/acces-direct-aide-b6066dd3/tests/integration/p10e-messaging.test.js:397:21
+    at file:///Users/gokhan/Dropbox/Mac/Downloads/acces-direct-aide-b6066dd3/node_modules/@vitest/runner/dist/index.js:915:20 | CODE: undefined | DETAIL: undefined | MSG: No transactions support in neon-http driver
+TX ERROR: Error: No transactions support in neon-http driver
+    at NeonHttpSession.transaction (file:///Users/gokhan/Dropbox/Mac/Downloads/acces-direct-aide-b6066dd3/node_modules/drizzle-orm/neon-http/session.js:152:11)
+    at NeonHttpDatabase.transaction (file:///Users/gokhan/Dropbox/Mac/Downloads/acces-direct-aide-b6066dd3/node_modules/drizzle-orm/pg-core/db.js:290:25)
+    at sendMessage (/Users/gokhan/Dropbox/Mac/Downloads/acces-direct-aide-b6066dd3/api/_handlers/messages.js:184:24)
+    at processTicksAndRejections (node:internal/process/task_queues:95:5)
+    at /Users/gokhan/Dropbox/Mac/Downloads/acces-direct-aide-b6066dd3/api/index.js:249:17
+    at handler (/Users/gokhan/Dropbox/Mac/Downloads/acces-direct-aide-b6066dd3/api/index.js:236:9)
+    at invokeApi (/Users/gokhan/Dropbox/Mac/Downloads/acces-direct-aide-b6066dd3/tests/integration/p10e-messaging.test.js:123:3)
+    at /Users/gokhan/Dropbox/Mac/Downloads/acces-direct-aide-b6066dd3/tests/integration/p10e-messaging.test.js:397:21
+    at file:///Users/gokhan/Dropbox/Mac/Downloads/acces-direct-aide-b6066dd3/node_modules/@vitest/runner/dist/index.js:915:20 | CODE: undefined | DETAIL: undefined | MSG: No transactions support in neon-http driver
+TX ERROR: Error: No transactions support in neon-http driver
+    at NeonHttpSession.transaction (file:///Users/gokhan/Dropbox/Mac/Downloads/acces-direct-aide-b6066dd3/node_modules/drizzle-orm/neon-http/session.js:152:11)
+    at NeonHttpDatabase.transaction (file:///Users/gokhan/Dropbox/Mac/Downloads/acces-direct-aide-b6066dd3/node_modules/drizzle-orm/pg-core/db.js:290:25)
+    at sendMessage (/Users/gokhan/Dropbox/Mac/Downloads/acces-direct-aide-b6066dd3/api/_handlers/messages.js:184:24)
+    at processTicksAndRejections (node:internal/process/task_queues:95:5)
+    at /Users/gokhan/Dropbox/Mac/Downloads/acces-direct-aide-b6066dd3/api/index.js:249:17
+    at handler (/Users/gokhan/Dropbox/Mac/Downloads/acces-direct-aide-b6066dd3/api/index.js:236:9)
+    at invokeApi (/Users/gokhan/Dropbox/Mac/Downloads/acces-direct-aide-b6066dd3/tests/integration/p10e-messaging.test.js:123:3)
+    at /Users/gokhan/Dropbox/Mac/Downloads/acces-direct-aide-b6066dd3/tests/integration/p10e-messaging.test.js:397:21
+    at file:///Users/gokhan/Dropbox/Mac/Downloads/acces-direct-aide-b6066dd3/node_modules/@vitest/runner/dist/index.js:915:20 | CODE: undefined | DETAIL: undefined | MSG: No transactions support in neon-http driver

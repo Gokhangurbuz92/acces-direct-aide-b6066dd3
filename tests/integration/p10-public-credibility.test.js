@@ -1,7 +1,13 @@
+import { vi } from "vitest";
+vi.stubEnv("KV_REST_API_URL", "http://localhost");
+vi.stubEnv("KV_REST_API_TOKEN", "mock-token");
+
 import crypto from 'node:crypto';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import demarchesHandler from '../../api/_handlers/demarches.js';
-import prisma from '../../api/_utils/prisma.js';
+import { db } from '../../src/db/index.js';
+import * as schema from '../../src/db/schema.js';
+import { eq, sql } from 'drizzle-orm';
 
 function createMockReq({ method = 'GET', url = '/api/demarches', query = {}, headers = {} } = {}) {
   return {
@@ -42,34 +48,40 @@ describe.skipIf(!hasDatabase)('P10-0 public credibility guards', () => {
   const hiddenSlug = `demarche-hidden-${suffix}`;
   const visibleSlug = `demarche-visible-${suffix}`;
 
-  beforeAll(async () => {
+  beforeEach(async () => {
     const now = new Date();
-    await prisma.demarche.createMany({
-      data: [
-        {
-          slug: hiddenSlug,
-          titre: 'Démarche Test interne',
-          statut: 'publie',
-          published_at: now,
-          description_courte: 'Doit etre masquee en public.',
-        },
-        {
-          slug: visibleSlug,
-          titre: 'Demander une domiciliation',
-          statut: 'publie',
-          published_at: now,
-          description_courte: 'Doit rester visible en public.',
-        },
-      ],
-    });
-  });
-
-  afterAll(async () => {
-    await prisma.demarche.deleteMany({
-      where: {
-        slug: { in: [hiddenSlug, visibleSlug] },
+    await db.insert(schema.Demarche).values([
+      {
+        slug: hiddenSlug,
+        titre: 'Démarche Test interne',
+        statut: 'publie',
+        published_at: now,
+        description_courte: 'Doit etre masquee en public.',
+        quality_score: 50,
+        documents_necessaires: [],
+        mots_cles: [],
+        audiences: [],
+        departements: [],
+        region_codes: [],
+        department_codes: [],
+        insee_codes: [],
       },
-    });
+      {
+        slug: visibleSlug,
+        titre: 'Demander une domiciliation',
+        statut: 'publie',
+        published_at: now,
+        description_courte: 'Doit rester visible en public.',
+        quality_score: 50,
+        documents_necessaires: [],
+        mots_cles: [],
+        audiences: [],
+        departements: [],
+        region_codes: [],
+        department_codes: [],
+        insee_codes: [],
+      },
+    ]);
   });
 
   it('list endpoint excludes test-labeled demarches on public surface', async () => {

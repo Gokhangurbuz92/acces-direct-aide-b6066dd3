@@ -1,7 +1,10 @@
-
-import prisma from '../../_utils/prisma.js';
+import crypto from 'node:crypto';
+import { db } from '../../../src/db/index.js';
+import { ProRdvService, Service, ProAppointment } from '../../../src/db/schema.js';
+import { eq, desc, and, inArray, sql } from 'drizzle-orm';
 import { AUTH_ROLE, requireProStructureContext } from '../../_utils/auth.js';
 import { withProRdvHandler } from '../../_utils/with-pro-rdv-handler.js';
+import { createServiceSchema } from '../../../src/db/drizzle-schemas.js';
 
 /**
  * @param {unknown} value
@@ -49,9 +52,9 @@ async function handler(req, res) {
   const canWrite = role === AUTH_ROLE.STRUCTURE_ADMIN || role === AUTH_ROLE.SUPERADMIN;
 
   if (req.method === 'GET') {
-    const services = await prisma.proRdvService.findMany({
-      where: { structureId },
-      orderBy: { createdAt: 'desc' },
+    const services = await db.query.ProRdvService.findMany({
+      where: eq(ProRdvService.structureId, structureId),
+      orderBy: [desc(ProRdvService.createdAt)],
     });
     return res.status(200).json(services.map(serialize));
   }
@@ -61,34 +64,29 @@ async function handler(req, res) {
   }
 
   if (req.method === 'POST') {
-    const body = req.body && typeof req.body === 'object' ? req.body : {};
-    const name = String(body.name || '').trim();
-    const durationMinutes = toInt(body.durationMinutes ?? body.duration_minutes);
-    const bufferBeforeMinutes = Math.max(
-      0,
-      toInt(body.bufferBeforeMinutes ?? body.buffer_before_minutes ?? 0),
-    );
-    const bufferAfterMinutes = Math.max(
-      0,
-      toInt(body.bufferAfterMinutes ?? body.buffer_after_minutes ?? 0),
-    );
-    const isActive = body.isActive ?? body.is_active ?? true;
-
-    if (!name) return res.status(400).json({ error: 'Name is required' });
-    if (!Number.isFinite(durationMinutes) || durationMinutes <= 0) {
-      return res.status(400).json({ error: 'durationMinutes must be a positive number' });
+    const parsed = createServiceSchema.safeParse(req.body);
+    if (!parsed.success) {
+      const firstError = parsed.error.errors[0]?.message || 'Invalid input';
+      return res.status(400).json({ error: firstError });
     }
+    const data = parsed.data;
+    const name = data.name;
+    const durationMinutes = data.durationMinutes ?? data.duration_minutes;
+    const bufferBeforeMinutes = Math.max(0, data.bufferBeforeMinutes ?? data.buffer_before_minutes ?? 0);
+    const bufferAfterMinutes = Math.max(0, data.bufferAfterMinutes ?? data.buffer_after_minutes ?? 0);
+    const isActive = data.isActive ?? data.is_active ?? true;
 
-    const created = await prisma.proRdvService.create({
-      data: {
+    const [created] = await db.insert(ProRdvService).values({
+        id: crypto.randomUUID(),
         structureId,
         name,
         durationMinutes,
         bufferBeforeMinutes,
         bufferAfterMinutes,
         isActive: Boolean(isActive),
-      },
-    });
+        createdAt: new Date(),
+        updatedAt: new Date(),
+    }).returning();
     return res.status(201).json(serialize(created));
   }
 
@@ -97,11 +95,11 @@ async function handler(req, res) {
     const id = String(req.query.id || body.id || '').trim();
     if (!id) return res.status(400).json({ error: 'id is required' });
 
-    const existing = await prisma.proRdvService.findUnique({
-      where: { id },
+    const existing = await db.query.ProRdvService.findFirst({
+      where: eq(ProRdvService.id, id),
     });
     if (!existing) {
-      const legacy = await prisma.service.findUnique({ where: { id } });
+      const legacy = await db.query.Service.findFirst({ where: eq(Service.id, id) });
       if (legacy && legacy.structureId !== structureId) {
         return res.status(403).json({ error: 'Forbidden' });
       }
@@ -120,6 +118,8 @@ async function handler(req, res) {
       }
       updates.durationMinutes = durationMinutes;
     }
+
+    updates.updatedAt = new Date();
 
     if (
       typeof body.bufferBeforeMinutes !== 'undefined' ||
@@ -148,10 +148,7 @@ async function handler(req, res) {
       return res.status(200).json(serialize(existing));
     }
 
-    const updated = await prisma.proRdvService.update({
-      where: { id: existing.id },
-      data: updates,
-    });
+    const [updated] = await db.update(ProRdvService).set(updates).where(eq(ProRdvService.id, existing.id)).returning();
     return res.status(200).json(serialize(updated));
   }
 
@@ -159,11 +156,11 @@ async function handler(req, res) {
     const id = String(req.query.id || '').trim();
     if (!id) return res.status(400).json({ error: 'id is required' });
 
-    const existing = await prisma.proRdvService.findUnique({
-      where: { id },
+    const existing = await db.query.ProRdvService.findFirst({
+      where: eq(ProRdvService.id, id),
     });
     if (!existing) {
-      const legacy = await prisma.service.findUnique({ where: { id } });
+      const legacy = await db.query.Service.findFirst({ where: eq(Service.id, id) });
       if (legacy && legacy.structureId !== structureId) {
         return res.status(403).json({ error: 'Forbidden' });
       }
@@ -171,22 +168,20 @@ async function handler(req, res) {
     }
     if (existing.structureId !== structureId) return res.status(403).json({ error: 'Forbidden' });
 
-    const activeAppointments = await prisma.proAppointment.count({
-      where: {
-        serviceId: id,
-        status: { in: ['booked', 'requested', 'confirmed', 'locked'] },
-      },
-    });
+    const activeAppointmentsRes = await db.select({ count: sql`count(*)` })
+      .from(ProAppointment)
+      .where(and(
+        eq(ProAppointment.serviceId, id),
+        inArray(ProAppointment.status, ['booked', 'requested', 'confirmed', 'locked'])
+      ));
+    const activeAppointments = Number(activeAppointmentsRes[0].count);
 
     if (activeAppointments > 0) {
-      const disabled = await prisma.proRdvService.update({
-        where: { id },
-        data: { isActive: false },
-      });
+      const [disabled] = await db.update(ProRdvService).set({ isActive: false }).where(eq(ProRdvService.id, id)).returning();
       return res.status(200).json({ ...serialize(disabled), deleted: false, disabled: true });
     }
 
-    await prisma.proRdvService.delete({ where: { id } });
+    await db.delete(ProRdvService).where(eq(ProRdvService.id, id));
     return res.status(200).json({ success: true });
   }
 

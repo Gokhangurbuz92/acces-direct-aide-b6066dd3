@@ -1,6 +1,8 @@
 import logger from '../../_utils/logger.js';
 // @ts-nocheck
-import prisma from '../../_utils/prisma.js';
+import { db } from '../../../src/db/index.js';
+import { SharedDiagnostic, AuditLog } from '../../../src/db/schema.js';
+import { eq } from 'drizzle-orm';
 import { env } from '../../_utils/env.js';
 import { requireProAuth, requireProStructureContext } from '../../_utils/auth.js';
 import crypto from 'crypto';
@@ -41,8 +43,8 @@ async function handler(req, res) {
     }
 
     try {
-        const dossier = await prisma.sharedDiagnostic.findUnique({
-            where: { id: shareId },
+        const dossier = await db.query.SharedDiagnostic.findFirst({
+            where: eq(SharedDiagnostic.id, shareId),
         });
 
         if (!dossier) {
@@ -103,8 +105,7 @@ async function handler(req, res) {
         }
 
         // Audit trail
-        await prisma.auditLog.create({
-            data: {
+        await db.insert(AuditLog).values({
                 action: 'EXTERNAL_TRANSMISSION_SIAO',
                 entityId: shareId,
                 entityType: 'DIAGNOSTIC',
@@ -116,7 +117,6 @@ async function handler(req, res) {
                     fieldsExported: Object.keys(siaoPayload.demandeur).length,
                 }),
                 ipHash: 'SYSTEM_GATEWAY',
-            },
         });
 
         return res.status(200).json({

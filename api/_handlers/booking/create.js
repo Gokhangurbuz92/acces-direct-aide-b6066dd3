@@ -1,5 +1,7 @@
 import logger from '../../_utils/logger.js';
-import prisma from '../../_utils/prisma.js';
+import { db } from '../../../src/db/index.js';
+import { Beneficiary, Appointment } from '../../../src/db/schema.js';
+import { eq } from 'drizzle-orm';
 import { checkRateLimit } from '../_utils/rateLimit.js';
 import { encrypt, hash } from '../../lib/crypto.js';
 import crypto from 'crypto';
@@ -27,18 +29,17 @@ export default async function handler(req, res) {
     try {
         // 1. Handle Beneficiary (Dedupe by hash)
         const contactHash = hash(contact);
-        let beneficiary = await prisma.beneficiary.findFirst({
-            where: { contact_hash: contactHash }
+        let beneficiary = await db.query.Beneficiary.findFirst({
+            where: eq(Beneficiary.contact_hash, contactHash)
         });
 
         if (!beneficiary) {
-            beneficiary = await prisma.beneficiary.create({
-                data: {
+            const [newBen] = await db.insert(Beneficiary).values({
                     contact_encrypted: encrypt(contact),
                     contact_hash: contactHash,
                     first_name_encrypted: encrypt(firstName)
-                }
-            });
+            }).returning();
+            beneficiary = newBen;
         }
 
         // 2. Create Appointment
@@ -48,8 +49,7 @@ export default async function handler(req, res) {
         const cancelToken = crypto.randomBytes(32).toString('hex');
         const accessToken = crypto.randomBytes(32).toString('hex');
 
-        const appointment = await prisma.appointment.create({
-            data: {
+        const [appointment] = await db.insert(Appointment).values({
                 structureId,
                 serviceId,
                 proId,
@@ -60,8 +60,7 @@ export default async function handler(req, res) {
                 status: 'requested',
                 cancel_token_hash: hash(cancelToken),
                 access_token_hash: hash(accessToken)
-            }
-        });
+        }).returning();
 
         return res.status(200).json({
             success: true,

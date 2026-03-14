@@ -1,4 +1,6 @@
-import prisma from '../_utils/prisma.js';
+import { db } from '../../src/db/index.js';
+import { Aide } from '../../src/db/schema.js';
+import { count, and, eq, ilike, desc } from 'drizzle-orm';
 import { checkRateLimit, getClientIp } from '../_utils/rateLimit.js';
 import { searchAidesSchema } from '../_utils/validators.js';
 import { searchAides } from '../lib/search-query.js';
@@ -108,14 +110,18 @@ async function handler(req, res) {
                 level: 'info'
             });
 
-            const aide = await prisma.aide.findFirst({
-                where: effectiveParams.id ? { id: effectiveParams.id } : { slug: effectiveParams.slug },
-                include: {
+            let aide = await db.query.Aide.findFirst({
+                where: (a, { eq }) => effectiveParams.id ? eq(a.id, effectiveParams.id) : eq(a.slug, effectiveParams.slug),
+                with: {
                     category: true,
-                    situations: true,
-                    aidSituations: { include: { situation: true } },
+                    situations: {
+                        with: {
+                            LifeSituation: true
+                        }
+                    },
+                    aidSituations: { with: { situation: true } },
                     sourceDocument: {
-                        select: {
+                        columns: {
                             fetched_at: true,
                             source_url: true,
                         },
@@ -125,6 +131,11 @@ async function handler(req, res) {
 
             if (!aide || aide.statut !== 'publie') {
                 return res.status(404).json({ error: "Aide non trouvée" });
+            }
+
+            // Flatten Drizzle Many-To-Many representation back to Prisma array
+            if (aide.situations) {
+                aide.situations = aide.situations.map(s => s.LifeSituation).filter(Boolean);
             }
 
             const { sourceDocument, ...safeAide } = aide;
@@ -150,7 +161,7 @@ async function handler(req, res) {
         });
 
         // Ensure ONLY ONE declaration of items/total
-        const { items, total, facets } = await searchAides(prisma, effectiveParams);
+        const { items, total, facets } = await searchAides(effectiveParams);
 
         logger.info('SEARCH_AIDES_SUCCESS', {
             requestId,
@@ -188,20 +199,17 @@ async function handler(req, res) {
             const fallbackLimit = Math.min(50, Math.max(1, Number(req.query?.limit) || 20));
             const fallbackSkip = (fallbackPage - 1) * fallbackLimit;
 
-            const fallbackWhere = { statut: 'publie' };
-            if (req.query?.q) {
-                fallbackWhere.OR = [
-                    { titre: { contains: String(req.query.q), mode: 'insensitive' } },
-                ];
-            }
+            const fallbackWhere = req.query?.q 
+              ? and(eq(Aide.statut, 'publie'), ilike(Aide.titre, `%${String(req.query.q)}%`))
+              : eq(Aide.statut, 'publie');
 
-            const [fallbackItems, fallbackTotal] = await Promise.all([
-                prisma.aide.findMany({
+            const [fallbackItems, fallbackTotalRes] = await Promise.all([
+                db.query.Aide.findMany({
                     where: fallbackWhere,
-                    skip: fallbackSkip,
-                    take: fallbackLimit,
-                    orderBy: { updatedAt: 'desc' },
-                    select: {
+                    offset: fallbackSkip,
+                    limit: fallbackLimit,
+                    orderBy: desc(Aide.updatedAt),
+                    columns: {
                         id: true,
                         slug: true,
                         titre: true,
@@ -209,8 +217,9 @@ async function handler(req, res) {
                         statut: true,
                     },
                 }),
-                prisma.aide.count({ where: fallbackWhere }),
+                db.select({ value: count() }).from(Aide).where(fallbackWhere),
             ]);
+            const fallbackTotal = fallbackTotalRes[0]?.value || 0;
 
             logger.info('SEARCH_AIDES_FALLBACK_SUCCESS', { requestId, total: fallbackTotal });
             return res.status(200).json({

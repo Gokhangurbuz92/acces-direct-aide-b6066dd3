@@ -1,5 +1,7 @@
 
-import prisma from '../api/_utils/prisma.js';
+import { db } from '../src/db/index.js';
+import { Aide } from '../src/db/schema.js';
+import { eq, sql } from 'drizzle-orm';
 
 
 const aides = [
@@ -1015,24 +1017,22 @@ async function main() {
     let created = 0;
     let updated = 0;
 
-	for (const aideData of aides) {
-		// Remove fields that don't exist in Prisma schema
-		const cleanData = { ...aideData };
-		delete cleanData.sources;
+    for (const aideData of aides) {
+        const cleanData = { ...aideData };
+        delete cleanData.sources;
 
-		// Ensure published_at is set for published aides
-		if (cleanData.statut === 'publie' && !cleanData.published_at) {
-			cleanData.published_at = new Date();
+        if (cleanData.statut === 'publie' && !cleanData.published_at) {
+            cleanData.published_at = new Date();
         }
 
-        const existing = await prisma.aide.findUnique({
-            where: { slug: cleanData.slug }
+        const existing = await db.query.Aide.findFirst({
+            where: eq(Aide.slug, cleanData.slug),
+            columns: { id: true },
         });
 
-        await prisma.aide.upsert({
-            where: { slug: cleanData.slug },
-            update: cleanData,
-            create: cleanData,
+        await db.insert(Aide).values(cleanData).onConflictDoUpdate({
+            target: [Aide.slug],
+            set: cleanData,
         });
 
         if (existing) {
@@ -1044,16 +1044,12 @@ async function main() {
 
     console.log(`✅ Seeding aides complete: ${created} created, ${updated} updated`);
 
-    // Count published aides
-    const publishedCount = await prisma.aide.count({ where: { statut: 'publie' } });
-    console.log(`📊 Published aides: ${publishedCount}`);
+    const [{ count }] = await db.select({ count: sql`count(*)::int` }).from(Aide).where(eq(Aide.statut, 'publie'));
+    console.log(`📊 Published aides: ${count}`);
 }
 
 main()
     .catch((e) => {
         console.error('❌ Error:', e);
         process.exit(1);
-    })
-    .finally(async () => {
-        await prisma.$disconnect();
     });

@@ -1,4 +1,6 @@
-import prisma from '../_utils/prisma.js';
+import { db } from '../../src/db/index.js';
+import * as schema from '../../src/db/schema.js';
+import { eq, or, and, sql, desc, asc, ilike } from 'drizzle-orm';
 import { verifyAdmin } from '../_utils/auth.js';
 import { handleAdminCreate, handleAdminUpdate, handleAdminDelete } from '../_utils/crud.js';
 import { logger } from '../lib/logger.js'; // Ensure logger is imported
@@ -37,31 +39,31 @@ function extractSlugFromPath(url, host = 'localhost') {
 function buildOrderBy(sort) {
     const s = String(sort || '').trim();
     if (!s || s === 'recent' || s === '-recent' || s === '-date_publication') {
-        return [{ date_publication: 'desc' }, { id: 'desc' }];
+        return [desc(schema.Actualite.date_publication), desc(schema.Actualite.id)];
     }
     if (s === 'date_publication') {
-        return [{ date_publication: 'asc' }, { id: 'asc' }];
+        return [asc(schema.Actualite.date_publication), asc(schema.Actualite.id)];
     }
     if (s === 'updated_date') {
-        return [{ updatedAt: 'asc' }, { id: 'asc' }];
+        return [asc(schema.Actualite.updatedAt), asc(schema.Actualite.id)];
     }
     if (s === '-updated_date') {
-        return [{ updatedAt: 'desc' }, { id: 'desc' }];
+        return [desc(schema.Actualite.updatedAt), desc(schema.Actualite.id)];
     }
     if (s === 'quality') {
-        return [{ quality_score: 'desc' }, { date_publication: 'desc' }, { id: 'desc' }];
+        return [desc(schema.Actualite.quality_score), desc(schema.Actualite.date_publication), desc(schema.Actualite.id)];
     }
     if (s === '-quality') {
-        return [{ quality_score: 'asc' }, { id: 'asc' }];
+        return [asc(schema.Actualite.quality_score), asc(schema.Actualite.id)];
     }
     if (s === 'titre') {
-        return [{ titre: 'asc' }, { id: 'asc' }];
+        return [asc(schema.Actualite.titre), asc(schema.Actualite.id)];
     }
     if (s === '-titre') {
-        return [{ titre: 'desc' }, { id: 'desc' }];
+        return [desc(schema.Actualite.titre), desc(schema.Actualite.id)];
     }
     // "relevance" fallback: stable recent-first ordering.
-    return [{ date_publication: 'desc' }, { id: 'desc' }];
+    return [desc(schema.Actualite.date_publication), desc(schema.Actualite.id)];
 }
 
 /**
@@ -81,10 +83,12 @@ export default async function handler(req, res) {
         }
 
         // CRUD operations (Admin only enforced in crud utils)
+        // CRUD operations (Admin only enforced in crud utils)
         const id = queryWithPath.id ? String(queryWithPath.id) : '';
-        if (req.method === 'POST') return handleAdminCreate(req, res, prisma.actualite);
-        if (req.method === 'PUT') return handleAdminUpdate(req, res, prisma.actualite, id);
-        if (req.method === 'DELETE') return handleAdminDelete(req, res, prisma.actualite, id);
+        // Note: CRUD utils will need full migration to drizzle too if not done.
+        if (req.method === 'POST') return handleAdminCreate(req, res, db.query.Actualite);
+        if (req.method === 'PUT') return handleAdminUpdate(req, res, db.query.Actualite, id);
+        if (req.method === 'DELETE') return handleAdminDelete(req, res, db.query.Actualite, id);
 
         if (req.method !== 'GET' && req.method !== 'HEAD') {
             return res.status(405).json({ error: 'Method not allowed' });
@@ -120,11 +124,11 @@ export default async function handler(req, res) {
 
         // 1) Single item (ID or slug)
         if (effectiveParams.id || effectiveParams.slug) {
-            const item = await prisma.actualite.findFirst({
-                where: effectiveParams.id ? { id: effectiveParams.id } : { slug: effectiveParams.slug },
-                include: {
+            const item = await db.query.Actualite.findFirst({
+                where: effectiveParams.id ? eq(schema.Actualite.id, effectiveParams.id) : eq(schema.Actualite.slug, effectiveParams.slug),
+                with: {
                   sourceDocument: {
-                    select: {
+                    columns: {
                       fetched_at: true,
                       source_url: true,
                     },
@@ -152,53 +156,49 @@ export default async function handler(req, res) {
         }
 
         // 2) Listing / search
-        const and = [];
+        const andConditions = [];
 
         if (effectiveParams.statut) {
-            and.push({ statut: effectiveParams.statut });
+            andConditions.push(eq(schema.Actualite.statut, effectiveParams.statut));
         }
         if (effectiveParams.categorie) {
-            and.push({ categorie: effectiveParams.categorie });
+            andConditions.push(eq(schema.Actualite.categorie, effectiveParams.categorie));
         }
         if (effectiveParams.territoire) {
-            and.push({ territoire: effectiveParams.territoire });
+            andConditions.push(eq(schema.Actualite.territoire, effectiveParams.territoire));
         }
         if (effectiveParams.source) {
-            const source = effectiveParams.source;
-            and.push({
-                OR: [
-                    { source_name: { contains: source, mode: 'insensitive' } },
-                    { source_nom: { contains: source, mode: 'insensitive' } },
-                    { source: { contains: source, mode: 'insensitive' } },
-                ],
-            });
+            const source = `%${effectiveParams.source}%`;
+            andConditions.push(or(
+                ilike(schema.Actualite.source_name, source),
+                ilike(schema.Actualite.source_nom, source),
+                ilike(schema.Actualite.source, source)
+            ));
         }
         if (effectiveParams.q) {
-            const q = effectiveParams.q;
-            and.push({
-                OR: [
-                    { titre: { contains: q, mode: 'insensitive' } },
-                    { resume: { contains: q, mode: 'insensitive' } },
-                    { contenu: { contains: q, mode: 'insensitive' } },
-                ],
-            });
+            const q = `%${effectiveParams.q}%`;
+            andConditions.push(or(
+                ilike(schema.Actualite.titre, q),
+                ilike(schema.Actualite.resume, q),
+                ilike(schema.Actualite.contenu, q)
+            ));
         }
 
-        const where = and.length ? { AND: and } : {};
-        const orderBy = buildOrderBy(effectiveParams.sort);
+        const whereCondition = andConditions.length > 0 ? and(...andConditions) : undefined;
+        const orderByArr = buildOrderBy(effectiveParams.sort);
         const page = effectiveParams.page || 1;
         const pageSize = effectiveParams.pageSize || 10;
         const skip = (page - 1) * pageSize;
 
         try {
-            const [total, items] = await Promise.all([
-                prisma.actualite.count({ where }),
-                prisma.actualite.findMany({
-                    where,
-                    orderBy,
-                    skip,
-                    take: pageSize,
-                    select: {
+            const [totalCountResult, items] = await Promise.all([
+                db.select({ count: sql`count(*)` }).from(schema.Actualite).where(whereCondition),
+                db.query.Actualite.findMany({
+                    where: whereCondition,
+                    orderBy: orderByArr,
+                    offset: skip,
+                    limit: pageSize,
+                    columns: {
                         id: true,
                         slug: true,
                         titre: true,
@@ -218,8 +218,10 @@ export default async function handler(req, res) {
                         source_url: true,
                         quality_score: true,
                         fetched_at: true,
+                    },
+                    with: {
                         sourceDocument: {
-                          select: {
+                          columns: {
                             fetched_at: true,
                             source_url: true,
                           },
@@ -227,6 +229,7 @@ export default async function handler(req, res) {
                     },
                 }),
             ]);
+            const total = Number(totalCountResult[0].count);
 
             const itemsWithProvenance = items.map((item) => {
               const { sourceDocument, ...safeItem } = item;

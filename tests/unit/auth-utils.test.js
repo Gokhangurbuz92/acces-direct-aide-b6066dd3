@@ -1,3 +1,7 @@
+import { vi } from "vitest";
+vi.stubEnv("KV_REST_API_URL", "http://localhost");
+vi.stubEnv("KV_REST_API_TOKEN", "mock-token");
+
 import { afterEach, describe, expect, it } from 'vitest';
 
 import {
@@ -7,7 +11,7 @@ import {
   signAdminSessionToken,
   verifyAdminSessionToken,
 } from '../../api/_utils/auth.js';
-import { signProToken } from '../../api/lib/pro-auth.js';
+import { signProToken } from '../../api/_utils/auth.js';
 
 const originalAuthMode = process.env.AUTH_MODE;
 const originalAuthSecret = process.env.AUTH_SECRET;

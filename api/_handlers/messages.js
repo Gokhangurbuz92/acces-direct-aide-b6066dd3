@@ -1,5 +1,9 @@
 // @ts-nocheck
-import prisma from '../_utils/prisma.js';
+import crypto from 'node:crypto';
+import fs from 'fs';
+import { db } from '../../src/db/index.js';
+import * as schema from '../../src/db/schema.js';
+import { eq, and, desc, asc } from 'drizzle-orm';
 import { checkRateLimit, getClientIp, getRateLimitStatus } from '../_utils/rateLimit.js';
 import { requireCitizenUser } from '../_utils/rdv-public-auth.js';
 import {
@@ -67,35 +71,20 @@ async function enforceRateLimit(req, action, subject) {
  * @param {number} limit
  */
 async function loadConversationById(conversationId, limit) {
-  return prisma.rdvConversation.findUnique({
-    where: {
-      id: conversationId,
-    },
-    include: {
+  return db.query.RdvConversation.findFirst({
+    where: (conv, { eq }) => eq(conv.id, conversationId),
+    with: {
       structure: {
-        select: {
-          id: true,
-          slug: true,
-          nom: true,
-        },
+        columns: { id: true, slug: true, nom: true },
       },
       appointment: {
-        select: {
-          id: true,
-          startAt: true,
-          endAt: true,
-          status: true,
-          service: {
-            select: {
-              id: true,
-              name: true,
-            },
-          },
+        columns: { id: true, startAt: true, endAt: true, status: true },
+        with: {
+          service: { columns: { id: true, name: true } },
         },
       },
       messages: {
-        orderBy: { createdAt: 'asc' },
-        take: limit,
+        orderBy: (msg, { asc }) => [asc(msg.createdAt)],
       },
     },
   });
@@ -114,44 +103,27 @@ async function getConversations(req, res, user) {
   const url = getUrl(req);
   const limit = toLimit(url.searchParams.get('limit'), 20, 100);
 
-  const conversations = await prisma.rdvConversation.findMany({
-    where: {
-      citizenUserId: user.id,
-    },
-    take: limit,
-    orderBy: {
-      lastMessageAt: 'desc',
-    },
-    include: {
-      structure: {
-        select: {
-          id: true,
-          slug: true,
-          nom: true,
+  let conversations;
+  try {
+    conversations = await db.query.RdvConversation.findMany({
+      where: (conv, { eq }) => eq(conv.citizenUserId, user.id),
+      limit,
+      orderBy: (conv, { desc }) => [desc(conv.lastMessageAt)],
+      with: {
+        structure: { columns: { id: true, slug: true, nom: true } },
+        appointment: {
+          columns: { id: true, startAt: true, endAt: true, status: true },
+          with: { service: { columns: { id: true, name: true } } },
+        },
+        messages: {
+          orderBy: (msg, { desc }) => [desc(msg.createdAt)],
         },
       },
-      appointment: {
-        select: {
-          id: true,
-          startAt: true,
-          endAt: true,
-          status: true,
-          service: {
-            select: {
-              id: true,
-              name: true,
-            },
-          },
-        },
-      },
-      messages: {
-        orderBy: {
-          createdAt: 'desc',
-        },
-        take: 1,
-      },
-    },
-  });
+    });
+  } catch (err) {
+    fs.appendFileSync('API_ERROR.txt', 'GET CONV ERROR: ' + err.stack + ' | CODE: ' + err.code + ' | DETAIL: ' + err.detail + '\n');
+    throw err;
+  }
 
   return res.status(200).json({
     ok: true,
@@ -172,7 +144,13 @@ async function getConversation(req, res, user, conversationId) {
   const url = getUrl(req);
   const limit = toLimit(url.searchParams.get('limit'), 50, 200);
 
-  const conversation = await loadConversationById(conversationId, limit);
+  let conversation;
+  try {
+    conversation = await loadConversationById(conversationId, limit);
+  } catch (err) {
+    console.error("GET CONVERSATION BY ID ERROR", err);
+    throw err;
+  }
   if (!conversation) {
     return res.status(404).json({ error: 'Conversation not found' });
   }
@@ -201,52 +179,40 @@ async function sendMessage(req, res, user, conversationId) {
     return res.status(400).json({ error: 'Message body is required' });
   }
 
-  const created = await prisma.$transaction(async (tx) => {
-    const conversation = await tx.rdvConversation.findUnique({
-      where: {
-        id: conversationId,
-      },
-      include: {
-        structure: {
-          select: {
-            id: true,
-            nom: true,
-          },
+  let created;
+  try {
+    created = await db.transaction(async (tx) => {
+      const conversation = await tx.query.RdvConversation.findFirst({
+        where: (conv, { eq }) => eq(conv.id, conversationId),
+        with: {
+          structure: { columns: { id: true, nom: true } },
+          appointment: { columns: { id: true, startAt: true } },
         },
-        appointment: {
-          select: {
-            id: true,
-            startAt: true,
-          },
-        },
-      },
-    });
+      });
 
-    if (!conversation) return null;
-    if (conversation.citizenUserId !== user.id) {
-      return { forbidden: true };
-    }
+      if (!conversation) return null;
+      if (conversation.citizenUserId !== user.id) {
+        return { forbidden: true };
+      }
 
-    const message = await tx.rdvConversationMessage.create({
-      data: {
+      const message = (await tx.insert(schema.RdvConversationMessage).values({
+        id: crypto.randomUUID(),
         conversationId: conversation.id,
         senderType: 'USER',
         senderCitizenUserId: user.id,
         body,
-      },
-    });
+      }).returning())[0];
 
-    await tx.rdvConversation.update({
-      where: {
-        id: conversation.id,
-      },
-      data: {
+      await tx.update(schema.RdvConversation).set({
         lastMessageAt: message.createdAt,
-      },
-    });
+      }).where(eq(schema.RdvConversation.id, conversation.id));
 
-    return { conversation, message, forbidden: false };
-  });
+      return { conversation, message, forbidden: false };
+    });
+  } catch (err) {
+    fs.appendFileSync('API_ERROR.txt', 'TX ERROR: ' + err.stack + ' | CODE: ' + err.code + ' | DETAIL: ' + err.detail + ' | MSG: ' + err.message + '\n');
+    throw err;
+  }
 
   if (!created) {
     return res.status(404).json({ error: 'Conversation not found' });
@@ -255,19 +221,14 @@ async function sendMessage(req, res, user, conversationId) {
     return res.status(403).json({ error: 'Forbidden' });
   }
 
-  const recipient = await prisma.proUser.findFirst({
-    where: {
-      structureId: created.conversation.structureId,
-      status: 'active',
-      notificationEmailEnabled: true,
-    },
-    select: {
-      email: true,
-      notificationEmailEnabled: true,
-    },
-    orderBy: {
-      createdAt: 'asc',
-    },
+  const recipient = await db.query.ProUser.findFirst({
+    where: (pro, { eq, and }) => and(
+      eq(pro.structureId, created.conversation.structureId),
+      eq(pro.status, 'active'),
+      eq(pro.notificationEmailEnabled, true)
+    ),
+    columns: { email: true, notificationEmailEnabled: true },
+    orderBy: (pro, { asc }) => [asc(pro.createdAt)],
   });
 
   try {
@@ -300,20 +261,11 @@ async function getOrCreateFromAppointment(req, res, user, appointmentId) {
     return res.status(writeLimit.status).json(writeLimit.error);
   }
 
-  const appointment = await prisma.proAppointment.findUnique({
-    where: {
-      id: appointmentId,
-    },
-    select: {
-      id: true,
-      citizenUserId: true,
-      structureId: true,
-      structure: {
-        select: {
-          slug: true,
-          nom: true,
-        },
-      },
+  const appointment = await db.query.ProAppointment.findFirst({
+    where: (app, { eq }) => eq(app.id, appointmentId),
+    columns: { id: true, citizenUserId: true, structureId: true },
+    with: {
+      structure: { columns: { slug: true, nom: true } },
     },
   });
 
@@ -325,53 +277,47 @@ async function getOrCreateFromAppointment(req, res, user, appointmentId) {
     return res.status(403).json({ error: 'Forbidden' });
   }
 
-  const existing = await prisma.rdvConversation.findUnique({
-    where: {
-      appointmentId: appointment.id,
-    },
-    select: {
-      id: true,
-      citizenUserId: true,
-    },
+  const existing = await db.query.RdvConversation.findFirst({
+    where: (conv, { eq }) => eq(conv.appointmentId, appointment.id),
+    columns: { id: true, citizenUserId: true },
   });
 
   if (existing && existing.citizenUserId !== user.id) {
     return res.status(403).json({ error: 'Forbidden' });
   }
 
-  const conversation = await prisma.rdvConversation.upsert({
-    where: {
-      appointmentId: appointment.id,
-    },
-    update: {},
-    create: {
+  try {
+    const rawConversation = (await db.insert(schema.RdvConversation).values({
+      id: crypto.randomUUID(),
       appointmentId: appointment.id,
       structureId: appointment.structureId,
       citizenUserId: user.id,
       lastMessageAt: new Date(),
-    },
-    select: {
-      id: true,
-      appointmentId: true,
-      lastMessageAt: true,
-      structure: {
-        select: {
-          slug: true,
-          nom: true,
-        },
-      },
-    },
-  });
+      updatedAt: new Date(),
+    }).onConflictDoUpdate({
+      target: schema.RdvConversation.appointmentId,
+      set: { updatedAt: new Date() },
+    }).returning())[0];
 
-  return res.status(200).json({
-    ok: true,
-    conversationId: conversation.id,
-    appointmentId: conversation.appointmentId,
-    structure: {
-      slug: conversation.structure?.slug || null,
-      name: conversation.structure?.nom || null,
-    },
-  });
+    const conversation = await db.query.RdvConversation.findFirst({
+      where: (conv, { eq }) => eq(conv.id, rawConversation.id),
+      columns: { id: true, appointmentId: true, lastMessageAt: true },
+      with: { structure: { columns: { slug: true, nom: true } } },
+    });
+    
+    return res.status(200).json({
+      ok: true,
+      conversationId: conversation.id,
+      appointmentId: conversation.appointmentId,
+      structure: {
+        slug: conversation.structure?.slug || null,
+        name: conversation.structure?.nom || null,
+      },
+    });
+  } catch (err) {
+    fs.appendFileSync('API_ERROR.txt', 'UPSERT ERROR: ' + err.stack + ' | CODE: ' + err.code + ' | DETAIL: ' + err.detail + ' | MSG: ' + err.message + '\n');
+    throw err;
+  }
 }
 
 /**

@@ -1,6 +1,12 @@
+import { vi } from "vitest";
+vi.stubEnv("KV_REST_API_URL", "http://localhost");
+vi.stubEnv("KV_REST_API_TOKEN", "mock-token");
+
 import { describe, expect, it } from 'vitest';
 import apiHandler from '../../api/index.js';
-import prisma from '../../api/_utils/prisma.js';
+import { db } from '../../src/db/index.js';
+import * as schema from '../../src/db/schema.js';
+import { eq, sql } from 'drizzle-orm';
 
 /**
  * @param {{
@@ -124,8 +130,8 @@ describe('P8-A cache policy contracts', () => {
     expect(String(sitemapOk.getHeader('cache-control'))).toContain('s-maxage=3600');
     expect(String(sitemapOk.getHeader('cache-control'))).toContain('stale-while-revalidate=86400');
 
-    const originalFindMany = prisma.aide.findMany;
-    prisma.aide.findMany = async () => {
+    const originalFindMany = db.query.Aide.findMany;
+    db.query.Aide.findMany = async () => {
       throw new Error('db unavailable');
     };
 
@@ -134,7 +140,7 @@ describe('P8-A cache policy contracts', () => {
       expect(sitemapDown.statusCode).toBe(503);
       expect(String(sitemapDown.getHeader('cache-control')).toLowerCase()).toContain('no-store');
     } finally {
-      prisma.aide.findMany = originalFindMany;
+      db.query.Aide.findMany = originalFindMany;
     }
   });
 });

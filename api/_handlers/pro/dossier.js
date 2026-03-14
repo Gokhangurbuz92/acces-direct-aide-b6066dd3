@@ -1,8 +1,10 @@
 import logger from '../../_utils/logger.js';
 // @ts-nocheck
-import prisma from '../../_utils/prisma.js';
+import { db } from '../../../src/db/index.js';
+import { SharedDiagnostic } from '../../../src/db/schema.js';
+import { eq } from 'drizzle-orm';
 import { requireProAuth, requireProStructureContext } from '../../_utils/auth.js';
-import { logProAudit } from '../../lib/pro-auth.js';
+import { logProAudit } from '../../_utils/auth.js';
 /**
  * Pro Dossier Handler
  *
@@ -27,8 +29,8 @@ async function handler(req, res) {
     try {
         if (req.method === 'GET') {
             // 1. Retrieve the shared diagnostic
-            const shared = await prisma.sharedDiagnostic.findUnique({
-                where: { id: shareId },
+            const shared = await db.query.SharedDiagnostic.findFirst({
+                where: eq(SharedDiagnostic.id, shareId)
             });
 
             if (!shared) {
@@ -44,10 +46,11 @@ async function handler(req, res) {
             }
 
             // 3. Increment view count (non-blocking)
-            prisma.sharedDiagnostic.update({
-                where: { id: shareId },
-                data: { viewCount: { increment: 1 } },
-            }).catch(() => { /* non-blocking */ });
+            // Need a separate query to fetch current count then increment, or raw SQL.
+            db.update(SharedDiagnostic)
+                .set({ viewCount: shared.viewCount + 1 })
+                .where(eq(SharedDiagnostic.id, shareId))
+                .catch(() => { /* non-blocking */ });
 
             // 4. RGPD audit: log who accessed what
             await logProAudit('DOSSIER_VIEWED', userId, structureId, {
@@ -77,8 +80,8 @@ async function handler(req, res) {
             }
 
             // We store follow-up metadata in the results JSON
-            const shared = await prisma.sharedDiagnostic.findUnique({
-                where: { id: shareId },
+            const shared = await db.query.SharedDiagnostic.findFirst({
+                where: eq(SharedDiagnostic.id, shareId)
             });
 
             if (!shared) {
@@ -96,10 +99,9 @@ async function handler(req, res) {
                 },
             };
 
-            await prisma.sharedDiagnostic.update({
-                where: { id: shareId },
-                data: { results: updatedResults },
-            });
+            await db.update(SharedDiagnostic)
+                .set({ results: updatedResults })
+                .where(eq(SharedDiagnostic.id, shareId));
 
             await logProAudit('DOSSIER_STATUS_UPDATED', userId, structureId, {
                 shareId,

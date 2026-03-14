@@ -1,6 +1,5 @@
 import crypto from 'crypto';
-import bcrypt from 'bcryptjs';
-import { signJwt, verifyJwt } from '../lib/pro-auth.js';
+import { signJwt, verifyJwt } from '../_utils/auth.js';
 import { env } from './env.js';
 
 export const USER_SESSION_COOKIE_NAME = 'ada_user_session';
@@ -51,12 +50,31 @@ export function generateAuthToken() {
   return crypto.randomBytes(32).toString('hex');
 }
 
+const SCRYPT_PARAMS = { N: 16384, r: 8, p: 1 };
+const KEY_LEN = 64;
+
 /**
  * @param {string} password
  * @returns {Promise<string>}
  */
-export function hashPassword(password) {
-  return bcrypt.hash(password, 10);
+export async function hashPassword(password) {
+  return new Promise((resolve, reject) => {
+    const salt = crypto.randomBytes(16).toString('hex');
+    crypto.scrypt(password, salt, KEY_LEN, SCRYPT_PARAMS, (err, derivedKey) => {
+      if (err) reject(err);
+      else resolve(`scrypt:${salt}:${derivedKey.toString('hex')}`);
+    });
+  });
+}
+
+/**
+ * @param {string} password
+ * @returns {string}
+ */
+export function hashPasswordSync(password) {
+  const salt = crypto.randomBytes(16).toString('hex');
+  const derivedKey = crypto.scryptSync(password, salt, KEY_LEN, SCRYPT_PARAMS);
+  return `scrypt:${salt}:${derivedKey.toString('hex')}`;
 }
 
 /**
@@ -66,7 +84,19 @@ export function hashPassword(password) {
  */
 export async function verifyPassword(password, passwordHash) {
   if (!password || !passwordHash) return false;
-  return bcrypt.compare(password, passwordHash);
+  if (!passwordHash.startsWith('scrypt:')) return false;
+
+  const [, salt, keyHex] = passwordHash.split(':');
+  return new Promise((resolve, reject) => {
+    crypto.scrypt(password, salt, KEY_LEN, SCRYPT_PARAMS, (err, derivedKey) => {
+      if (err) reject(err);
+      else {
+        const keyBuffer = Buffer.from(keyHex, 'hex');
+        if (keyBuffer.length !== derivedKey.length) return resolve(false);
+        resolve(crypto.timingSafeEqual(keyBuffer, derivedKey));
+      }
+    });
+  });
 }
 
 /**

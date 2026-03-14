@@ -1,5 +1,11 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import prisma from '../../api/_utils/prisma.js';
+import { vi } from "vitest";
+vi.stubEnv("KV_REST_API_URL", "http://localhost");
+vi.stubEnv("KV_REST_API_TOKEN", "mock-token");
+
+import { describe, it, expect, beforeEach, afterEach } from 'vitest';
+import { db } from '../../src/db/index.js';
+import * as schema from '../../src/db/schema.js';
+import { eq, sql } from 'drizzle-orm';
 import { kv } from '../../api/_utils/kv.js';
 
 const FEED_URL = 'http://example.test/rss-p6-cron';
@@ -51,6 +57,26 @@ vi.mock('fs', async () => {
   return { ...mocked, default: mocked };
 });
 
+const mockKvStore = new Map();
+vi.mock('../../api/_utils/kv.js', () => ({
+  kv: {
+    get: vi.fn(async (k) => mockKvStore.get(k) || null),
+    set: vi.fn(async (k, v, options) => {
+      if (options?.nx && mockKvStore.has(k)) {
+        return null;
+      }
+      mockKvStore.set(k, v);
+      return 'OK';
+    }),
+    del: vi.fn(async (k) => {
+      mockKvStore.delete(k);
+      return 1;
+    }),
+    incr: vi.fn(async () => 1),
+    expire: vi.fn(async () => 1),
+  },
+}));
+
 function createMockReq({ headers = {}, query = {}, url = '/api/cron/actualites' } = {}) {
   return {
     method: 'GET',
@@ -96,10 +122,16 @@ describe('P6 Cron Actualites (secure + idempotent)', () => {
   beforeEach(() => {
     process.env.CRON_SECRET = 'test-cron-secret';
     originalFetch = global.fetch;
-    global.fetch = vi.fn().mockResolvedValue({
-      ok: true,
-      status: 200,
-      text: vi.fn().mockResolvedValue(RSS_XML),
+    global.fetch = vi.fn().mockImplementation(async (url, options) => {
+      const urlStr = String(url);
+      if (urlStr.includes('example.test')) {
+        return {
+          ok: true,
+          status: 200,
+          text: vi.fn().mockResolvedValue(RSS_XML),
+        };
+      }
+      return originalFetch(url, options);
     });
   });
 
@@ -108,9 +140,9 @@ describe('P6 Cron Actualites (secure + idempotent)', () => {
     global.fetch = originalFetch;
 
     await kv.del('cron:actualites:lock');
-    await prisma.actualite.deleteMany({ where: { canonical_url: CANONICAL_URL } });
-    await prisma.rssSource.deleteMany({ where: { feed_url: FEED_URL } });
-    await prisma.cronRun.deleteMany({ where: { job: 'actualites' } });
+    await await db.delete(schema.Actualite);
+    await await db.delete(schema.RssSource);
+    await await db.delete(schema.CronRun);
   });
 
   it('prevents flooding via lock and remains idempotent across runs', async () => {
@@ -123,8 +155,9 @@ describe('P6 Cron Actualites (secure + idempotent)', () => {
       headers: { 'x-cron-secret': 'test-cron-secret' },
     });
     const res1 = createMockRes();
-
     await handler(req1, res1);
+    console.log("RES1 BODY:", res1.body);
+    if (res1.statusCode !== 200) console.error("TEST FAILED WITH 500:", res1.body);
     expect(res1.statusCode).toBe(200);
     expect(res1.body?.cronRunId).toBeTruthy();
 
@@ -142,10 +175,9 @@ describe('P6 Cron Actualites (secure + idempotent)', () => {
 
     // Simulate lock expiry + cooldown window passing (no waiting in tests).
     await kv.del('cron:actualites:lock');
-    await prisma.cronRun.updateMany({
-      where: { job: 'actualites' },
-      data: { startedAt: new Date(Date.now() - 11 * 60 * 1000) },
-    });
+    await await db.update(schema.CronRun)
+      .set({ startedAt: new Date(Date.now() - 11 * 60 * 1000) })
+      .where(eq(schema.CronRun.job, 'actualites'));
 
     const req3 = createMockReq({
       url: '/api/cron/actualites?limit=1',
@@ -158,10 +190,13 @@ describe('P6 Cron Actualites (secure + idempotent)', () => {
     expect(res3.statusCode).toBe(200);
     expect(res3.body?.cronRunId).toBeTruthy();
 
-    const count = await prisma.actualite.count({ where: { canonical_url: CANONICAL_URL } });
-    expect(count).toBe(1);
+    const count = await (await db.select({ count: sql`count(*)` }).from(schema.Actualite))[0].count;
+    expect(Number(count)).toBe(1);
 
-    const runs = await prisma.cronRun.findMany({ where: { job: 'actualites' }, orderBy: { startedAt: 'asc' } });
+    const runs = await db.query.CronRun.findMany({
+      where: eq(schema.CronRun.job, 'actualites'),
+      orderBy: (cr, { asc }) => [asc(cr.startedAt)],
+    });
     expect(runs).toHaveLength(3);
     expect(runs[0]?.status).toBe('success');
     expect(runs[1]?.status).toBe('skipped');
@@ -180,6 +215,7 @@ describe('P6 Cron Actualites (secure + idempotent)', () => {
     const successRes = createMockRes();
 
     await handler(successReq, successRes);
+    if (successRes.statusCode !== 200) console.error("TEST FAILED WITH 500:", successRes.body);
     expect(successRes.statusCode).toBe(200);
 
     // Bypass lock TTL to reach cooldown logic immediately.
@@ -197,10 +233,10 @@ describe('P6 Cron Actualites (secure + idempotent)', () => {
     expect(cooldownRes.body?.skipped).toBe(true);
     expect(cooldownRes.body?.reason).toBe('cooldown');
 
-    const latestRuns = await prisma.cronRun.findMany({
-      where: { job: 'actualites' },
-      orderBy: { startedAt: 'desc' },
-      take: 2,
+    const latestRuns = await db.query.CronRun.findMany({
+      where: eq(schema.CronRun.job, 'actualites'),
+      orderBy: (cr, { desc }) => [desc(cr.startedAt)],
+      limit: 2,
     });
     expect(latestRuns).toHaveLength(2);
     expect(latestRuns[0]?.status).toBe('skipped');

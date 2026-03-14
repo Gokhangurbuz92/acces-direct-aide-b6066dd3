@@ -1,6 +1,7 @@
 import { checkRateLimit, getClientIp, getRateLimitStatus } from '../../_utils/rateLimit.js';
 import logger from '../../_utils/logger.js';
-import prisma from '../../_utils/prisma.js';
+import { db } from '../../../src/db/index.js';
+import { sql } from 'drizzle-orm';
 import { verifyAdmin } from '../../_utils/auth.js';
 
 /**
@@ -29,8 +30,8 @@ export default async function handler(req, res) {
     }
 
     try {
-        // Raw SQL because Prisma can't select/filter on Unsupported("vector") types
-        const aides = await prisma.$queryRawUnsafe(`
+        // Raw SQL because Drizzle can't select/filter on Unsupported("vector") column types
+        const aidesRes = await db.execute(sql`
             SELECT
                 id,
                 titre,
@@ -41,6 +42,7 @@ export default async function handler(req, res) {
             FROM "Aide"
             ORDER BY "updatedAt" DESC
         `);
+        const aides = aidesRes.rows || aidesRes;
 
         return res.status(200).json({
             success: true,

@@ -1,4 +1,6 @@
-import prisma from '../../../_utils/prisma.js';
+import { db } from '../../../../src/db/index.js';
+import { ProAppointment } from '../../../../src/db/schema.js';
+import { eq } from 'drizzle-orm';
 import { requireProStructureContext } from '../../../_utils/auth.js';
 import { withProRdvHandler } from '../../../_utils/with-pro-rdv-handler.js';
 /**
@@ -17,18 +19,15 @@ async function handler(req, res) {
   const id = String(req.body?.id || '').trim();
   if (!id) return res.status(400).json({ error: 'Missing appointment ID' });
 
-  const appointment = await prisma.proAppointment.findUnique({
-    where: { id },
+  const appointment = await db.query.ProAppointment.findFirst({
+    where: (pa, { eq }) => eq(pa.id, id),
   });
   if (!appointment) return res.status(404).json({ error: 'Appointment not found' });
   if (appointment.structureId !== proCtx.structureId) {
     return res.status(403).json({ error: 'Forbidden' });
   }
 
-  const updated = await prisma.proAppointment.update({
-    where: { id },
-    data: { status: 'cancelled' },
-  });
+  const [updated] = await db.update(ProAppointment).set({ status: 'cancelled' }).where(eq(ProAppointment.id, id)).returning();
 
   return res.status(200).json({
     ok: true,

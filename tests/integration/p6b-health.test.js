@@ -1,5 +1,26 @@
+import { vi } from "vitest";
+vi.stubEnv("KV_REST_API_URL", "http://localhost");
+vi.stubEnv("KV_REST_API_TOKEN", "mock-token");
+
+vi.mock('@vercel/kv', () => {
+  const mockKv = {
+    get: vi.fn().mockResolvedValue('ok'),
+    set: vi.fn().mockResolvedValue('OK'),
+    del: vi.fn().mockResolvedValue(1),
+    incr: vi.fn().mockResolvedValue(1),
+  };
+  return {
+    __esModule: true,
+    createClient: vi.fn(() => mockKv),
+    kv: mockKv,
+    default: mockKv,
+  };
+});
+
 import { describe, it, expect, afterEach, beforeEach } from 'vitest';
-import prisma from '../../api/_utils/prisma.js';
+import { db } from '../../src/db/index.js';
+import * as schema from '../../src/db/schema.js';
+import { eq, sql } from 'drizzle-orm';
 import health from '../../api/_handlers/health.js';
 import healthDeep from '../../api/_handlers/health-deep.js';
 
@@ -47,16 +68,30 @@ describe('P6-B+ Health endpoints', () => {
   const ORIGINAL_STALE = process.env.CRON_ACTUALITES_STALE_MINUTES;
   const ORIGINAL_FAIL = process.env.CRON_ACTUALITES_FAIL_MINUTES;
 
+  const ORIGINAL_STORAGE_ENDPOINT = process.env.STORAGE_ENDPOINT;
+  const ORIGINAL_STORAGE_BUCKET = process.env.STORAGE_BUCKET;
+  const ORIGINAL_STORAGE_ACCESS_KEY_ID = process.env.STORAGE_ACCESS_KEY_ID;
+  const ORIGINAL_STORAGE_SECRET_ACCESS_KEY = process.env.STORAGE_SECRET_ACCESS_KEY;
+
   beforeEach(async () => {
     delete process.env.CRON_ACTUALITES_STALE_MINUTES;
     delete process.env.CRON_ACTUALITES_FAIL_MINUTES;
-    await prisma.cronRun.deleteMany({ where: { job: 'actualites' } });
+    // Prevent checkStorage() from attempting real S3 connections
+    delete process.env.STORAGE_ENDPOINT;
+    delete process.env.STORAGE_BUCKET;
+    delete process.env.STORAGE_ACCESS_KEY_ID;
+    delete process.env.STORAGE_SECRET_ACCESS_KEY;
+    await db.delete(schema.CronRun);
   });
 
   afterEach(async () => {
     process.env.CRON_ACTUALITES_STALE_MINUTES = ORIGINAL_STALE;
     process.env.CRON_ACTUALITES_FAIL_MINUTES = ORIGINAL_FAIL;
-    await prisma.cronRun.deleteMany({ where: { job: 'actualites' } });
+    process.env.STORAGE_ENDPOINT = ORIGINAL_STORAGE_ENDPOINT;
+    process.env.STORAGE_BUCKET = ORIGINAL_STORAGE_BUCKET;
+    process.env.STORAGE_ACCESS_KEY_ID = ORIGINAL_STORAGE_ACCESS_KEY_ID;
+    process.env.STORAGE_SECRET_ACCESS_KEY = ORIGINAL_STORAGE_SECRET_ACCESS_KEY;
+    await db.delete(schema.CronRun);
   });
 
   it('GET /api/health returns minimal ok payload + x-request-id', async () => {
@@ -106,15 +141,14 @@ describe('P6-B+ Health endpoints', () => {
   });
 
   it('GET /api/health/deep reports cron freshness when latest success is recent', async () => {
-    await prisma.cronRun.create({
-      data: {
+    await (await db.insert(schema.CronRun).values({
         job: 'actualites',
         status: 'success',
         startedAt: new Date(),
         finishedAt: new Date(),
         durationMs: 20,
       },
-    });
+    ).returning())[0];
 
     const req = mockReq({
       url: '/api/health/deep',
@@ -138,15 +172,14 @@ describe('P6-B+ Health endpoints', () => {
     process.env.CRON_ACTUALITES_STALE_MINUTES = '1';
     process.env.CRON_ACTUALITES_FAIL_MINUTES = '999';
 
-    await prisma.cronRun.create({
-      data: {
+    await (await db.insert(schema.CronRun).values({
         job: 'actualites',
         status: 'success',
         startedAt: new Date(Date.now() - 5 * 60 * 1000),
         finishedAt: new Date(Date.now() - 5 * 60 * 1000),
         durationMs: 20,
       },
-    });
+    ).returning())[0];
 
     const req = mockReq({
       url: '/api/health/deep',
@@ -171,15 +204,14 @@ describe('P6-B+ Health endpoints', () => {
     process.env.CRON_ACTUALITES_STALE_MINUTES = '1';
     process.env.CRON_ACTUALITES_FAIL_MINUTES = '2';
 
-    await prisma.cronRun.create({
-      data: {
+    await (await db.insert(schema.CronRun).values({
         job: 'actualites',
         status: 'success',
         startedAt: new Date(Date.now() - 10 * 60 * 1000),
         finishedAt: new Date(Date.now() - 10 * 60 * 1000),
         durationMs: 20,
       },
-    });
+    ).returning())[0];
 
     const req = mockReq({
       url: '/api/health/deep',
@@ -200,10 +232,7 @@ describe('P6-B+ Health endpoints', () => {
   });
 
   it('GET /api/health/deep returns 503 when db check fails', async () => {
-    const original = prisma.$queryRaw;
-    prisma.$queryRaw = async () => {
-      throw new Error('db down');
-    };
+    const dbSpy = vi.spyOn(db, 'execute').mockRejectedValueOnce(new Error('db down'));
 
     try {
       const req = mockReq({
@@ -223,7 +252,7 @@ describe('P6-B+ Health endpoints', () => {
       expect(res.body?.ok).toBe(false);
       expect(res.body?.deps?.db?.ok).toBe(false);
     } finally {
-      prisma.$queryRaw = original;
+      dbSpy.mockRestore();
     }
   });
 });

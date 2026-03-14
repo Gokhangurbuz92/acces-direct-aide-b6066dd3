@@ -5,20 +5,18 @@
  * Usage:
  *   DRY_RUN=true  node scripts/migrate-demarches-autre.js   # Preview (default)
  *   DRY_RUN=false node scripts/migrate-demarches-autre.js   # Apply changes
- *
- * Requires: DATABASE_URL in environment or .env
  */
 
-import { PrismaClient } from '@prisma/client';
 import dotenv from 'dotenv';
-
 dotenv.config({ path: '.env.local' });
 dotenv.config({ path: '.env' });
 
-const DRY_RUN = process.env.DRY_RUN !== 'false';
-const prisma = new PrismaClient();
+import { db } from '../src/db/index.js';
+import { AidCategory, Demarche } from '../src/db/schema.js';
+import { eq } from 'drizzle-orm';
 
-// ── Keyword → canonical category mapping ──────────────────────
+const DRY_RUN = process.env.DRY_RUN !== 'false';
+
 const KEYWORD_MAP = [
     { keywords: ['mobilit', 'transport', 'permis', 'vélo', 'voiture', 'déplac'], slug: 'transports' },
     { keywords: ['logement', 'loyer', 'hébergement', 'habitation', 'hlm', 'locataire'], slug: 'logement' },
@@ -41,24 +39,22 @@ function guessCategory(titre, description) {
             if (text.includes(kw)) return slug;
         }
     }
-    return 'papiers-citoyennete'; // neutral fallback — never "autre"
+    return 'papiers-citoyennete';
 }
 
 async function main() {
     console.log(`\n🏷️  Migrate démarches "Autre" → canonical category`);
     console.log(`   Mode: ${DRY_RUN ? '🔍 DRY RUN (preview)' : '⚡ LIVE (applying)'}\n`);
 
-    // Find the "autre" category
-    const autreCat = await prisma.category.findFirst({ where: { slug: 'autre' } });
+    const autreCat = await db.query.AidCategory.findFirst({ where: eq(AidCategory.slug, 'autre') });
     if (!autreCat) {
         console.log('✅ No "autre" category found in database. Nothing to do.');
         return;
     }
 
-    // Find démarches with "autre" category
-    const demarches = await prisma.demarche.findMany({
-        where: { categoryId: autreCat.id },
-        select: { id: true, titre: true, description_courte: true, slug: true },
+    const demarches = await db.query.Demarche.findMany({
+        where: eq(Demarche.categoryId, autreCat.id),
+        columns: { id: true, titre: true, description_courte: true, slug: true },
     });
 
     if (demarches.length === 0) {
@@ -70,7 +66,7 @@ async function main() {
 
     for (const d of demarches) {
         const newSlug = guessCategory(d.titre, d.description_courte);
-        const targetCat = await prisma.category.findFirst({ where: { slug: newSlug } });
+        const targetCat = await db.query.AidCategory.findFirst({ where: eq(AidCategory.slug, newSlug) });
 
         if (!targetCat) {
             console.log(`  ⚠️  [${d.slug}] "${d.titre}" → ${newSlug} — CATEGORY NOT FOUND, skipping`);
@@ -81,10 +77,7 @@ async function main() {
         console.log(`     autre → ${newSlug} (${targetCat.label})`);
 
         if (!DRY_RUN) {
-            await prisma.demarche.update({
-                where: { id: d.id },
-                data: { categoryId: targetCat.id },
-            });
+            await db.update(Demarche).set({ categoryId: targetCat.id }).where(eq(Demarche.id, d.id));
             console.log(`     ✅ Updated`);
         }
     }
@@ -93,5 +86,4 @@ async function main() {
 }
 
 main()
-    .catch(e => { console.error('❌ Migration error:', e); process.exit(1); })
-    .finally(() => prisma.$disconnect());
+    .catch(e => { console.error('❌ Migration error:', e); process.exit(1); });

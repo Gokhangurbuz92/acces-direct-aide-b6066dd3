@@ -1,4 +1,5 @@
-import prisma from '../api/_utils/prisma.js';
+import { db } from '../src/db/index.js';
+import { AidCategory, LifeSituation } from '../src/db/schema.js';
 
 /**
  * Canonical categories matching api/data/taxonomy.json.
@@ -45,10 +46,9 @@ async function main() {
   // Seed categories
   console.log('📦 Creating categories...');
   for (const cat of categories) {
-    await prisma.aidCategory.upsert({
-      where: { slug: cat.slug },
-      update: { label: cat.label },
-      create: cat,
+    await db.insert(AidCategory).values(cat).onConflictDoUpdate({
+      target: [AidCategory.slug],
+      set: { label: cat.label },
     });
   }
   console.log(`✅ Created ${categories.length} categories`);
@@ -56,10 +56,9 @@ async function main() {
   // Seed life situations
   console.log('👥 Creating life situations...');
   for (const sit of situations) {
-    await prisma.lifeSituation.upsert({
-      where: { slug: sit.slug },
-      update: { label: sit.label },
-      create: sit,
+    await db.insert(LifeSituation).values(sit).onConflictDoUpdate({
+      target: [LifeSituation.slug],
+      set: { label: sit.label },
     });
   }
   console.log(`✅ Created ${situations.length} life situations`);
@@ -71,7 +70,4 @@ main()
   .catch((e) => {
     console.error('❌ Error seeding taxonomy:', e);
     process.exit(1);
-  })
-  .finally(async () => {
-    await prisma.$disconnect();
   });

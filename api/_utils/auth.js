@@ -1,10 +1,15 @@
-
 import crypto from 'crypto';
-import { signJwt, verifyJwt, verifyProToken } from '../lib/pro-auth.js';
+import jwt from 'jsonwebtoken';
 import { env } from './env.js';
+import logger from './logger.js';
+import { db } from '../../src/db/index.js';
+import { AuditLog } from '../../src/db/schema.js';
+import { checkRateLimit as checkRateLimitUtil } from './rateLimit.js';
 
 const ADMIN_SESSION_ISSUER = 'accesdirectaide';
 const ADMIN_SESSION_AUDIENCE = 'accesdirectaide-admin';
+const PRO_SESSION_ISSUER = 'accesdirectaide';
+const PRO_SESSION_AUDIENCE = 'accesdirectaide-pro';
 
 export const AUTH_ROLE = {
   ADMIN: 'admin',
@@ -14,12 +19,124 @@ export const AUTH_ROLE = {
   USER: 'user',
 };
 
+export const ROLE = {
+    SUPERADMIN: 'SUPERADMIN',
+    STRUCTURE_ADMIN: 'STRUCTURE_ADMIN',
+    PRO: 'PRO'
+};
+
 const NO_STORE_VALUE = 'private, no-store, max-age=0, must-revalidate';
 
-/**
- * @param {import('./http-types').ApiRequest} req
- * @returns {string | null}
- */
+function getJwtSecret() {
+    return env.secrets.jwtSecret;
+}
+
+export function signJwt(payload, secret, options = {}) {
+    return jwt.sign(payload, secret, options);
+}
+
+export function verifyJwt(token, secret, options = {}) {
+    return jwt.verify(token, secret, options);
+}
+
+export function signProToken(user) {
+    const JWT_SECRET = getJwtSecret();
+    if (!JWT_SECRET) {
+        throw new Error("JWT_SECRET is missing");
+    }
+
+    return jwt.sign(
+        {
+            userId: user.id,
+            email: user.email,
+            structureId: user.structureId,
+            role: user.role,
+            scope: 'pro'
+        },
+        JWT_SECRET,
+        {
+            expiresIn: '8h',
+            issuer: PRO_SESSION_ISSUER,
+            audience: PRO_SESSION_AUDIENCE,
+            algorithm: 'HS256',
+        }
+    );
+}
+
+export function verifyProToken(token) {
+    const JWT_SECRET = getJwtSecret();
+    if (!JWT_SECRET) return null;
+
+    try {
+        const strictDecoded = jwt.verify(token, JWT_SECRET, {
+            algorithms: ['HS256'],
+            issuer: PRO_SESSION_ISSUER,
+            audience: PRO_SESSION_AUDIENCE,
+        });
+        return validateProClaims(strictDecoded);
+    } catch {
+        try {
+            const legacyDecoded = jwt.verify(token, JWT_SECRET, {
+                algorithms: ['HS256'],
+            });
+            return validateProClaims(legacyDecoded);
+        } catch {
+            return null;
+        }
+    }
+}
+
+function validateProClaims(decoded) {
+    if (!decoded || typeof decoded !== 'object') return null;
+
+    const payload = /** @type {Record<string, any>} */ (decoded);
+    const scope = typeof payload.scope === 'string' ? payload.scope : '';
+    const userId = String(payload.userId || '').trim();
+    const structureId = String(payload.structureId || '').trim();
+    const roleRaw = String(payload.role || '').toUpperCase();
+
+    if (scope && scope !== 'pro') return null;
+    if (!userId || !structureId) return null;
+    if (![ROLE.PRO, ROLE.STRUCTURE_ADMIN, ROLE.SUPERADMIN].includes(roleRaw)) return null;
+
+    return {
+        userId,
+        structureId,
+        email: typeof payload.email === 'string' ? payload.email : undefined,
+        role: roleRaw,
+        scope: scope || undefined,
+    };
+}
+
+export async function checkRateLimit(identifier) {
+    const result = await checkRateLimitUtil('LOGIN_PRO', identifier);
+    if (!result.allowed) {
+        return { allowed: false, remaining: 0 };
+    }
+    return { allowed: true, remaining: 1 };
+}
+
+function hashIp(ip) {
+    if (!ip) return 'unknown';
+    return crypto.createHash('sha256').update(ip).digest('hex').substring(0, 16);
+}
+
+export async function logProAudit(action, actorId, structureId, details, ip) {
+    try {
+        await db.insert(AuditLog).values({
+            action,
+            actor_id: actorId, 
+            actor: actorId, 
+            entity: 'ProUser', 
+            details: { ...details, structureId },
+            ip,
+            ip_hash: hashIp(ip)
+        });
+    } catch (e) {
+        logger.error("Audit Log Error", e);
+    }
+}
+
 export function getBearerToken(req) {
   const raw = req?.headers?.authorization || req?.headers?.Authorization;
   if (typeof raw !== 'string') return null;
@@ -29,11 +146,6 @@ export function getBearerToken(req) {
   return token || null;
 }
 
-/**
- * @param {string} left
- * @param {string} right
- * @returns {boolean}
- */
 function timingSafeEquals(left, right) {
   const leftBuf = Buffer.from(left);
   const rightBuf = Buffer.from(right);
@@ -41,27 +153,16 @@ function timingSafeEquals(left, right) {
   return crypto.timingSafeEqual(leftBuf, rightBuf);
 }
 
-/**
- * @param {string | null} token
- * @returns {boolean}
- */
 function verifyLegacyAdminToken(token) {
   const adminToken = env.secrets.adminToken;
   if (!token || !adminToken) return false;
   return timingSafeEquals(token, adminToken);
 }
 
-/**
- * @returns {string | undefined}
- */
 function getAdminSessionSecret() {
   return env.auth.secret || env.secrets.jwtSecret;
 }
 
-/**
- * @param {{ email?: string, role?: string }} payload
- * @returns {string}
- */
 export function signAdminSessionToken(payload = {}) {
   const secret = getAdminSessionSecret();
   if (!secret) {
@@ -89,10 +190,6 @@ export function signAdminSessionToken(payload = {}) {
   );
 }
 
-/**
- * @param {string | null} token
- * @returns {null | { scope?: string, role?: string, email?: string }}
- */
 export function verifyAdminSessionToken(token) {
   if (!token) return null;
 
@@ -121,10 +218,6 @@ export function verifyAdminSessionToken(token) {
   }
 }
 
-/**
- * @param {string | undefined} role
- * @returns {string}
- */
 function normalizeRole(role) {
   switch (String(role || '').toUpperCase()) {
     case 'SUPERADMIN':
@@ -140,19 +233,11 @@ function normalizeRole(role) {
   }
 }
 
-/**
- * @param {string | undefined} role
- * @returns {boolean}
- */
 export function isAdminRole(role) {
   const normalized = normalizeRole(role);
   return normalized === AUTH_ROLE.ADMIN || normalized === AUTH_ROLE.SUPERADMIN;
 }
 
-/**
- * @param {string | undefined} role
- * @returns {boolean}
- */
 export function isProRole(role) {
   const normalized = normalizeRole(role);
   return (
@@ -162,10 +247,6 @@ export function isProRole(role) {
   );
 }
 
-/**
- * @param {import('./http-types').ApiRequest} req
- * @returns {null | { role: string, authType: 'admin_token' | 'admin_jwt' | 'pro_jwt', email?: string, userId?: string, structureId?: string }}
- */
 export function resolveAuthContext(req) {
   const token = getBearerToken(req);
   if (!token) return null;
@@ -202,36 +283,29 @@ export function resolveAuthContext(req) {
   return null;
 }
 
-/**
- * Backward-compatible admin verifier used by existing handlers.
- *
- * @param {import('./http-types').ApiRequest} req
- * @returns {boolean}
- */
 export function verifyAdmin(req) {
   const auth = resolveAuthContext(req);
   return Boolean(auth && isAdminRole(auth.role));
 }
 
-/**
- * @param {import('./http-types').ApiRequest} req
- * @returns {Promise<null | { email?: string, role: string, authType: string, userId?: string, structureId?: string }>}
- */
 export async function getAuthenticatedUser(req) {
   const auth = resolveAuthContext(req);
   if (!auth) return null;
   return auth;
 }
 
-/**
- * @param {(req: import('./http-types').ApiRequest, res: import('./http-types').ApiResponse) => any} handler
- */
-export function requireAuth(handler) {
-  /** @param {import('./http-types').ApiRequest} req @param {import('./http-types').ApiResponse} res */
+export function requireAuth(handler, allowedRolesLegacy = []) {
   return async function wrapped(req, res) {
     const auth = resolveAuthContext(req);
     if (!auth) {
       return res.status(401).json({ error: 'Unauthorized' });
+    }
+
+    // Support legacy allowedRoles array from pro-auth
+    if (allowedRolesLegacy && allowedRolesLegacy.length > 0) {
+        if (!allowedRolesLegacy.includes(auth.role) && auth.role !== AUTH_ROLE.SUPERADMIN) {
+           return res.status(403).json({ error: 'Forbidden' });
+        }
     }
 
     req.auth = auth;
@@ -247,16 +321,10 @@ export function requireAuth(handler) {
   };
 }
 
-/**
- * @param {(req: import('./http-types').ApiRequest, res: import('./http-types').ApiResponse) => any} handler
- * @param {string[]} roles
- * @param {{ allowAdminBypass?: boolean }=} options
- */
 export function requireRole(handler, roles, options = {}) {
   const expected = Array.isArray(roles) ? roles : [];
   const allowAdminBypass = options.allowAdminBypass !== false;
 
-  /** @param {import('./http-types').ApiRequest} req @param {import('./http-types').ApiResponse} res */
   return requireAuth(async function roleWrapped(req, res) {
     const auth = req.auth || resolveAuthContext(req);
     if (!auth) return res.status(401).json({ error: 'Unauthorized' });
@@ -273,14 +341,7 @@ export function requireRole(handler, roles, options = {}) {
   });
 }
 
-/**
- * Strict admin-only auth guard.
- * Accepts only admin token or admin session JWT.
- *
- * @param {(req: import('./http-types').ApiRequest, res: import('./http-types').ApiResponse) => any} handler
- */
 export function requireAdminAuth(handler) {
-  /** @param {import('./http-types').ApiRequest} req @param {import('./http-types').ApiResponse} res */
   return async function wrapped(req, res) {
     res.setHeader('Cache-Control', NO_STORE_VALUE);
 
@@ -303,12 +364,6 @@ export function requireAdminAuth(handler) {
   };
 }
 
-/**
- * Strict admin auth guard that ALSO requires MFA verification.
- * Returns 403 with { error: 'MFA required' } if mfa_verified claim missing.
- *
- * @param {(req: import('./http-types').ApiRequest, res: import('./http-types').ApiResponse) => any} handler
- */
 export function requireAdminMfa(handler) {
   return requireAdminAuth(async function mfaWrapped(req, res) {
     if (!req.auth?.mfa_verified) {
@@ -318,14 +373,7 @@ export function requireAdminMfa(handler) {
   });
 }
 
-/**
- * Strict pro-only auth guard.
- * Accepts only pro JWT. Rejects static admin token and admin session JWT.
- *
- * @param {(req: import('./http-types').ApiRequest, res: import('./http-types').ApiResponse) => any} handler
- */
 export function requireProAuth(handler) {
-  /** @param {import('./http-types').ApiRequest} req @param {import('./http-types').ApiResponse} res */
   return async function wrapped(req, res) {
     res.setHeader('Cache-Control', NO_STORE_VALUE);
 
@@ -364,16 +412,9 @@ export function requireProAuth(handler) {
   };
 }
 
-/**
- * Pro role guard (pro JWT only).
- *
- * @param {(req: import('./http-types').ApiRequest, res: import('./http-types').ApiResponse) => any} handler
- * @param {string[]} roles
- */
 export function requireProRole(handler, roles) {
   const expected = Array.isArray(roles) ? roles : [];
 
-  /** @param {import('./http-types').ApiRequest} req @param {import('./http-types').ApiResponse} res */
   return requireProAuth(async function wrapped(req, res) {
     if (expected.length > 0 && !expected.includes(req.user?.role)) {
       return res.status(403).json({ error: 'Forbidden' });
@@ -382,14 +423,6 @@ export function requireProRole(handler, roles) {
   });
 }
 
-/**
- * Enforces structure context for pro routes and optionally compares a target structure id.
- *
- * @param {import('./http-types').ApiRequest} req
- * @param {import('./http-types').ApiResponse} res
- * @param {string | undefined | null} targetStructureId
- * @returns {{ structureId: string, userId: string, role: string } | null}
- */
 export function requireProStructureContext(req, res, targetStructureId = null) {
   const structureId = String(req?.user?.structureId || '').trim();
   const userId = String(req?.user?.userId || '').trim();

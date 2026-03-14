@@ -1,6 +1,8 @@
 import logger from '../../_utils/logger.js';
 // @ts-nocheck
-import prisma from '../../_utils/prisma.js';
+import { db } from '../../../src/db/index.js';
+import { ImportLog, ReviewQueueItem, Aide, Demarche, Structure, ProAppointment } from '../../../src/db/schema.js';
+import { sql, eq, desc, gte } from 'drizzle-orm';
 import { env } from '../../_utils/env.js';
 import { requireProAuth } from '../../_utils/auth.js';
 /**
@@ -22,33 +24,34 @@ async function handler(req, res) {
     try {
         // 1. Database ping latency
         const dbStart = Date.now();
-        await prisma.$queryRaw`SELECT 1`;
+        await db.execute(sql`SELECT 1`);
         const dbLatencyMs = Date.now() - dbStart;
 
         // 2. Last ingestion
-        const lastIngest = await prisma.importLog.findFirst({
-            orderBy: { createdAt: 'desc' },
-            select: { createdAt: true, source: true, status: true },
+        const lastIngest = await db.query.ImportLog.findFirst({
+            orderBy: [desc(ImportLog.createdAt)],
+            columns: { createdAt: true, source: true, status: true },
         });
 
         // 3. Pending moderation items
-        const pendingModeration = await prisma.reviewQueueItem.count({
-            where: { status: 'OPEN' },
-        });
+        const pendingModRes = await db.select({ count: sql`count(*)` }).from(ReviewQueueItem).where(eq(ReviewQueueItem.status, 'OPEN'));
+        const pendingModeration = Number(pendingModRes[0].count);
 
         // 4. Total content counts
-        const [aidesCount, demarchesCount, structuresCount] = await Promise.all([
-            prisma.aide.count(),
-            prisma.demarche.count(),
-            prisma.structure.count(),
+        const [aCountRes, dCountRes, sCountRes] = await Promise.all([
+            db.select({ count: sql`count(*)` }).from(Aide),
+            db.select({ count: sql`count(*)` }).from(Demarche),
+            db.select({ count: sql`count(*)` }).from(Structure),
         ]);
+        const aidesCount = Number(aCountRes[0].count);
+        const demarchesCount = Number(dCountRes[0].count);
+        const structuresCount = Number(sCountRes[0].count);
 
         // 5. Appointments this month
         const now = new Date();
         const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
-        const appointmentsThisMonth = await prisma.proAppointment.count({
-            where: { startAt: { gte: startOfMonth } },
-        });
+        const appCountRes = await db.select({ count: sql`count(*)` }).from(ProAppointment).where(gte(ProAppointment.startAt, startOfMonth));
+        const appointmentsThisMonth = Number(appCountRes[0].count);
 
         // 6. Service status inference
         const siaEnabled = env.siao.enabled;

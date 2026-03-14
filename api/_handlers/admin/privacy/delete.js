@@ -1,5 +1,7 @@
 import { checkRateLimit, getClientIp, getRateLimitStatus } from '../../../_utils/rateLimit.js';
-import prisma from '../../../_utils/prisma.js';
+import { db } from '../../../../src/db/index.js';
+import { ProUser, Beneficiary, Invitation, AuditLog } from '../../../../src/db/schema.js';
+import { eq } from 'drizzle-orm';
 import { verifyAdmin } from '../../../_utils/auth.js';
 import { hash } from '../../../lib/crypto.js';
 import { logger } from '../../../lib/logger.js';
@@ -38,42 +40,28 @@ export default async function handler(req, res) {
         };
 
         // 1. Delete ProUser
-        // Use deleteMany to be safe if multiple (though email should be unique per structure usually, but schema says unique [structureId, email])
-        const proDelete = await prisma.proUser.deleteMany({
-            where: { email }
-        });
-        stats.proUserDeleted = proDelete.count > 0;
+        const proDelete = await db.delete(ProUser).where(eq(ProUser.email, email)).returning();
+        stats.proUserDeleted = proDelete.length > 0;
 
         // 2. Anonymize Beneficiaries
-        const benUpdate = await prisma.beneficiary.updateMany({
-            where: { contact_hash: hashedEmail },
-            data: {
+        const benUpdate = await db.update(Beneficiary).set({
                 contact_encrypted: "ANONYMIZED",
                 contact_hash: "ANONYMIZED",
                 first_name_encrypted: null
-            }
-        });
-        stats.beneficiariesAnonymized = benUpdate.count;
+        }).where(eq(Beneficiary.contact_hash, hashedEmail)).returning();
+        stats.beneficiariesAnonymized = benUpdate.length;
 
         // 3. Delete Invitations
-        const invDelete = await prisma.invitation.deleteMany({
-            where: { email }
-        });
-        stats.invitationsDeleted = invDelete.count;
+        const invDelete = await db.delete(Invitation).where(eq(Invitation.email, email)).returning();
+        stats.invitationsDeleted = invDelete.length;
 
         // 4. Audit Log
-        await prisma.auditLog.create({
-            data: {
+        await db.insert(AuditLog).values({
                 action: 'GDPR_DELETE',
                 actor: 'admin',
-                target: email, // This will be masked in logs, but stored here. Should we store it?
-                               // GDPR says we should keep proof of deletion. Storing the email as "target" of deletion is usually acceptable for the register.
-                               // But maybe we should hash it or mask it?
-                               // "Target" field is likely for search.
-                               // Let's store it as is, access is restricted to admin.
+                target: email,
                 details: stats,
-                ip: req.headers['x-forwarded-for'] || req.socket.remoteAddress
-            }
+                ip: req.headers['x-forwarded-for'] || req.socket.remoteAddress || ''
         });
 
         logger.info(`GDPR Delete executed for ${email}`, stats);

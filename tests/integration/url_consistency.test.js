@@ -1,4 +1,9 @@
-import { describe, test, expect, vi } from 'vitest';
+import { vi } from "vitest";
+vi.stubEnv("KV_REST_API_URL", "http://localhost");
+vi.stubEnv("KV_REST_API_TOKEN", "mock-token");
+
+import { describe, test, expect } from 'vitest';
+import { db } from '../../src/db/index.js';
 import sitemapHandler from '../../api/_handlers/sitemap.js';
 
 const { mockAideFindMany, mockDemarcheFindMany, mockStructureFindMany } = vi.hoisted(() => ({
@@ -7,23 +12,22 @@ const { mockAideFindMany, mockDemarcheFindMany, mockStructureFindMany } = vi.hoi
   mockStructureFindMany: vi.fn(),
 }));
 
-vi.mock('@prisma/client', () => ({
-  PrismaClient: vi.fn().mockImplementation(function PrismaClient() {
-    return {
-      aide: { findMany: mockAideFindMany },
-      demarche: { findMany: mockDemarcheFindMany },
-      structure: { findMany: mockStructureFindMany },
-      $disconnect: vi.fn(),
-    };
-  }),
+vi.mock('../../src/db/index.js', () => ({
+  db: {
+    query: {
+      Aide: { findMany: vi.fn() },
+      Demarche: { findMany: vi.fn() },
+      Structure: { findMany: vi.fn() }
+    }
+  }
 }));
 
 describe('URL Canonical Consistency', () => {
   test('Sitemap should generate plural /aides/:slug URLs', async () => {
     vi.clearAllMocks();
-    mockAideFindMany.mockResolvedValue([{ slug: 'test-aide-slug', updatedAt: new Date() }]);
-    mockDemarcheFindMany.mockResolvedValue([{ slug: 'test-demarche-slug', updatedAt: new Date() }]);
-    mockStructureFindMany.mockResolvedValue([{ slug: 'test-structure-slug', updatedAt: new Date() }]);
+    db.query.Aide.findMany.mockResolvedValue([{ slug: 'test-aide-slug', updated_at: new Date() }]);
+    db.query.Demarche.findMany.mockResolvedValue([{ slug: 'test-demarche-slug', updated_at: new Date() }]);
+    db.query.Structure.findMany.mockResolvedValue([{ slug: 'test-structure-slug', updated_at: new Date() }]);
 
     const res = {
       writeHead: vi.fn(),

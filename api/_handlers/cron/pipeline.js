@@ -1,6 +1,7 @@
 import logger from '../../_utils/logger.js';
 import { getCronAuth } from '../../_utils/cronAuth.js';
-import prisma from '../../_utils/prisma.js';
+import { db } from '../../../src/db/index.js';
+import { ImportLog } from '../../../src/db/schema.js';
 import crypto from 'crypto';
 import { runIngestStructures } from './ingest-structures.js';
 import { runIngestAids } from './ingest-aids.js';
@@ -126,15 +127,13 @@ export default async function handler(req, res) {
 
         // Log the Run
         try {
-            await prisma.importLog.create({
-                data: {
-                    source_name: `CRON_${sourceResolved.toUpperCase()}`,
-                    status: stats.errors.length > 0 ? 'PARTIAL' : 'SUCCESS',
-                    items_new: stats.created,
-                    items_total: stats.processed,
-                    logs: stats.errors.length ? JSON.stringify(stats.errors) : null,
-                    duration_ms: Date.now() - startTime
-                }
+            await db.insert(ImportLog).values({
+                source_name: `CRON_${sourceResolved.toUpperCase()}`,
+                status: stats.errors.length > 0 ? 'PARTIAL' : 'SUCCESS',
+                items_new: stats.created,
+                items_total: stats.processed,
+                logs: stats.errors.length ? JSON.stringify(stats.errors) : null,
+                duration_ms: Date.now() - startTime
             });
         } catch { /* ignore */ }
     };
@@ -152,13 +151,11 @@ export default async function handler(req, res) {
         logger.error("Pipeline Global Error:", globalErr);
         // Try to log failure
         try {
-            await prisma.importLog.create({
-                data: {
-                    source_name: `CRON_${sourceResolved ? sourceResolved.toUpperCase() : 'UNKNOWN'}`,
-                    status: 'ERROR',
-                    logs: JSON.stringify(globalErr.message),
-                    duration_ms: Date.now() - startTime
-                }
+            await db.insert(ImportLog).values({
+                source_name: `CRON_${sourceResolved ? sourceResolved.toUpperCase() : 'UNKNOWN'}`,
+                status: 'ERROR',
+                logs: JSON.stringify(globalErr.message),
+                duration_ms: Date.now() - startTime
             });
         } catch { /* ignore */ }
 
@@ -185,13 +182,11 @@ export default async function handler(req, res) {
 
         // Log this specific failure
         try {
-            await prisma.importLog.create({
-                data: {
-                    source_name: `CRON_${sourceResolved ? sourceResolved.toUpperCase() : 'UNKNOWN'}`,
-                    status: 'ERROR',
-                    logs: JSON.stringify([errorMsg]),
-                    duration_ms: Date.now() - startTime
-                }
+            await db.insert(ImportLog).values({
+                source_name: `CRON_${sourceResolved ? sourceResolved.toUpperCase() : 'UNKNOWN'}`,
+                status: 'ERROR',
+                logs: JSON.stringify([errorMsg]),
+                duration_ms: Date.now() - startTime
             });
         } catch (e) {
             logger.error('Failed to log NOOP error:', e);

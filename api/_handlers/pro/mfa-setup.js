@@ -1,6 +1,8 @@
-import prisma from '../../_utils/prisma.js';
+import { db } from '../../../src/db/index.js';
+import { ProUser } from '../../../src/db/schema.js';
+import { eq } from 'drizzle-orm';
 import { requireProAuth } from '../../_utils/auth.js';
-import { logProAudit } from '../../lib/pro-auth.js';
+import { logProAudit } from '../../_utils/auth.js';
 import { generateSecret, verifyCode, buildOtpauthUrl } from '../../lib/totp.js';
 
 /**
@@ -19,10 +21,7 @@ async function handler(req, res) {
         const otpauthUrl = buildOtpauthUrl(secret, email);
 
         // Save secret but keep mfa_enabled = false until verified
-        await prisma.proUser.update({
-            where: { id: userId },
-            data: { mfa_secret: secret, mfa_enabled: false },
-        });
+        await db.update(ProUser).set({ mfa_secret: secret, mfa_enabled: false }).where(eq(ProUser.id, userId));
 
         return res.status(200).json({ ok: true, secret, otpauthUrl });
     }
@@ -34,7 +33,7 @@ async function handler(req, res) {
             return res.status(400).json({ error: 'Code à 6 chiffres requis' });
         }
 
-        const user = await prisma.proUser.findUnique({ where: { id: userId } });
+        const user = await db.query.ProUser.findFirst({ where: eq(ProUser.id, userId) });
         if (!user?.mfa_secret) {
             return res.status(400).json({ error: 'Aucun secret MFA configuré. Lancez d\'abord GET /api/pro/mfa-setup.' });
         }
@@ -44,10 +43,7 @@ async function handler(req, res) {
             return res.status(400).json({ error: 'Code de vérification incorrect' });
         }
 
-        await prisma.proUser.update({
-            where: { id: userId },
-            data: { mfa_enabled: true },
-        });
+        await db.update(ProUser).set({ mfa_enabled: true }).where(eq(ProUser.id, userId));
 
         await logProAudit('MFA_ENABLED', userId, structureId, {}, null);
 
@@ -61,7 +57,7 @@ async function handler(req, res) {
             return res.status(400).json({ error: 'Code à 6 chiffres requis pour désactiver le MFA' });
         }
 
-        const user = await prisma.proUser.findUnique({ where: { id: userId } });
+        const user = await db.query.ProUser.findFirst({ where: eq(ProUser.id, userId) });
         if (!user?.mfa_secret || !user.mfa_enabled) {
             return res.status(400).json({ error: 'MFA non activé' });
         }
@@ -71,10 +67,7 @@ async function handler(req, res) {
             return res.status(400).json({ error: 'Code incorrect' });
         }
 
-        await prisma.proUser.update({
-            where: { id: userId },
-            data: { mfa_enabled: false, mfa_secret: null },
-        });
+        await db.update(ProUser).set({ mfa_enabled: false, mfa_secret: null }).where(eq(ProUser.id, userId));
 
         await logProAudit('MFA_DISABLED', userId, structureId, {}, null);
 

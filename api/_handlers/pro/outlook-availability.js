@@ -1,6 +1,8 @@
 import logger from '../../_utils/logger.js';
 // @ts-nocheck
-import prisma from '../../_utils/prisma.js';
+import { db } from '../../../src/db/index.js';
+import { ProOutlookToken } from '../../../src/db/schema.js';
+import { eq } from 'drizzle-orm';
 import crypto from 'crypto';
 import { env } from '../../_utils/env.js';
 import { requireProAuth, requireProStructureContext } from '../../_utils/auth.js';
@@ -84,14 +86,11 @@ async function refreshOutlookToken(storedToken, userId) {
         const newExpiresAt = new Date(Date.now() + (tokens.expires_in || 3600) * 1000);
 
         // Persist refreshed tokens back to ProOutlookToken (encrypted)
-        await prisma.proOutlookToken.update({
-            where: { userId },
-            data: {
-                accessToken: encryptToken(tokens.access_token),
-                refreshToken: encryptToken(tokens.refresh_token || refreshToken),
-                expiresAt: newExpiresAt,
-            },
-        });
+        await db.update(ProOutlookToken).set({
+            accessTokenEnc: encryptToken(tokens.access_token).content, // Assumes encryptToken returns { content, iv } format like others or update logic if different string
+            refreshTokenEnc: encryptToken(tokens.refresh_token || refreshToken).content, // Need to be careful here if encrypt string changes format
+            expiresAt: newExpiresAt,
+        }).where(eq(ProOutlookToken.userId, userId));
 
         logger.info('[Outlook Availability] Token refreshed for user:', userId);
         return tokens.access_token;
@@ -119,8 +118,8 @@ async function handler(req, res) {
 
     try {
         // Read tokens from ProOutlookToken (encrypted at rest)
-        const storedToken = await prisma.proOutlookToken.findUnique({
-            where: { userId: proCtx.userId },
+        const storedToken = await db.query.ProOutlookToken.findFirst({
+            where: eq(ProOutlookToken.userId, proCtx.userId),
         });
 
         if (!storedToken) {

@@ -1,4 +1,4 @@
-import prisma from './prisma.js';
+import { db } from '../../src/db/index.js';
 import { getUserSessionTokenFromRequest, normalizeEmail, verifyUserSessionToken } from './user-auth.js';
 
 /**
@@ -16,9 +16,9 @@ export async function requireCitizenUser(req) {
     return { ok: false, status: 401, error: 'Unauthorized' };
   }
 
-  const user = await prisma.citizenUser.findUnique({
-    where: { id: claims.userId },
-    select: {
+  const user = await db.query.CitizenUser.findFirst({
+    where: (cu, { eq }) => eq(cu.id, claims.userId),
+    columns: {
       id: true,
       email: true,
       emailVerifiedAt: true,

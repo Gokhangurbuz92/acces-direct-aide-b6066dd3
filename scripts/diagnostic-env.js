@@ -11,15 +11,13 @@
  * Usage: node scripts/diagnostic-env.js
  */
 
-import { PrismaClient } from '@prisma/client';
+import { db } from '../src/db/index.js';
+import { Aide, Structure, Actualite, Demarche } from '../src/db/schema.js';
+import { eq, sql } from 'drizzle-orm';
 import { config } from 'dotenv';
 
-// Charger les variables d'environnement
 config();
 
-const prisma = new PrismaClient();
-
-// Couleurs pour le terminal
 const colors = {
   reset: '\x1b[0m',
   red: '\x1b[31m',
@@ -39,7 +37,6 @@ function section(title) {
   console.log('='.repeat(60));
 }
 
-// Variables d'environnement requises
 const REQUIRED_ENV_VARS = [
   'DATABASE_URL',
   'JWT_SECRET',
@@ -91,12 +88,11 @@ async function checkDatabaseConnection() {
   section('2. VÉRIFICATION DE LA CONNEXION À LA BASE DE DONNÉES');
   
   try {
-    await prisma.$connect();
+    const result = await db.execute(sql`SELECT NOW() as current_time`);
+    const rows = result.rows || result;
+    const currentTime = rows[0]?.current_time;
     log('✅ Connexion à la base de données réussie', 'green');
-    
-    // Test simple
-    const result = await prisma.$queryRaw`SELECT NOW() as current_time`;
-    log(`✅ Test de requête réussi: ${result[0].current_time}`, 'green');
+    log(`✅ Test de requête réussi: ${currentTime}`, 'green');
     
     return true;
   } catch (error) {
@@ -106,49 +102,52 @@ async function checkDatabaseConnection() {
   }
 }
 
+async function countRows(table, where) {
+  const query = where
+    ? db.select({ c: sql`count(*)::int` }).from(table).where(where)
+    : db.select({ c: sql`count(*)::int` }).from(table);
+  const [result] = await query;
+  return result?.c ?? 0;
+}
+
 async function checkDatabaseContent() {
   section('3. VÉRIFICATION DU CONTENU DE LA BASE DE DONNÉES');
   
   try {
-    // Compter les aides
-    const aidesTotal = await prisma.aide.count();
-    const aidesPubliees = await prisma.aide.count({ where: { statut: 'publie' } });
-    const aidesBrouillon = await prisma.aide.count({ where: { statut: 'brouillon' } });
+    const aidesTotal = await countRows(Aide);
+    const aidesPubliees = await countRows(Aide, eq(Aide.statut, 'publie'));
+    const aidesBrouillon = await countRows(Aide, eq(Aide.statut, 'brouillon'));
     
     log(`\n📊 AIDES:`, 'blue');
     log(`   Total: ${aidesTotal}`);
     log(`   Publiées: ${aidesPubliees}`, aidesPubliees > 0 ? 'green' : 'red');
     log(`   Brouillon: ${aidesBrouillon}`, aidesBrouillon > 0 ? 'yellow' : 'reset');
     
-    // Compter les structures
-    const structuresTotal = await prisma.structure.count();
-    const structuresPubliees = await prisma.structure.count({ where: { statut: 'publie' } });
-    const structuresBrouillon = await prisma.structure.count({ where: { statut: 'brouillon' } });
+    const structuresTotal = await countRows(Structure);
+    const structuresPubliees = await countRows(Structure, eq(Structure.statut, 'publie'));
+    const structuresBrouillon = await countRows(Structure, eq(Structure.statut, 'brouillon'));
     
     log(`\n📊 STRUCTURES:`, 'blue');
     log(`   Total: ${structuresTotal}`);
     log(`   Publiées: ${structuresPubliees}`, structuresPubliees > 0 ? 'green' : 'red');
     log(`   Brouillon: ${structuresBrouillon}`, structuresBrouillon > 0 ? 'yellow' : 'reset');
     
-    // Compter les actualités
-    const actualitesTotal = await prisma.actualite.count();
-    const actualitesPubliees = await prisma.actualite.count({ where: { statut: 'publie' } });
-    const actualitesBrouillon = await prisma.actualite.count({ where: { statut: 'brouillon' } });
+    const actualitesTotal = await countRows(Actualite);
+    const actualitesPubliees = await countRows(Actualite, eq(Actualite.statut, 'publie'));
+    const actualitesBrouillon = await countRows(Actualite, eq(Actualite.statut, 'brouillon'));
     
     log(`\n📊 ACTUALITÉS:`, 'blue');
     log(`   Total: ${actualitesTotal}`);
     log(`   Publiées: ${actualitesPubliees}`, actualitesPubliees > 0 ? 'green' : 'red');
     log(`   Brouillon: ${actualitesBrouillon}`, actualitesBrouillon > 0 ? 'yellow' : 'reset');
     
-    // Compter les démarches
-    const demarchesTotal = await prisma.demarche.count();
-    const demarchesPubliees = await prisma.demarche.count({ where: { statut: 'publie' } });
+    const demarchesTotal = await countRows(Demarche);
+    const demarchesPubliees = await countRows(Demarche, eq(Demarche.statut, 'publie'));
     
     log(`\n📊 DÉMARCHES:`, 'blue');
     log(`   Total: ${demarchesTotal}`);
     log(`   Publiées: ${demarchesPubliees}`, demarchesPubliees > 0 ? 'green' : 'red');
     
-    // Diagnostic
     console.log('');
     if (aidesPubliees === 0 && structuresPubliees === 0 && actualitesPubliees === 0) {
       log('❌ PROBLÈME CRITIQUE: Aucun contenu publié détecté', 'red');
@@ -253,7 +252,6 @@ async function generateReport() {
   console.log('\n' + '='.repeat(60));
 }
 
-// Exécution principale
 async function main() {
   log('\n🔍 DIAGNOSTIC ACCESDIRECTAIDE - ENVIRONNEMENT & BASE DE DONNÉES\n', 'cyan');
   log(`Date: ${new Date().toLocaleString('fr-FR')}`, 'blue');
@@ -266,8 +264,6 @@ async function main() {
     log('\n❌ ERREUR FATALE:', 'red');
     log(error.stack, 'red');
     process.exit(1);
-  } finally {
-    await prisma.$disconnect();
   }
 }
 

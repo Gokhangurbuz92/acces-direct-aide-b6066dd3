@@ -1,6 +1,6 @@
 
-import prisma from '../api/_utils/prisma.js';
-
+import { db } from '../src/db/index.js';
+import { RssSource } from '../src/db/schema.js';
 
 const sources = [
     {
@@ -29,12 +29,10 @@ const sources = [
 async function main() {
     console.log('Seeding corrected RSS sources...');
     // Clear old ones to be safe
-    await prisma.rssSource.deleteMany({});
+    await db.delete(RssSource);
 
     for (const source of sources) {
-        await prisma.rssSource.create({
-            data: source,
-        });
+        await db.insert(RssSource).values(source);
     }
     console.log('RSS sources seeded.');
 }
@@ -43,7 +41,4 @@ main()
     .catch((e) => {
         console.error(e);
         process.exit(1);
-    })
-    .finally(async () => {
-        await prisma.$disconnect();
     });

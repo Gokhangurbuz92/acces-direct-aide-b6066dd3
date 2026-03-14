@@ -1,6 +1,25 @@
+import { vi } from "vitest";
+vi.stubEnv("KV_REST_API_URL", "http://localhost");
+vi.stubEnv("KV_REST_API_TOKEN", "mock-token");
+
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import apiHandler from '../../api/index.js';
-import prisma from '../../api/_utils/prisma.js';
+import { db } from '../../src/db/index.js';
+import * as schema from '../../src/db/schema.js';
+
+vi.stubEnv('KV_REST_API_URL', 'mock-url');
+vi.stubEnv('KV_REST_API_TOKEN', 'mock-token');
+vi.mock('@vercel/kv', () => ({
+  createClient: vi.fn(),
+  kv: {
+    get: vi.fn().mockResolvedValue(null),
+    set: vi.fn().mockResolvedValue('OK'),
+    incr: vi.fn().mockResolvedValue(1),
+  }
+}));
+
+import { eq, sql } from 'drizzle-orm';
+import crypto from 'crypto';
 
 /**
  * @param {{
@@ -111,7 +130,7 @@ describe('P8-F cron review queue scan endpoint contract', () => {
     process.env.CRON_SECRET = 'p8f-cron-secret';
     process.env.DATA_REVIEW_SCAN_CRON_ENABLED = '1';
     process.env.DATA_REVIEW_SCAN_CRON_LIMIT_PER_TYPE = '10';
-    await prisma.reviewQueueItem.deleteMany({ where: { reason: { startsWith: 'P8F_CRON_' } } });
+    await await db.delete(schema.ReviewQueueItem);
   });
 
   afterEach(async () => {
@@ -124,9 +143,9 @@ describe('P8-F cron review queue scan endpoint contract', () => {
     if (originalCronLimit == null) delete process.env.DATA_REVIEW_SCAN_CRON_LIMIT_PER_TYPE;
     else process.env.DATA_REVIEW_SCAN_CRON_LIMIT_PER_TYPE = originalCronLimit;
 
-    await prisma.reviewQueueItem.deleteMany({ where: { reason: { startsWith: 'P8F_CRON_' } } });
+    await await db.delete(schema.ReviewQueueItem);
     if (createdAideIds.length > 0) {
-      await prisma.aide.deleteMany({ where: { id: { in: createdAideIds } } });
+      await await db.delete(schema.Aide);
       createdAideIds.length = 0;
     }
   });
@@ -144,18 +163,19 @@ describe('P8-F cron review queue scan endpoint contract', () => {
   });
 
   it('returns 200 with summary when authorized via Bearer cron secret', async () => {
-    const aide = await prisma.aide.create({
-      data: {
+    const aide = await (await db.insert(schema.Aide).values({
+        id: crypto.randomUUID(),
+        createdAt: new Date(),
+        updatedAt: new Date(),
         titre: 'P8F cron scan candidate',
         slug: `p8f-cron-scan-${Date.now()}`,
         statut: 'publie',
+        est_urgent: false,
         territoires: ['national'],
         documents_necessaires: [],
         date_verification: null,
         source_url: null,
-      },
-      select: { id: true },
-    });
+      }).returning({ id: schema.Aide.id }))[0];
     createdAideIds.push(aide.id);
 
     const res = await invokeApi('/api/cron/review-queue/scan', {

@@ -1,6 +1,8 @@
 import { checkRateLimit, getClientIp, getRateLimitStatus } from '../../_utils/rateLimit.js';
 import logger from '../../_utils/logger.js';
-import prisma from '../../_utils/prisma.js';
+import { db } from '../../../src/db/index.js';
+import { ConversationLog } from '../../../src/db/schema.js';
+import { count, sql, eq, isNotNull, desc, avg } from 'drizzle-orm';
 import { verifyAdmin } from '../../_utils/auth.js';
 
 /**
@@ -33,34 +35,35 @@ export default async function handler(req, res) {
     try {
         const [modeStats, intentStats, dailyActivity, avgSources] = await Promise.all([
             // 1. Distribution des modes de recherche
-            prisma.conversationLog.groupBy({
-                by: ['searchMode'],
-                _count: { id: true },
-            }),
+            db.select({
+                searchMode: ConversationLog.searchMode,
+                _count: { id: count(ConversationLog.id) },
+            }).from(ConversationLog).groupBy(ConversationLog.searchMode),
 
             // 2. Top 10 des intentions détectées
-            prisma.conversationLog.groupBy({
-                by: ['intent'],
-                _count: { id: true },
-                where: { NOT: { intent: null } },
-                orderBy: { _count: { intent: 'desc' } },
-                take: 10,
-            }),
+            db.select({
+                intent: ConversationLog.intent,
+                _count: { id: count(ConversationLog.id) },
+            }).from(ConversationLog)
+              .where(isNotNull(ConversationLog.intent))
+              .groupBy(ConversationLog.intent)
+              .orderBy(desc(count(ConversationLog.id)))
+              .limit(10),
 
             // 3. Activité journalière (7 derniers jours)
-            prisma.$queryRawUnsafe(`
+            db.execute(sql`
                 SELECT DATE("createdAt") AS day, COUNT(*)::int AS count
                 FROM "ConversationLog"
                 WHERE "createdAt" > NOW() - INTERVAL '7 days'
                 GROUP BY day
                 ORDER BY day ASC
-            `),
+            `).then(res => res.rows || res),
 
             // 4. Moyenne de sources par mode
-            prisma.conversationLog.groupBy({
-                by: ['searchMode'],
-                _avg: { sourceCount: true },
-            }),
+            db.select({
+                searchMode: ConversationLog.searchMode,
+                _avg: { sourceCount: avg(ConversationLog.sourceCount) },
+            }).from(ConversationLog).groupBy(ConversationLog.searchMode),
         ]);
 
         // Build clean response

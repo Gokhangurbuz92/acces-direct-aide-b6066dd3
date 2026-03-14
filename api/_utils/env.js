@@ -6,6 +6,31 @@
  * - Frontend must NOT import this module. Frontend uses Vite `import.meta.env` via `src/config/env.js`.
  */
 
+import { z } from 'zod';
+
+const strictEnvSchema = z.object({
+  DATABASE_URL: z.string().min(1, 'DATABASE_URL est requis'),
+  JWT_SECRET: z.string().min(1, 'JWT_SECRET est requis'),
+  ADA_ENCRYPTION_KEY: z.string().min(1, 'ADA_ENCRYPTION_KEY est requis'),
+  KV_REST_API_URL: z.string().min(1).optional(), 
+  KV_REST_API_TOKEN: z.string().min(1).optional(),
+}).passthrough();
+
+try {
+  strictEnvSchema.parse(process.env);
+} catch (error) {
+  console.error("❌ ERREUR CRITIQUE D'ENVIRONNEMENT : Variables requises manquantes ou invalides.");
+  console.error(error.errors);
+  // Don't kill the process in test/E2E/CI mock environments where
+  // the backend is fully mocked and these secrets are never used.
+  const isSafeToSkip = process.env.NODE_ENV === 'test'
+    || process.env.USE_MOCKS === 'true'
+    || process.env.VITEST === 'true';
+  if (!isSafeToSkip) {
+    process.exit(1);
+  }
+}
+
 /**
  * @typedef {object} GetEnvOptions
  * @property {boolean=} required

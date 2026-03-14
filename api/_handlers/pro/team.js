@@ -1,7 +1,9 @@
 import logger from '../../_utils/logger.js';
 // @ts-nocheck
-import prisma from '../../_utils/prisma.js';
-import { logProAudit } from '../../lib/pro-auth.js';
+import { db } from '../../../src/db/index.js';
+import { ProUser, Invitation } from '../../../src/db/schema.js';
+import { eq, desc, isNull, sql, and } from 'drizzle-orm';
+import { logProAudit } from '../../_utils/auth.js';
 import { AUTH_ROLE, requireProRole, requireProStructureContext } from '../../_utils/auth.js';
 import { createNotification } from './notifications.js';
 const VALID_ROLES = ['PRO', 'STRUCTURE_ADMIN', 'SUPERADMIN'];
@@ -27,21 +29,29 @@ async function handler(req, res) {
             const limit = Math.min(50, Math.max(1, parseInt(url.searchParams.get('limit') || '20', 10)));
             const skip = (page - 1) * limit;
 
-            const [users, total] = await Promise.all([
-                prisma.proUser.findMany({
-                    where: { structureId },
-                    select: { id: true, email: true, role: true, status: true, createdAt: true },
-                    orderBy: { createdAt: 'desc' },
-                    take: limit,
-                    skip,
+            const [users, totalRes] = await Promise.all([
+                db.query.ProUser.findMany({
+                    where: eq(ProUser.structureId, structureId),
+                    columns: { id: true, email: true, role: true, status: true, createdAt: true },
+                    orderBy: [desc(ProUser.createdAt)],
+                    limit: limit,
+                    offset: skip,
                 }),
-                prisma.proUser.count({ where: { structureId } }),
+                db.select({ count: sql`count(*)` }).from(ProUser).where(eq(ProUser.structureId, structureId))
             ]);
+            const total = Number(totalRes[0].count);
 
-            const invitations = await prisma.invitation.findMany({
-                where: { structureId, used_at: null },
-                orderBy: { created_at: 'desc' },
-                take: 10,
+            const invitations = await db.query.Invitation.findMany({
+                where: and(eq(Invitation.structureId, structureId), isNull(Invitation.used_at)),
+                columns: {
+                  id: true,
+                  email: true,
+                  role: true,
+                  expires_at: true,
+                  createdAt: true,
+                },
+                orderBy: [desc(Invitation.createdAt)],
+                limit: 10,
             });
 
             return res.status(200).json({
@@ -75,8 +85,8 @@ async function handler(req, res) {
             }
 
             // Verify target user belongs to same structure
-            const targetUser = await prisma.proUser.findFirst({
-                where: { id: targetUserId, structureId },
+            const targetUser = await db.query.ProUser.findFirst({
+                where: and(eq(ProUser.id, targetUserId), eq(ProUser.structureId, structureId))
             });
 
             if (!targetUser) {
@@ -85,10 +95,9 @@ async function handler(req, res) {
 
             const previousRole = targetUser.role;
 
-            await prisma.proUser.update({
-                where: { id: targetUserId },
-                data: { role },
-            });
+            await db.update(ProUser)
+                .set({ role })
+                .where(eq(ProUser.id, targetUserId));
 
             // Audit
             await logProAudit('USER_ROLE_CHANGED', userId, structureId, {
@@ -128,18 +137,17 @@ async function handler(req, res) {
                 return res.status(400).json({ error: 'Impossible de se désactiver soi-même.' });
             }
 
-            const targetUser = await prisma.proUser.findFirst({
-                where: { id: targetUserId, structureId },
+            const targetUser = await db.query.ProUser.findFirst({
+                where: and(eq(ProUser.id, targetUserId), eq(ProUser.structureId, structureId))
             });
 
             if (!targetUser) {
                 return res.status(404).json({ error: 'Utilisateur introuvable.' });
             }
 
-            await prisma.proUser.update({
-                where: { id: targetUserId },
-                data: { status: 'disabled' },
-            });
+            await db.update(ProUser)
+                .set({ status: 'disabled' })
+                .where(eq(ProUser.id, targetUserId));
 
             await logProAudit('USER_DISABLED', userId, structureId, {
                 targetUserId,

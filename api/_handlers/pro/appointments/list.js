@@ -1,5 +1,7 @@
 import logger from '../../../_utils/logger.js';
-import prisma from '../../../_utils/prisma.js';
+import { db } from '../../../../src/db/index.js';
+import { Appointment } from '../../../../src/db/schema.js';
+import { eq, and, gte, lte, count, asc } from 'drizzle-orm';
 import { requireProAuth, requireProStructureContext } from '../../../_utils/auth.js';
 /**
  * @param {import('../../../_utils/http-types').ApiRequest} req
@@ -23,37 +25,30 @@ async function handler(req, res) {
         const toDate = req.query.to ? new Date(req.query.to) : undefined;
         const status = req.query.status;
 
-        const where = {
-            structureId: proCtx.structureId,
-            ...(fromDate || toDate ? {
-                start_at: {
-                    ...(fromDate && { gte: fromDate }),
-                    ...(toDate && { lte: toDate })
-                }
-            } : {}),
-            ...(status ? { status } : {})
-        };
+        const conditions = [eq(Appointment.structureId, proCtx.structureId)];
+        if (fromDate) conditions.push(gte(Appointment.start_at, fromDate));
+        if (toDate) conditions.push(lte(Appointment.start_at, toDate));
+        if (status) conditions.push(eq(Appointment.status, status));
+        const whereFilter = and(...conditions);
 
-        const [total, appointments] = await prisma.$transaction([
-            prisma.appointment.count({ where }),
-            prisma.appointment.findMany({
-                where,
-                skip,
-                take: pageSize,
-                orderBy: { start_at: 'asc' },
-                include: {
+        const [totalRes, appointments] = await Promise.all([
+            db.select({ value: count() }).from(Appointment).where(whereFilter),
+            db.query.Appointment.findMany({
+                where: whereFilter,
+                offset: skip,
+                limit: pageSize,
+                orderBy: (a, { asc }) => [asc(a.start_at)],
+                with: {
                     beneficiary: {
-                        select: {
-                            contact_hash: true,
-                            id: true
-                        }
+                        columns: { contact_hash: true, id: true }
                     },
                     service: {
-                        select: { name: true }
+                        columns: { name: true }
                     }
                 }
             })
         ]);
+        const total = totalRes[0]?.value || 0;
 
         const items = appointments.map(app => ({
             id: app.id,

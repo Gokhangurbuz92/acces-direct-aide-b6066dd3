@@ -1,5 +1,7 @@
 import logger from '../../_utils/logger.js';
-import prisma from '../../_utils/prisma.js';
+import { db } from '../../../src/db/index.js';
+import { Availability, Appointment } from '../../../src/db/schema.js';
+import { eq, and, inArray, gte, lte } from 'drizzle-orm';
 import { addDays, format, startOfDay, endOfDay } from 'date-fns';
 /**
  * @param {import('../../_utils/http-types').ApiRequest} req
@@ -21,8 +23,8 @@ export default async function handler(req, res) {
 
     try {
         // Fetch all pros in structure
-        await prisma.availability.findMany({
-            where: { structureId }
+        await db.query.Availability.findMany({
+            where: eq(Availability.structureId, structureId)
         });
 
         // 1. Get Pro Availability Definition
@@ -31,8 +33,8 @@ export default async function handler(req, res) {
         // Let's assume structure has one main schedule or we aggregate.
         // For simpler MVP: Check if any Availability record exists for this structure.
 
-        const availabilityRecords = await prisma.availability.findMany({
-            where: { structureId }
+        const availabilityRecords = await db.query.Availability.findMany({
+            where: eq(Availability.structureId, structureId)
         });
 
         // Default Schedule if none defined
@@ -58,12 +60,13 @@ export default async function handler(req, res) {
         const endDate = endOfDay(addDays(startDate, 14)); // 2 weeks
 
         // 2. Get Existing Appointments
-        const appointments = await prisma.appointment.findMany({
-            where: {
-                structureId,
-                start_at: { gte: startDate, lte: endDate },
-                status: { in: ['confirmed', 'locked'] }
-            }
+        const appointments = await db.query.Appointment.findMany({
+            where: and(
+                eq(Appointment.structureId, structureId),
+                gte(Appointment.start_at, startDate),
+                lte(Appointment.start_at, endDate),
+                inArray(Appointment.status, ['confirmed', 'locked'])
+            )
         });
 
         const slots = [];

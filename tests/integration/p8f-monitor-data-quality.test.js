@@ -1,6 +1,13 @@
+import { vi } from "vitest";
+vi.stubEnv("KV_REST_API_URL", "http://localhost");
+vi.stubEnv("KV_REST_API_TOKEN", "mock-token");
+
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import apiHandler from '../../api/index.js';
-import prisma from '../../api/_utils/prisma.js';
+import { db } from '../../src/db/index.js';
+import * as schema from '../../src/db/schema.js';
+import { eq, sql } from 'drizzle-orm';
+import crypto from 'crypto';
 
 /**
  * @param {{
@@ -94,35 +101,33 @@ async function invokeApi(url, options = {}) {
 describe('P8-F monitor data-quality endpoint contract', () => {
   const originalTotalMax = process.env.MONITOR_DQ_OPEN_TOTAL_MAX;
   const originalP0Max = process.env.MONITOR_DQ_OPEN_P0_MAX;
-  /** @type {typeof prisma.reviewQueueItem.count} */
-  let originalCount;
 
   beforeEach(async () => {
+    vi.restoreAllMocks();
     process.env.MONITOR_DQ_OPEN_TOTAL_MAX = '500';
     process.env.MONITOR_DQ_OPEN_P0_MAX = '25';
-    originalCount = prisma.reviewQueueItem.count;
-    await prisma.reviewQueueItem.deleteMany({ where: { reason: { startsWith: 'P8F_MONITOR_' } } });
+    await await db.delete(schema.ReviewQueueItem);
   });
 
   afterEach(async () => {
-    prisma.reviewQueueItem.count = originalCount;
+    vi.restoreAllMocks();
     if (originalTotalMax == null) delete process.env.MONITOR_DQ_OPEN_TOTAL_MAX;
     else process.env.MONITOR_DQ_OPEN_TOTAL_MAX = originalTotalMax;
     if (originalP0Max == null) delete process.env.MONITOR_DQ_OPEN_P0_MAX;
     else process.env.MONITOR_DQ_OPEN_P0_MAX = originalP0Max;
-    await prisma.reviewQueueItem.deleteMany({ where: { reason: { startsWith: 'P8F_MONITOR_' } } });
+    await await db.delete(schema.ReviewQueueItem);
   });
 
   it('GET /api/monitor/data-quality returns 200 with safe metrics payload when under thresholds', async () => {
-    await prisma.reviewQueueItem.create({
-      data: {
+    await db.insert(schema.ReviewQueueItem).values({
+        id: crypto.randomUUID(),
         entityType: 'aide',
         entityId: 'p8f-monitor-1',
         reason: 'P8F_MONITOR_BASELINE',
         severity: 'P2',
         status: 'open',
-      },
-    });
+        updatedAt: new Date()
+      });
 
     const res = await invokeApi('/api/monitor/data-quality');
 
@@ -150,24 +155,26 @@ describe('P8-F monitor data-quality endpoint contract', () => {
     process.env.MONITOR_DQ_OPEN_TOTAL_MAX = '1';
     process.env.MONITOR_DQ_OPEN_P0_MAX = '1';
 
-    await prisma.reviewQueueItem.createMany({
-      data: [
+    await db.insert(schema.ReviewQueueItem).values([
         {
+          id: crypto.randomUUID(),
           entityType: 'aide',
           entityId: 'p8f-monitor-2',
           reason: 'P8F_MONITOR_OVER_1',
           severity: 'P0',
           status: 'open',
+          updatedAt: new Date()
         },
         {
+          id: crypto.randomUUID(),
           entityType: 'aide',
           entityId: 'p8f-monitor-3',
           reason: 'P8F_MONITOR_OVER_2',
           severity: 'P0',
           status: 'open',
+          updatedAt: new Date()
         },
-      ],
-    });
+      ]);
 
     const res = await invokeApi('/api/monitor/data-quality');
 
@@ -200,9 +207,9 @@ describe('P8-F monitor data-quality endpoint contract', () => {
   });
 
   it('returns 503 with safe payload when DB lookup fails', async () => {
-    prisma.reviewQueueItem.count = async () => {
+    vi.spyOn(db, 'select').mockImplementation(() => {
       throw new Error('relation private_table does not exist');
-    };
+    });
 
     const res = await invokeApi('/api/monitor/data-quality');
 

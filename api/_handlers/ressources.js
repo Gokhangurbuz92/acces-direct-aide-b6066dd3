@@ -1,5 +1,7 @@
 import logger from '../_utils/logger.js';
-import prisma from '../_utils/prisma.js';
+import { db } from '../../src/db/index.js';
+import { ResourceAccessibility } from '../../src/db/schema.js';
+import { eq, and, desc, count } from 'drizzle-orm';
 import { checkRateLimit, getClientIp } from '../_utils/rateLimit.js';
 import { z } from 'zod';
 
@@ -37,8 +39,8 @@ async function handler(req, res) {
 
         // 1. Single Item (ID or Slug)
         if (params.id || params.slug) {
-            const ressource = await prisma.resourceAccessibility.findFirst({
-                where: params.id ? { id: params.id } : { slug: params.slug }
+            const ressource = await db.query.ResourceAccessibility.findFirst({
+                where: params.id ? eq(ResourceAccessibility.id, params.id) : eq(ResourceAccessibility.slug, params.slug)
             });
 
             if (!ressource || ressource.status !== 'published') {
@@ -48,27 +50,28 @@ async function handler(req, res) {
         }
 
         // 2. Search / List
-        const where = {
-            status: 'published'
-        };
+        const conditionArr = [eq(ResourceAccessibility.status, 'published')];
 
         if (params.type) {
-            where.type = params.type;
+            conditionArr.push(eq(ResourceAccessibility.type, params.type));
         }
 
         if (params.territory_scope) {
-            where.territory_scope = params.territory_scope;
+            conditionArr.push(eq(ResourceAccessibility.territory_scope, params.territory_scope));
         }
+        
+        const conditions = conditionArr.length === 1 ? conditionArr[0] : and(...conditionArr);
 
-        const [items, total] = await Promise.all([
-            prisma.resourceAccessibility.findMany({
-                where,
-                orderBy: { createdAt: 'desc' },
-                skip: (params.page - 1) * params.pageSize,
-                take: params.pageSize
+        const [items, totalRes] = await Promise.all([
+            db.query.ResourceAccessibility.findMany({
+                where: conditions,
+                orderBy: [desc(ResourceAccessibility.createdAt)],
+                offset: (params.page - 1) * params.pageSize,
+                limit: params.pageSize
             }),
-            prisma.resourceAccessibility.count({ where })
+            db.select({ count: count() }).from(ResourceAccessibility).where(conditions)
         ]);
+        const total = Number(totalRes[0].count);
 
         return res.status(200).json({
             items,

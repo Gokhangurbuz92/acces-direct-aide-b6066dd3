@@ -1,4 +1,6 @@
-import prisma from '../../_utils/prisma.js';
+import { db } from '../../../src/db/index.js';
+import { AuthToken, CitizenUser } from '../../../src/db/schema.js';
+import { eq } from 'drizzle-orm';
 import { hashAuthToken, normalizeNextPath, redirect } from '../../_utils/user-auth.js';
 
 /**
@@ -47,9 +49,9 @@ export default async function handler(req, res) {
 
   try {
     const tokenHash = hashAuthToken(token);
-    const tokenRow = await prisma.authToken.findUnique({
-      where: { tokenHash },
-      include: { user: true },
+    const tokenRow = await db.query.AuthToken.findFirst({
+      where: eq(AuthToken.tokenHash, tokenHash),
+      with: { user: true },
     });
 
     if (!tokenRow || tokenRow.type !== 'EMAIL_VERIFY' || !tokenRow.user) {
@@ -60,16 +62,10 @@ export default async function handler(req, res) {
       return redirect(res, buildUiRedirect('expired', nextPath), 302);
     }
 
-    await prisma.$transaction([
-      prisma.authToken.update({
-        where: { id: tokenRow.id },
-        data: { usedAt: new Date() },
-      }),
-      prisma.citizenUser.update({
-        where: { id: tokenRow.user.id },
-        data: { emailVerifiedAt: tokenRow.user.emailVerifiedAt || new Date() },
-      }),
-    ]);
+    await db.transaction(async (tx) => {
+      await tx.update(AuthToken).set({ usedAt: new Date() }).where(eq(AuthToken.id, tokenRow.id));
+      await tx.update(CitizenUser).set({ emailVerifiedAt: tokenRow.user.emailVerifiedAt || new Date() }).where(eq(CitizenUser.id, tokenRow.user.id));
+    });
 
     return redirect(res, buildUiRedirect('success', nextPath), 302);
   } catch {

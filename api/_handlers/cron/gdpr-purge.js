@@ -1,5 +1,7 @@
 import logger from '../../_utils/logger.js';
-import prisma from '../../_utils/prisma.js';
+import { db } from '../../../src/db/index.js';
+import { EntityVersion, UpdateLog, AuditLog } from '../../../src/db/schema.js';
+import { lt } from 'drizzle-orm';
 import { getCronAuth } from '../../_utils/cronAuth.js';
 
 const RETENTION_DAYS = 90;
@@ -30,30 +32,24 @@ export default async function handler(req, res) {
         logger.info(`🧹 Starting GDPR Purge (older than ${RETENTION_DAYS} days: ${cutoff.toISOString()})...`);
 
         // 1. Purge Old Entity Versions
-        const deletedVersions = await prisma.entityVersion.deleteMany({
-            where: { createdAt: { lt: cutoff } }
-        });
+        const deletedVersions = await db.delete(EntityVersion).where(lt(EntityVersion.createdAt, cutoff));
+        const deletedVersionsCount = deletedVersions.length;
 
         // 2. Purge Old Update Logs
-        const deletedLogs = await prisma.updateLog.deleteMany({
-            where: { createdAt: { lt: cutoff } }
-        });
+        const deletedLogs = await db.delete(UpdateLog).where(lt(UpdateLog.createdAt, cutoff));
+        const deletedLogsCount = deletedLogs.length;
 
         // 3. Purge sensitive logs if they exist (AuditLog)
-        // Check if AuditLog exists in schema first... 
-        // Based on previous listings, we have AuditLog.
-        let deletedAudit = 0;
+        let deletedAuditCount = 0;
         try {
-            const auditRes = await prisma.auditLog.deleteMany({
-                where: { createdAt: { lt: cutoff } }
-            });
-            deletedAudit = auditRes.count;
+            const auditRes = await db.delete(AuditLog).where(lt(AuditLog.timestamp, cutoff));
+            deletedAuditCount = auditRes.length;
         } catch { /* Might not exist yet */ }
 
         const summary = {
-            versions_deleted: deletedVersions.count,
-            update_logs_deleted: deletedLogs.count,
-            audit_logs_deleted: deletedAudit,
+            versions_deleted: deletedVersionsCount,
+            update_logs_deleted: deletedLogsCount,
+            audit_logs_deleted: deletedAuditCount,
             status: 'success'
         };
 

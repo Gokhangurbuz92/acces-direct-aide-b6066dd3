@@ -37,6 +37,10 @@
     {
       "path": "/api/cron/rdv-reminder",
       "schedule": "0 8 * * *"
+    },
+    {
+      "path": "/api/cron/backup-db",
+      "schedule": "0 1 * * 0"
     }
   ],
   "redirects": [
@@ -126,7 +130,7 @@
         },
         {
           "key": "Content-Security-Policy",
-          "value": "default-src 'self'; connect-src 'self' https: wss: *.sentry.io https://meet.jit.si; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://meet.jit.si; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; worker-src 'self' blob:; img-src 'self' data: https: blob:; font-src 'self' data: https://fonts.gstatic.com; frame-src https://meet.jit.si; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'; upgrade-insecure-requests;"
+          "value": "default-src 'self'; script-src 'self' 'unsafe-inline' https://va.vercel-scripts.com; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; connect-src 'self' https://api.service-public.fr https://api.accesdirectaide.fr;"
         }
       ]
     }

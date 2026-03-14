@@ -1,6 +1,8 @@
 import logger from '../../../_utils/logger.js';
 // @ts-nocheck
-import prisma from '../../../_utils/prisma.js';
+import { db } from '../../../../src/db/index.js';
+import { ProMessage, ProNotification } from '../../../../src/db/schema.js';
+import { eq, and, isNull, ne, count } from 'drizzle-orm';
 import { requireProAuth, requireProStructureContext } from '../../../_utils/auth.js';
 
 /**
@@ -23,20 +25,22 @@ async function handler(req, res) {
 
     try {
         // Count ProMessages not sent by this user AND not yet read
-        const messageCount = await prisma.proMessage.count({
-            where: {
-                readAt: null,
-                senderId: { not: userId },
-            },
-        });
+        const messageCountRes = await db.select({ count: count() }).from(ProMessage).where(
+            and(
+                isNull(ProMessage.readAt),
+                ne(ProMessage.senderId, userId)
+            )
+        );
+        const messageCount = messageCountRes[0].count;
 
         // Also get ProNotification unread count for a unified badge
-        const notifCount = await prisma.proNotification.count({
-            where: {
-                userId,
-                readAt: null,
-            },
-        });
+        const notifCountRes = await db.select({ count: count() }).from(ProNotification).where(
+            and(
+                eq(ProNotification.userId, userId),
+                isNull(ProNotification.readAt)
+            )
+        );
+        const notifCount = notifCountRes[0].count;
 
         return res.status(200).json({
             ok: true,

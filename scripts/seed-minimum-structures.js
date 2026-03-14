@@ -1,6 +1,6 @@
 
-import prisma from '../api/_utils/prisma.js';
-
+import { db } from '../src/db/index.js';
+import { Structure } from '../src/db/schema.js';
 
 const structures = [
     // STRASBOURG & CUS (67)
@@ -235,10 +235,9 @@ for (const s of structures) {
 async function main() {
     console.log('Seeding ' + uniqueStructures.length + ' structures...');
     for (const sData of uniqueStructures) {
-        await prisma.structure.upsert({
-            where: { slug: sData.slug },
-            update: sData,
-            create: sData,
+        await db.insert(Structure).values(sData).onConflictDoUpdate({
+            target: [Structure.slug],
+            set: sData,
         });
     }
     console.log('Seeding structures complete.');
@@ -248,7 +247,5 @@ main()
     .catch((e) => {
         console.error(e);
         process.exit(1);
-    })
-    .finally(async () => {
-        await prisma.$disconnect();
     });
+

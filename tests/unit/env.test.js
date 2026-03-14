@@ -1,4 +1,8 @@
-import { afterEach, describe, expect, it, vi } from 'vitest';
+import { vi } from "vitest";
+vi.stubEnv("KV_REST_API_URL", "http://localhost");
+vi.stubEnv("KV_REST_API_TOKEN", "mock-token");
+
+import { afterEach, describe, expect, it } from 'vitest';
 import { env, envAliases, getEnv, requireEnv } from '../../api/_utils/env.js';
 
 function snapshotEnv(keys) {

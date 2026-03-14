@@ -2,7 +2,8 @@ import logger from '../_utils/logger.js';
 import { randomUUID } from 'crypto';
 import * as Sentry from '@sentry/node';
 
-import prisma from '../_utils/prisma.js';
+import { db } from '../../src/db/index.js';
+import { ContentReport } from '../../src/db/schema.js';
 import { checkRateLimit, getClientIp } from '../_utils/rateLimit.js';
 
 const CONTENT_TYPE_MAP = {
@@ -122,17 +123,14 @@ export default async function handler(req, res) {
   }
 
   try {
-    const report = await prisma.contentReport.create({
-      data: {
+    const [report] = await db.insert(ContentReport).values({
         contentType: CONTENT_TYPE_MAP[type],
         contentId: id || `slug:${slug}`,
         reason: 'AUTRE',
         message,
         pageUrl,
         reporterEmail: email,
-      },
-      select: { id: true },
-    });
+    }).returning();
 
     log.info({
       msg: 'feedback.created',

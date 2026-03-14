@@ -1,7 +1,9 @@
 import logger from '../../_utils/logger.js';
 // @ts-nocheck
 import { requireProAuth } from '../../_utils/auth.js';
-import prisma from '../../_utils/prisma.js';
+import { db } from '../../../src/db/index.js';
+import { ProOutlookToken } from '../../../src/db/schema.js';
+import { eq } from 'drizzle-orm';
 import crypto from 'crypto';
 
 import { env } from '../../_utils/env.js';
@@ -16,13 +18,13 @@ const SCOPES = 'openid profile email Calendars.ReadWrite offline_access';
 
 // ── AES-256-GCM helpers ──
 function encrypt(text) {
-    if (!TOKEN_KEY || TOKEN_KEY.length < 32) return text; // dev fallback: plaintext
+    if (!TOKEN_KEY || TOKEN_KEY.length < 32) return { content: text }; // dev fallback: plaintext
     const key = Buffer.from(TOKEN_KEY.slice(0, 32), 'utf8');
     const iv = crypto.randomBytes(12);
     const cipher = crypto.createCipheriv('aes-256-gcm', key, iv, { authTagLength: 16 });
     const encrypted = Buffer.concat([cipher.update(text, 'utf8'), cipher.final()]);
     const tag = cipher.getAuthTag();
-    return `${iv.toString('hex')}:${tag.toString('hex')}:${encrypted.toString('hex')}`;
+    return { content: `${iv.toString('hex')}:${tag.toString('hex')}:${encrypted.toString('hex')}` };
 }
 
 function decrypt(data) {
@@ -128,22 +130,27 @@ async function handler(req, res) {
 
             // Persist tokens (encrypted at rest)
             const expiresAt = new Date(Date.now() + (tokens.expires_in || 3600) * 1000);
-            await prisma.proOutlookToken.upsert({
-                where: { userId },
-                update: {
-                    accessToken: encrypt(tokens.access_token),
-                    refreshToken: encrypt(tokens.refresh_token || ''),
-                    expiresAt,
-                    scope: tokens.scope || null,
-                },
-                create: {
-                    userId,
-                    accessToken: encrypt(tokens.access_token),
-                    refreshToken: encrypt(tokens.refresh_token || ''),
-                    expiresAt,
-                    scope: tokens.scope || null,
-                },
+            
+            const existingToken = await db.query.ProOutlookToken.findFirst({
+                where: eq(ProOutlookToken.userId, userId)
             });
+
+            if (existingToken) {
+                await db.update(ProOutlookToken).set({
+                    accessTokenEnc: encrypt(tokens.access_token).content,
+                    refreshTokenEnc: encrypt(tokens.refresh_token || '').content,
+                    expiresAt,
+                    scope: tokens.scope || null,
+                }).where(eq(ProOutlookToken.userId, userId));
+            } else {
+                await db.insert(ProOutlookToken).values({
+                    userId,
+                    accessTokenEnc: encrypt(tokens.access_token).content,
+                    refreshTokenEnc: encrypt(tokens.refresh_token || '').content,
+                    expiresAt,
+                    scope: tokens.scope || null,
+                });
+            }
 
             logger.info({ userId }, '[Outlook] OAuth connected — tokens persisted');
 
@@ -157,9 +164,9 @@ async function handler(req, res) {
 
         // ── Status: Check if connected ──
         if (action === 'status' && req.method === 'GET') {
-            const stored = await prisma.proOutlookToken.findUnique({
-                where: { userId },
-                select: { expiresAt: true, scope: true, updatedAt: true },
+            const stored = await db.query.ProOutlookToken.findFirst({
+                where: eq(ProOutlookToken.userId, userId),
+                columns: { expiresAt: true, scope: true, updatedAt: true },
             });
 
             if (!stored) {
@@ -183,7 +190,7 @@ async function handler(req, res) {
 
         // ── Disconnect ──
         if (action === 'disconnect' && req.method === 'POST') {
-            await prisma.proOutlookToken.deleteMany({ where: { userId } });
+            await db.delete(ProOutlookToken).where(eq(ProOutlookToken.userId, userId));
             logger.info({ userId }, '[Outlook] Disconnected — tokens removed');
             return res.status(200).json({ ok: true, status: 'disconnected' });
         }

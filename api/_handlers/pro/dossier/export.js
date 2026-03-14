@@ -1,8 +1,10 @@
 import logger from '../../../_utils/logger.js';
 // @ts-nocheck
-import prisma from '../../../_utils/prisma.js';
+import { db } from '../../../../src/db/index.js';
+import { SharedDiagnostic } from '../../../../src/db/schema.js';
+import { eq } from 'drizzle-orm';
 import { requireProAuth, requireProStructureContext } from '../../../_utils/auth.js';
-import { logProAudit } from '../../../lib/pro-auth.js';
+import { logProAudit } from '../../../_utils/auth.js';
 /**
  * Dossier Export API (Pro-only, RGPD)
  *
@@ -30,8 +32,8 @@ async function handler(req, res) {
     }
 
     try {
-        const shared = await prisma.sharedDiagnostic.findUnique({
-            where: { id: shareId },
+        const shared = await db.query.SharedDiagnostic.findFirst({
+            where: eq(SharedDiagnostic.id, shareId),
         });
 
         if (!shared) {

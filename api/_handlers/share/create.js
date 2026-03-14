@@ -1,5 +1,7 @@
 import logger from '../../_utils/logger.js';
-import prisma from '../../_utils/prisma.js';
+import crypto from 'node:crypto';
+import { db } from '../../../src/db/index.js';
+import { SharedDiagnostic } from '../../../src/db/schema.js';
 
 /**
  * POST /api/share/create
@@ -28,13 +30,12 @@ export default async function handler(req, res) {
         const expiresAt = new Date();
         expiresAt.setDate(expiresAt.getDate() + 7); // 7-day expiration
 
-        const shared = await prisma.sharedDiagnostic.create({
-            data: {
-                situation,
-                results,
-                expiresAt,
-            },
-        });
+        const [shared] = await db.insert(SharedDiagnostic).values({
+            id: crypto.randomUUID(),
+            situation,
+            results,
+            expiresAt,
+        }).returning();
 
         return res.status(200).json({
             success: true,

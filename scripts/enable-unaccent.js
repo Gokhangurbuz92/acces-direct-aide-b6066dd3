@@ -1,17 +1,14 @@
 
-import prisma from '../api/_utils/prisma.js';
-
-
+import { db } from '../src/db/index.js';
+import { sql } from 'drizzle-orm';
 
 async function main() {
     console.log("Enabling 'unaccent' extension...");
     try {
-        await prisma.$executeRaw`CREATE EXTENSION IF NOT EXISTS unaccent;`;
+        await db.execute(sql`CREATE EXTENSION IF NOT EXISTS unaccent;`);
         console.log("✅ Extension 'unaccent' enabled.");
     } catch (e) {
         console.error("❌ Failed to enable extension:", e.message);
-    } finally {
-        await prisma.$disconnect();
     }
 }
 

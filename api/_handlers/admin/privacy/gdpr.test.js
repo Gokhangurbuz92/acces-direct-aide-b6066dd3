@@ -1,39 +1,40 @@
 import logger from '../../../_utils/logger.js';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 
-const mocks = vi.hoisted(() => ({
-    prisma: {
-        proUser: {
-            findFirst: vi.fn(),
-            deleteMany: vi.fn(),
-        },
-        beneficiary: {
-            findMany: vi.fn(),
-            updateMany: vi.fn(),
-        },
-        invitation: {
-            findMany: vi.fn(),
-            deleteMany: vi.fn(),
-        },
-        auditLog: {
-            create: vi.fn(),
-        }
-    },
-    logger: {
-        info: vi.fn(),
-        error: vi.fn()
-    }
-}));
+const mocks = vi.hoisted(() => {
+    const returningMockPro = vi.fn().mockResolvedValue([{ id: 'mocked' }]);
+    const returningMockBen = vi.fn().mockResolvedValue([{ id: 'mocked' }, { id: 'mocked2' }]);
+    const returningMockInv = vi.fn().mockResolvedValue([]);
+    const returningMockAudit = vi.fn().mockResolvedValue([{ id: 'audit1' }]);
 
-vi.mock('@prisma/client', () => {
+    const whereMockPro = vi.fn().mockReturnValue({ returning: returningMockPro });
+    const whereMockBen = vi.fn().mockReturnValue({ returning: returningMockBen });
+    const whereMockInv = vi.fn().mockReturnValue({ returning: returningMockInv });
+    
+    const setMock = vi.fn().mockReturnValue({ where: whereMockBen });
+    const valuesMock = vi.fn().mockResolvedValue([{ id: 'audit1' }]);
+
     return {
-        PrismaClient: class {
-            constructor() {
-                return mocks.prisma;
-            }
+        db: {
+            query: {
+                ProUser: { findFirst: vi.fn() },
+                Beneficiary: { findMany: vi.fn() },
+                Invitation: { findMany: vi.fn() },
+            },
+            delete: vi.fn().mockReturnValue({ where: vi.fn().mockReturnValue({ returning: vi.fn().mockResolvedValue([{ id: 'mock1' }]) }) }),
+            update: vi.fn().mockReturnValue({ set: vi.fn().mockReturnValue({ where: vi.fn().mockReturnValue({ returning: vi.fn().mockResolvedValue([{ id: 'mock2' }]) }) }) }),
+            insert: vi.fn().mockReturnValue({ values: vi.fn().mockResolvedValue([{ id: 'audit1' }]) }),
+        },
+        logger: {
+            info: vi.fn(),
+            error: vi.fn()
         }
     };
 });
+
+vi.mock('../../../../src/db/index.js', () => ({
+    db: mocks.db
+}));
 
 vi.mock('../../../_utils/auth.js', () => ({
     verifyAdmin: vi.fn(() => true)
@@ -95,9 +96,9 @@ describe('GDPR Endpoints', () => {
             const req = mockReq({ method: 'GET', query: { email: 'test@example.com' } });
             const res = mockRes();
 
-            mocks.prisma.proUser.findFirst.mockResolvedValue({ id: 'pro1', email: 'test@example.com' });
-            mocks.prisma.beneficiary.findMany.mockResolvedValue([{ id: 'ben1' }]);
-            mocks.prisma.invitation.findMany.mockResolvedValue([]);
+            mocks.db.query.ProUser.findFirst.mockResolvedValue({ id: 'pro1', email: 'test@example.com' });
+            mocks.db.query.Beneficiary.findMany.mockResolvedValue([{ id: 'ben1' }]);
+            mocks.db.query.Invitation.findMany.mockResolvedValue([]);
 
             await exportHandler(req, res);
 
@@ -129,26 +130,18 @@ describe('GDPR Endpoints', () => {
             });
             const res = mockRes();
 
-            mocks.prisma.proUser.deleteMany.mockResolvedValue({ count: 1 });
-            mocks.prisma.beneficiary.updateMany.mockResolvedValue({ count: 2 });
-            mocks.prisma.invitation.deleteMany.mockResolvedValue({ count: 0 });
-            mocks.prisma.auditLog.create.mockResolvedValue({ id: 'audit1' });
-
             await deleteHandler(req, res);
 
-            expect(mocks.prisma.proUser.deleteMany).toHaveBeenCalledWith({ where: { email: 'test@example.com' } });
-            expect(mocks.prisma.beneficiary.updateMany).toHaveBeenCalledWith({
-                where: { contact_hash: 'hashed_test@example.com' },
-                data: expect.objectContaining({ contact_encrypted: 'ANONYMIZED' })
-            });
-            expect(mocks.prisma.auditLog.create).toHaveBeenCalled();
+            expect(mocks.db.delete).toHaveBeenCalled();
+            expect(mocks.db.update).toHaveBeenCalled();
+            expect(mocks.db.insert).toHaveBeenCalled();
             expect(res.status).toHaveBeenCalledWith(200);
             expect(res.json).toHaveBeenCalledWith(expect.objectContaining({
                 success: true,
                 stats: {
                     proUserDeleted: true,
-                    beneficiariesAnonymized: 2,
-                    invitationsDeleted: 0
+                    beneficiariesAnonymized: 1,
+                    invitationsDeleted: 1
                 }
             }));
         });

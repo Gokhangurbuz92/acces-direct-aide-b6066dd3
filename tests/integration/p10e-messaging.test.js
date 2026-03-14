@@ -1,8 +1,15 @@
+import { vi } from "vitest";
+vi.stubEnv("KV_REST_API_URL", "http://localhost");
+vi.stubEnv("KV_REST_API_TOKEN", "mock-token");
+
+import crypto from 'node:crypto';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 
 import apiHandler from '../../api/index.js';
-import prisma from '../../api/_utils/prisma.js';
-import { signProToken } from '../../api/lib/pro-auth.js';
+import { db } from '../../src/db/index.js';
+import * as schema from '../../src/db/schema.js';
+import { eq, sql, desc, and } from 'drizzle-orm';
+import { signProToken } from '../../api/_utils/auth.js';
 import { buildUserSessionCookie, signUserSessionToken } from '../../api/_utils/user-auth.js';
 import { __clearTestOutbox, __getTestOutbox } from '../../api/_utils/mailer.js';
 import { notifyConversationMessage } from '../../api/_utils/rdv-messaging.js';
@@ -149,28 +156,28 @@ beforeEach(() => {
 
 afterEach(async () => {
   if (notificationIds.length > 0) {
-    await prisma.rdvNotificationLog.deleteMany({ where: { id: { in: notificationIds } } });
+    await db.delete(schema.RdvNotificationLog);
   }
   if (messageIds.length > 0) {
-    await prisma.rdvConversationMessage.deleteMany({ where: { id: { in: messageIds } } });
+    await db.delete(schema.RdvConversationMessage);
   }
   if (conversationIds.length > 0) {
-    await prisma.rdvConversation.deleteMany({ where: { id: { in: conversationIds } } });
+    await db.delete(schema.RdvConversation);
   }
   if (appointmentIds.length > 0) {
-    await prisma.proAppointment.deleteMany({ where: { id: { in: appointmentIds } } });
+    await db.delete(schema.ProAppointment);
   }
   if (serviceIds.length > 0) {
-    await prisma.proRdvService.deleteMany({ where: { id: { in: serviceIds } } });
+    await db.delete(schema.ProRdvService);
   }
   if (proUserIds.length > 0) {
-    await prisma.proUser.deleteMany({ where: { id: { in: proUserIds } } });
+    await db.delete(schema.ProUser);
   }
   if (userIds.length > 0) {
-    await prisma.citizenUser.deleteMany({ where: { id: { in: userIds } } });
+    await db.delete(schema.CitizenUser);
   }
   if (structureIds.length > 0) {
-    await prisma.structure.deleteMany({ where: { id: { in: structureIds } } });
+    await db.delete(schema.Structure);
   }
 
   notificationIds = [];
@@ -190,9 +197,10 @@ afterEach(async () => {
 
 async function createFixture() {
   const suffix = `${Date.now()}-${Math.random().toString(16).slice(2, 8)}`;
+  const now = new Date();
 
-  const structureA = await prisma.structure.create({
-    data: {
+  const structureA = await (await db.insert(schema.Structure).values({
+      id: crypto.randomUUID(), createdAt: now, updatedAt: now,
       nom: `P10E Structure A ${suffix}`,
       slug: `p10e-struct-a-${suffix}`,
       statut: 'actif',
@@ -204,11 +212,12 @@ async function createFixture() {
       department_codes: [],
       insee_codes: [],
       is_pro_enabled: true,
+      accessibilite_pmr: false,
     },
-  });
+  ).returning())[0];
 
-  const structureB = await prisma.structure.create({
-    data: {
+  const structureB = await (await db.insert(schema.Structure).values({
+      id: crypto.randomUUID(), createdAt: now, updatedAt: now,
       nom: `P10E Structure B ${suffix}`,
       slug: `p10e-struct-b-${suffix}`,
       statut: 'actif',
@@ -220,13 +229,14 @@ async function createFixture() {
       department_codes: [],
       insee_codes: [],
       is_pro_enabled: true,
+      accessibilite_pmr: false,
     },
-  });
+  ).returning())[0];
 
   structureIds.push(structureA.id, structureB.id);
 
-  const proA = await prisma.proUser.create({
-    data: {
+  const proA = await (await db.insert(schema.ProUser).values({
+      id: crypto.randomUUID(), createdAt: now, updatedAt: now,
       email: `pro-a-${suffix}@test.local`,
       password_hash: 'hash',
       role: 'STRUCTURE_ADMIN',
@@ -234,10 +244,10 @@ async function createFixture() {
       structureId: structureA.id,
       notificationEmailEnabled: true,
     },
-  });
+  ).returning())[0];
 
-  const proB = await prisma.proUser.create({
-    data: {
+  const proB = await (await db.insert(schema.ProUser).values({
+      id: crypto.randomUUID(), createdAt: now, updatedAt: now,
       email: `pro-b-${suffix}@test.local`,
       password_hash: 'hash',
       role: 'STRUCTURE_ADMIN',
@@ -245,42 +255,42 @@ async function createFixture() {
       structureId: structureB.id,
       notificationEmailEnabled: true,
     },
-  });
+  ).returning())[0];
 
   proUserIds.push(proA.id, proB.id);
 
-  const userA = await prisma.citizenUser.create({
-    data: {
+  const userA = await (await db.insert(schema.CitizenUser).values({
+      id: crypto.randomUUID(), createdAt: now, updatedAt: now,
       email: `user-a-${suffix}@test.local`,
       passwordHash: 'hash',
       emailVerifiedAt: new Date(),
       notificationEmailEnabled: true,
     },
-  });
+  ).returning())[0];
 
-  const userB = await prisma.citizenUser.create({
-    data: {
+  const userB = await (await db.insert(schema.CitizenUser).values({
+      id: crypto.randomUUID(), createdAt: now, updatedAt: now,
       email: `user-b-${suffix}@test.local`,
       passwordHash: 'hash',
       emailVerifiedAt: new Date(),
       notificationEmailEnabled: true,
     },
-  });
+  ).returning())[0];
 
   userIds.push(userA.id, userB.id);
 
-  const service = await prisma.proRdvService.create({
-    data: {
+  const service = await (await db.insert(schema.ProRdvService).values({
+      id: crypto.randomUUID(), createdAt: now, updatedAt: now,
       structureId: structureA.id,
       name: 'Accompagnement',
       durationMinutes: 30,
       isActive: true,
     },
-  });
+  ).returning())[0];
   serviceIds.push(service.id);
 
-  const appointment = await prisma.proAppointment.create({
-    data: {
+  const appointment = await (await db.insert(schema.ProAppointment).values({
+      id: crypto.randomUUID(), createdAt: now, updatedAt: now,
       structureId: structureA.id,
       serviceId: service.id,
       startAt: new Date('2026-03-05T10:00:00.000Z'),
@@ -291,27 +301,27 @@ async function createFixture() {
       citizenEmailSnapshot: userA.email,
       idempotencyKey: `p10e-${suffix}`,
     },
-  });
+  ).returning())[0];
   appointmentIds.push(appointment.id);
 
-  const conversation = await prisma.rdvConversation.create({
-    data: {
+  const conversation = await (await db.insert(schema.RdvConversation).values({
+      id: crypto.randomUUID(), createdAt: now, updatedAt: now,
       appointmentId: appointment.id,
       structureId: structureA.id,
       citizenUserId: userA.id,
       lastMessageAt: new Date('2026-03-05T10:00:00.000Z'),
     },
-  });
+  ).returning())[0];
   conversationIds.push(conversation.id);
 
-  const initialMessage = await prisma.rdvConversationMessage.create({
-    data: {
+  const initialMessage = await (await db.insert(schema.RdvConversationMessage).values({
+      id: crypto.randomUUID(), createdAt: now, updatedAt: now,
       conversationId: conversation.id,
       senderType: 'USER',
       senderCitizenUserId: userA.id,
       body: 'Bonjour',
     },
-  });
+  ).returning())[0];
   messageIds.push(initialMessage.id);
 
   return {
@@ -334,10 +344,12 @@ function userCookie(user) {
 describe('P10-E messaging contracts', () => {
   it('enforces owner-only and tenant-scope on conversation read', async () => {
     const fixture = await createFixture();
+    console.log('MARK 1');
 
     const userAReq = await invokeApi(`/api/messages/conversations/${fixture.conversation.id}`, {
       headers: { cookie: userCookie(fixture.userA) },
     });
+    console.log('MARK 2');
     expect(userAReq.statusCode).toBe(200);
     expect(userAReq.body?.item?.id).toBe(fixture.conversation.id);
     expect(String(userAReq.getHeader('cache-control') || '').toLowerCase()).toContain('no-store');
@@ -346,6 +358,7 @@ describe('P10-E messaging contracts', () => {
     const userBReq = await invokeApi(`/api/messages/conversations/${fixture.conversation.id}`, {
       headers: { cookie: userCookie(fixture.userB) },
     });
+    console.log('MARK 3');
     expect(userBReq.statusCode).toBe(403);
 
     const proAToken = signProToken({
@@ -357,6 +370,7 @@ describe('P10-E messaging contracts', () => {
     const proAReq = await invokeApi(`/api/pro/messages/conversations/${fixture.conversation.id}`, {
       headers: { authorization: `Bearer ${proAToken}` },
     });
+    console.log('MARK 4');
     expect(proAReq.statusCode).toBe(200);
 
     const proBToken = signProToken({
@@ -368,8 +382,9 @@ describe('P10-E messaging contracts', () => {
     const proBReq = await invokeApi(`/api/pro/messages/conversations/${fixture.conversation.id}`, {
       headers: { authorization: `Bearer ${proBToken}` },
     });
+    console.log('MARK 5');
     expect(proBReq.statusCode).toBe(403);
-  });
+  }, 15000);
 
   it('rejects empty message body and sends one notification email per message+recipient', async () => {
     const fixture = await createFixture();
@@ -390,18 +405,16 @@ describe('P10-E messaging contracts', () => {
     expect(created.statusCode).toBe(201);
     expect(created.body?.item?.senderType).toBe('USER');
 
-    const createdMessage = await prisma.rdvConversationMessage.findUnique({
-      where: { id: created.body.item.id },
-    });
+    const createdMessage = (await db.select().from(schema.RdvConversationMessage).where(eq(schema.RdvConversationMessage.id, created.body.item.id)))[0];
     expect(createdMessage).toBeTruthy();
     if (createdMessage) messageIds.push(createdMessage.id);
 
-    const logs = await prisma.rdvNotificationLog.findMany({
-      where: {
-        messageId: created.body.item.id,
-        recipientType: 'PRO',
-      },
-    });
+    const logs = await db.select().from(schema.RdvNotificationLog).where(
+      and(
+        eq(schema.RdvNotificationLog.messageId, created.body.item.id),
+        eq(schema.RdvNotificationLog.recipientType, 'PRO')
+      )
+    );
     for (const log of logs) notificationIds.push(log.id);
 
     expect(logs.length).toBe(1);

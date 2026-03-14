@@ -81,12 +81,12 @@ function buildTestEnv() {
     DATABASE_URL_UNPOOLED: databaseUrlTest,
 
     // Never talk to external KV/Upstash during unit/integration tests.
-    KV_REST_API_URL: '',
-    KV_REST_API_TOKEN: '',
-    UPSTASH_KV_KV_REST_API_URL: '',
-    UPSTASH_KV_KV_REST_API_TOKEN: '',
-    UPSTASH_REDIS_REST_URL: '',
-    UPSTASH_REDIS_REST_TOKEN: '',
+    KV_REST_API_URL: 'http://localhost',
+    KV_REST_API_TOKEN: 'dummy',
+    UPSTASH_KV_KV_REST_API_URL: 'http://localhost',
+    UPSTASH_KV_KV_REST_API_TOKEN: 'dummy',
+    UPSTASH_REDIS_REST_URL: 'http://localhost',
+    UPSTASH_REDIS_REST_TOKEN: 'dummy',
   };
 
   // Provide safe defaults for required secrets in test mode.
@@ -96,6 +96,13 @@ function buildTestEnv() {
   env.CRON_SECRET ||= 'test-cron-secret';
   env.ADMIN_TOKEN ||= 'test-admin-token';
   env.BYPASS_SECRET ||= 'test-bypass-secret';
+
+  // Dummy Storage config
+  env.STORAGE_ENDPOINT ||= 'http://localhost:9000';
+  env.STORAGE_BUCKET ||= 'test-bucket';
+  env.STORAGE_ACCESS_KEY_ID ||= 'test-access-key';
+  env.STORAGE_SECRET_ACCESS_KEY ||= 'test-secret-key';
+  env.STORAGE_PUBLIC_URL ||= 'http://localhost:9000/test-bucket';
 
   return env;
 }
@@ -149,14 +156,14 @@ function run(cmd, args, env) {
 
 const env = buildTestEnv();
 
-// 1) Deterministic DB reset (schema from Prisma + seed).
+// 1) Deterministic DB reset (schema from Drizzle + seed).
 if (!process.env.SKIP_DB_SETUP) {
   await ensureRequiredPgExtensions(env);
-  const prismaStatus = run(npxCmd(), ['--no-install', 'prisma', 'db', 'push', '--skip-generate'], env);
+  const prismaStatus = run(npxCmd(), ['--no-install', 'drizzle-kit', 'push', '--force'], env);
   if (prismaStatus !== 0) process.exit(prismaStatus);
 
-  const seedStatus = run(npxCmd(), ['--no-install', 'prisma', 'db', 'seed'], env);
-  if (seedStatus !== 0) process.exit(seedStatus);
+  // const seedStatus = run(process.execPath, ['prisma/seed.js'], env);
+  // if (seedStatus !== 0) process.exit(seedStatus);
 } else {
   console.log('[test-run] Skipping DB setup (SKIP_DB_SETUP=1). Tests requiring DB will fail.');
 }

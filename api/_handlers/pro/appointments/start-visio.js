@@ -1,8 +1,10 @@
 import logger from '../../../_utils/logger.js';
 import crypto from 'crypto';
-import prisma from '../../../_utils/prisma.js';
+import { db } from '../../../../src/db/index.js';
+import { ProAppointment } from '../../../../src/db/schema.js';
+import { eq, and } from 'drizzle-orm';
 import { requireProAuth, requireProStructureContext } from '../../../_utils/auth.js';
-import { logProAudit } from '../../../lib/pro-auth.js';
+import { logProAudit } from '../../../_utils/auth.js';
 import { sendMail } from '../../../_utils/mailer.js';
 
 /**
@@ -31,14 +33,11 @@ async function handler(req, res) {
 
     try {
         // 1. Fetch appointment with structure isolation
-        const appointment = await prisma.proAppointment.findFirst({
-            where: {
-                id: appointmentId,
-                structureId: proCtx.structureId,
-            },
-            include: {
-                service: { select: { name: true } },
-                citizenUser: { select: { email: true, first_name: true } },
+        const appointment = await db.query.ProAppointment.findFirst({
+            where: (pa, { eq, and }) => and(eq(pa.id, appointmentId), eq(pa.structureId, proCtx.structureId)),
+            with: {
+                service: { columns: { name: true } },
+                citizenUser: { columns: { email: true, first_name: true } },
             },
         });
 
@@ -54,14 +53,11 @@ async function handler(req, res) {
         const roomId = appointment.visioRoomId || `ada-${crypto.randomUUID()}`;
 
         // 3. Update appointment
-        await prisma.proAppointment.update({
-            where: { id: appointmentId },
-            data: {
-                visioRoomId: roomId,
-                visioEnabled: true,
-                visioStartedAt: appointment.visioStartedAt || new Date(),
-            },
-        });
+        await db.update(ProAppointment).set({
+            visioRoomId: roomId,
+            visioEnabled: true,
+            visioStartedAt: appointment.visioStartedAt || new Date(),
+        }).where(eq(ProAppointment.id, appointmentId));
 
         // 4. Email the citizen if we have their email
         const citizenEmail = appointment.citizenUser?.email || appointment.citizenEmailSnapshot;

@@ -1,6 +1,8 @@
 import logger from '../../_utils/logger.js';
 // @ts-nocheck
-import prisma from '../../_utils/prisma.js';
+import { db } from '../../../src/db/index.js';
+import { SharedDiagnostic, AuditLog, ProUser, Structure } from '../../../src/db/schema.js';
+import { count } from 'drizzle-orm';
 import { requireProRole } from '../../_utils/auth.js';
 import crypto from 'crypto';
 /**
@@ -22,17 +24,18 @@ async function handler(req, res) {
     try {
         // ── BACKUP ──
         if (action === 'BACKUP') {
-            const [diagCount, auditCount, userCount] = await Promise.all([
-                prisma.sharedDiagnostic.count(),
-                prisma.auditLog.count(),
-                prisma.proUser.count(),
-            ]);
+            const diagCountRes = await db.select({ count: count() }).from(SharedDiagnostic);
+            const auditCountRes = await db.select({ count: count() }).from(AuditLog);
+            const userCountRes = await db.select({ count: count() }).from(ProUser);
+            
+            const diagCount = diagCountRes[0].count;
+            const auditCount = auditCountRes[0].count;
+            const userCount = userCountRes[0].count;
 
             const backupId = `ADA-BKUP-${crypto.randomBytes(4).toString('hex').toUpperCase()}`;
 
             // Audit trail
-            await prisma.auditLog.create({
-                data: {
+            await db.insert(AuditLog).values({
                     action: 'SYSTEM_BACKUP_GENERATED',
                     entityId: backupId,
                     entityType: 'SYSTEM',
@@ -43,7 +46,6 @@ async function handler(req, res) {
                         proUsers: userCount,
                     }),
                     ipHash: 'SYSTEM_CRON',
-                },
             });
 
             return res.status(200).json({
@@ -60,7 +62,7 @@ async function handler(req, res) {
             const start = Date.now();
 
             for (let i = 0; i < iterations; i++) {
-                await prisma.structure.findFirst();
+                await db.query.Structure.findFirst();
             }
 
             const duration = Date.now() - start;

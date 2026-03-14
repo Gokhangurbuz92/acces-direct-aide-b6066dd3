@@ -1,4 +1,8 @@
-import { describe, it, expect, vi } from "vitest";
+import { vi } from "vitest";
+vi.stubEnv("KV_REST_API_URL", "http://localhost");
+vi.stubEnv("KV_REST_API_TOKEN", "mock-token");
+
+import { describe, it, expect } from "vitest";
 
 describe("Security: Token Crossing", () => {
     it("should REJECT a Pro JWT on Admin Check (verifyAdmin)", async () => {
@@ -8,7 +12,7 @@ describe("Security: Token Crossing", () => {
         vi.resetModules();
 
         const { verifyAdmin } = await import("../api/_utils/auth.js");
-        const { signProToken } = await import("../api/lib/pro-auth.js");
+        const { signProToken } = await import("../api/_utils/auth.js");
 
         const proUser = { id: 1, email: "pro@test.com", structureId: 1, role: "PRO" };
         const proToken = signProToken(proUser);
@@ -23,7 +27,7 @@ describe("Security: Token Crossing", () => {
 
         vi.resetModules();
 
-        const { verifyProToken } = await import("../api/lib/pro-auth.js");
+        const { verifyProToken } = await import("../api/_utils/auth.js");
         expect(verifyProToken(process.env.ADMIN_TOKEN)).toBe(null);
     });
 

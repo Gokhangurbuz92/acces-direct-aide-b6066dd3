@@ -1,4 +1,6 @@
-import prisma from '../_utils/prisma.js';
+import { db } from '../../src/db/index.js';
+import * as schema from '../../src/db/schema.js';
+import { eq, and, or, ilike, asc, desc, count } from 'drizzle-orm';
 import { checkRateLimit, getClientIp } from '../_utils/rateLimit.js';
 import { logger } from '../lib/logger.js';
 
@@ -23,31 +25,30 @@ export default async function handler(req, res) {
         const pageSize = Math.min(100, Math.max(1, parseInt(limit, 10) || 20));
         const skip = (pageNum - 1) * pageSize;
 
-        const where = {
-            statut: 'publie',
-            providerName: 'drees',
-        };
+        const conditions = [
+            eq(schema.Aide.statut, 'publie'),
+            eq(schema.Aide.providerName, 'drees')
+        ];
 
         if (q) {
-            where.OR = [
-                { titre: { contains: q, mode: 'insensitive' } },
-            ];
+            conditions.push(ilike(schema.Aide.titre, `%${q}%`));
         }
 
         if (category) {
-            where.categorie = category.toLowerCase();
+            conditions.push(eq(schema.Aide.categorie, category.toLowerCase()));
         }
 
-        // Try full select first, fallback to minimal if columns don't exist
-        let items, total;
+        const whereClause = and(...conditions);
+
+        let items, totalRes;
         try {
-            [items, total] = await Promise.all([
-                prisma.aide.findMany({
-                    where,
-                    skip,
-                    take: pageSize,
-                    orderBy: { titre: 'asc' },
-                    select: {
+            [items, totalRes] = await Promise.all([
+                db.query.Aide.findMany({
+                    where: whereClause,
+                    offset: skip,
+                    limit: pageSize,
+                    orderBy: [asc(schema.Aide.titre)],
+                    columns: {
                         id: true,
                         slug: true,
                         titre: true,
@@ -62,18 +63,17 @@ export default async function handler(req, res) {
                         updatedAt: true,
                     },
                 }),
-                prisma.aide.count({ where }),
+                db.select({ count: count() }).from(schema.Aide).where(whereClause),
             ]);
         } catch (selectError) {
-            // Some columns may not exist — retry with minimal safe columns
             logger.warn('DREES_API_FULL_SELECT_FAILED', { error: selectError.message });
-            [items, total] = await Promise.all([
-                prisma.aide.findMany({
-                    where,
-                    skip,
-                    take: pageSize,
-                    orderBy: { updatedAt: 'desc' },
-                    select: {
+            [items, totalRes] = await Promise.all([
+                db.query.Aide.findMany({
+                    where: whereClause,
+                    offset: skip,
+                    limit: pageSize,
+                    orderBy: [desc(schema.Aide.updatedAt)],
+                    columns: {
                         id: true,
                         slug: true,
                         titre: true,
@@ -81,9 +81,10 @@ export default async function handler(req, res) {
                         statut: true,
                     },
                 }),
-                prisma.aide.count({ where }),
+                db.select({ count: count() }).from(schema.Aide).where(whereClause),
             ]);
         }
+        const total = Number(totalRes[0].count);
 
         return res.status(200).json({
             items,

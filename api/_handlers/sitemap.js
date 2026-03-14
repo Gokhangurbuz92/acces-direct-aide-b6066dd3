@@ -1,6 +1,8 @@
 import logger from '../_utils/logger.js';
 import { randomUUID } from 'crypto';
-import prisma from '../_utils/prisma.js';
+import { db } from '../../src/db/index.js';
+import * as schema from '../../src/db/schema.js';
+import { eq, and, isNotNull, desc } from 'drizzle-orm';
 import { getCanonicalOrigin } from '../_utils/site-origin.js';
 
 const CACHE_CONTROL = 'public, max-age=0, s-maxage=3600, stale-while-revalidate=86400';
@@ -111,23 +113,23 @@ export default async function handler(req, res) {
   try {
     // Parallel queries for all dynamic content types
     const [aides, demarches, structures] = await Promise.all([
-      prisma.aide.findMany({
-        where: { statut: 'publie', slug: { not: null } },
-        select: { slug: true, updatedAt: true },
-        take: MAX_DYNAMIC_URLS,
-        orderBy: { updatedAt: 'desc' },
+      db.query.Aide.findMany({
+        where: and(eq(schema.Aide.statut, 'publie'), isNotNull(schema.Aide.slug)),
+        columns: { slug: true, updatedAt: true },
+        limit: MAX_DYNAMIC_URLS,
+        orderBy: [desc(schema.Aide.updatedAt)],
       }),
-      prisma.demarche.findMany({
-        where: { statut: 'publie', slug: { not: null } },
-        select: { slug: true, updatedAt: true },
-        take: MAX_DYNAMIC_URLS,
-        orderBy: { updatedAt: 'desc' },
+      db.query.Demarche.findMany({
+        where: and(eq(schema.Demarche.statut, 'publie'), isNotNull(schema.Demarche.slug)),
+        columns: { slug: true, updatedAt: true },
+        limit: MAX_DYNAMIC_URLS,
+        orderBy: [desc(schema.Demarche.updatedAt)],
       }),
-      prisma.structure.findMany({
-        where: { statut: 'publie', slug: { not: null } },
-        select: { slug: true, updatedAt: true },
-        take: MAX_DYNAMIC_URLS,
-        orderBy: { updatedAt: 'desc' },
+      db.query.Structure.findMany({
+        where: and(eq(schema.Structure.statut, 'publie'), isNotNull(schema.Structure.slug)),
+        columns: { slug: true, updatedAt: true },
+        limit: MAX_DYNAMIC_URLS,
+        orderBy: [desc(schema.Structure.updatedAt)],
       }),
     ]);
 

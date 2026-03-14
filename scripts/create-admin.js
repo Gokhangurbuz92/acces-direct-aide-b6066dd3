@@ -1,9 +1,8 @@
 
-import prisma from '../api/_utils/prisma.js';
+import { db } from '../src/db/index.js';
+import { AdminUser } from '../src/db/schema.js';
 import bcrypt from 'bcryptjs';
 import inquirer from 'inquirer';
-
-
 
 async function main() {
     console.log("🔒 Creation d'un compte Administrateur sécurisé");
@@ -34,26 +33,23 @@ async function main() {
     const hashedPassword = await bcrypt.hash(answers.password, salt);
 
     try {
-        const user = await prisma.adminUser.upsert({
-            where: { email: answers.email },
-            update: {
+        const [user] = await db.insert(AdminUser).values({
+            email: answers.email,
+            password: hashedPassword,
+            role: answers.role,
+        }).onConflictDoUpdate({
+            target: [AdminUser.email],
+            set: {
                 password: hashedPassword,
                 role: answers.role,
                 failedLoginAttempts: 0,
-                lockoutUntil: null
+                lockoutUntil: null,
             },
-            create: {
-                email: answers.email,
-                password: hashedPassword,
-                role: answers.role
-            },
-        });
+        }).returning();
 
         console.log(`✅ Admin ${user.email} créé/mis à jour avec succès (ID: ${user.id})`);
     } catch (e) {
         console.error("❌ Erreur:", e);
-    } finally {
-        await prisma.$disconnect();
     }
 }
 

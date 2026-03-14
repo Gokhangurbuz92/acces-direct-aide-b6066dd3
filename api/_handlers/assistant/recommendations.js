@@ -2,7 +2,7 @@ import logger from '../../_utils/logger.js';
 import { randomUUID } from 'crypto';
 import * as Sentry from '@sentry/node';
 
-import prisma from '../../_utils/prisma.js';
+
 import { checkRateLimit, getClientIp, getRateLimitStatus } from '../../_utils/rateLimit.js';
 import { generateEmbedding } from '../../lib/gemini-embedding.js';
 import { searchAidesHybrid } from '../../lib/hybrid-search.js';
@@ -177,7 +177,7 @@ export default async function handler(req, res) {
                         log.warn({ msg: 'recos.embedding_failed', error: embErr instanceof Error ? embErr.message : String(embErr) });
                     }
 
-                    const { items } = await searchAidesHybrid(prisma, {
+                    const { items } = await searchAidesHybrid({
                         query: trimmedNeed,
                         limit: perTypeLimit,
                         embedding,
@@ -192,7 +192,7 @@ export default async function handler(req, res) {
         if (requestedTypes.includes('demarche')) {
             searchPromises.push(
                 (async () => {
-                    const { items } = await searchDemarches(prisma, {
+                    const { items } = await searchDemarches({
                         q: trimmedNeed,
                         territoire: territoryStr,
                         pageSize: perTypeLimit,
@@ -211,7 +211,7 @@ export default async function handler(req, res) {
         if (requestedTypes.includes('structure')) {
             searchPromises.push(
                 (async () => {
-                    const { items } = await searchStructures(prisma, {
+                    const { items } = await searchStructures({
                         q: trimmedNeed,
                         departement: territoryStr,
                         pageSize: perTypeLimit,

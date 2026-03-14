@@ -1,4 +1,6 @@
-import prisma from '../../../_utils/prisma.js';
+import { db } from '../../../../src/db/index.js';
+import { Aide, Demarche, Actualite } from '../../../../src/db/schema.js';
+import { eq } from 'drizzle-orm';
 import logger from '../../../_utils/logger.js';
 import { generateText } from '../../../lib/gemini.js';
 
@@ -16,21 +18,21 @@ import { generateText } from '../../../lib/gemini.js';
 /** Entity configuration map */
 const ENTITY_CONFIG = {
     aide: {
-        model: () => prisma.aide,
+        model: Aide,
         titleField: 'titre',
         sourceFields: ['cest_quoi', 'pour_qui', 'ce_que_ca_aide', 'description'],
         cacheFields: ['summary_falc', 'conditions_falc'],
         contextLabel: "une aide sociale",
     },
     demarche: {
-        model: () => prisma.demarche,
+        model: Demarche,
         titleField: 'titre',
         sourceFields: ['description_courte', 'pour_qui', 'contenu_detaille', 'ou_faire'],
         cacheFields: ['summary_falc'],
         contextLabel: "une démarche administrative",
     },
     actualite: {
-        model: () => prisma.actualite,
+        model: Actualite,
         titleField: 'titre',
         sourceFields: ['contenu', 'resume'],
         cacheFields: ['summary_falc'],
@@ -59,7 +61,9 @@ export default async function handler(req, res) {
 
     try {
         // 1. Fetch the entity
-        const entity = await config.model().findUnique({ where: { id: entityId } });
+        // We use dynamic query fallback or standard
+        const entityTableName = type === 'aide' ? 'Aide' : type === 'demarche' ? 'Demarche' : 'Actualite';
+        const entity = await db.query[entityTableName].findFirst({ where: (t, { eq }) => eq(t.id, entityId) });
         if (!entity) {
             return res.status(404).json({ error: `${type} introuvable` });
         }
@@ -153,10 +157,7 @@ RÉPONDS UNIQUEMENT en JSON valide avec cette structure exacte :
             updateData.falc_status = 'done';
         }
 
-        await config.model().update({
-            where: { id: entityId },
-            data: updateData,
-        });
+        await db.update(config.model).set(updateData).where(eq(config.model.id, entityId));
 
         logger.info(`[FALC] Generated and cached for ${type}=${entityId}`);
 
@@ -175,7 +176,8 @@ RÉPONDS UNIQUEMENT en JSON valide avec cette structure exacte :
         // Graceful fallback — rules-based simplification
         try {
             const { summarizeFALC } = await import('../../../lib/falc-summarizer.js');
-            const entity = await config.model().findUnique({ where: { id: entityId } });
+            const entityTableName = type === 'aide' ? 'Aide' : type === 'demarche' ? 'Demarche' : 'Actualite';
+            const entity = await db.query[entityTableName].findFirst({ where: (t, { eq }) => eq(t.id, entityId) });
             if (entity) {
                 const fallbackSource = config.sourceFields.map(f => entity[f]).filter(Boolean).join(' ');
                 const fallbackText = summarizeFALC(fallbackSource, 4);

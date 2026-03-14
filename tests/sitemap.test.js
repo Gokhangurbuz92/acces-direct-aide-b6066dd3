@@ -1,19 +1,35 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { vi } from "vitest";
+vi.stubEnv("KV_REST_API_URL", "http://localhost");
+vi.stubEnv("KV_REST_API_TOKEN", "mock-token");
 
-const { mockAideFindMany, mockDemarcheFindMany, mockStructureFindMany } = vi.hoisted(() => ({
-  mockAideFindMany: vi.fn(),
-  mockDemarcheFindMany: vi.fn(),
-  mockStructureFindMany: vi.fn(),
+import { describe, it, expect, beforeEach } from 'vitest';
+
+// Mock the Drizzle db module
+const mockFindMany = vi.fn();
+vi.mock('../src/db/index.js', () => ({
+  db: {
+    query: {
+      Aide: { findMany: (...args) => mockFindMany('Aide', ...args) },
+      Demarche: { findMany: (...args) => mockFindMany('Demarche', ...args) },
+      Structure: { findMany: (...args) => mockFindMany('Structure', ...args) },
+    },
+  },
 }));
 
-vi.mock('@prisma/client', () => ({
-  PrismaClient: vi.fn().mockImplementation(function PrismaClient() {
-    return {
-      aide: { findMany: mockAideFindMany },
-      demarche: { findMany: mockDemarcheFindMany },
-      structure: { findMany: mockStructureFindMany },
-    };
-  }),
+vi.mock('../src/db/schema.js', () => {
+  const col = (name) => ({ name });
+  return {
+    Aide: { statut: col('statut'), slug: col('slug'), updatedAt: col('updatedAt') },
+    Demarche: { statut: col('statut'), slug: col('slug'), updatedAt: col('updatedAt') },
+    Structure: { statut: col('statut'), slug: col('slug'), updatedAt: col('updatedAt') },
+  };
+});
+
+vi.mock('drizzle-orm', () => ({
+  eq: vi.fn(),
+  and: vi.fn(),
+  isNotNull: vi.fn(),
+  desc: vi.fn(),
 }));
 
 import sitemapHandler from '../api/_handlers/sitemap.js';
@@ -43,15 +59,18 @@ function createRes() {
 describe('Sitemap handler (P7-A)', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    mockAideFindMany.mockResolvedValue([]);
-    mockDemarcheFindMany.mockResolvedValue([]);
-    mockStructureFindMany.mockResolvedValue([]);
+    mockFindMany.mockResolvedValue([]);
   });
 
   it('returns XML with static and dynamic URLs', async () => {
-    mockAideFindMany.mockResolvedValue([
-      { slug: 'aide-exemple', updatedAt: new Date('2026-01-01T12:00:00.000Z') },
-    ]);
+    mockFindMany.mockImplementation((model) => {
+      if (model === 'Aide') {
+        return Promise.resolve([
+          { slug: 'aide-exemple', updatedAt: new Date('2026-01-01T12:00:00.000Z') },
+        ]);
+      }
+      return Promise.resolve([]);
+    });
 
     const req = createReq();
     const res = createRes();
@@ -73,7 +92,7 @@ describe('Sitemap handler (P7-A)', () => {
   });
 
   it('returns 503 without stack details when DB is unavailable', async () => {
-    mockAideFindMany.mockRejectedValue(new Error('db unavailable'));
+    mockFindMany.mockRejectedValue(new Error('db unavailable'));
 
     const req = createReq();
     const res = createRes();
@@ -104,4 +123,3 @@ describe('Sitemap handler (P7-A)', () => {
     expect(res.end).toHaveBeenCalledWith();
   });
 });
-

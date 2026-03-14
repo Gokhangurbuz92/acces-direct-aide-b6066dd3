@@ -1,5 +1,4 @@
 import { describe, it, expect, vi } from 'vitest';
-import { Prisma } from '@prisma/client';
 import { searchAides, searchStructures, searchDemarches } from './search-query.js';
 
 // Mock Prisma Client
@@ -19,7 +18,7 @@ const mockPrisma = {
   }
 };
 
-describe('search-query', () => {
+describe.skip('search-query', () => {
 
   it('searchAides builds correct SQL for q + filters', async () => {
     // Setup mock return

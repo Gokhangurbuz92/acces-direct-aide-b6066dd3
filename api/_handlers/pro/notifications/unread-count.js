@@ -1,7 +1,11 @@
 import logger from '../../../_utils/logger.js';
 // @ts-nocheck
 import { db } from '../../../../src/db/index.js';
+<<<<<<< HEAD
 import { ProNotification, RdvConversationMessage } from '../../../../src/db/schema.js';
+=======
+import { ProNotification } from '../../../../src/db/schema.js';
+>>>>>>> 241663f (refactor(schema): drop 6 legacy tables + clean 35 handler files)
 import { eq, and, isNull, ne, count } from 'drizzle-orm';
 import { requireProAuth, requireProStructureContext } from '../../../_utils/auth.js';
 

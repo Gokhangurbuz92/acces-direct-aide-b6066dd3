@@ -8,6 +8,7 @@
       "when": 1773507815198,
       "tag": "0000_fuzzy_fallen_one",
       "breakpoints": true
+<<<<<<< HEAD
     },
     {
       "idx": 1,
@@ -29,6 +30,8 @@
       "when": 1773512983484,
       "tag": "0003_free_crusher_hogan",
       "breakpoints": true
+=======
+>>>>>>> 241663f (refactor(schema): drop 6 legacy tables + clean 35 handler files)
     }
   ]
 }

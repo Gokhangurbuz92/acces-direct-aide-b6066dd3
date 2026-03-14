@@ -1,6 +1,6 @@
 import crypto from 'node:crypto';
 import { db } from '../../../src/db/index.js';
-import { ProRdvService, Service, ProAppointment } from '../../../src/db/schema.js';
+import { ProRdvService, ProAppointment } from '../../../src/db/schema.js';
 import { eq, desc, and, inArray, sql } from 'drizzle-orm';
 import { AUTH_ROLE, requireProStructureContext } from '../../_utils/auth.js';
 import { withProRdvHandler } from '../../_utils/with-pro-rdv-handler.js';

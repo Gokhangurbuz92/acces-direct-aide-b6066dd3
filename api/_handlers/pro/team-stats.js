@@ -1,7 +1,7 @@
 import logger from '../../_utils/logger.js';
 // @ts-nocheck
 import { db } from '../../../src/db/index.js';
-import { ProUser, ProAppointment, RdvConversation } from '../../../src/db/schema.js';
+import { ProUser, ProRdvConversation } from '../../../src/db/schema.js';
 import { eq, and, gte, lt, not, isNotNull, count } from 'drizzle-orm';
 import { AUTH_ROLE, requireProRole, requireProStructureContext } from '../../_utils/auth.js';
 

@@ -1,6 +1,6 @@
 import logger from '../../../_utils/logger.js';
 import { db } from '../../../../src/db/index.js';
-import { Appointment } from '../../../../src/db/schema.js';
+import { ProAppointment } from '../../../../src/db/schema.js';
 import { eq } from 'drizzle-orm';
 import { logProAudit } from '../../../_utils/auth.js';
 import { requireProAuth, requireProStructureContext } from '../../../_utils/auth.js';

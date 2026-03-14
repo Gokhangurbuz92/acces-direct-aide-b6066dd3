@@ -1,6 +1,6 @@
 import logger from '../../_utils/logger.js';
 import { db } from '../../../src/db/index.js';
-import { Availability, Appointment } from '../../../src/db/schema.js';
+import { ProAppointment } from '../../../src/db/schema.js';
 import { eq, and, inArray, gte, lte } from 'drizzle-orm';
 import { addDays, format, startOfDay, endOfDay } from 'date-fns';
 /**

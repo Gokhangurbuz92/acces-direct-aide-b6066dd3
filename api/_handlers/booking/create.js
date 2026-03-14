@@ -1,6 +1,6 @@
 import logger from '../../_utils/logger.js';
 import { db } from '../../../src/db/index.js';
-import { Beneficiary, Appointment } from '../../../src/db/schema.js';
+import { ProAppointment } from '../../../src/db/schema.js';
 import { eq } from 'drizzle-orm';
 import { checkRateLimit } from '../_utils/rateLimit.js';
 import { encrypt, hash } from '../../lib/crypto.js';

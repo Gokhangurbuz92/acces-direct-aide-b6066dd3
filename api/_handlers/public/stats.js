@@ -1,6 +1,6 @@
 import logger from '../../_utils/logger.js';
 import { db } from '../../../src/db/index.js';
-import { Guide, ToolboxItem, Structure, Appointment } from '../../../src/db/schema.js';
+import { Guide, ToolboxItem, Structure, ProAppointment } from '../../../src/db/schema.js';
 import { count, eq } from 'drizzle-orm';
 /**
  * @param {import('../../_utils/http-types').ApiRequest} req

@@ -1,6 +1,6 @@
 import logger from '../../../_utils/logger.js';
 import { db } from '../../../../src/db/index.js';
-import { Appointment, AuditLog } from '../../../../src/db/schema.js';
+import { AuditLog } from '../../../../src/db/schema.js';
 import { eq } from 'drizzle-orm';
 import crypto from 'crypto';
 import { hash } from '../../../lib/crypto.js';

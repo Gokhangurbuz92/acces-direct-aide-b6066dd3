@@ -1,7 +1,7 @@
 import logger from '../../../_utils/logger.js';
 // @ts-nocheck
 import { db } from '../../../../src/db/index.js';
-import { ProMessage, ProNotification } from '../../../../src/db/schema.js';
+import { ProNotification } from '../../../../src/db/schema.js';
 import { eq, and, isNull, ne, count } from 'drizzle-orm';
 import { requireProAuth, requireProStructureContext } from '../../../_utils/auth.js';
 

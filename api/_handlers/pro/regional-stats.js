@@ -1,7 +1,7 @@
 import logger from '../../_utils/logger.js';
 // @ts-nocheck
 import { db } from '../../../src/db/index.js';
-import { Structure, ProUser, ProAppointment, SharedDiagnostic } from '../../../src/db/schema.js';
+import { Structure, ProUser, ProSharedDiagnostic } from '../../../src/db/schema.js';
 import { eq, and, gte, lte, asc, sql } from 'drizzle-orm';
 import { requireProAuth } from '../../_utils/auth.js';
 /**

@@ -1,5 +1,5 @@
 import { db } from '../../../src/db/index.js';
-import { Appointment, Beneficiary, Attachment, Message, AuditLog, ImportLog, UpdateLog } from '../../../src/db/schema.js';
+import { AuditLog, ImportLog, UpdateLog } from '../../../src/db/schema.js';
 import { lt, and, eq, gte } from 'drizzle-orm';
 import { subDays } from 'date-fns';
 import { storage } from '../../lib/storage.js';

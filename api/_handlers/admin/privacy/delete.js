@@ -1,6 +1,6 @@
 import { checkRateLimit, getClientIp, getRateLimitStatus } from '../../../_utils/rateLimit.js';
 import { db } from '../../../../src/db/index.js';
-import { ProUser, Beneficiary, Invitation, AuditLog } from '../../../../src/db/schema.js';
+import { ProUser, Invitation, AuditLog } from '../../../../src/db/schema.js';
 import { eq } from 'drizzle-orm';
 import { verifyAdmin } from '../../../_utils/auth.js';
 import { hash } from '../../../lib/crypto.js';

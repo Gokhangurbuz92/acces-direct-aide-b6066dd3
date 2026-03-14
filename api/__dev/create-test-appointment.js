@@ -1,5 +1,5 @@
 import { db } from '../../src/db/index.js';
-import { Structure, ProUser, Service, Appointment, Beneficiary } from '../../src/db/schema.js';
+import { Structure, ProUser } from '../../src/db/schema.js';
 import { eq } from 'drizzle-orm';
 import { hash, encrypt } from '../lib/crypto.js';
 import crypto from 'crypto';

@@ -152,7 +152,7 @@ beforeEach(() => {
 
 afterEach(async () => {
   if (createdServiceIds.length > 0) {
-    await await db.delete(schema.Service);
+    await await db.delete(schema.ProRdvService);
   }
   if (createdProUserIds.length > 0) {
     await await db.delete(schema.ProUser);
@@ -211,22 +211,22 @@ async function createTenantFixture() {
     },
   ).returning())[0];
 
-  const serviceA = await (await db.insert(schema.Service).values({
+  const serviceA = await (await db.insert(schema.ProRdvService).values({
       structureId: structureA.id,
-      slug: `service-a-${suffix}`,
       name: 'Service A',
-      required_docs: [],
-      audiences: [],
-      modes: [],
+      durationMinutes: 30,
+      bufferBeforeMinutes: 0,
+      bufferAfterMinutes: 0,
+      isActive: true,
     },
   ).returning())[0];
-  const serviceB = await (await db.insert(schema.Service).values({
+  const serviceB = await (await db.insert(schema.ProRdvService).values({
       structureId: structureB.id,
-      slug: `service-b-${suffix}`,
       name: 'Service B',
-      required_docs: [],
-      audiences: [],
-      modes: [],
+      durationMinutes: 30,
+      bufferBeforeMinutes: 0,
+      bufferAfterMinutes: 0,
+      isActive: true,
     },
   ).returning())[0];
 
@@ -307,7 +307,7 @@ describe('P9-B pro-only gate + tenancy foundation', () => {
 
     expect(res.statusCode).toBe(403);
 
-    const freshServiceB = await db.query.Service.findFirst({ where: eq(schema.Service.id, fixture.serviceB.id) /* AUTOMIGRATED: { id: fixture.serviceB.id }  */ });
+    const freshServiceB = await db.query.ProRdvService.findFirst({ where: eq(schema.ProRdvService.id, fixture.serviceB.id) });
     expect(freshServiceB?.name).toBe('Service B');
   });
 });

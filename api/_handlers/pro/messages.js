@@ -17,7 +17,7 @@
  */
 import logger from '../../_utils/logger.js';
 import { db } from '../../../src/db/index.js';
-import { ProAppointment, RdvConversation, RdvConversationMessage } from '../../../src/db/schema.js';
+import { ProRdvConversation, RdvConversationMessage } from '../../../src/db/schema.js';
 import { eq, desc, and, ne, sql, asc } from 'drizzle-orm';
 import { requireProAuth, requireProStructureContext } from '../../_utils/auth.js';
 import { encrypt } from '../../lib/crypto.js';

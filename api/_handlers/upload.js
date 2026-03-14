@@ -4,7 +4,7 @@ import { encryptBuffer, encrypt, hash } from '../lib/crypto.js';
 import { storage } from '../lib/storage.js';
 import crypto from 'node:crypto';
 import { db } from '../../src/db/index.js';
-import { Appointment, Message, Attachment } from '../../src/db/schema.js';
+// [LEGACY] Attachment import removed
 import { eq } from 'drizzle-orm';
 import { verifyProToken } from '../_utils/auth.js';
 

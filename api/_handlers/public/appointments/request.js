@@ -1,6 +1,6 @@
 import logger from '../../../_utils/logger.js';
 import { db } from '../../../../src/db/index.js';
-import { Structure, Service, Appointment, Availability, Beneficiary, ConsentLog, AuditLog } from '../../../../src/db/schema.js';
+import { Structure, ConsentLog, AuditLog } from '../../../../src/db/schema.js';
 import { eq, and, lt, gt, inArray } from 'drizzle-orm';
 import { addMinutes, parseISO } from 'date-fns';
 import { encrypt, hash } from '../../../lib/crypto.js';

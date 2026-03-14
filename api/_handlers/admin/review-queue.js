@@ -5,6 +5,7 @@ import { db } from '../../../src/db/index.js';
 import { ReviewQueueItem } from '../../../src/db/schema.js';
 import { eq, inArray, and, desc } from 'drizzle-orm';
 import { verifyAdmin } from '../../_utils/auth.js';
+import { reviewQueuePatchSchema, reviewQueueBulkPatchSchema } from '../../../src/db/drizzle-schemas.js';
 import {
   normalizeEntityType,
   normalizeReviewStatus,
@@ -192,13 +193,12 @@ export default async function handler(req, res) {
 
     if (req.method === 'PATCH') {
       if (isBulkPath(pathname)) {
-        const body = parseJsonBody(req.body);
-        const ids = parseBulkIds(/** @type {{ ids?: unknown }} */ (body).ids);
-        const nextStatus = parsePatchStatus(/** @type {{ status?: unknown }} */ (body).status);
-
-        if (!ids || !nextStatus) {
-          return res.status(400).json({ error: 'Invalid bulk payload', requestId });
+        const bulkResult = reviewQueueBulkPatchSchema.safeParse(parseJsonBody(req.body));
+        if (!bulkResult.success) {
+          return res.status(400).json({ error: 'Invalid bulk payload', requestId, details: bulkResult.error.flatten() });
         }
+
+        const { ids, status: nextStatus } = bulkResult.data;
 
         const existing = await db.select({ id: ReviewQueueItem.id, status: ReviewQueueItem.status }).from(ReviewQueueItem).where(inArray(ReviewQueueItem.id, ids));
 
@@ -232,11 +232,12 @@ export default async function handler(req, res) {
         return res.status(400).json({ error: 'Missing review queue item id', requestId });
       }
 
-      const body = parseJsonBody(req.body);
-      const nextStatus = parsePatchStatus(/** @type {{ status?: unknown }} */ (body).status);
-      if (!nextStatus) {
-        return res.status(400).json({ error: 'Invalid status', requestId });
+      const patchResult = reviewQueuePatchSchema.safeParse(parseJsonBody(req.body));
+      if (!patchResult.success) {
+        return res.status(400).json({ error: 'Invalid status', requestId, details: patchResult.error.flatten() });
       }
+
+      const { status: nextStatus } = patchResult.data;
 
       const [item] = await db.update(ReviewQueueItem).set({ status: nextStatus }).where(eq(ReviewQueueItem.id, itemId)).returning();
       if (!item) {

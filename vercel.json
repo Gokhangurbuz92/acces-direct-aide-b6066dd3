@@ -2,7 +2,9 @@
   "buildCommand": "npm run vercel-build",
   "functions": {
     "api/index.js": {
-      "maxDuration": 300
+      "maxDuration": 300,
+      "memory": 1024,
+      "regions": ["fra1"]
     }
   },
   "crons": [

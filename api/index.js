@@ -7,6 +7,7 @@ import { applyCachePolicy } from "./_utils/cachePolicy.js";
 import { env, getEnv } from './_utils/env.js';
 import { applyNoIndex, isTechnicalNoIndexPath } from './_utils/robots.js';
 import { checkRateLimit, getClientIp, getRateLimitStatus } from './_utils/rateLimit.js';
+import { waitUntil } from '@vercel/functions';
 
 // Vercel Serverless Function config — Pro plan supports up to 300s
 export const config = {
@@ -206,7 +207,10 @@ export default async function handler(req, res) {
         });
 
         if (route) {
-            routeHandler = route.handler;
+            // Lazy-loaded routes: handler is () => import('./module.js')
+            // Resolve to the default export of the dynamically imported module
+            const mod = await route.handler();
+            routeHandler = mod.default || mod;
         }
 
         if (!routeHandler) {
@@ -263,7 +267,7 @@ export default async function handler(req, res) {
                             'http.status_code': '500',
                         },
                     });
-                    await Sentry.flush(2000);
+                    waitUntil(Sentry.flush(2000));
                 } catch {
                     // best-effort
                 }
@@ -304,7 +308,7 @@ export default async function handler(req, res) {
         // Try to capture in Sentry if possible
         try {
             Sentry.captureException(bootError, { tags: { requestId, phase: "boot" } });
-            await Sentry.flush(2000);
+            waitUntil(Sentry.flush(2000));
         } catch {
             // Intentionally ignore: Sentry reporting is best-effort, failure should not block response
         }

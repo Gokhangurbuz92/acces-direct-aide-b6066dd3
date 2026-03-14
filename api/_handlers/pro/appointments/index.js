@@ -107,6 +107,13 @@ async function handler(req, res) {
         offset: skip,
         limit: pageSize,
         orderBy: (pa, { asc }) => [asc(pa.startAt)],
+        columns: {
+          idempotencyKey: false,
+          citizenEmailSnapshot: false,
+          createdByProUserId: false,
+          visioRoomId: false,
+          visioStartedAt: false,
+        },
         with: {
           service: {
             columns: {

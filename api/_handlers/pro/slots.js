@@ -59,6 +59,12 @@ async function handler(req, res) {
       lt(ProAppointment.startAt, range.to),
       gt(ProAppointment.endAt, range.from)
     ),
+    columns: {
+      id: true,
+      startAt: true,
+      endAt: true,
+      status: true,
+    },
     with: {
       service: {
         columns: {

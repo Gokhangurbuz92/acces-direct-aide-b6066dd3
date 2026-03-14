@@ -118,10 +118,19 @@ export default async function handler(req, res) {
 
         // 1. Single Item
         if (effectiveParams.id || effectiveParams.slug) {
-            const detailResult = effectiveParams.id
-                ? await db.execute(sql`SELECT * FROM "Demarche" WHERE id = ${effectiveParams.id} LIMIT 1`)
-                : await db.execute(sql`SELECT * FROM "Demarche" WHERE slug = ${effectiveParams.slug} LIMIT 1`);
-            const demarcheObj = (detailResult.rows || detailResult)[0];
+            const demarcheObj = await db.query.Demarche.findFirst({
+                where: effectiveParams.id
+                    ? eq(schema.Demarche.id, effectiveParams.id)
+                    : eq(schema.Demarche.slug, effectiveParams.slug),
+                with: {
+                    category: {
+                        columns: { id: true, slug: true, label: true },
+                    },
+                    sourceDocument: {
+                        columns: { fetched_at: true, source_url: true },
+                    },
+                },
+            });
 
             if (!demarcheObj) return res.status(404).json({ error: "Démarche non trouvée" });
             if (!isAdmin && demarcheObj.statut !== 'publie') {

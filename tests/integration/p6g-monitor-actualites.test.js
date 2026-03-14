@@ -1,5 +1,10 @@
+import { vi } from "vitest";
+vi.stubEnv("KV_REST_API_URL", "http://localhost");
+vi.stubEnv("KV_REST_API_TOKEN", "mock-token");
+
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { db } from '../../src/db/index.js';
+import * as schema from '../../src/db/schema.js';
 import { eq, sql } from 'drizzle-orm';
 import { vi } from 'vitest';
 import monitorCronActualites from '../../api/_handlers/monitor/cron-actualites.js';

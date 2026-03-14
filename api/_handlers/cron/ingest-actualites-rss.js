@@ -217,6 +217,8 @@ export async function upsertActualiteFromFeedItem(input) {
     : {};
 
   const insertData = {
+    id: crypto.randomUUID(),
+    createdAt: now,
     titre: title,
     slug: finalSlug,
     contenu,

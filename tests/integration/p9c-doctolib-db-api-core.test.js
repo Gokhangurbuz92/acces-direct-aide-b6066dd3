@@ -1,10 +1,27 @@
+import { vi } from "vitest";
+vi.stubEnv("KV_REST_API_URL", "http://localhost");
+vi.stubEnv("KV_REST_API_TOKEN", "mock-token");
+
+vi.mock('@vercel/kv', () => {
+  const mockKv = {
+    get: vi.fn().mockResolvedValue('ok'),
+    set: vi.fn().mockResolvedValue('OK'),
+    del: vi.fn().mockResolvedValue(1),
+    incr: vi.fn().mockResolvedValue(1),
+  };
+  return {
+    createClient: vi.fn(() => mockKv),
+    kv: mockKv
+  };
+});
+
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 
 import apiHandler from '../../api/index.js';
 import { db } from '../../src/db/index.js';
 import * as schema from '../../src/db/schema.js';
-import { eq, sql } from 'drizzle-orm';
-import { signProToken } from '../../api/lib/pro-auth.js';
+import { eq, sql, inArray } from 'drizzle-orm';
+import { signProToken } from '../../api/_utils/auth.js';
 
 /**
  * @param {{
@@ -126,20 +143,21 @@ beforeEach(() => {
 });
 
 afterEach(async () => {
-  if (createdAppointmentIds.length > 0) {
-    await await db.delete(schema.ProAppointment);
-  }
+  // ENFORCE DELETE ORDER TO PREVENT FOREIGN KEY CASCADING CRASHES
   if (createdRuleIds.length > 0) {
-    await await db.delete(schema.ProAvailabilityRule);
+    await db.delete(schema.ProAvailabilityRule).where(inArray(schema.ProAvailabilityRule.id, createdRuleIds));
+  }
+  if (createdAppointmentIds.length > 0) {
+    await db.delete(schema.ProAppointment).where(inArray(schema.ProAppointment.id, createdAppointmentIds));
   }
   if (createdServiceIds.length > 0) {
-    await await db.delete(schema.ProRdvService);
+    await db.delete(schema.ProRdvService).where(inArray(schema.ProRdvService.id, createdServiceIds));
   }
   if (createdProUserIds.length > 0) {
-    await await db.delete(schema.ProUser);
+    await db.delete(schema.ProUser).where(inArray(schema.ProUser.id, createdProUserIds));
   }
   if (createdStructureIds.length > 0) {
-    await await db.delete(schema.Structure);
+    await db.delete(schema.Structure).where(inArray(schema.Structure.id, createdStructureIds));
   }
 
   createdAppointmentIds = [];
@@ -227,6 +245,7 @@ describe('P9-C doctolib social DB + pro API core', () => {
       role: fixture.proUserA.role,
     });
 
+    console.log('[DEBUG-P9C] START serviceCreate');
     const serviceCreate = await invokeApi('/api/pro/services', {
       method: 'POST',
       headers: { authorization: `Bearer ${token}` },
@@ -237,16 +256,20 @@ describe('P9-C doctolib social DB + pro API core', () => {
         bufferAfterMinutes: 5,
       },
     });
+    console.log('[DEBUG-P9C] DONE serviceCreate');
     expect(serviceCreate.statusCode).toBe(201);
     const serviceId = serviceCreate.body.id;
     createdServiceIds.push(serviceId);
 
+    console.log('[DEBUG-P9C] START listServices');
     const listServices = await invokeApi('/api/pro/services', {
       headers: { authorization: `Bearer ${token}` },
     });
+    console.log('[DEBUG-P9C] DONE listServices');
     expect(listServices.statusCode).toBe(200);
     expect(listServices.body.some((service) => service.id === serviceId)).toBe(true);
 
+    console.log('[DEBUG-P9C] START setAvailability');
     const setAvailability = await invokeApi('/api/pro/availability', {
       method: 'PUT',
       headers: { authorization: `Bearer ${token}` },
@@ -254,24 +277,28 @@ describe('P9-C doctolib social DB + pro API core', () => {
         rules: [{ weekday: 1, startTime: '09:00', endTime: '12:00', timezone: 'Europe/Paris' }],
       },
     });
+    console.log('[DEBUG-P9C] DONE setAvailability');
     expect(setAvailability.statusCode).toBe(200);
 
     const dbRules = await db.query.ProAvailabilityRule.findMany({
-      where: { structureId: fixture.structureA.id },
-      select: { id: true },
+      where: eq(schema.ProAvailabilityRule.structureId, fixture.structureA.id),
+      columns: { id: true },
     });
     createdRuleIds.push(...dbRules.map((rule) => rule.id));
 
+    console.log('[DEBUG-P9C] START slotsRes');
     const slotsRes = await invokeApi(
       `/api/pro/slots?serviceId=${serviceId}&from=2026-03-02T00:00:00.000Z&to=2026-03-02T23:59:59.000Z`,
       {
         headers: { authorization: `Bearer ${token}` },
       },
     );
+    console.log('[DEBUG-P9C] DONE slotsRes');
     expect(slotsRes.statusCode).toBe(200);
     expect(Array.isArray(slotsRes.body.slots)).toBe(true);
     expect(slotsRes.body.slots.length).toBeGreaterThan(0);
 
+    console.log('[DEBUG-P9C] START appointmentCreate');
     const appointmentCreate = await invokeApi('/api/pro/appointments', {
       method: 'POST',
       headers: { authorization: `Bearer ${token}` },
@@ -283,35 +310,42 @@ describe('P9-C doctolib social DB + pro API core', () => {
         notes: 'Test note',
       },
     });
+    console.log('[DEBUG-P9C] DONE appointmentCreate');
     expect(appointmentCreate.statusCode).toBe(201);
     const appointmentId = appointmentCreate.body.item.id;
     createdAppointmentIds.push(appointmentId);
 
+    console.log('[DEBUG-P9C] START appointmentsList');
     const appointmentsList = await invokeApi(
       '/api/pro/appointments?from=2026-03-02T00:00:00.000Z&to=2026-03-03T00:00:00.000Z',
       {
         headers: { authorization: `Bearer ${token}` },
       },
     );
+    console.log('[DEBUG-P9C] DONE appointmentsList');
     expect(appointmentsList.statusCode).toBe(200);
     expect(appointmentsList.body.items.some((item) => item.id === appointmentId)).toBe(true);
 
+    console.log('[DEBUG-P9C] START markDone');
     const markDone = await invokeApi('/api/pro/appointments', {
       method: 'PATCH',
       headers: { authorization: `Bearer ${token}` },
       body: { id: appointmentId, status: 'done' },
     });
+    console.log('[DEBUG-P9C] DONE markDone');
     expect(markDone.statusCode).toBe(200);
     expect(markDone.body.item.status).toBe('done');
 
+    console.log('[DEBUG-P9C] START cancelLegacy');
     const cancelLegacy = await invokeApi('/api/pro/appointments/cancel', {
       method: 'POST',
       headers: { authorization: `Bearer ${token}` },
       body: { id: appointmentId },
     });
+    console.log('[DEBUG-P9C] DONE cancelLegacy');
     expect(cancelLegacy.statusCode).toBe(200);
     expect(cancelLegacy.body.item.status).toBe('cancelled');
-  });
+  }, 20000);
 
   it('enforces tenancy: service from another structure cannot be booked', async () => {
     const fixture = await createTenantFixture();

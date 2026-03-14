@@ -1,3 +1,7 @@
+import { vi } from "vitest";
+vi.stubEnv("KV_REST_API_URL", "http://localhost");
+vi.stubEnv("KV_REST_API_TOKEN", "mock-token");
+
 import { describe, it, expect, beforeAll, afterAll } from 'vitest';
 import { isCronAuthorized } from '../../api/_utils/cronAuth.js';
 

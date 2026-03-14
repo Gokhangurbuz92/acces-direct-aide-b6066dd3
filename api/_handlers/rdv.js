@@ -1,6 +1,7 @@
 // @ts-nocheck
-import { Prisma } from '@prisma/client';
-import prisma from '../_utils/prisma.js';
+import { db } from '../../src/db/index.js';
+import * as schema from '../../src/db/schema.js';
+import { eq, and, inArray, lt, gt, sql, asc, count } from 'drizzle-orm';
 import { buildAppointmentIcs } from '../_utils/ics.js';
 import { sendMail } from '../_utils/mailer.js';
 import { ACTIVE_APPOINTMENT_STATUSES, generateSlots, toBusyWindows, validateDateRange } from '../_utils/pro-rdv.js';
@@ -117,30 +118,31 @@ function groupSlotsByDay(slots) {
  * @param {string} slug
  */
 async function loadStructureBySlug(slug) {
-  const structure = await prisma.structure.findFirst({
-    where: {
-      slug,
-      statut: 'actif',
-    },
-    select: {
+  const structure = await db.query.Structure.findFirst({
+    where: (t, { eq, and }) => and(eq(t.slug, slug), eq(t.statut, 'actif')),
+    columns: {
       id: true,
       slug: true,
       nom: true,
+      is_pro_enabled: true,
+    },
+    with: {
       rdvSettings: {
-        select: {
+        columns: {
           isPublished: true,
           bookingMode: true,
         },
       },
-      is_pro_enabled: true,
     },
   });
 
   if (!structure) return null;
 
+  // rdvSettings is a `many` relation → array in Drizzle
+  const settings = Array.isArray(structure.rdvSettings) ? structure.rdvSettings[0] : structure.rdvSettings;
   const isPublished =
-    structure.rdvSettings && typeof structure.rdvSettings.isPublished === 'boolean'
-      ? structure.rdvSettings.isPublished
+    settings && typeof settings.isPublished === 'boolean'
+      ? settings.isPublished
       : Boolean(structure.is_pro_enabled);
 
   return {
@@ -148,7 +150,7 @@ async function loadStructureBySlug(slug) {
     slug: structure.slug,
     nom: structure.nom,
     isPublished,
-    bookingMode: structure.rdvSettings?.bookingMode || 'IN_PERSON',
+    bookingMode: settings?.bookingMode || 'IN_PERSON',
   };
 }
 
@@ -264,6 +266,85 @@ async function sendAppointmentConfirmationEmail(input) {
 }
 
 /**
+ * Helper: load appointment with service + structure relations
+ * @param {string} appointmentId
+ * @param {{ citizenUserId?: string, idempotencyKey?: string }=} where
+ */
+async function loadAppointmentWithRelations(appointmentId, where = {}) {
+  if (appointmentId) {
+    return db.query.ProAppointment.findFirst({
+      where: (a, { eq }) => eq(a.id, appointmentId),
+      with: {
+        service: { columns: { id: true, name: true, durationMinutes: true } },
+        structure: { columns: { id: true, slug: true, nom: true } },
+      },
+    });
+  }
+  if (where.citizenUserId && where.idempotencyKey) {
+    return db.query.ProAppointment.findFirst({
+      where: (a, { eq, and }) => and(eq(a.citizenUserId, where.citizenUserId), eq(a.idempotencyKey, where.idempotencyKey)),
+      with: {
+        service: { columns: { id: true, name: true, durationMinutes: true } },
+        structure: { columns: { id: true, slug: true, nom: true } },
+      },
+    });
+  }
+  return null;
+}
+
+/**
+ * Helper: find overlapping appointments using Query Builder (supports lt/gt/in)
+ * @param {any} dbOrTx - db or tx instance
+ * @param {{ structureId: string, statuses: string[], startBefore: Date, endAfter: Date }} params
+ */
+async function findOverlappingAppointments(dbOrTx, params) {
+  const rows = await dbOrTx
+    .select()
+    .from(schema.ProAppointment)
+    .where(
+      and(
+        eq(schema.ProAppointment.structureId, params.structureId),
+        inArray(schema.ProAppointment.status, params.statuses),
+        lt(schema.ProAppointment.startAt, params.startBefore),
+        gt(schema.ProAppointment.endAt, params.endAfter),
+      ),
+    );
+
+  // Load service relation for buffer minutes
+  const withService = await Promise.all(
+    rows.map(async (appt) => {
+      const service = appt.serviceId
+        ? await db.query.ProRdvService.findFirst({
+            where: (s, { eq }) => eq(s.id, appt.serviceId),
+            columns: { bufferBeforeMinutes: true, bufferAfterMinutes: true },
+          })
+        : null;
+      return { ...appt, service };
+    }),
+  );
+
+  return withService;
+}
+
+/**
+ * Helper: find time-offs overlapping a range using Query Builder
+ * @param {any} dbOrTx
+ * @param {{ structureId: string, startBefore: Date, endAfter: Date }} params
+ */
+async function findOverlappingTimeOffs(dbOrTx, params) {
+  return dbOrTx
+    .select({ startAt: schema.ProTimeOff.startAt, endAt: schema.ProTimeOff.endAt })
+    .from(schema.ProTimeOff)
+    .where(
+      and(
+        eq(schema.ProTimeOff.structureId, params.structureId),
+        lt(schema.ProTimeOff.startAt, params.startBefore),
+        gt(schema.ProTimeOff.endAt, params.endAfter),
+      ),
+    );
+}
+
+/**
  * @param {import('../_utils/http-types').ApiRequest} req
  * @param {import('../_utils/http-types').ApiResponse} res
  */
@@ -290,21 +371,16 @@ async function getServices(req, res) {
     return res.status(404).json({ error: 'RDV indisponible' });
   }
 
-  const services = await prisma.proRdvService.findMany({
-    where: {
-      structureId: structure.id,
-      isActive: true,
-    },
-    select: {
+  const services = await db.query.ProRdvService.findMany({
+    where: (s, { eq, and }) => and(eq(s.structureId, structure.id), eq(s.isActive, true)),
+    columns: {
       id: true,
       name: true,
       durationMinutes: true,
       bufferBeforeMinutes: true,
       bufferAfterMinutes: true,
     },
-    orderBy: {
-      name: 'asc',
-    },
+    orderBy: (s, { asc }) => [asc(s.name)],
   });
 
   return res.status(200).json({
@@ -365,13 +441,9 @@ async function getSlots(req, res) {
     return res.status(400).json({ error: error instanceof Error ? error.message : 'Invalid date range' });
   }
 
-  const service = await prisma.proRdvService.findFirst({
-    where: {
-      id: serviceId,
-      structureId: structure.id,
-      isActive: true,
-    },
-    select: {
+  const service = await db.query.ProRdvService.findFirst({
+    where: (s, { eq, and }) => and(eq(s.id, serviceId), eq(s.structureId, structure.id), eq(s.isActive, true)),
+    columns: {
       id: true,
       name: true,
       durationMinutes: true,
@@ -384,43 +456,22 @@ async function getSlots(req, res) {
     return res.status(404).json({ error: 'Service not found' });
   }
 
-  const rules = await prisma.proAvailabilityRule.findMany({
-    where: {
-      structureId: structure.id,
-      isActive: true,
-    },
-    orderBy: [{ weekday: 'asc' }, { startTime: 'asc' }],
+  const rules = await db.query.ProAvailabilityRule.findMany({
+    where: (r, { eq, and }) => and(eq(r.structureId, structure.id), eq(r.isActive, true)),
+    orderBy: (r, { asc }) => [asc(r.weekday), asc(r.startTime)],
   });
 
-  const appointments = await prisma.proAppointment.findMany({
-    where: {
-      structureId: structure.id,
-      status: {
-        in: ACTIVE_APPOINTMENT_STATUSES,
-      },
-      startAt: { lt: range.to },
-      endAt: { gt: range.from },
-    },
-    include: {
-      service: {
-        select: {
-          bufferBeforeMinutes: true,
-          bufferAfterMinutes: true,
-        },
-      },
-    },
+  const appointments = await findOverlappingAppointments(db, {
+    structureId: structure.id,
+    statuses: ACTIVE_APPOINTMENT_STATUSES,
+    startBefore: range.to,
+    endAfter: range.from,
   });
 
-  const timeOffs = await prisma.proTimeOff.findMany({
-    where: {
-      structureId: structure.id,
-      startAt: { lt: range.to },
-      endAt: { gt: range.from },
-    },
-    select: {
-      startAt: true,
-      endAt: true,
-    },
+  const timeOffs = await findOverlappingTimeOffs(db, {
+    structureId: structure.id,
+    startBefore: range.to,
+    endAfter: range.from,
   });
 
   const busyWindows = [
@@ -481,27 +532,9 @@ async function createAppointment(req, res) {
     return res.status(400).json({ error: 'structureSlug, serviceId, startAt and idempotencyKey are required' });
   }
 
-  const existingByKey = await prisma.proAppointment.findFirst({
-    where: {
-      citizenUserId: auth.user.id,
-      idempotencyKey,
-    },
-    include: {
-      service: {
-        select: {
-          id: true,
-          name: true,
-          durationMinutes: true,
-        },
-      },
-      structure: {
-        select: {
-          id: true,
-          slug: true,
-          nom: true,
-        },
-      },
-    },
+  const existingByKey = await loadAppointmentWithRelations(null, {
+    citizenUserId: auth.user.id,
+    idempotencyKey,
   });
 
   if (existingByKey) {
@@ -525,13 +558,9 @@ async function createAppointment(req, res) {
     return res.status(404).json({ error: 'RDV indisponible' });
   }
 
-  const service = await prisma.proRdvService.findFirst({
-    where: {
-      id: serviceId,
-      structureId: structure.id,
-      isActive: true,
-    },
-    select: {
+  const service = await db.query.ProRdvService.findFirst({
+    where: (s, { eq, and }) => and(eq(s.id, serviceId), eq(s.structureId, structure.id), eq(s.isActive, true)),
+    columns: {
       id: true,
       name: true,
       durationMinutes: true,
@@ -548,43 +577,22 @@ async function createAppointment(req, res) {
   const dayStart = startOfUtcDay(startAt);
   const dayEnd = endOfUtcDay(startAt);
 
-  const rules = await prisma.proAvailabilityRule.findMany({
-    where: {
-      structureId: structure.id,
-      isActive: true,
-    },
-    orderBy: [{ weekday: 'asc' }, { startTime: 'asc' }],
+  const rules = await db.query.ProAvailabilityRule.findMany({
+    where: (r, { eq, and }) => and(eq(r.structureId, structure.id), eq(r.isActive, true)),
+    orderBy: (r, { asc }) => [asc(r.weekday), asc(r.startTime)],
   });
 
-  const appointmentsForDay = await prisma.proAppointment.findMany({
-    where: {
-      structureId: structure.id,
-      status: {
-        in: ACTIVE_APPOINTMENT_STATUSES,
-      },
-      startAt: { lt: dayEnd },
-      endAt: { gt: dayStart },
-    },
-    include: {
-      service: {
-        select: {
-          bufferBeforeMinutes: true,
-          bufferAfterMinutes: true,
-        },
-      },
-    },
+  const appointmentsForDay = await findOverlappingAppointments(db, {
+    structureId: structure.id,
+    statuses: ACTIVE_APPOINTMENT_STATUSES,
+    startBefore: dayEnd,
+    endAfter: dayStart,
   });
 
-  const timeOffs = await prisma.proTimeOff.findMany({
-    where: {
-      structureId: structure.id,
-      startAt: { lt: dayEnd },
-      endAt: { gt: dayStart },
-    },
-    select: {
-      startAt: true,
-      endAt: true,
-    },
+  const timeOffs = await findOverlappingTimeOffs(db, {
+    structureId: structure.id,
+    startBefore: dayEnd,
+    endAfter: dayStart,
   });
 
   const busyWindows = [
@@ -609,125 +617,106 @@ async function createAppointment(req, res) {
   }
 
   try {
-    const result = await prisma.$transaction(async (tx) => {
-      const overlaps = await tx.proAppointment.findMany({
-        where: {
-          structureId: structure.id,
-          status: { in: ACTIVE_APPOINTMENT_STATUSES },
-          startAt: { lt: endAt },
-          endAt: { gt: startAt },
-        },
-        include: {
-          service: {
-            select: {
-              bufferBeforeMinutes: true,
-              bufferAfterMinutes: true,
-            },
-          },
-        },
-      });
+    // Optimistic locking: Neon HTTP driver does not support transactions.
+    // The unique constraint on (citizenUserId, idempotencyKey) prevents duplicates.
 
-      const overlapBusyWindows = toBusyWindows(overlaps);
-      const candidateBusyStart = new Date(startAt.getTime() - service.bufferBeforeMinutes * 60_000);
-      const candidateBusyEnd = new Date(endAt.getTime() + service.bufferAfterMinutes * 60_000);
-      const hasConflict = overlapBusyWindows.some((window) => candidateBusyStart < window.end && window.start < candidateBusyEnd);
+    // 1. Check overlapping appointments
+    const overlaps = await db
+      .select()
+      .from(schema.ProAppointment)
+      .where(
+        and(
+          eq(schema.ProAppointment.structureId, structure.id),
+          inArray(schema.ProAppointment.status, ACTIVE_APPOINTMENT_STATUSES),
+          lt(schema.ProAppointment.startAt, endAt),
+          gt(schema.ProAppointment.endAt, startAt),
+        ),
+      );
 
-      if (hasConflict) {
-        return { created: false, conflict: true, appointment: null };
-      }
+    // Load service buffers for overlap check
+    const overlapsWithService = await Promise.all(
+      overlaps.map(async (appt) => {
+        const svc = appt.serviceId
+          ? await db
+              .select({
+                bufferBeforeMinutes: schema.ProRdvService.bufferBeforeMinutes,
+                bufferAfterMinutes: schema.ProRdvService.bufferAfterMinutes,
+              })
+              .from(schema.ProRdvService)
+              .where(eq(schema.ProRdvService.id, appt.serviceId))
+              .then((rows) => rows[0] || null)
+          : null;
+        return { ...appt, service: svc };
+      }),
+    );
 
-      const hasTimeOff = await tx.proTimeOff.count({
-        where: {
-          structureId: structure.id,
-          startAt: { lt: endAt },
-          endAt: { gt: startAt },
-        },
-      });
+    const overlapBusyWindows = toBusyWindows(overlapsWithService);
+    const candidateBusyStart = new Date(startAt.getTime() - service.bufferBeforeMinutes * 60_000);
+    const candidateBusyEnd = new Date(endAt.getTime() + service.bufferAfterMinutes * 60_000);
+    const hasConflict = overlapBusyWindows.some((window) => candidateBusyStart < window.end && window.start < candidateBusyEnd);
 
-      if (hasTimeOff > 0) {
-        return { created: false, conflict: true, appointment: null };
-      }
-
-      const createdAppointment = await tx.proAppointment.create({
-        data: {
-          structureId: structure.id,
-          serviceId: service.id,
-          startAt,
-          endAt,
-          status: 'confirmed',
-          beneficiaryName: 'Particulier',
-          beneficiaryPhone: null,
-          notes: null,
-          citizenUserId: auth.user.id,
-          citizenEmailSnapshot: auth.user.email,
-          idempotencyKey,
-        },
-        include: {
-          service: {
-            select: {
-              id: true,
-              name: true,
-              durationMinutes: true,
-            },
-          },
-          structure: {
-            select: {
-              id: true,
-              slug: true,
-              nom: true,
-            },
-          },
-        },
-      });
-
-      return { created: true, appointment: createdAppointment };
-    });
-
-    if (result.conflict || !result.appointment) {
+    if (hasConflict) {
       return res.status(409).json({ error: 'Slot no longer available' });
     }
 
-    if (result.created) {
-      try {
-        await sendAppointmentConfirmationEmail({
-          appointment: result.appointment,
-          structureName: result.appointment.structure?.nom || structure.nom,
-          structureSlug: result.appointment.structure?.slug || structure.slug,
-          serviceName: result.appointment.service?.name || service.name,
-          toEmail: auth.user.email,
-        });
-      } catch {
-        // Email is best-effort: booking must stay successful even if provider is unavailable.
-      }
+    // 2. Check time-offs
+    const [timeOffCount] = await db
+      .select({ value: count() })
+      .from(schema.ProTimeOff)
+      .where(
+        and(
+          eq(schema.ProTimeOff.structureId, structure.id),
+          lt(schema.ProTimeOff.startAt, endAt),
+          gt(schema.ProTimeOff.endAt, startAt),
+        ),
+      );
+
+    if (Number(timeOffCount.value) > 0) {
+      return res.status(409).json({ error: 'Slot no longer available' });
     }
 
-    const payload = serializeAppointment(result.appointment, {
-      structureSlug: result.appointment.structure?.slug || structure.slug,
+    // 3. Insert appointment (unique constraint on citizenUserId+idempotencyKey catches races)
+    const [createdAppointment] = await db.insert(schema.ProAppointment).values({
+      structureId: structure.id,
+      serviceId: service.id,
+      startAt,
+      endAt,
+      status: 'confirmed',
+      beneficiaryName: 'Particulier',
+      beneficiaryPhone: null,
+      notes: null,
+      citizenUserId: auth.user.id,
+      citizenEmailSnapshot: auth.user.email,
+      idempotencyKey,
+      visioEnabled: false,
+    }).returning();
+
+    // Load full appointment with relations
+    const fullAppointment = await loadAppointmentWithRelations(createdAppointment.id);
+
+    try {
+      await sendAppointmentConfirmationEmail({
+        appointment: fullAppointment || createdAppointment,
+        structureName: fullAppointment?.structure?.nom || structure.nom,
+        structureSlug: fullAppointment?.structure?.slug || structure.slug,
+        serviceName: fullAppointment?.service?.name || service.name,
+        toEmail: auth.user.email,
+      });
+    } catch {
+      // Email is best-effort: booking must stay successful even if provider is unavailable.
+    }
+
+    const payload = serializeAppointment(fullAppointment || createdAppointment, {
+      structureSlug: fullAppointment?.structure?.slug || structure.slug,
     });
-    return res.status(result.created ? 201 : 200).json(payload);
+    return res.status(201).json(payload);
   } catch (error) {
-    if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002') {
-      const existing = await prisma.proAppointment.findFirst({
-        where: {
-          citizenUserId: auth.user.id,
-          idempotencyKey,
-        },
-        include: {
-          service: {
-            select: {
-              id: true,
-              name: true,
-              durationMinutes: true,
-            },
-          },
-          structure: {
-            select: {
-              id: true,
-              slug: true,
-              nom: true,
-            },
-          },
-        },
+    // Drizzle wraps pg errors in error.cause
+    const pgCode = error?.cause?.code || error?.code;
+    if (pgCode === '23505') {
+      const existing = await loadAppointmentWithRelations(null, {
+        citizenUserId: auth.user.id,
+        idempotencyKey,
       });
 
       if (existing) {
@@ -761,25 +750,7 @@ async function getAppointment(req, res) {
     return res.status(rateLimit.status).json(rateLimit.error);
   }
 
-  const appointment = await prisma.proAppointment.findUnique({
-    where: { id: appointmentId },
-    include: {
-      service: {
-        select: {
-          id: true,
-          name: true,
-          durationMinutes: true,
-        },
-      },
-      structure: {
-        select: {
-          id: true,
-          slug: true,
-          nom: true,
-        },
-      },
-    },
-  });
+  const appointment = await loadAppointmentWithRelations(appointmentId);
 
   if (!appointment) {
     return res.status(404).json({ error: 'Appointment not found' });
@@ -813,25 +784,7 @@ async function cancelAppointment(req, res) {
     return res.status(rateLimit.status).json(rateLimit.error);
   }
 
-  const appointment = await prisma.proAppointment.findUnique({
-    where: { id: appointmentId },
-    include: {
-      service: {
-        select: {
-          id: true,
-          name: true,
-          durationMinutes: true,
-        },
-      },
-      structure: {
-        select: {
-          id: true,
-          slug: true,
-          nom: true,
-        },
-      },
-    },
-  });
+  const appointment = await loadAppointmentWithRelations(appointmentId);
 
   if (!appointment) {
     return res.status(404).json({ error: 'Appointment not found' });
@@ -845,32 +798,16 @@ async function cancelAppointment(req, res) {
     return res.status(200).json(serializeAppointment(appointment));
   }
 
-  const updated = await prisma.proAppointment.update({
-    where: { id: appointment.id },
-    data: {
-      status: 'cancelled',
-      cancelledAt: new Date(),
-      cancelledBy: 'USER',
-    },
-    include: {
-      service: {
-        select: {
-          id: true,
-          name: true,
-          durationMinutes: true,
-        },
-      },
-      structure: {
-        select: {
-          id: true,
-          slug: true,
-          nom: true,
-        },
-      },
-    },
-  });
+  await db.update(schema.ProAppointment).set({
+    status: 'cancelled',
+    cancelledAt: new Date(),
+    cancelledBy: 'USER',
+  }).where(eq(schema.ProAppointment.id, appointment.id));
 
-  return res.status(200).json(serializeAppointment(updated));
+  // Reload with relations after update
+  const updated = await loadAppointmentWithRelations(appointment.id);
+
+  return res.status(200).json(serializeAppointment(updated || appointment));
 }
 
 /**

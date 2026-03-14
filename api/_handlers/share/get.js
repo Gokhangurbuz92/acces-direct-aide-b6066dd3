@@ -1,5 +1,7 @@
 import logger from '../../_utils/logger.js';
-import prisma from '../../_utils/prisma.js';
+import { db } from '../../../src/db/index.js';
+import { SharedDiagnostic } from '../../../src/db/schema.js';
+import { eq, sql } from 'drizzle-orm';
 
 /**
  * GET /api/share/get?id=...
@@ -26,8 +28,8 @@ export default async function handler(req, res) {
     }
 
     try {
-        const shared = await prisma.sharedDiagnostic.findUnique({
-            where: { id },
+        const shared = await db.query.SharedDiagnostic.findFirst({
+            where: eq(SharedDiagnostic.id, id),
         });
 
         if (!shared) {
@@ -46,10 +48,11 @@ export default async function handler(req, res) {
         }
 
         // Increment view count (fire-and-forget)
-        prisma.sharedDiagnostic.update({
-            where: { id },
-            data: { viewCount: { increment: 1 } },
-        }).catch(() => { /* non-blocking */ });
+        db.update(SharedDiagnostic)
+            .set({ viewCount: sql`${SharedDiagnostic.viewCount} + 1` })
+            .where(eq(SharedDiagnostic.id, id))
+            .execute()
+            .catch(() => { /* non-blocking */ });
 
         return res.status(200).json({
             success: true,

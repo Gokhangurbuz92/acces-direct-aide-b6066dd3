@@ -83,7 +83,6 @@ async function loadConversationForPro(conversationId, limit) {
       },
       messages: {
         orderBy: [asc(RdvConversationMessage.createdAt)],
-        limit,
       },
       citizenUser: {
         columns: { id: true },
@@ -121,7 +120,6 @@ async function getConversations(req, res, proCtx) {
       },
       messages: {
         orderBy: [desc(RdvConversationMessage.createdAt)],
-        limit: 1,
       },
     },
   });

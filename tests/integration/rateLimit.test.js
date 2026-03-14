@@ -1,3 +1,7 @@
+import { vi } from "vitest";
+vi.stubEnv("KV_REST_API_URL", "http://localhost");
+vi.stubEnv("KV_REST_API_TOKEN", "mock-token");
+
 import { vi, describe, it, expect, beforeEach, afterEach } from 'vitest';
 import * as rateLimitUtils from '../../api/_utils/rateLimit.js';
 

@@ -11,7 +11,7 @@ import { cache } from '@ada/shared/cache';
  * GET /api/admin/stats
  *
  * Returns real-time system stats for the admin dashboard:
- * - Prisma model counts (Aide, AdminUser, CitizenUser, CronRun, Demarche)
+ * - Drizzle model counts (Aide, AdminUser, CitizenUser, CronRun, Demarche)
  * - Feature flag states
  * - Cache backend info
  *

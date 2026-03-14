@@ -1,3 +1,4 @@
+import crypto from 'node:crypto';
 import { relations, sql } from 'drizzle-orm'
 import { boolean, doublePrecision, foreignKey, integer, jsonb, pgEnum, pgTable, serial, text, timestamp, uniqueIndex } from 'drizzle-orm/pg-core'
 
@@ -16,7 +17,7 @@ export const IngestJobStatus = pgEnum('IngestJobStatus', ['PENDING', 'PROCESSING
 export const RdvBookingMode = pgEnum('RdvBookingMode', ['IN_PERSON', 'VIDEO', 'BOTH'])
 
 export const SourceDocument = pgTable('SourceDocument', {
-	id: text('id').notNull().primaryKey().default(sql`gen_random_uuid()`),
+	id: text('id').notNull().primaryKey().$defaultFn(() => crypto.randomUUID()),
 	source_url: text('source_url'),
 	fetched_at: timestamp('fetched_at', { precision: 3 }).notNull().defaultNow(),
 	content_hash: text('content_hash'),
@@ -25,7 +26,7 @@ export const SourceDocument = pgTable('SourceDocument', {
 });
 
 export const Aide = pgTable('Aide', {
-	id: text('id').notNull().primaryKey().default(sql`gen_random_uuid()`),
+	id: text('id').notNull().primaryKey().$defaultFn(() => crypto.randomUUID()),
 	slug: text('slug').unique(),
 	titre: text('titre').notNull(),
 	categorie: text('categorie'),
@@ -40,7 +41,7 @@ export const Aide = pgTable('Aide', {
 	etapes: jsonb('etapes'),
 	ou_demander: text('ou_demander'),
 	lien_demande: text('lien_demande'),
-	updatedAt: timestamp('updatedAt', { precision: 3 }).notNull(),
+	updatedAt: timestamp('updatedAt', { precision: 3, mode: 'date' }).$defaultFn(() => new Date()).$onUpdate(() => new Date()).notNull(),
 	statut: text('statut').notNull().default("brouillon"),
 	updatedBy: text('updatedBy'),
 	quality_score: integer('quality_score').notNull(),
@@ -119,28 +120,28 @@ export const Aide = pgTable('Aide', {
 }));
 
 export const AidCategory = pgTable('AidCategory', {
-	id: text('id').notNull().primaryKey().default(sql`gen_random_uuid()`),
+	id: text('id').notNull().primaryKey().$defaultFn(() => crypto.randomUUID()),
 	slug: text('slug').notNull().unique(),
 	label: text('label').notNull()
 });
 
 export const LifeSituation = pgTable('LifeSituation', {
-	id: text('id').notNull().primaryKey().default(sql`gen_random_uuid()`),
+	id: text('id').notNull().primaryKey().$defaultFn(() => crypto.randomUUID()),
 	slug: text('slug').notNull().unique(),
 	label: text('label').notNull()
 });
 
 export const Situation = pgTable('Situation', {
-	id: text('id').notNull().primaryKey().default(sql`gen_random_uuid()`),
+	id: text('id').notNull().primaryKey().$defaultFn(() => crypto.randomUUID()),
 	code: text('code').notNull().unique(),
 	label: text('label').notNull(),
 	description: text('description'),
 	createdAt: timestamp('createdAt', { precision: 3 }).notNull().defaultNow(),
-	updatedAt: timestamp('updatedAt', { precision: 3 }).notNull()
+	updatedAt: timestamp('updatedAt', { precision: 3, mode: 'date' }).$defaultFn(() => new Date()).$onUpdate(() => new Date()).notNull()
 });
 
 export const AidSituation = pgTable('AidSituation', {
-	id: text('id').notNull().primaryKey().default(sql`gen_random_uuid()`),
+	id: text('id').notNull().primaryKey().$defaultFn(() => crypto.randomUUID()),
 	aidId: text('aidId').notNull(),
 	situationId: text('situationId').notNull(),
 	createdAt: timestamp('createdAt', { precision: 3 }).notNull().defaultNow()
@@ -164,7 +165,7 @@ export const AidSituation = pgTable('AidSituation', {
 }));
 
 export const AidSource = pgTable('AidSource', {
-	id: text('id').notNull().primaryKey().default(sql`gen_random_uuid()`),
+	id: text('id').notNull().primaryKey().$defaultFn(() => crypto.randomUUID()),
 	name: text('name').notNull(),
 	kind: text('kind'),
 	baseUrl: text('baseUrl'),
@@ -175,7 +176,7 @@ export const AidSource = pgTable('AidSource', {
 });
 
 export const Structure = pgTable('Structure', {
-	id: text('id').notNull().primaryKey().default(sql`gen_random_uuid()`),
+	id: text('id').notNull().primaryKey().$defaultFn(() => crypto.randomUUID()),
 	nom: text('nom').notNull(),
 	type_structure: text('type_structure'),
 	accessibilite_pmr: boolean('accessibilite_pmr').notNull(),
@@ -192,7 +193,10 @@ export const Structure = pgTable('Structure', {
 	publics_accueillis: text('publics_accueillis').array().notNull(),
 	date_verification: timestamp('date_verification', { precision: 3 }),
 	categories_aidees: text('categories_aidees').array().notNull(),
-	updatedAt: timestamp('updatedAt', { precision: 3 }).notNull(),
+	updatedAt: timestamp('updatedAt', { precision: 3, mode: 'date' })
+		.$defaultFn(() => new Date())
+		.$onUpdate(() => new Date())
+		.notNull(),
 	status: text('status').notNull().default("actif"),
 	commentaire_statut: text('commentaire_statut'),
 	published_at: timestamp('published_at', { precision: 3 }),
@@ -240,7 +244,7 @@ export const Structure = pgTable('Structure', {
 }));
 
 export const Demarche = pgTable('Demarche', {
-	id: text('id').notNull().primaryKey().default(sql`gen_random_uuid()`),
+	id: text('id').notNull().primaryKey().$defaultFn(() => crypto.randomUUID()),
 	titre: text('titre').notNull(),
 	categorie: text('categorie'),
 	description_courte: text('description_courte'),
@@ -253,7 +257,7 @@ export const Demarche = pgTable('Demarche', {
 	ou_faire: text('ou_faire'),
 	lien_officiel: text('lien_officiel'),
 	sources: jsonb('sources'),
-	updatedAt: timestamp('updatedAt', { precision: 3 }).notNull(),
+	updatedAt: timestamp('updatedAt', { precision: 3, mode: 'date' }).$defaultFn(() => new Date()).$onUpdate(() => new Date()).notNull(),
 	statut: text('statut').notNull().default("brouillon"),
 	updatedBy: text('updatedBy'),
 	quality_score: integer('quality_score').notNull(),
@@ -297,14 +301,14 @@ export const Demarche = pgTable('Demarche', {
 }));
 
 export const Actualite = pgTable('Actualite', {
-	id: text('id').notNull().primaryKey().default(sql`gen_random_uuid()`),
+	id: text('id').notNull().primaryKey().$defaultFn(() => crypto.randomUUID()),
 	titre: text('titre').notNull(),
 	contenu: text('contenu'),
 	date_publication: timestamp('date_publication', { precision: 3 }).notNull().defaultNow(),
 	image_url: text('image_url'),
 	lien_url: text('lien_url'),
 	source: text('source'),
-	updatedAt: timestamp('updatedAt', { precision: 3 }).notNull(),
+	updatedAt: timestamp('updatedAt', { precision: 3, mode: 'date' }).$defaultFn(() => new Date()).$onUpdate(() => new Date()).notNull(),
 	statut: text('statut').notNull().default("brouillon"),
 	updatedBy: text('updatedBy'),
 	commentaire_statut: text('commentaire_statut'),
@@ -348,7 +352,7 @@ export const Actualite = pgTable('Actualite', {
 }));
 
 export const ImportLog = pgTable('ImportLog', {
-	id: text('id').notNull().primaryKey().default(sql`gen_random_uuid()`),
+	id: text('id').notNull().primaryKey().$defaultFn(() => crypto.randomUUID()),
 	run_id: text('run_id'),
 	source_name: text('source_name').notNull(),
 	status: text('status').notNull(),
@@ -363,7 +367,7 @@ export const ImportLog = pgTable('ImportLog', {
 });
 
 export const CronRun = pgTable('CronRun', {
-	id: text('id').notNull().primaryKey().default(sql`gen_random_uuid()`),
+	id: text('id').notNull().primaryKey().$defaultFn(() => crypto.randomUUID()),
 	job: text('job').notNull(),
 	status: text('status').notNull(),
 	trigger: text('trigger'),
@@ -377,11 +381,14 @@ export const CronRun = pgTable('CronRun', {
 	metrics: jsonb('metrics'),
 	errorSample: text('errorSample'),
 	createdAt: timestamp('createdAt', { precision: 3 }).notNull().defaultNow(),
-	updatedAt: timestamp('updatedAt', { precision: 3 }).notNull()
+	updatedAt: timestamp('updatedAt', { precision: 3, mode: 'date' })
+		.$defaultFn(() => new Date())
+		.$onUpdate(() => new Date())
+		.notNull()
 });
 
 export const ReviewQueueItem = pgTable('ReviewQueueItem', {
-	id: text('id').notNull().primaryKey().default(sql`gen_random_uuid()`),
+	id: text('id').notNull().primaryKey().$defaultFn(() => crypto.randomUUID()),
 	entityType: text('entityType').notNull(),
 	entityId: text('entityId').notNull(),
 	entitySlug: text('entitySlug'),
@@ -391,14 +398,14 @@ export const ReviewQueueItem = pgTable('ReviewQueueItem', {
 	status: text('status').notNull(),
 	details: jsonb('details'),
 	createdAt: timestamp('createdAt', { precision: 3 }).notNull().defaultNow(),
-	updatedAt: timestamp('updatedAt', { precision: 3 }).notNull()
+	updatedAt: timestamp('updatedAt', { precision: 3, mode: 'date' }).$defaultFn(() => new Date()).$onUpdate(() => new Date()).notNull()
 }, (ReviewQueueItem) => ({
 	'ReviewQueueItem_entityType_entityId_reason_status_unique_idx': uniqueIndex('ReviewQueueItem_entityType_entityId_reason_status_key')
 		.on(ReviewQueueItem.entityType, ReviewQueueItem.entityId, ReviewQueueItem.reason, ReviewQueueItem.status)
 }));
 
 export const RssSource = pgTable('RssSource', {
-	id: text('id').notNull().primaryKey().default(sql`gen_random_uuid()`),
+	id: text('id').notNull().primaryKey().$defaultFn(() => crypto.randomUUID()),
 	name: text('name').notNull(),
 	feed_url: text('feed_url').notNull().unique(),
 	domain: text('domain').notNull(),
@@ -410,7 +417,7 @@ export const RssSource = pgTable('RssSource', {
 	error_count: integer('error_count').notNull(),
 	last_error: text('last_error'),
 	createdAt: timestamp('createdAt', { precision: 3 }).notNull().defaultNow(),
-	updatedAt: timestamp('updatedAt', { precision: 3 }).notNull()
+	updatedAt: timestamp('updatedAt', { precision: 3, mode: 'date' }).$defaultFn(() => new Date()).$onUpdate(() => new Date()).notNull()
 });
 
 export const UpdateLog = pgTable('UpdateLog', {
@@ -428,7 +435,7 @@ export const UpdateLog = pgTable('UpdateLog', {
 });
 
 export const IngestJob = pgTable('IngestJob', {
-	id: text('id').notNull().primaryKey().default(sql`gen_random_uuid()`),
+	id: text('id').notNull().primaryKey().$defaultFn(() => crypto.randomUUID()),
 	source: text('source').notNull(),
 	status: IngestJobStatus('status').notNull().default("PENDING"),
 	payload: jsonb('payload'),
@@ -437,11 +444,11 @@ export const IngestJob = pgTable('IngestJob', {
 	started_at: timestamp('started_at', { precision: 3 }),
 	finished_at: timestamp('finished_at', { precision: 3 }),
 	createdAt: timestamp('createdAt', { precision: 3 }).notNull().defaultNow(),
-	updatedAt: timestamp('updatedAt', { precision: 3 }).notNull()
+	updatedAt: timestamp('updatedAt', { precision: 3, mode: 'date' }).$defaultFn(() => new Date()).$onUpdate(() => new Date()).notNull()
 });
 
 export const Source = pgTable('Source', {
-	id: text('id').notNull().primaryKey().default(sql`gen_random_uuid()`),
+	id: text('id').notNull().primaryKey().$defaultFn(() => crypto.randomUUID()),
 	name: text('name').notNull(),
 	type: text('type').notNull(),
 	url: text('url'),
@@ -451,12 +458,12 @@ export const Source = pgTable('Source', {
 });
 
 export const AdminUser = pgTable('AdminUser', {
-	id: text('id').notNull().primaryKey().default(sql`gen_random_uuid()`),
+	id: text('id').notNull().primaryKey().$defaultFn(() => crypto.randomUUID()),
 	email: text('email').notNull().unique(),
 	password: text('password').notNull(),
 	role: text('role').notNull().default("admin"),
 	createdAt: timestamp('createdAt', { precision: 3 }).notNull().defaultNow(),
-	updatedAt: timestamp('updatedAt', { precision: 3 }).notNull(),
+	updatedAt: timestamp('updatedAt', { precision: 3, mode: 'date' }).$defaultFn(() => new Date()).$onUpdate(() => new Date()).notNull(),
 	failedLoginAttempts: integer('failedLoginAttempts').notNull(),
 	lastLogin: timestamp('lastLogin', { precision: 3 }),
 	lockoutUntil: timestamp('lockoutUntil', { precision: 3 }),
@@ -466,7 +473,7 @@ export const AdminUser = pgTable('AdminUser', {
 });
 
 export const CitizenUser = pgTable('CitizenUser', {
-	id: text('id').notNull().primaryKey().default(sql`gen_random_uuid()`),
+	id: text('id').notNull().primaryKey().$defaultFn(() => crypto.randomUUID()),
 	email: text('email').notNull().unique(),
 	passwordHash: text('passwordHash').notNull(),
 	emailVerifiedAt: timestamp('emailVerifiedAt', { precision: 3 }),
@@ -474,11 +481,11 @@ export const CitizenUser = pgTable('CitizenUser', {
 	phoneVerifiedAt: timestamp('phoneVerifiedAt', { precision: 3 }),
 	notificationEmailEnabled: boolean('notificationEmailEnabled').notNull().default(true),
 	createdAt: timestamp('createdAt', { precision: 3 }).notNull().defaultNow(),
-	updatedAt: timestamp('updatedAt', { precision: 3 }).notNull()
+	updatedAt: timestamp('updatedAt', { precision: 3, mode: 'date' }).$defaultFn(() => new Date()).$onUpdate(() => new Date()).notNull()
 });
 
 export const AuthToken = pgTable('AuthToken', {
-	id: text('id').notNull().primaryKey().default(sql`gen_random_uuid()`),
+	id: text('id').notNull().primaryKey().$defaultFn(() => crypto.randomUUID()),
 	userId: text('userId').notNull(),
 	type: text('type').notNull(),
 	tokenHash: text('tokenHash').notNull().unique(),
@@ -496,7 +503,7 @@ export const AuthToken = pgTable('AuthToken', {
 }));
 
 export const AuditLog = pgTable('AuditLog', {
-	id: text('id').notNull().primaryKey().default(sql`gen_random_uuid()`),
+	id: text('id').notNull().primaryKey().$defaultFn(() => crypto.randomUUID()),
 	action: text('action').notNull(),
 	actor: text('actor'),
 	target: text('target'),
@@ -510,7 +517,7 @@ export const AuditLog = pgTable('AuditLog', {
 });
 
 export const ProUser = pgTable('ProUser', {
-	id: text('id').notNull().primaryKey().default(sql`gen_random_uuid()`),
+	id: text('id').notNull().primaryKey().$defaultFn(() => crypto.randomUUID()),
 	email: text('email').notNull(),
 	password_hash: text('password_hash').notNull(),
 	role: text('role').notNull(),
@@ -518,7 +525,7 @@ export const ProUser = pgTable('ProUser', {
 	structureId: text('structureId').notNull(),
 	notificationEmailEnabled: boolean('notificationEmailEnabled').notNull().default(true),
 	createdAt: timestamp('createdAt', { precision: 3 }).notNull().defaultNow(),
-	updatedAt: timestamp('updatedAt', { precision: 3 }).notNull(),
+	updatedAt: timestamp('updatedAt', { precision: 3, mode: 'date' }).$defaultFn(() => new Date()).$onUpdate(() => new Date()).notNull(),
 	mfa_enabled: boolean('mfa_enabled').notNull(),
 	mfa_secret: text('mfa_secret')
 }, (ProUser) => ({
@@ -534,7 +541,7 @@ export const ProUser = pgTable('ProUser', {
 }));
 
 export const Service = pgTable('Service', {
-	id: text('id').notNull().primaryKey().default(sql`gen_random_uuid()`),
+	id: text('id').notNull().primaryKey().$defaultFn(() => crypto.randomUUID()),
 	structureId: text('structureId').notNull(),
 	slug: text('slug').notNull(),
 	name: text('name').notNull(),
@@ -545,7 +552,7 @@ export const Service = pgTable('Service', {
 	audiences: text('audiences').array().notNull(),
 	is_active: boolean('is_active').notNull().default(true),
 	createdAt: timestamp('createdAt', { precision: 3 }).notNull().defaultNow(),
-	updatedAt: timestamp('updatedAt', { precision: 3 }).notNull()
+	updatedAt: timestamp('updatedAt', { precision: 3, mode: 'date' }).$defaultFn(() => new Date()).$onUpdate(() => new Date()).notNull()
 }, (Service) => ({
 	'Service_structure_fkey': foreignKey({
 		name: 'Service_structure_fkey',
@@ -559,7 +566,7 @@ export const Service = pgTable('Service', {
 }));
 
 export const ProRdvService = pgTable('ProRdvService', {
-	id: text('id').notNull().primaryKey().default(sql`gen_random_uuid()`),
+	id: text('id').notNull().primaryKey().$defaultFn(() => crypto.randomUUID()),
 	structureId: text('structureId').notNull(),
 	name: text('name').notNull(),
 	durationMinutes: integer('durationMinutes').notNull(),
@@ -567,7 +574,7 @@ export const ProRdvService = pgTable('ProRdvService', {
 	bufferAfterMinutes: integer('bufferAfterMinutes').notNull(),
 	isActive: boolean('isActive').notNull().default(true),
 	createdAt: timestamp('createdAt', { precision: 3 }).notNull().defaultNow(),
-	updatedAt: timestamp('updatedAt', { precision: 3 }).notNull()
+	updatedAt: timestamp('updatedAt', { precision: 3, mode: 'date' }).$defaultFn(() => new Date()).$onUpdate(() => new Date()).notNull()
 }, (ProRdvService) => ({
 	'ProRdvService_structure_fkey': foreignKey({
 		name: 'ProRdvService_structure_fkey',
@@ -579,7 +586,7 @@ export const ProRdvService = pgTable('ProRdvService', {
 }));
 
 export const ProAvailabilityRule = pgTable('ProAvailabilityRule', {
-	id: text('id').notNull().primaryKey().default(sql`gen_random_uuid()`),
+	id: text('id').notNull().primaryKey().$defaultFn(() => crypto.randomUUID()),
 	structureId: text('structureId').notNull(),
 	weekday: integer('weekday').notNull(),
 	startTime: text('startTime').notNull(),
@@ -587,7 +594,7 @@ export const ProAvailabilityRule = pgTable('ProAvailabilityRule', {
 	timezone: text('timezone').notNull().default("Europe/Paris"),
 	isActive: boolean('isActive').notNull().default(true),
 	createdAt: timestamp('createdAt', { precision: 3 }).notNull().defaultNow(),
-	updatedAt: timestamp('updatedAt', { precision: 3 }).notNull()
+	updatedAt: timestamp('updatedAt', { precision: 3, mode: 'date' }).$defaultFn(() => new Date()).$onUpdate(() => new Date()).notNull()
 }, (ProAvailabilityRule) => ({
 	'ProAvailabilityRule_structure_fkey': foreignKey({
 		name: 'ProAvailabilityRule_structure_fkey',
@@ -599,7 +606,7 @@ export const ProAvailabilityRule = pgTable('ProAvailabilityRule', {
 }));
 
 export const ProAppointment = pgTable('ProAppointment', {
-	id: text('id').notNull().primaryKey().default(sql`gen_random_uuid()`),
+	id: text('id').notNull().primaryKey().$defaultFn(() => crypto.randomUUID()),
 	structureId: text('structureId').notNull(),
 	serviceId: text('serviceId').notNull(),
 	startAt: timestamp('startAt', { precision: 3 }).notNull(),
@@ -615,7 +622,7 @@ export const ProAppointment = pgTable('ProAppointment', {
 	cancelledAt: timestamp('cancelledAt', { precision: 3 }),
 	cancelledBy: text('cancelledBy'),
 	createdAt: timestamp('createdAt', { precision: 3 }).notNull().defaultNow(),
-	updatedAt: timestamp('updatedAt', { precision: 3 }).notNull(),
+	updatedAt: timestamp('updatedAt', { precision: 3, mode: 'date' }).$defaultFn(() => new Date()).$onUpdate(() => new Date()).notNull(),
 	visioRoomId: text('visioRoomId'),
 	visioEnabled: boolean('visioEnabled').notNull(),
 	visioStartedAt: timestamp('visioStartedAt', { precision: 3 })
@@ -653,13 +660,13 @@ export const ProAppointment = pgTable('ProAppointment', {
 }));
 
 export const RdvConversation = pgTable('RdvConversation', {
-	id: text('id').notNull().primaryKey().default(sql`gen_random_uuid()`),
+	id: text('id').notNull().primaryKey().$defaultFn(() => crypto.randomUUID()),
 	appointmentId: text('appointmentId').notNull().unique(),
 	structureId: text('structureId').notNull(),
 	citizenUserId: text('citizenUserId').notNull(),
 	lastMessageAt: timestamp('lastMessageAt', { precision: 3 }).notNull().defaultNow(),
 	createdAt: timestamp('createdAt', { precision: 3 }).notNull().defaultNow(),
-	updatedAt: timestamp('updatedAt', { precision: 3 }).notNull()
+	updatedAt: timestamp('updatedAt', { precision: 3, mode: 'date' }).$defaultFn(() => new Date()).$onUpdate(() => new Date()).notNull()
 }, (RdvConversation) => ({
 	'RdvConversation_appointment_fkey': foreignKey({
 		name: 'RdvConversation_appointment_fkey',
@@ -685,7 +692,7 @@ export const RdvConversation = pgTable('RdvConversation', {
 }));
 
 export const RdvConversationMessage = pgTable('RdvConversationMessage', {
-	id: text('id').notNull().primaryKey().default(sql`gen_random_uuid()`),
+	id: text('id').notNull().primaryKey().$defaultFn(() => crypto.randomUUID()),
 	conversationId: text('conversationId').notNull(),
 	senderType: text('senderType').notNull(),
 	senderCitizenUserId: text('senderCitizenUserId'),
@@ -717,7 +724,7 @@ export const RdvConversationMessage = pgTable('RdvConversationMessage', {
 }));
 
 export const RdvNotificationLog = pgTable('RdvNotificationLog', {
-	id: text('id').notNull().primaryKey().default(sql`gen_random_uuid()`),
+	id: text('id').notNull().primaryKey().$defaultFn(() => crypto.randomUUID()),
 	kind: text('kind').notNull().default("MESSAGE_EMAIL"),
 	conversationId: text('conversationId').notNull(),
 	messageId: text('messageId').notNull(),
@@ -743,13 +750,13 @@ export const RdvNotificationLog = pgTable('RdvNotificationLog', {
 }));
 
 export const ProTimeOff = pgTable('ProTimeOff', {
-	id: text('id').notNull().primaryKey().default(sql`gen_random_uuid()`),
+	id: text('id').notNull().primaryKey().$defaultFn(() => crypto.randomUUID()),
 	structureId: text('structureId').notNull(),
 	startAt: timestamp('startAt', { precision: 3 }).notNull(),
 	endAt: timestamp('endAt', { precision: 3 }).notNull(),
 	reason: text('reason'),
 	createdAt: timestamp('createdAt', { precision: 3 }).notNull().defaultNow(),
-	updatedAt: timestamp('updatedAt', { precision: 3 }).notNull()
+	updatedAt: timestamp('updatedAt', { precision: 3, mode: 'date' }).$defaultFn(() => new Date()).$onUpdate(() => new Date()).notNull()
 }, (ProTimeOff) => ({
 	'ProTimeOff_structure_fkey': foreignKey({
 		name: 'ProTimeOff_structure_fkey',
@@ -761,7 +768,7 @@ export const ProTimeOff = pgTable('ProTimeOff', {
 }));
 
 export const StructureRdvSettings = pgTable('StructureRdvSettings', {
-	id: text('id').notNull().primaryKey().default(sql`gen_random_uuid()`),
+	id: text('id').notNull().primaryKey().$defaultFn(() => crypto.randomUUID()),
 	structureId: text('structureId').notNull().unique(),
 	isPublished: boolean('isPublished').notNull(),
 	bookingMode: RdvBookingMode('bookingMode').notNull().default("IN_PERSON"),
@@ -769,7 +776,7 @@ export const StructureRdvSettings = pgTable('StructureRdvSettings', {
 	contactPhone: text('contactPhone'),
 	publishedAt: timestamp('publishedAt', { precision: 3 }),
 	createdAt: timestamp('createdAt', { precision: 3 }).notNull().defaultNow(),
-	updatedAt: timestamp('updatedAt', { precision: 3 }).notNull()
+	updatedAt: timestamp('updatedAt', { precision: 3, mode: 'date' }).$defaultFn(() => new Date()).$onUpdate(() => new Date()).notNull()
 }, (StructureRdvSettings) => ({
 	'StructureRdvSettings_structure_fkey': foreignKey({
 		name: 'StructureRdvSettings_structure_fkey',
@@ -781,7 +788,7 @@ export const StructureRdvSettings = pgTable('StructureRdvSettings', {
 }));
 
 export const Invitation = pgTable('Invitation', {
-	id: text('id').notNull().primaryKey().default(sql`gen_random_uuid()`),
+	id: text('id').notNull().primaryKey().$defaultFn(() => crypto.randomUUID()),
 	structureId: text('structureId').notNull(),
 	email: text('email').notNull(),
 	role: text('role').notNull(),
@@ -800,7 +807,7 @@ export const Invitation = pgTable('Invitation', {
 }));
 
 export const ConsentLog = pgTable('ConsentLog', {
-	id: text('id').notNull().primaryKey().default(sql`gen_random_uuid()`),
+	id: text('id').notNull().primaryKey().$defaultFn(() => crypto.randomUUID()),
 	policy_version: text('policy_version').notNull(),
 	policy_hash: text('policy_hash').notNull(),
 	subject_type: text('subject_type').notNull(),
@@ -809,13 +816,13 @@ export const ConsentLog = pgTable('ConsentLog', {
 });
 
 export const Availability = pgTable('Availability', {
-	id: text('id').notNull().primaryKey().default(sql`gen_random_uuid()`),
+	id: text('id').notNull().primaryKey().$defaultFn(() => crypto.randomUUID()),
 	structureId: text('structureId').notNull(),
 	proId: text('proId'),
 	slots_json: jsonb('slots_json').notNull().default("{}"),
 	exceptions_json: jsonb('exceptions_json').notNull().default("[]"),
 	createdAt: timestamp('createdAt', { precision: 3 }).notNull().defaultNow(),
-	updatedAt: timestamp('updatedAt', { precision: 3 }).notNull()
+	updatedAt: timestamp('updatedAt', { precision: 3, mode: 'date' }).$defaultFn(() => new Date()).$onUpdate(() => new Date()).notNull()
 }, (Availability) => ({
 	'Availability_pro_fkey': foreignKey({
 		name: 'Availability_pro_fkey',
@@ -836,7 +843,7 @@ export const Availability = pgTable('Availability', {
 }));
 
 export const Beneficiary = pgTable('Beneficiary', {
-	id: text('id').notNull().primaryKey().default(sql`gen_random_uuid()`),
+	id: text('id').notNull().primaryKey().$defaultFn(() => crypto.randomUUID()),
 	contact_encrypted: text('contact_encrypted').notNull(),
 	contact_hash: text('contact_hash').notNull(),
 	first_name_encrypted: text('first_name_encrypted'),
@@ -844,7 +851,7 @@ export const Beneficiary = pgTable('Beneficiary', {
 });
 
 export const Appointment = pgTable('Appointment', {
-	id: text('id').notNull().primaryKey().default(sql`gen_random_uuid()`),
+	id: text('id').notNull().primaryKey().$defaultFn(() => crypto.randomUUID()),
 	structureId: text('structureId').notNull(),
 	serviceId: text('serviceId').notNull(),
 	proId: text('proId'),
@@ -857,7 +864,7 @@ export const Appointment = pgTable('Appointment', {
 	lock_expires_at: timestamp('lock_expires_at', { precision: 3 }),
 	cancel_token_hash: text('cancel_token_hash'),
 	createdAt: timestamp('createdAt', { precision: 3 }).notNull().defaultNow(),
-	updatedAt: timestamp('updatedAt', { precision: 3 }).notNull(),
+	updatedAt: timestamp('updatedAt', { precision: 3, mode: 'date' }).$defaultFn(() => new Date()).$onUpdate(() => new Date()).notNull(),
 	access_token_hash: text('access_token_hash'),
 	metadata: jsonb('metadata').default("{}")
 }, (Appointment) => ({
@@ -892,7 +899,7 @@ export const Appointment = pgTable('Appointment', {
 }));
 
 export const Message = pgTable('Message', {
-	id: text('id').notNull().primaryKey().default(sql`gen_random_uuid()`),
+	id: text('id').notNull().primaryKey().$defaultFn(() => crypto.randomUUID()),
 	appointmentId: text('appointmentId').notNull(),
 	sender: text('sender').notNull(),
 	content_encrypted: text('content_encrypted').notNull(),
@@ -909,7 +916,7 @@ export const Message = pgTable('Message', {
 }));
 
 export const Attachment = pgTable('Attachment', {
-	id: text('id').notNull().primaryKey().default(sql`gen_random_uuid()`),
+	id: text('id').notNull().primaryKey().$defaultFn(() => crypto.randomUUID()),
 	messageId: text('messageId').notNull(),
 	filename_encrypted: text('filename_encrypted').notNull(),
 	mime_type: text('mime_type').notNull(),
@@ -927,7 +934,7 @@ export const Attachment = pgTable('Attachment', {
 }));
 
 export const Guide = pgTable('Guide', {
-	id: text('id').notNull().primaryKey().default(sql`gen_random_uuid()`),
+	id: text('id').notNull().primaryKey().$defaultFn(() => crypto.randomUUID()),
 	slug: text('slug').notNull().unique(),
 	titre: text('titre').notNull(),
 	resume_falc: text('resume_falc'),
@@ -940,11 +947,11 @@ export const Guide = pgTable('Guide', {
 	statut: text('statut').notNull().default("brouillon"),
 	published_at: timestamp('published_at', { precision: 3 }),
 	createdAt: timestamp('createdAt', { precision: 3 }).notNull().defaultNow(),
-	updatedAt: timestamp('updatedAt', { precision: 3 }).notNull()
+	updatedAt: timestamp('updatedAt', { precision: 3, mode: 'date' }).$defaultFn(() => new Date()).$onUpdate(() => new Date()).notNull()
 });
 
 export const ToolboxItem = pgTable('ToolboxItem', {
-	id: text('id').notNull().primaryKey().default(sql`gen_random_uuid()`),
+	id: text('id').notNull().primaryKey().$defaultFn(() => crypto.randomUUID()),
 	slug: text('slug').notNull().unique(),
 	titre: text('titre').notNull(),
 	resume_falc: text('resume_falc'),
@@ -956,11 +963,11 @@ export const ToolboxItem = pgTable('ToolboxItem', {
 	statut: text('statut').notNull().default("brouillon"),
 	published_at: timestamp('published_at', { precision: 3 }),
 	createdAt: timestamp('createdAt', { precision: 3 }).notNull().defaultNow(),
-	updatedAt: timestamp('updatedAt', { precision: 3 }).notNull()
+	updatedAt: timestamp('updatedAt', { precision: 3, mode: 'date' }).$defaultFn(() => new Date()).$onUpdate(() => new Date()).notNull()
 });
 
 export const PartnershipRequest = pgTable('PartnershipRequest', {
-	id: text('id').notNull().primaryKey().default(sql`gen_random_uuid()`),
+	id: text('id').notNull().primaryKey().$defaultFn(() => crypto.randomUUID()),
 	structureName: text('structureName').notNull(),
 	city: text('city'),
 	type: text('type'),
@@ -971,11 +978,11 @@ export const PartnershipRequest = pgTable('PartnershipRequest', {
 	consent: boolean('consent').notNull(),
 	ip_hash: text('ip_hash'),
 	createdAt: timestamp('createdAt', { precision: 3 }).notNull().defaultNow(),
-	updatedAt: timestamp('updatedAt', { precision: 3 }).notNull()
+	updatedAt: timestamp('updatedAt', { precision: 3, mode: 'date' }).$defaultFn(() => new Date()).$onUpdate(() => new Date()).notNull()
 });
 
 export const EntityVersion = pgTable('EntityVersion', {
-	id: text('id').notNull().primaryKey().default(sql`gen_random_uuid()`),
+	id: text('id').notNull().primaryKey().$defaultFn(() => crypto.randomUUID()),
 	entity_type: text('entity_type').notNull(),
 	entity_id: text('entity_id').notNull(),
 	snapshot_json: jsonb('snapshot_json').notNull(),
@@ -985,7 +992,7 @@ export const EntityVersion = pgTable('EntityVersion', {
 });
 
 export const Dispositif = pgTable('Dispositif', {
-	id: text('id').notNull().primaryKey().default(sql`gen_random_uuid()`),
+	id: text('id').notNull().primaryKey().$defaultFn(() => crypto.randomUUID()),
 	slug: text('slug').unique(),
 	titre: text('titre').notNull(),
 	description_falc: text('description_falc'),
@@ -998,7 +1005,7 @@ export const Dispositif = pgTable('Dispositif', {
 	published_at: timestamp('published_at', { precision: 3 }),
 	summary_falc: text('summary_falc'),
 	createdAt: timestamp('createdAt', { precision: 3 }).notNull().defaultNow(),
-	updatedAt: timestamp('updatedAt', { precision: 3 }).notNull(),
+	updatedAt: timestamp('updatedAt', { precision: 3, mode: 'date' }).$defaultFn(() => new Date()).$onUpdate(() => new Date()).notNull(),
 	source_url_exact: text('source_url_exact'),
 	territory_scope: text('territory_scope'),
 	content_hash: text('content_hash'),
@@ -1018,7 +1025,7 @@ export const Dispositif = pgTable('Dispositif', {
 }));
 
 export const SourceSnapshot = pgTable('SourceSnapshot', {
-	id: text('id').notNull().primaryKey().default(sql`gen_random_uuid()`),
+	id: text('id').notNull().primaryKey().$defaultFn(() => crypto.randomUUID()),
 	entity_type: text('entity_type').notNull(),
 	entity_id: text('entity_id').notNull(),
 	fetched_at: timestamp('fetched_at', { precision: 3 }).notNull().defaultNow(),
@@ -1030,7 +1037,7 @@ export const SourceSnapshot = pgTable('SourceSnapshot', {
 });
 
 export const ResourceAccessibility = pgTable('ResourceAccessibility', {
-	id: text('id').notNull().primaryKey().default(sql`gen_random_uuid()`),
+	id: text('id').notNull().primaryKey().$defaultFn(() => crypto.randomUUID()),
 	slug: text('slug').notNull().unique(),
 	title: text('title').notNull(),
 	type: text('type').notNull(),
@@ -1038,7 +1045,7 @@ export const ResourceAccessibility = pgTable('ResourceAccessibility', {
 	source_url: text('source_url'),
 	territory_scope: text('territory_scope'),
 	createdAt: timestamp('createdAt', { precision: 3 }).notNull().defaultNow(),
-	updatedAt: timestamp('updatedAt', { precision: 3 }).notNull(),
+	updatedAt: timestamp('updatedAt', { precision: 3, mode: 'date' }).$defaultFn(() => new Date()).$onUpdate(() => new Date()).notNull(),
 	status: text('status').notNull().default("draft"),
 	retrieved_at: timestamp('retrieved_at', { precision: 3 }),
 	last_checked_at: timestamp('last_checked_at', { precision: 3 }),
@@ -1046,7 +1053,7 @@ export const ResourceAccessibility = pgTable('ResourceAccessibility', {
 });
 
 export const ContentReport = pgTable('ContentReport', {
-	id: text('id').notNull().primaryKey().default(sql`gen_random_uuid()`),
+	id: text('id').notNull().primaryKey().$defaultFn(() => crypto.randomUUID()),
 	contentType: ContentType('contentType').notNull(),
 	contentId: text('contentId').notNull(),
 	reason: ReportReason('reason').notNull(),
@@ -1055,11 +1062,11 @@ export const ContentReport = pgTable('ContentReport', {
 	reporterEmail: text('reporterEmail'),
 	status: ReportStatus('status').notNull().default("NEW"),
 	createdAt: timestamp('createdAt', { precision: 3 }).notNull().defaultNow(),
-	updatedAt: timestamp('updatedAt', { precision: 3 }).notNull()
+	updatedAt: timestamp('updatedAt', { precision: 3, mode: 'date' }).$defaultFn(() => new Date()).$onUpdate(() => new Date()).notNull()
 });
 
 export const SyncRun = pgTable('SyncRun', {
-	id: text('id').notNull().primaryKey().default(sql`gen_random_uuid()`),
+	id: text('id').notNull().primaryKey().$defaultFn(() => crypto.randomUUID()),
 	source_id: text('source_id'),
 	status: text('status').notNull(),
 	started_at: timestamp('started_at', { precision: 3 }).notNull().defaultNow(),
@@ -1067,11 +1074,11 @@ export const SyncRun = pgTable('SyncRun', {
 	error: text('error'),
 	stats: jsonb('stats'),
 	createdAt: timestamp('createdAt', { precision: 3 }).notNull().defaultNow(),
-	updatedAt: timestamp('updatedAt', { precision: 3 }).notNull()
+	updatedAt: timestamp('updatedAt', { precision: 3, mode: 'date' }).$defaultFn(() => new Date()).$onUpdate(() => new Date()).notNull()
 });
 
 export const ConversationLog = pgTable('ConversationLog', {
-	id: text('id').notNull().primaryKey().default(sql`gen_random_uuid()`),
+	id: text('id').notNull().primaryKey().$defaultFn(() => crypto.randomUUID()),
 	createdAt: timestamp('createdAt', { precision: 3 }).notNull().defaultNow(),
 	message: text('message').notNull(),
 	intent: text('intent'),
@@ -1084,7 +1091,7 @@ export const ConversationLog = pgTable('ConversationLog', {
 });
 
 export const SharedDiagnostic = pgTable('SharedDiagnostic', {
-	id: text('id').notNull().primaryKey().default(sql`gen_random_uuid()`),
+	id: text('id').notNull().primaryKey().$defaultFn(() => crypto.randomUUID()),
 	createdAt: timestamp('createdAt', { precision: 3 }).notNull().defaultNow(),
 	expiresAt: timestamp('expiresAt', { precision: 3 }).notNull(),
 	situation: jsonb('situation').notNull(),
@@ -1093,7 +1100,7 @@ export const SharedDiagnostic = pgTable('SharedDiagnostic', {
 });
 
 export const ProNotification = pgTable('ProNotification', {
-	id: text('id').notNull().primaryKey().default(sql`gen_random_uuid()`),
+	id: text('id').notNull().primaryKey().$defaultFn(() => crypto.randomUUID()),
 	userId: text('userId').notNull(),
 	structureId: text('structureId').notNull(),
 	type: text('type').notNull(),
@@ -1113,7 +1120,7 @@ export const ProNotification = pgTable('ProNotification', {
 }));
 
 export const ProOutlookToken = pgTable('ProOutlookToken', {
-	id: text('id').notNull().primaryKey().default(sql`gen_random_uuid()`),
+	id: text('id').notNull().primaryKey().$defaultFn(() => crypto.randomUUID()),
 	userId: text('userId').notNull().unique(),
 	email: text('email'),
 	accessTokenEnc: text('accessTokenEnc').notNull(),
@@ -1122,7 +1129,7 @@ export const ProOutlookToken = pgTable('ProOutlookToken', {
 	expiresAt: timestamp('expiresAt', { precision: 3 }).notNull(),
 	scope: text('scope'),
 	createdAt: timestamp('createdAt', { precision: 3 }).notNull().defaultNow(),
-	updatedAt: timestamp('updatedAt', { precision: 3 }).notNull()
+	updatedAt: timestamp('updatedAt', { precision: 3, mode: 'date' }).$defaultFn(() => new Date()).$onUpdate(() => new Date()).notNull()
 }, (ProOutlookToken) => ({
 	'ProOutlookToken_user_fkey': foreignKey({
 		name: 'ProOutlookToken_user_fkey',
@@ -1134,7 +1141,7 @@ export const ProOutlookToken = pgTable('ProOutlookToken', {
 }));
 
 export const ProAuditLog = pgTable('ProAuditLog', {
-	id: text('id').notNull().primaryKey().default(sql`gen_random_uuid()`),
+	id: text('id').notNull().primaryKey().$defaultFn(() => crypto.randomUUID()),
 	createdAt: timestamp('createdAt', { precision: 3 }).notNull().defaultNow(),
 	proUserId: text('proUserId').notNull(),
 	action: text('action').notNull(),
@@ -1153,7 +1160,7 @@ export const ProAuditLog = pgTable('ProAuditLog', {
 }));
 
 export const ProMessage = pgTable('ProMessage', {
-	id: text('id').notNull().primaryKey().default(sql`gen_random_uuid()`),
+	id: text('id').notNull().primaryKey().$defaultFn(() => crypto.randomUUID()),
 	createdAt: timestamp('createdAt', { precision: 3 }).notNull().defaultNow(),
 	conversationId: text('conversationId').notNull(),
 	senderId: text('senderId').notNull(),
@@ -1163,7 +1170,7 @@ export const ProMessage = pgTable('ProMessage', {
 });
 
 export const UserConsent = pgTable('UserConsent', {
-	id: text('id').notNull().primaryKey().default(sql`gen_random_uuid()`),
+	id: text('id').notNull().primaryKey().$defaultFn(() => crypto.randomUUID()),
 	createdAt: timestamp('createdAt', { precision: 3 }).notNull().defaultNow(),
 	citizenId: text('citizenId').notNull(),
 	structureId: text('structureId').notNull(),

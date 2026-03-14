@@ -1,4 +1,6 @@
-import prisma from '../_utils/prisma.js';
+import { db } from '../../src/db/index.js';
+import { Structure, ProUser, Service, Appointment, Beneficiary } from '../../src/db/schema.js';
+import { eq } from 'drizzle-orm';
 import { hash, encrypt } from '../lib/crypto.js';
 import crypto from 'crypto';
 import { hashPasswordSync } from '../_utils/user-auth.js';
@@ -24,63 +26,46 @@ export default async function handler(req, res) {
 
         // Structure
         const STRUCTURE_SLUG = "structure-turnkey-demo";
-        const structure = await prisma.structure.upsert({
-            where: { slug: STRUCTURE_SLUG },
-            update: {},
-            create: {
-                slug: STRUCTURE_SLUG,
-                nom: 'Structure Turnkey Demo',
-                email: 'structure-turnkey@test.com',
-                adresse: '1 rue de la Démo',
-                code_postal: '67000',
-                ville: 'Strasbourg',
-                departement: '67',
-                telephone: '0102030405',
-                statut: 'publie',
-                is_pro_enabled: true
-            }
-        });
+        const [structure] = await db.insert(Structure).values({
+            id: crypto.randomUUID(),
+            slug: STRUCTURE_SLUG,
+            nom: 'Structure Turnkey Demo',
+            email: 'structure-turnkey@test.com',
+            adresse: '1 rue de la Démo',
+            code_postal: '67000',
+            ville: 'Strasbourg',
+            departement: '67',
+            telephone: '0102030405',
+            statut: 'publie',
+            is_pro_enabled: true
+        }).onConflictDoUpdate({ target: Structure.slug, set: { slug: STRUCTURE_SLUG } }).returning();
 
         // Pro
-        const pro = await prisma.proUser.upsert({
-            where: {
-                structureId_email: {
-                    structureId: structure.id,
-                    email: email
-                }
-            },
-            update: {
-                password_hash: passwordHash,
-                role: 'STRUCTURE_ADMIN',
-                status: 'active'
-            },
-            create: {
-                email,
-                role: 'STRUCTURE_ADMIN',
-                structureId: structure.id,
-                password_hash: passwordHash,
-                status: 'active'
-            }
-        });
+        const [pro] = await db.insert(ProUser).values({
+            id: crypto.randomUUID(),
+            email,
+            role: 'STRUCTURE_ADMIN',
+            structureId: structure.id,
+            password_hash: passwordHash,
+            status: 'active'
+        }).onConflictDoUpdate({ 
+            target: [ProUser.structureId, ProUser.email], 
+            set: { password_hash: passwordHash, role: 'STRUCTURE_ADMIN', status: 'active' } 
+        }).returning();
 
         // Service
         const SERVICE_SLUG = "demarrage-demo";
-        const service = await prisma.service.upsert({
-            where: {
-                structureId_slug: {
-                    structureId: structure.id,
-                    slug: SERVICE_SLUG
-                }
-            },
-            update: {},
-            create: {
-                name: 'Démarrage',
-                slug: SERVICE_SLUG,
-                structureId: structure.id,
-                duration_minutes: 30, // Correct field name
-                modes: ["presentiel"]
-            }
-        });
+        const [service] = await db.insert(Service).values({
+            id: crypto.randomUUID(),
+            name: 'Démarrage',
+            slug: SERVICE_SLUG,
+            structureId: structure.id,
+            duration_minutes: 30, // Correct field name
+            modes: ["presentiel"]
+        }).onConflictDoUpdate({ 
+            target: [Service.structureId, Service.slug], 
+            set: { duration_minutes: 30 } 
+        }).returning();
 
         // Token
         const token = crypto.randomBytes(32).toString('hex');
@@ -90,29 +75,27 @@ export default async function handler(req, res) {
         const contactEncrypted = encrypt('alice@test.com');
         const nameEncrypted = encrypt('Alice');
 
-        // Create Appointment using CONNECT
-        const appointment = await prisma.appointment.create({
-            data: {
-                start_at: new Date(Date.now() + 3600000),
-                end_at: new Date(Date.now() + 7200000),
-                status: 'confirmed',
-                access_token_hash: tokenHash,
-                mode: 'presentiel',
+        // Create Beneficiary
+        const [beneficiary] = await db.insert(Beneficiary).values({
+            id: crypto.randomUUID(),
+            first_name_encrypted: nameEncrypted,
+            contact_encrypted: contactEncrypted,
+            contact_hash: hash('alice@test.com')
+        }).returning();
 
-                // Relations via connect
-                structure: { connect: { id: structure.id } },
-                pro: { connect: { id: pro.id } },
-                service: { connect: { id: service.id } },
-
-                beneficiary: {
-                    create: {
-                        first_name_encrypted: nameEncrypted,
-                        contact_encrypted: contactEncrypted,
-                        contact_hash: hash('alice@test.com')
-                    }
-                }
-            }
-        });
+        // Create Appointment using explicit IDs
+        const [appointment] = await db.insert(Appointment).values({
+            id: crypto.randomUUID(),
+            start_at: new Date(Date.now() + 3600000),
+            end_at: new Date(Date.now() + 7200000),
+            status: 'confirmed',
+            access_token_hash: tokenHash,
+            mode: 'presentiel',
+            structureId: structure.id,
+            proId: pro.id,
+            serviceId: service.id,
+            beneficiaryId: beneficiary.id
+        }).returning();
 
         res.json({
             proEmail: email,

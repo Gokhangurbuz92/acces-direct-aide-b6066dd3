@@ -3,7 +3,8 @@ import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
 import { env } from '../_utils/env.js';
 import logger from '../_utils/logger.js';
-import prisma from '../_utils/prisma.js';
+import { db } from '../../src/db/index.js';
+import { sql } from 'drizzle-orm';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -72,18 +73,17 @@ async function fetchRagContext(message, limit = 5) {
         const vector = embedResult.embedding.values;
         const vectorStr = `[${vector.join(',')}]`;
 
-        const results = await prisma.$queryRawUnsafe(
-            `SELECT titre, cest_quoi, pour_qui, ce_que_ca_aide, summary_falc,
-                    1 - (embedding <=> $1::vector) AS similarity
+        const results = await db.execute(sql`
+            SELECT titre, cest_quoi, pour_qui, ce_que_ca_aide, summary_falc,
+                    1 - (embedding <=> ${vectorStr}::vector) AS similarity
              FROM "Aide"
              WHERE embedding IS NOT NULL
-             ORDER BY embedding <=> $1::vector ASC
-             LIMIT $2`,
-            vectorStr,
-            limit
-        );
+             ORDER BY embedding <=> ${vectorStr}::vector ASC
+             LIMIT ${limit}
+        `);
 
-        return results || [];
+        const rows = results.rows || results;
+        return rows || [];
     } catch (err) {
         // Graceful fallback: pgvector not enabled, no embeddings, or Gemini quota exceeded
         logger.warn('[RAG] Vector search unavailable, will try lexical fallback:', err.message);
@@ -111,7 +111,7 @@ function formatRagContext(aides) {
 }
 
 /**
- * Lexical fallback: keyword search via Prisma when vector search is unavailable.
+ * Lexical fallback: keyword search via Drizzle when vector search is unavailable.
  * Extracts meaningful words from the message and searches titre + cest_quoi fields.
  *
  * @param {string} message
@@ -129,28 +129,26 @@ async function fetchLexicalContext(message, limit = 5) {
 
         if (!keywords.length) return [];
 
-        // Build OR conditions for each keyword against multiple fields
+        // Build OR conditions using raw SQL with ILIKE for case-insensitive search
         const conditions = keywords.flatMap(kw => [
-            { titre: { contains: kw, mode: 'insensitive' } },
-            { cest_quoi: { contains: kw, mode: 'insensitive' } },
-            { pour_qui: { contains: kw, mode: 'insensitive' } },
-            { summary_falc: { contains: kw, mode: 'insensitive' } },
+            sql`titre ILIKE ${'%' + kw + '%'}`,
+            sql`cest_quoi ILIKE ${'%' + kw + '%'}`,
+            sql`pour_qui ILIKE ${'%' + kw + '%'}`,
+            sql`summary_falc ILIKE ${'%' + kw + '%'}`,
         ]);
 
-        const results = await prisma.aide.findMany({
-            where: { OR: conditions },
-            select: {
-                titre: true,
-                cest_quoi: true,
-                pour_qui: true,
-                ce_que_ca_aide: true,
-                summary_falc: true,
-            },
-            take: limit,
-        });
+        const orClause = sql.join(conditions, sql` OR `);
 
-        logger.info(`[Lexical] Found ${results.length} aides for keywords: ${keywords.join(', ')}`);
-        return results;
+        const results = await db.execute(sql`
+            SELECT titre, cest_quoi, pour_qui, ce_que_ca_aide, summary_falc
+            FROM "Aide"
+            WHERE ${orClause}
+            LIMIT ${limit}
+        `);
+
+        const rows = results.rows || results;
+        logger.info(`[Lexical] Found ${rows.length} aides for keywords: ${keywords.join(', ')}`);
+        return rows;
     } catch (err) {
         logger.error('[Lexical] Fallback search failed:', err.message);
         return [];

@@ -1,7 +1,7 @@
 import crypto from 'crypto';
 import * as Sentry from '@sentry/node';
 
-import prisma from '../_utils/prisma.js';
+import { db } from '../../src/db/index.js';
 import { applyNoStore } from '../_utils/cache.js';
 import { buildProvenance } from '../_utils/provenance.js';
 import { htmlToPlainText } from '../_utils/html-text.js';
@@ -118,21 +118,18 @@ function getFreshnessLabel(verifiedAt) {
  */
 function buildIdentifierWhere(identifier) {
   if (UUID_LIKE_REGEX.test(identifier)) {
-    return { OR: [{ slug: identifier }, { id: identifier }] };
+    return (t, { eq, or, and: andOp }) => andOp(or(eq(t.slug, identifier), eq(t.id, identifier)), eq(t.statut, 'publie'));
   }
-  return { slug: identifier };
+  return (t, { eq, and: andOp }) => andOp(eq(t.slug, identifier), eq(t.statut, 'publie'));
 }
 
 /**
  * @param {string} identifier
  */
 async function loadAide(identifier) {
-  return prisma.aide.findFirst({
-    where: {
-      ...buildIdentifierWhere(identifier),
-      statut: 'publie',
-    },
-    select: {
+  return db.query.Aide.findFirst({
+    where: buildIdentifierWhere(identifier),
+    columns: {
       id: true,
       slug: true,
       titre: true,
@@ -148,8 +145,10 @@ async function loadAide(identifier) {
       date_verification: true,
       source_name: true,
       source_url: true,
+    },
+    with: {
       sourceDocument: {
-        select: {
+        columns: {
           fetched_at: true,
           source_url: true,
         },
@@ -162,12 +161,9 @@ async function loadAide(identifier) {
  * @param {string} identifier
  */
 async function loadDemarche(identifier) {
-  return prisma.demarche.findFirst({
-    where: {
-      ...buildIdentifierWhere(identifier),
-      statut: 'publie',
-    },
-    select: {
+  return db.query.Demarche.findFirst({
+    where: buildIdentifierWhere(identifier),
+    columns: {
       id: true,
       slug: true,
       titre: true,
@@ -181,8 +177,10 @@ async function loadDemarche(identifier) {
       lien_officiel: true,
       date_verification: true,
       source_url: true,
+    },
+    with: {
       sourceDocument: {
-        select: {
+        columns: {
           fetched_at: true,
           source_url: true,
         },

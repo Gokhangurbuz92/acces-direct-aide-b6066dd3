@@ -126,13 +126,10 @@ export async function runIngestAnnuaire({ limit, runId } = {}) {
 
                 if (existing) {
                     if (existing.raw_data_hash !== hash) {
-                        await prisma.structure.update({
-                            where: { id: existing.id },
-                            data: {
-                                ...data,
-                                last_sync: new Date(),
-                            },
-                        });
+                        await db.update(Structure).set({
+                            ...data,
+                            last_sync: new Date(),
+                        }).where(eq(Structure.id, existing.id));
                         stats.updated++;
                     } else {
                         stats.skippedExisting++;
@@ -229,13 +226,10 @@ export async function runIngestAnnuaire({ limit, runId } = {}) {
 
                 if (existing) {
                     if (existing.raw_data_hash !== hash) {
-                        await prisma.structure.update({
-                            where: { id: existing.id },
-                            data: {
-                                ...data,
-                                last_sync: new Date(),
-                            },
-                        });
+                        await db.update(Structure).set({
+                            ...data,
+                            last_sync: new Date(),
+                        }).where(eq(Structure.id, existing.id));
                         stats.updated++;
                     } else {
                         stats.skippedExisting++;

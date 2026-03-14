@@ -4,7 +4,8 @@ import * as Sentry from '@sentry/node';
 
 import { checkRateLimit, getClientIp, getRateLimitStatus } from '../../_utils/rateLimit.js';
 import { chatWithRulePack } from '../../lib/gemini.js';
-import prisma from '../../_utils/prisma.js';
+import { db } from '../../../src/db/index.js';
+import { ConversationLog } from '../../../src/db/schema.js';
 
 // --- Sensitive Data Patterns ---
 // NIR (numéro de sécurité sociale) : 13 digits + 2-digit key
@@ -156,14 +157,12 @@ export default async function handler(req, res) {
         // --- Log the conversation (await to get logId for feedback) ---
         let logId = null;
         try {
-            const logEntry = await prisma.conversationLog.create({
-                data: {
-                    message: trimmedMessage.slice(0, 500), // Truncate for storage
-                    intent: meta.intent || null,
-                    searchMode: meta.searchMode,
-                    sourceCount: meta.sourceCount,
-                },
-            });
+            const [logEntry] = await db.insert(ConversationLog).values({
+                message: trimmedMessage.slice(0, 500),
+                intent: meta.intent || null,
+                searchMode: meta.searchMode,
+                sourceCount: meta.sourceCount,
+            }).returning();
             logId = logEntry.id;
         } catch (logErr) {
             log.warn({ msg: 'assistant.log_write_failed', error: logErr.message, requestId });

@@ -1,3 +1,7 @@
+import { vi } from "vitest";
+vi.stubEnv("KV_REST_API_URL", "http://localhost");
+vi.stubEnv("KV_REST_API_TOKEN", "mock-token");
+
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 
 // --- Mock Prisma ---
@@ -16,6 +20,33 @@ vi.mock('../../api/_utils/prisma.js', () => ({
         $queryRaw: (...args) => mockQueryRaw(...args),
     },
 }));
+
+const mockDrizzleFindMany = vi.fn();
+const mockDrizzleSelect = vi.fn().mockReturnValue({
+    from: vi.fn().mockReturnValue({
+        where: vi.fn()
+    })
+});
+
+vi.mock('../../src/db/index.js', () => ({
+    db: {
+        query: {
+            Aide: {
+                findFirst: (...args) => mockFindFirst(...args),
+                findMany: (...args) => mockDrizzleFindMany(...args)
+            }
+        },
+        select: (...args) => mockDrizzleSelect(...args)
+    }
+}));
+
+vi.mock('drizzle-orm', async (importOriginal) => {
+    const actual = await importOriginal();
+    return {
+        ...actual,
+        count: vi.fn().mockReturnValue('count_mock')
+    };
+});
 
 vi.mock('../../api/_utils/rateLimit.js', () => ({
     checkRateLimit: vi.fn().mockResolvedValue({ allowed: true }),
@@ -140,8 +171,12 @@ describe('/api/aids handler', () => {
 
     it('falls back to simple query when searchAides fails and returns 200', async () => {
         const fallbackItems = [{ id: '1', slug: 'rsa', titre: 'RSA', updatedAt: new Date(), statut: 'publie' }];
-        mockFindMany.mockResolvedValue(fallbackItems);
-        mockCount.mockResolvedValue(1);
+        mockDrizzleFindMany.mockResolvedValue(fallbackItems);
+        mockDrizzleSelect.mockReturnValue({
+            from: vi.fn().mockReturnValue({
+                where: vi.fn().mockResolvedValue([{ value: 1 }])
+            })
+        });
 
         const req = { method: 'GET', query: { page: '1', limit: '1' }, headers: {}, url: '/api/aids?page=1&limit=1' };
         const res = createMockRes();
@@ -157,8 +192,12 @@ describe('/api/aids handler', () => {
     });
 
     it('returns empty valid JSON when even fallback fails', async () => {
-        mockFindMany.mockRejectedValue(new Error('Connection refused'));
-        mockCount.mockRejectedValue(new Error('Connection refused'));
+        mockDrizzleFindMany.mockRejectedValue(new Error('Connection refused'));
+        mockDrizzleSelect.mockReturnValue({
+            from: vi.fn().mockReturnValue({
+                where: vi.fn().mockRejectedValue(new Error('Connection refused'))
+            })
+        });
 
         const req = { method: 'GET', query: { page: '1', limit: '1' }, headers: {}, url: '/api/aids?page=1&limit=1' };
         const res = createMockRes();

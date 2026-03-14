@@ -1,3 +1,7 @@
+import { vi } from "vitest";
+vi.stubEnv("KV_REST_API_URL", "http://localhost");
+vi.stubEnv("KV_REST_API_TOKEN", "mock-token");
+
 import { describe, expect, it } from 'vitest';
 
 import { ensureSlugOrNull, isValidSlug, normalizeSlug } from '../../api/_utils/slug.js';

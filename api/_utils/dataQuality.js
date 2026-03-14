@@ -2,6 +2,7 @@ import { db as defaultDb } from '../../src/db/index.js';
 import { Aide, Demarche, Structure, Actualite, ReviewQueueItem } from '../../src/db/schema.js';
 import { isNull, isNotNull, asc, desc, eq, and } from 'drizzle-orm';
 import { env } from './env.js';
+import { randomUUID } from 'crypto';
 
 export const REVIEW_QUEUE_OPEN_STATUS = 'open';
 
@@ -92,10 +93,10 @@ function createCandidate(entityType, entityId, entitySlug, title, reason, severi
 
 /**
  * @param {Record<string, unknown>} details
- * @returns {import('@prisma/client').Prisma.InputJsonValue}
+ * @returns {object}
  */
 function toJsonDetails(details) {
-  return /** @type {import('@prisma/client').Prisma.InputJsonValue} */ (details);
+  return /** @type {object} */ (details);
 }
 
 /**
@@ -635,11 +636,15 @@ async function upsertOpenCandidate(dbClient, candidate) {
       title: candidate.title,
       severity: candidate.severity,
       details: toJsonDetails(candidate.details),
+      updatedAt: new Date(),
     }).where(eq(ReviewQueueItem.id, existingRows[0].id));
     return 'updated';
   }
 
   await dbClient.insert(ReviewQueueItem).values({
+    id: randomUUID(),
+    createdAt: new Date(),
+    updatedAt: new Date(),
     entityType: candidate.entityType.toUpperCase(),
     entityId: candidate.entityId,
     entitySlug: candidate.entitySlug,

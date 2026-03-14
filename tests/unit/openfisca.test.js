@@ -1,3 +1,7 @@
+import { vi } from "vitest";
+vi.stubEnv("KV_REST_API_URL", "http://localhost");
+vi.stubEnv("KV_REST_API_TOKEN", "mock-token");
+
 import { describe, test, expect } from 'vitest';
 import { buildTestCase, parseResults, getCurrentPeriod } from '../../api/lib/openfiscaMapping.js';
 import { RIGHTS_CATALOG, getOutputVariables } from '../../api/lib/openfiscaRightsCatalog.js';

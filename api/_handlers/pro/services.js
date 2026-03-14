@@ -1,3 +1,4 @@
+import crypto from 'node:crypto';
 import { db } from '../../../src/db/index.js';
 import { ProRdvService, Service, ProAppointment } from '../../../src/db/schema.js';
 import { eq, desc, and, inArray, sql } from 'drizzle-orm';
@@ -81,12 +82,15 @@ async function handler(req, res) {
     }
 
     const [created] = await db.insert(ProRdvService).values({
+        id: crypto.randomUUID(),
         structureId,
         name,
         durationMinutes,
         bufferBeforeMinutes,
         bufferAfterMinutes,
         isActive: Boolean(isActive),
+        createdAt: new Date(),
+        updatedAt: new Date(),
     }).returning();
     return res.status(201).json(serialize(created));
   }
@@ -119,6 +123,8 @@ async function handler(req, res) {
       }
       updates.durationMinutes = durationMinutes;
     }
+
+    updates.updatedAt = new Date();
 
     if (
       typeof body.bufferBeforeMinutes !== 'undefined' ||

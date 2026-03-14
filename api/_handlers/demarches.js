@@ -1,4 +1,6 @@
-import prisma from '../_utils/prisma.js';
+import { db } from '../../src/db/index.js';
+import { sql, eq } from 'drizzle-orm';
+import * as schema from '../../src/db/schema.js';
 import { searchDemarchesSchema } from '../_utils/validators.js';
 import { searchDemarches } from '../lib/search-query.js';
 import { verifyAdmin } from '../_utils/auth.js';
@@ -116,28 +118,20 @@ export default async function handler(req, res) {
 
         // 1. Single Item
         if (effectiveParams.id || effectiveParams.slug) {
-            const demarche = await prisma.demarche.findFirst({
-                where: effectiveParams.id ? { id: effectiveParams.id } : { slug: effectiveParams.slug },
-                include: {
-                    category: true,
-                    situations: true,
-                    sourceDocument: {
-                        select: {
-                            fetched_at: true,
-                            source_url: true,
-                        },
-                    },
-                }
-            });
+            const detailResult = effectiveParams.id
+                ? await db.execute(sql`SELECT * FROM "Demarche" WHERE id = ${effectiveParams.id} LIMIT 1`)
+                : await db.execute(sql`SELECT * FROM "Demarche" WHERE slug = ${effectiveParams.slug} LIMIT 1`);
+            const demarcheObj = (detailResult.rows || detailResult)[0];
 
-            if (!demarche) return res.status(404).json({ error: "Démarche non trouvée" });
-            if (!isAdmin && demarche.statut !== 'publie') {
+            if (!demarcheObj) return res.status(404).json({ error: "Démarche non trouvée" });
+            if (!isAdmin && demarcheObj.statut !== 'publie') {
                 return res.status(404).json({ error: "Démarche non trouvée" });
             }
-            if (!isAdmin && isTestDemarcheTitle(demarche.titre)) {
+            if (!isAdmin && isTestDemarcheTitle(demarcheObj.titre)) {
                 return res.status(404).json({ error: "Démarche non trouvée" });
             }
-            const { sourceDocument, ...safeDemarche } = demarche;
+
+            const { sourceDocument, ...safeDemarche } = demarcheObj;
             return res.status(200).json({
                 ...safeDemarche,
                 provenance: buildProvenance({

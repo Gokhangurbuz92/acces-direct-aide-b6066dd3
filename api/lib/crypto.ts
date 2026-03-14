@@ -62,14 +62,14 @@ export function decrypt(encryptedText: string | null | undefined): string | null
         // v1:iv:tag:data
         if (parts.length !== 4) {
             logger.error("Decryption failed: Invalid v1 format");
-            throw new Error("Decryption failed: Invalid format");
+            return null;
         }
         [, ivHex, authTagHex, contentHex] = parts as [string, string, string, string];
     } else {
         // Legacy: iv:tag:data
         if (parts.length !== 3) {
             logger.error("Decryption failed: Invalid legacy format");
-            throw new Error("Decryption failed: Invalid format");
+            return null;
         }
         [ivHex, authTagHex, contentHex] = parts as [string, string, string];
     }

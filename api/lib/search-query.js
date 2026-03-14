@@ -25,8 +25,8 @@ export async function searchAides(params) {
     category, situation, providerType
   } = params;
 
-  const LIMIT = pageSize;
-  const OFFSET = (page - 1) * LIMIT;
+  const LIMIT = Number(pageSize) || 20;
+  const OFFSET = (Math.max(1, Number(page) || 1) - 1) * LIMIT;
 
   const conditions = [sql`statut = ${statut}`];
 
@@ -302,18 +302,18 @@ export async function searchDemarches(params) {
 
   const effectiveCategory = theme || category;
   const effectiveGeo = geo || territoire || territory;
-  const LIMIT = pageSize;
-  const OFFSET = (page - 1) * LIMIT;
+  const LIMIT = Number(pageSize) || 20;
+  const OFFSET = (Math.max(1, Number(page) || 1) - 1) * LIMIT;
 
   // Phase 3: support statut_in (array) for multi-value filtering
   const conditions = [];
   if (statut_in && Array.isArray(statut_in) && statut_in.length > 0) {
-    conditions.push(sql`statut = ANY(ARRAY[${sql.join(statut_in)}]::text[])`);
+    conditions.push(sql`statut = ANY(ARRAY[${sql.join(statut_in, sql.raw(', '))}]::text[])`);
   } else {
     conditions.push(sql`statut = ${statut}`);
   }
 
-  if (q, sql.raw(',')) {
+  if (q) {
     conditions.push(sql`"search_vector" @@ plainto_tsquery('french', unaccent(${q}))`);
   }
 
@@ -484,8 +484,8 @@ export async function searchDemarches(params) {
  */
 export async function searchStructures(params) {
   const { q, city, zip, type, departement, pmr, sort, page, pageSize } = params;
-  const LIMIT = pageSize;
-  const OFFSET = (page - 1) * LIMIT;
+  const LIMIT = Number(pageSize) || 20;
+  const OFFSET = (Math.max(1, Number(page) || 1) - 1) * LIMIT;
 
   const conditions = [sql`statut = 'actif'`];
 

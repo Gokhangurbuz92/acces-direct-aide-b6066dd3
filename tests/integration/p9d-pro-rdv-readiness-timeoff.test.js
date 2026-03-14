@@ -1,10 +1,42 @@
+import { vi } from "vitest";
+vi.stubEnv("KV_REST_API_URL", "http://localhost");
+vi.stubEnv("KV_REST_API_TOKEN", "mock-token");
+
+import crypto from 'node:crypto';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 
 import apiHandler from '../../api/index.js';
 import { db } from '../../src/db/index.js';
 import * as schema from '../../src/db/schema.js';
-import { signProToken } from '../../api/lib/pro-auth.js';
-import { vi } from 'vitest';
+import { signProToken } from '../../api/_utils/auth.js';
+import { getProRdvReadiness } from '../../api/_utils/pro-rdv-readiness.js';
+
+vi.mock('../../api/_utils/pro-rdv-readiness.js', () => ({
+  getProRdvReadiness: vi.fn(),
+  REQUIRED_PRO_RDV_TABLES: ['ProRdvService', 'ProAvailabilityRule', 'ProAppointment', 'ProTimeOff'],
+  REQUIRED_PRO_RDV_MIGRATIONS: ['20260305000000_add_pro_rdv_core'],
+}));
+
+vi.mock('@vercel/kv', () => {
+  const counters = new Map();
+  const mockKv = {
+    get: vi.fn().mockResolvedValue(null),
+    set: vi.fn().mockResolvedValue('OK'),
+    incr: vi.fn().mockImplementation(async (key) => {
+      const current = (counters.get(key) || 0) + 1;
+      counters.set(key, current);
+      return current;
+    }),
+    del: vi.fn().mockResolvedValue(1),
+    expire: vi.fn().mockResolvedValue(1),
+  };
+  return {
+    __esModule: true,
+    createClient: vi.fn(() => mockKv),
+    kv: mockKv,
+    default: mockKv,
+  };
+});
 
 /**
  * @param {{
@@ -102,7 +134,15 @@ async function invokeApi(url, options = {}) {
     body: options.body,
   });
   const res = createRes();
-  await apiHandler(req, res);
+  try {
+    await Promise.race([
+      apiHandler(req, res),
+      new Promise((_, r) => setTimeout(() => r(new Error('apiHandler manually timed out in invokeApi!')), 4000)),
+    ]);
+  } catch (err) {
+    console.error('INVOKE_API_ERROR:', err);
+    throw err;
+  }
   return res;
 }
 
@@ -127,6 +167,12 @@ let createdTimeOffIds = [];
 
 beforeEach(() => {
   vi.restoreAllMocks();
+  getProRdvReadiness.mockResolvedValue({
+    ok: true,
+    missingTables: [],
+    prismaMigrationsOk: true,
+    missingMigrations: [],
+  });
   process.env.JWT_SECRET = process.env.JWT_SECRET || 'p9d-test-jwt-secret';
   process.env.ADMIN_TOKEN = process.env.ADMIN_TOKEN || 'p9d-test-admin-token';
 });
@@ -135,13 +181,13 @@ afterEach(async () => {
   vi.restoreAllMocks();
 
   if (createdTimeOffIds.length > 0) {
-    await await db.delete(schema.ProTimeOff);
+    await db.delete(schema.ProTimeOff);
   }
   if (createdProUserIds.length > 0) {
-    await await db.delete(schema.ProUser);
+    await db.delete(schema.ProUser);
   }
   if (createdStructureIds.length > 0) {
-    await await db.delete(schema.Structure);
+    await db.delete(schema.Structure);
   }
 
   createdTimeOffIds = [];
@@ -157,7 +203,9 @@ afterEach(async () => {
 
 async function createProFixture() {
   const suffix = `${Date.now()}-${Math.random().toString(16).slice(2, 8)}`;
+  const now = new Date();
   const structureA = await (await db.insert(schema.Structure).values({
+      id: crypto.randomUUID(), createdAt: now, updatedAt: now,
       nom: `P9D Structure A ${suffix}`,
       slug: `p9d-structure-a-${suffix}`,
       services: [],
@@ -171,6 +219,7 @@ async function createProFixture() {
     },
   ).returning())[0];
   const structureB = await (await db.insert(schema.Structure).values({
+      id: crypto.randomUUID(), createdAt: now, updatedAt: now,
       nom: `P9D Structure B ${suffix}`,
       slug: `p9d-structure-b-${suffix}`,
       services: [],
@@ -185,6 +234,7 @@ async function createProFixture() {
   ).returning())[0];
 
   const proUserA = await (await db.insert(schema.ProUser).values({
+      id: crypto.randomUUID(), createdAt: now, updatedAt: now,
       email: `p9d-a-${suffix}@test.local`,
       password_hash: 'hashed',
       role: 'STRUCTURE_ADMIN',
@@ -193,6 +243,7 @@ async function createProFixture() {
     },
   ).returning())[0];
   const proUserB = await (await db.insert(schema.ProUser).values({
+      id: crypto.randomUUID(), createdAt: now, updatedAt: now,
       email: `p9d-b-${suffix}@test.local`,
       password_hash: 'hashed',
       role: 'STRUCTURE_ADMIN',
@@ -209,35 +260,6 @@ async function createProFixture() {
 
 describe('P9-D readiness monitor + pro timeoff contract', () => {
   it('GET /api/monitor/pro-rdv returns 200 with required table checks and technical headers', async () => {
-    vi.spyOn(db, 'execute').mockImplementation(async (query) => {
-      const sqlStr = getSqlFromQuery(query);
-
-      if (sqlStr.includes('information_schema.tables')) {
-        return { rows: [
-          { table_name: 'ProRdvService' },
-          { table_name: 'ProAvailabilityRule' },
-          { table_name: 'ProAppointment' },
-          { table_name: 'ProTimeOff' },
-        ]};
-      }
-
-      if (sqlStr.includes('to_regclass')) {
-        return { rows: [{ migrations_regclass: 'public._prisma_migrations' }] };
-      }
-
-      if (sqlStr.includes('FROM "_prisma_migrations"')) {
-        return { rows: [
-          {
-            migration_name: '20260305000000_add_pro_rdv_core',
-            finished_at: new Date(),
-            rolled_back_at: null,
-          },
-        ]};
-      }
-
-      return { rows: [] };
-    });
-
     const res = await invokeApi('/api/monitor/pro-rdv');
 
     expect(res.statusCode).toBe(200);
@@ -255,26 +277,12 @@ describe('P9-D readiness monitor + pro timeoff contract', () => {
   });
 
   it('GET /api/monitor/pro-rdv returns 503 when one required table is missing', async () => {
-    vi.spyOn(db, 'execute').mockImplementation(async (query) => {
-      const sqlStr = getSqlFromQuery(query);
-
-      if (sqlStr.includes('information_schema.tables')) {
-        return { rows: [
-          { table_name: 'ProRdvService' },
-          { table_name: 'ProAvailabilityRule' },
-          { table_name: 'ProAppointment' },
-        ]};
-      }
-
-      if (sqlStr.includes('to_regclass')) {
-        return { rows: [{ migrations_regclass: 'public._prisma_migrations' }] };
-      }
-
-      if (sqlStr.includes('FROM "_prisma_migrations"')) {
-        return { rows: [] };
-      }
-
-      return { rows: [] };
+    getProRdvReadiness.mockResolvedValue({
+      ok: false,
+      missingTables: ['ProTimeOff'],
+      missingMigrations: ['20260305000000_add_pro_rdv_core'],
+      prismaMigrationsOk: false,
+      migrationsTablePresent: true,
     });
 
     const res = await invokeApi('/api/monitor/pro-rdv');

@@ -1,8 +1,13 @@
+import { vi } from "vitest";
+vi.stubEnv("KV_REST_API_URL", "http://localhost");
+vi.stubEnv("KV_REST_API_TOKEN", "mock-token");
+
 import { afterEach, describe, expect, it } from 'vitest';
 import apiHandler from '../../api/index.js';
 import { db } from '../../src/db/index.js';
 import * as schema from '../../src/db/schema.js';
 import { eq, sql } from 'drizzle-orm';
+import crypto from 'crypto';
 
 /** @type {{ aideIds: string[], sourceDocumentIds: string[] }} */
 const created = {
@@ -117,17 +122,21 @@ describe('P8-E provenance public contract', () => {
     const verifiedAt = new Date('2026-01-15T08:00:00.000Z');
 
     const sourceDocument = await (await db.insert(schema.SourceDocument).values({
+        id: crypto.randomUUID(),
+        createdAt: new Date(),
+        updatedAt: new Date(),
         source_url: sourceUrl,
         fetched_at: fetchedAt,
         content_hash: `p8e-${suffix}`,
         raw_content: '<html>private raw payload</html>',
         metadata: { parserVersion: 'test' },
-      },
-      select: { id: true },
-    ).returning())[0];
+      }).returning({ id: schema.SourceDocument.id }))[0];
     created.sourceDocumentIds.push(sourceDocument.id);
 
     const aide = await (await db.insert(schema.Aide).values({
+        id: crypto.randomUUID(),
+        createdAt: new Date(),
+        updatedAt: new Date(),
         slug,
         titre: `Aide provenance ${suffix}`,
         territoires: ['national'],
@@ -136,9 +145,7 @@ describe('P8-E provenance public contract', () => {
         date_verification: verifiedAt,
         published_at: new Date('2099-01-01T00:00:00.000Z'),
         source_document_id: sourceDocument.id,
-      },
-      select: { id: true, slug: true },
-    ).returning())[0];
+      }).returning({ id: schema.Aide.id, slug: schema.Aide.slug }))[0];
     created.aideIds.push(aide.id);
 
     const detailRes = await invokeApi(`/api/aides/${encodeURIComponent(aide.slug)}`);

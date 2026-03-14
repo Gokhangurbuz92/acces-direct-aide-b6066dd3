@@ -1,15 +1,20 @@
+import { vi } from "vitest";
+vi.stubEnv("KV_REST_API_URL", "http://localhost");
+vi.stubEnv("KV_REST_API_TOKEN", "mock-token");
+
 
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import handler from '../../api/_handlers/aides.js';
 
 // Mocks
-vi.mock('../../api/_utils/db.query.Js', () => ({
-    default: {
-        aide: {
-            findFirst: vi.fn(),
-            findMany: vi.fn(),
-        },
-        $queryRaw: vi.fn()
+vi.mock('../../src/db/index.js', () => ({
+    db: {
+        query: {
+            Aide: {
+                findFirst: vi.fn(),
+                findMany: vi.fn(),
+            }
+        }
     }
 }));
 
@@ -78,9 +83,10 @@ describe('API /aides Integration', () => {
             facets: expect.any(Object),
             pagination: expect.any(Object)
         }));
-        expect(searchAides).toHaveBeenCalledWith(expect.anything(), expect.objectContaining({
+        expect(searchAides).toHaveBeenCalledWith(expect.objectContaining({
             q: 'test',
-            theme: 'logement'
+            theme: 'logement',
+            statut: 'publie'
         }));
     });
 

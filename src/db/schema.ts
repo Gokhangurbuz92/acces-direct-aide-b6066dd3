@@ -1,6 +1,6 @@
 import crypto from 'node:crypto';
 import { relations, sql } from 'drizzle-orm'
-import { boolean, doublePrecision, foreignKey, integer, jsonb, pgEnum, pgTable, serial, text, timestamp, uniqueIndex } from 'drizzle-orm/pg-core'
+import { boolean, doublePrecision, foreignKey, index, integer, jsonb, pgEnum, pgTable, serial, text, timestamp, uniqueIndex, vector } from 'drizzle-orm/pg-core'
 
 export const ContentType = pgEnum('ContentType', ['AIDE', 'DEMARCHE', 'STRUCTURE', 'ACTUALITE'])
 
@@ -94,7 +94,9 @@ export const Aide = pgTable('Aide', {
 	retrieved_at: timestamp('retrieved_at', { precision: 3 }),
 	last_checked_at: timestamp('last_checked_at', { precision: 3 }),
 	source_document_id: text('source_document_id'),
-	externalId: text('externalId').unique()
+	externalId: text('externalId').unique(),
+	// pgvector: 768 dimensions to match gemini-embedding-001 model
+	embedding: vector('embedding', { dimensions: 768 }),
 }, (Aide) => ({
 	'Aide_category_fkey': foreignKey({
 		name: 'Aide_category_fkey',
@@ -116,7 +118,10 @@ export const Aide = pgTable('Aide', {
 		foreignColumns: [SourceDocument.id]
 	})
 		.onDelete('cascade')
-		.onUpdate('cascade')
+		.onUpdate('cascade'),
+	// HNSW index for fast cosine similarity search (pgvector)
+	'Aide_embedding_hnsw_idx': index('Aide_embedding_hnsw_idx')
+		.using('hnsw', Aide.embedding.op('vector_cosine_ops')),
 }));
 
 export const AidCategory = pgTable('AidCategory', {

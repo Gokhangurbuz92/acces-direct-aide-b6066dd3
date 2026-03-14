@@ -15,6 +15,20 @@
       "when": 1773510503465,
       "tag": "0001_organic_morlun",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1773512918004,
+      "tag": "0002_thankful_sunspot",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1773512983484,
+      "tag": "0003_free_crusher_hogan",
+      "breakpoints": true
     }
   ]
 }

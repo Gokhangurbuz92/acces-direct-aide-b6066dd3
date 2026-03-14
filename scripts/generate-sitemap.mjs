@@ -3,7 +3,7 @@
  *
  * Runs AFTER vite build + prerender. Produces dist/sitemap.xml.
  *
- * Slug source: Prisma DB (top N published aides with slugs).
+ * Slug source: Drizzle DB (top N published aides with slugs).
  * If DATABASE_URL is not set, generates sitemap with static routes only.
  *
  * Usage: node scripts/generate-sitemap.mjs [--limit N]
@@ -44,25 +44,20 @@ function parseArgs() {
  */
 async function fetchSlugsFromDB(limit) {
     try {
-        const prismaModule = await import('../api/_utils/prisma.js');
-        const prisma = prismaModule.default;
+        const { db } = await import('../src/db/index.ts');
+        const { Aide } = await import('../src/db/schema.ts');
+        const { isNotNull, eq, desc } = await import('drizzle-orm');
 
-        const aides = await prisma.aide.findMany({
-            where: {
-                slug: { not: null },
-                statut: 'publie',
-            },
-            select: {
-                slug: true,
-                date_verification: true,
-                updatedAt: true,
-            },
-            orderBy: [
-                { date_verification: 'desc' },
-                { updatedAt: 'desc' },
-            ],
-            take: limit,
-        });
+        const aides = await db.select({
+                slug: Aide.slug,
+                date_verification: Aide.date_verification,
+                updatedAt: Aide.updatedAt,
+            })
+            .from(Aide)
+            .where(isNotNull(Aide.slug))
+            .where(eq(Aide.statut, 'publie'))
+            .orderBy(desc(Aide.date_verification), desc(Aide.updatedAt))
+            .limit(limit);
 
         return aides.filter((a) => a.slug);
     } catch (error) {
@@ -114,10 +109,10 @@ function toISODate(date, fallback) {
  */
 async function fetchSeoCombinations() {
     try {
-        const prismaModule = await import('../api/_utils/prisma.js');
-        const prisma = prismaModule.default;
+        const { db } = await import('../src/db/index.ts');
+        const { AidCategory } = await import('../src/db/schema.ts');
 
-        const cats = await prisma.aidCategory.findMany({ select: { slug: true } });
+        const cats = await db.select({ slug: AidCategory.slug }).from(AidCategory);
 
         // Key territories for SEO rollout
         const territories = ['paris', 'strasbourg', 'lyon', 'marseille', 'bas-rhin', 'haute-garonne', 'gironde'];

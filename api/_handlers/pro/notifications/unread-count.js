@@ -1,7 +1,7 @@
 import logger from '../../../_utils/logger.js';
 // @ts-nocheck
 import { db } from '../../../../src/db/index.js';
-import { ProNotification } from '../../../../src/db/schema.js';
+import { ProNotification, RdvConversationMessage } from '../../../../src/db/schema.js';
 import { eq, and, isNull, ne, count } from 'drizzle-orm';
 import { requireProAuth, requireProStructureContext } from '../../../_utils/auth.js';
 
@@ -10,7 +10,7 @@ import { requireProAuth, requireProStructureContext } from '../../../_utils/auth
  *
  * GET /api/pro/notifications/unread-count
  *
- * Returns the number of unread ProMessages for the current user.
+ * Returns the number of unread RdvConversationMessages for the current user.
  * Lightweight endpoint designed for badge polling (30s heartbeat).
  */
 async function handler(req, res) {
@@ -24,11 +24,11 @@ async function handler(req, res) {
     const { userId } = proCtx;
 
     try {
-        // Count ProMessages not sent by this user AND not yet read
-        const messageCountRes = await db.select({ count: count() }).from(ProMessage).where(
+        // Count RdvConversationMessages not sent by this pro user AND not yet read
+        const messageCountRes = await db.select({ count: count() }).from(RdvConversationMessage).where(
             and(
-                isNull(ProMessage.readAt),
-                ne(ProMessage.senderId, userId)
+                isNull(RdvConversationMessage.readAt),
+                ne(RdvConversationMessage.senderProUserId, userId)
             )
         );
         const messageCount = messageCountRes[0].count;

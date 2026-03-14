@@ -1021,15 +1021,7 @@ export const ProAuditLog = pgTable('ProAuditLog', {
 		.onUpdate('cascade')
 }));
 
-export const ProMessage = pgTable('ProMessage', {
-	id: text('id').notNull().primaryKey().$defaultFn(() => crypto.randomUUID()),
-	createdAt: timestamp('createdAt', { precision: 3 }).notNull().defaultNow(),
-	conversationId: text('conversationId').notNull(),
-	senderId: text('senderId').notNull(),
-	contentEncrypted: text('contentEncrypted').notNull(),
-	iv: text('iv').notNull(),
-	readAt: timestamp('readAt', { precision: 3 })
-});
+// [LEGACY] ProMessage table removed — System C eradicated (dead code, replaced by RdvConversationMessage)
 
 export const UserConsent = pgTable('UserConsent', {
 	id: text('id').notNull().primaryKey().$defaultFn(() => crypto.randomUUID()),

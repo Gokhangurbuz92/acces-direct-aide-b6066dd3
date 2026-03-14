@@ -5,28 +5,22 @@
  * Usage:
  *   DRY_RUN=true  node scripts/backfill-demarches-falc.js   # Preview (default)
  *   DRY_RUN=false node scripts/backfill-demarches-falc.js   # Apply changes
- *
- * Requires: DATABASE_URL in environment or .env
  */
 
-import { PrismaClient } from '@prisma/client';
 import dotenv from 'dotenv';
-
 dotenv.config({ path: '.env.local' });
 dotenv.config({ path: '.env' });
 
-const DRY_RUN = process.env.DRY_RUN !== 'false';
-const prisma = new PrismaClient();
+import { db } from '../src/db/index.js';
+import { Demarche } from '../src/db/schema.js';
+import { isNull, eq } from 'drizzle-orm';
 
-/**
- * Generate a FALC summary from titre + description_courte.
- * FALC = Facile à Lire et à Comprendre: short, simple French sentences.
- */
+const DRY_RUN = process.env.DRY_RUN !== 'false';
+
 function generateFalcSummary(titre, descriptionCourte) {
     const name = (titre || 'cette démarche').replace(/^Demander\s+/i, '').replace(/^Mettre à jour\s+/i, '');
 
     if (descriptionCourte && descriptionCourte.length > 10) {
-        // Use existing description as base, simplify
         const simplified = descriptionCourte
             .replace(/étapes pour/gi, 'Voici comment')
             .replace(/selon votre situation/gi, '')
@@ -34,7 +28,6 @@ function generateFalcSummary(titre, descriptionCourte) {
         return `${simplified} Cette démarche est gratuite. Vous pouvez la faire en ligne ou dans un guichet.`;
     }
 
-    // Fallback: generate from title
     return `Cette démarche vous aide pour ${name}. Elle est gratuite. Vous pouvez la faire en ligne ou dans un point d'accueil.`;
 }
 
@@ -42,9 +35,9 @@ async function main() {
     console.log(`\n📖 Backfill summary_falc for démarches`);
     console.log(`   Mode: ${DRY_RUN ? '🔍 DRY RUN (preview)' : '⚡ LIVE (applying)'}\n`);
 
-    const demarches = await prisma.demarche.findMany({
-        where: { summary_falc: null },
-        select: { id: true, titre: true, description_courte: true, slug: true },
+    const demarches = await db.query.Demarche.findMany({
+        where: isNull(Demarche.summary_falc),
+        columns: { id: true, titre: true, description_courte: true, slug: true },
     });
 
     if (demarches.length === 0) {
@@ -60,10 +53,7 @@ async function main() {
         console.log(`     FALC: "${falc}"`);
 
         if (!DRY_RUN) {
-            await prisma.demarche.update({
-                where: { id: d.id },
-                data: { summary_falc: falc },
-            });
+            await db.update(Demarche).set({ summary_falc: falc }).where(eq(Demarche.id, d.id));
             console.log(`     ✅ Updated`);
         }
     }
@@ -72,5 +62,4 @@ async function main() {
 }
 
 main()
-    .catch(e => { console.error('❌ Backfill error:', e); process.exit(1); })
-    .finally(() => prisma.$disconnect());
+    .catch(e => { console.error('❌ Backfill error:', e); process.exit(1); });

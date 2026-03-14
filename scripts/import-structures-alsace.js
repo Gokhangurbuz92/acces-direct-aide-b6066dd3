@@ -1,5 +1,6 @@
 
-import prisma from '../api/_utils/prisma.js';
+import { db } from '../src/db/index.js';
+import { Structure } from '../src/db/schema.js';
 import fs from 'fs'
 import path from 'path'
 import { fileURLToPath } from 'url'
@@ -7,8 +8,6 @@ import slugify from '@sindresorhus/slugify'
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
-
-
 
 async function main() {
     const jsonPath = path.join(__dirname, '../data/structures-alsace.json')
@@ -20,7 +19,6 @@ async function main() {
     for (const s of structures) {
         const slug = slugify(s.nom)
 
-        // Create or Update map
         const data = {
             nom: s.nom,
             slug: slug,
@@ -38,10 +36,9 @@ async function main() {
         }
 
         try {
-            await prisma.structure.upsert({
-                where: { slug: slug },
-                update: data,
-                create: data
+            await db.insert(Structure).values(data).onConflictDoUpdate({
+                target: [Structure.slug],
+                set: data,
             })
             console.log(`✅ Upserted: ${s.nom}`)
         } catch (e) {
@@ -56,7 +53,4 @@ main()
     .catch((e) => {
         console.error(e)
         process.exit(1)
-    })
-    .finally(async () => {
-        await prisma.$disconnect()
     })

@@ -75,16 +75,24 @@ function checkEnvVariables() {
     return passed;
 }
 
-// 3. Check Prisma Configuration
-function checkPrisma() {
-    log('\n--- 3. Checking Prisma Configuration ---', colors.cyan);
-    const schemaPath = path.join(rootDir, 'prisma', 'schema.prisma');
+// 3. Check Drizzle ORM Configuration
+function checkDrizzle() {
+    log('\n--- 3. Checking Drizzle ORM Configuration ---', colors.cyan);
+    const schemaPath = path.join(rootDir, 'src', 'db', 'schema.js');
     let passed = true;
 
     if (fs.existsSync(schemaPath)) {
-        log(`[${checkMark(true)}] Prisma schema found at ${schemaPath}`);
+        log(`[${checkMark(true)}] Drizzle schema found at ${schemaPath}`);
     } else {
-        log(`[${checkMark(false)}] Prisma schema NOT found!`, colors.red);
+        log(`[${checkMark(false)}] Drizzle schema NOT found!`, colors.red);
+        passed = false;
+    }
+
+    const dbIndexPath = path.join(rootDir, 'src', 'db', 'index.js');
+    if (fs.existsSync(dbIndexPath)) {
+        log(`[${checkMark(true)}] Drizzle db module found at ${dbIndexPath}`);
+    } else {
+        log(`[${checkMark(false)}] Drizzle db module NOT found!`, colors.red);
         passed = false;
     }
 
@@ -150,7 +158,7 @@ async function runAudit() {
     const results = {
         node: checkNodeVersion(),
         env: checkEnvVariables(),
-        prisma: checkPrisma(),
+        drizzle: checkDrizzle(),
         sanity: checkStrayConsoleLogs(),
         build: checkBuild()
     };

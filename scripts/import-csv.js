@@ -1,14 +1,26 @@
-import prisma from '../api/_utils/prisma.js';
+import { db } from '../src/db/index.js';
+import { Aide, Demarche, Structure, Dispositif } from '../src/db/schema.js';
 import fs from 'fs';
 import slugify from '@sindresorhus/slugify';
 
-
+const MODEL_TABLE = {
+    aide: Aide,
+    demarche: Demarche,
+    structure: Structure,
+    dispositif: Dispositif,
+};
 
 async function importCsv(type, filePath) {
     console.log(`📂 Importing ${type} from ${filePath}...`);
 
     if (!fs.existsSync(filePath)) {
         console.error(`❌ File not found: ${filePath}`);
+        return;
+    }
+
+    const table = MODEL_TABLE[type];
+    if (!table) {
+        console.error(`❌ Unknown type: ${type}. Valid: ${Object.keys(MODEL_TABLE).join(', ')}`);
         return;
     }
 
@@ -29,34 +41,12 @@ async function importCsv(type, filePath) {
                 row[header] = values[index];
             });
 
-            // Map and cleanup data based on type
             const data = mapData(type, row);
 
-            if (type === 'aide') {
-                await prisma.aide.upsert({
-                    where: { slug: data.slug },
-                    update: data,
-                    create: data
-                });
-            } else if (type === 'demarche') {
-                await prisma.demarche.upsert({
-                    where: { slug: data.slug },
-                    update: data,
-                    create: data
-                });
-            } else if (type === 'structure') {
-                await prisma.structure.upsert({
-                    where: { slug: data.slug },
-                    update: data,
-                    create: data
-                });
-            } else if (type === 'dispositif') {
-                await prisma.dispositif.upsert({
-                    where: { slug: data.slug },
-                    update: data,
-                    create: data
-                });
-            }
+            await db.insert(table).values(data).onConflictDoUpdate({
+                target: [table.slug],
+                set: data,
+            });
 
             createdCount++;
         } catch (err) {
@@ -87,11 +77,9 @@ function parseCsvLine(line) {
 function mapData(type, row) {
     const data = { ...row };
 
-    // Auto-generate slug if missing
     if (!data.slug && data.titre) data.slug = slugify(data.titre);
     if (!data.slug && data.nom) data.slug = slugify(data.nom);
 
-    // Handle arrays (separated by |)
     const arrayFields = ['territoires', 'departements', 'audiences', 'situations_vie', 'documents_necessaires', 'mots_cles', 'services', 'publics_accueillis', 'categories_aidees', 'public'];
     arrayFields.forEach(field => {
         if (data[field]) {
@@ -101,13 +89,10 @@ function mapData(type, row) {
         }
     });
 
-    // Handle JSON (etapes, liens)
     ['etapes', 'liens'].forEach(jsonField => {
         if (data[jsonField] && typeof data[jsonField] === 'string') {
             try {
-                // If it looks like JSON
                 if (data[jsonField].trim().startsWith('[')) {
-                    // Hack: Allow single quotes in CSV for JSON to avoid escaping hell
                     const distinctJson = data[jsonField].replace(/'/g, '"');
                     data[jsonField] = JSON.parse(distinctJson);
                 }
@@ -118,7 +103,6 @@ function mapData(type, row) {
         }
     });
 
-    // Handle Booleans
     if (data.est_urgent) data.est_urgent = data.est_urgent === 'true';
     if (data.accessibilite_pmr) data.accessibilite_pmr = data.accessibilite_pmr === 'true';
     if (data.is_pro_enabled) data.is_pro_enabled = data.is_pro_enabled === 'true';
@@ -130,8 +114,7 @@ function mapData(type, row) {
 const args = process.argv.slice(2);
 if (args.length >= 2) {
     importCsv(args[0], args[1])
-        .catch(err => console.error(err))
-        .finally(() => prisma.$disconnect());
+        .catch(err => console.error(err));
 } else {
     console.log('Usage: node scripts/import-csv.js <type: aide|demarche|structure|dispositif> <path/to/file.csv>');
 }

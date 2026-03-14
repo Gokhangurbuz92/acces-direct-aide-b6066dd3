@@ -1,8 +1,7 @@
-import prisma from '../api/_utils/prisma.js';
+import { db } from '../src/db/index.js';
+import { Demarche, AidCategory, LifeSituation } from '../src/db/schema.js';
 
-
-
-function slugify(text: string) {
+function slugify(text) {
     return text
         .toString()
         .toLowerCase()
@@ -11,7 +10,7 @@ function slugify(text: string) {
         .replace(/[^\w\-]+/g, '')
         .replace(/\-\-+/g, '-')
         .replace(/^-+/, '')
-        .replace(/-+$/, '');
+        .replace(/-+$/g, '');
 }
 
 const demarchesData = [
@@ -49,7 +48,6 @@ const demarchesData = [
     { titre: "Demande de complémentaire santé solidaire (CSS)", cat: "sante", sit: ["je-cherche-des-soins", "j-ai-des-difficultes-financieres"] },
 ];
 
-// Add more to reach ~80
 for (let i = 1; i <= 50; i++) {
     demarchesData.push({
         titre: `Démarche administrative ${i} - ${i % 2 === 0 ? 'Préfecture' : 'Mairie'}`,
@@ -61,9 +59,8 @@ for (let i = 1; i <= 50; i++) {
 async function main() {
     console.log('Seeding démarches...');
 
-    // Cache taxonomies
-    const categories = await prisma.aidCategory.findMany();
-    const situations = await prisma.lifeSituation.findMany();
+    const categories = await db.query.AidCategory.findMany();
+    const situations = await db.query.LifeSituation.findMany();
 
     const categoryMap = new Map(categories.map(c => [c.slug, c.id]));
     const situationMap = new Map(situations.map(s => [s.slug, s.id]));
@@ -71,29 +68,18 @@ async function main() {
     for (const d of demarchesData) {
         const slug = slugify(d.titre);
         const categoryId = categoryMap.get(d.cat);
-        const situationIds = d.sit.map(s => situationMap.get(s)).filter(Boolean) as string[];
 
-        await prisma.demarche.upsert({
-            where: { slug },
-            update: {
-                titre: d.titre,
-                categoryId: categoryId,
-                situations: {
-                    set: situationIds.map(id => ({ id }))
-                },
-                statut: "publie",
-                published_at: new Date()
-            },
-            create: {
-                titre: d.titre,
-                slug,
-                categoryId: categoryId,
-                situations: {
-                    connect: situationIds.map(id => ({ id }))
-                },
-                statut: "publie",
-                published_at: new Date()
-            },
+        const data = {
+            titre: d.titre,
+            slug,
+            categoryId: categoryId,
+            statut: 'publie',
+            published_at: new Date(),
+        };
+
+        await db.insert(Demarche).values(data).onConflictDoUpdate({
+            target: [Demarche.slug],
+            set: data,
         });
     }
 
@@ -104,7 +90,4 @@ main()
     .catch((e) => {
         console.error(e);
         process.exit(1);
-    })
-    .finally(async () => {
-        await prisma.$disconnect();
     });

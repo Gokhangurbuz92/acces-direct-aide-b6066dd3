@@ -2,7 +2,7 @@ import { vi } from "vitest";
 vi.stubEnv("KV_REST_API_URL", "http://localhost");
 vi.stubEnv("KV_REST_API_TOKEN", "mock-token");
 
-import { describe, it, expect, vi } from "vitest";
+import { describe, it, expect } from "vitest";
 
 describe("Security: Token Crossing", () => {
     it("should REJECT a Pro JWT on Admin Check (verifyAdmin)", async () => {

@@ -13,7 +13,7 @@ import { eq, inArray, and, or, sql } from 'drizzle-orm';
  * and return the expected payload.
  */
 
-import { describe, test, expect, beforeEach, vi } from 'vitest';
+import { describe, test, expect, beforeEach } from 'vitest';
 import handler from '../../api/_handlers/aides.js';
 
 // Simple mock for the handler testing context

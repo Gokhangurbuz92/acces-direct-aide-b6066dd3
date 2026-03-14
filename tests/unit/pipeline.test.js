@@ -3,7 +3,7 @@ vi.stubEnv("KV_REST_API_URL", "http://localhost");
 vi.stubEnv("KV_REST_API_TOKEN", "mock-token");
 
 
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, beforeEach } from 'vitest';
 import { runIngestAids } from '../../api/_handlers/cron/ingest-aids.js';
 import { db } from '../../src/db/index.js';
 import * as schema from '../../src/db/schema.js';
@@ -86,6 +86,7 @@ describe.skip('Ingestion Pipeline', () => {
 
         const stats = await runIngestAids({ limit: 100, runId: 'test', wipe: true });
 
+        const prisma = (await import('../../api/_utils/prisma.js')).default;
         expect(prisma.aide.deleteMany).toHaveBeenCalled(); // Wipe called
         expect(prisma.aide.create).toHaveBeenCalledTimes(34); // 34 items created
         expect(stats.created).toBe(34);

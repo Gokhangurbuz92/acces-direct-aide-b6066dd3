@@ -8,7 +8,6 @@ import { db } from '../../src/db/index.js';
 import * as schema from '../../src/db/schema.js';
 import { eq, sql } from 'drizzle-orm';
 import crypto from 'crypto';
-import { vi } from 'vitest';
 
 /**
  * @param {{

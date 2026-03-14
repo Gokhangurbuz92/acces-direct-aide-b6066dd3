@@ -2,7 +2,7 @@ import { vi } from "vitest";
 vi.stubEnv("KV_REST_API_URL", "http://localhost");
 vi.stubEnv("KV_REST_API_TOKEN", "mock-token");
 
-import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import crypto from 'crypto';
 import { db } from '../../src/db/index.js';
 import * as schema from '../../src/db/schema.js';

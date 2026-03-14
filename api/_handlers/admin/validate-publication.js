@@ -7,6 +7,7 @@ import { validateForPublication, generateValidationReport } from '../../lib/publ
 import Sentry from '../../_utils/sentry.js';
 import { env } from '../../_utils/env.js';
 import { verifyAdmin } from '../../_utils/auth.js';
+import { validatePublicationSchema } from '../../../src/db/drizzle-schemas.js';
 
 const ENTITY_MODELS = {
   aide: Aide,
@@ -51,19 +52,15 @@ export default async function handler(req, res) {
       return res.status(405).json({ error: 'Method not allowed' });
     }
 
-    const { entityType, entityId } = req.body || {};
-
-    // Validation
-    if (!entityType || !ENTITY_MODELS[entityType]) {
+    const parseResult = validatePublicationSchema.safeParse(req.body);
+    if (!parseResult.success) {
       return res.status(400).json({
-        error: 'Invalid entity type',
-        validTypes: Object.keys(ENTITY_MODELS),
+        error: 'Invalid payload',
+        details: parseResult.error.flatten(),
       });
     }
 
-    if (!entityId) {
-      return res.status(400).json({ error: 'Entity ID is required' });
-    }
+    const { entityType, entityId } = parseResult.data;
 
     // Fetch the entity
     const model = ENTITY_MODELS[entityType];

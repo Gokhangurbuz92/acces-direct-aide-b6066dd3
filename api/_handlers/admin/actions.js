@@ -4,6 +4,7 @@ import { db } from '../../../src/db/index.js';
 import { Actualite, AuditLog } from '../../../src/db/schema.js';
 import { inArray } from 'drizzle-orm';
 import { verifyAdmin } from '../../_utils/auth.js';
+import { adminBulkActionSchema } from '../../../src/db/drizzle-schemas.js';
 /**
  * @param {import('../../_utils/http-types').ApiRequest} req
  * @param {import('../../_utils/http-types').ApiResponse} res
@@ -24,11 +25,12 @@ export default async function handler(req, res) {
         return res.status(401).json({ error: 'Unauthorized: Admin Token Required' });
     }
 
-    const { action, ids } = req.body;
-
-    if (!ids || !Array.isArray(ids) || ids.length === 0) {
-        return res.status(400).json({ error: 'Invalid IDs' });
+    const parseResult = adminBulkActionSchema.safeParse(req.body);
+    if (!parseResult.success) {
+        return res.status(400).json({ error: 'Invalid payload', details: parseResult.error.flatten() });
     }
+
+    const { action, ids } = parseResult.data;
 
     try {
         let updateData = {};

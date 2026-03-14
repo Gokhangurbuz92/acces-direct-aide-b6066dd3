@@ -182,9 +182,10 @@ export const AidSource = pgTable('AidSource', {
 
 export const Structure = pgTable('Structure', {
 	id: text('id').notNull().primaryKey().$defaultFn(() => crypto.randomUUID()),
+	createdAt: timestamp('createdAt', { precision: 3 }).notNull().defaultNow(),
 	nom: text('nom').notNull(),
 	type_structure: text('type_structure'),
-	accessibilite_pmr: boolean('accessibilite_pmr').notNull().default(false),
+	accessibilite_pmr: boolean('accessibilite_pmr').default(false).notNull(),
 	description_courte: text('description_courte'),
 	adresse: text('adresse'),
 	code_postal: text('code_postal'),
@@ -210,9 +211,9 @@ export const Structure = pgTable('Structure', {
 	mots_cles: text('mots_cles').array().notNull().default(sql`'{}'`),
 	slug: text('slug').unique(),
 	summary_falc: text('summary_falc'),
-	is_pro_enabled: boolean('is_pro_enabled').notNull().default(false),
+	is_pro_enabled: boolean('is_pro_enabled').default(false).notNull(),
 	settings_json: jsonb('settings_json').default("{}"),
-	auto_publish: boolean('auto_publish').notNull().default(false),
+	auto_publish: boolean('auto_publish').default(false).notNull(),
 	geoloc_status: text('geoloc_status'),
 	import_batch: text('import_batch'),
 	import_status: text('import_status').notNull().default("pending"),

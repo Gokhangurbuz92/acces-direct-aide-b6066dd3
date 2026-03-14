@@ -33,9 +33,6 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Generate Prisma Client
-        run: npx prisma generate
-
       - name: Build
         run: npx vite build
         env:
@@ -58,7 +55,7 @@ jobs:
           echo "🚀 Deployed to: $DEPLOY_URL"
 
       - name: Sync Database Schema
-        run: npx prisma db push --accept-data-loss --skip-generate
+        run: npx drizzle-kit push
         env:
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
 

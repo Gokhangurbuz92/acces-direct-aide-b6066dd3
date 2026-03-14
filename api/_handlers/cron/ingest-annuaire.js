@@ -86,7 +86,7 @@ export async function runIngestAnnuaire({ limit, runId } = {}) {
                 // Source document for traceability
                 let sourceDocumentId = null;
                 try {
-                    const doc = await upsertSourceDocument(null, {
+                    const doc = await upsertSourceDocument({
                         sourceUrl: `https://finess.sante.gouv.fr/finess/detail.do?id=${item.numero_finess}`,
                         rawContent: JSON.stringify(item),
                         metadata: {
@@ -189,7 +189,7 @@ export async function runIngestAnnuaire({ limit, runId } = {}) {
                 // Source document for traceability
                 let sourceDocumentId = null;
                 try {
-                    const doc = await upsertSourceDocument(null, {
+                    const doc = await upsertSourceDocument({
                         sourceUrl: `https://www.journal-officiel.gouv.fr/associations/detail-annonce/associations_b/${item.rna_id}`,
                         rawContent: JSON.stringify(item),
                         metadata: {

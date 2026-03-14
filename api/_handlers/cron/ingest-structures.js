@@ -170,7 +170,7 @@ export async function runIngestStructures({ limit, runId }) {
 
                 let sourceDocumentId = null;
                 try {
-                    const sourceDocument = await upsertSourceDocument(null, {
+                    const sourceDocument = await upsertSourceDocument({
                         sourceUrl: dataset.url,
                         rawContent: JSON.stringify(item),
                         metadata: {

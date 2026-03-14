@@ -5,7 +5,7 @@ vi.stubEnv("KV_REST_API_TOKEN", "mock-token");
 import { db } from '../../src/db/index.js';
 import * as schema from '../../src/db/schema.js';
 import { eq, inArray, and, or, sql } from 'drizzle-orm';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { beforeEach, describe, expect, it } from 'vitest';
 import handler from '../../api/_handlers/search.js';
 
 vi.mock('../../api/_utils/db.query.Js', () => ({

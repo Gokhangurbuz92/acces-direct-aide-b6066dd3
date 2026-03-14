@@ -9,7 +9,6 @@ import * as schema from '../../src/db/schema.js';
 import { eq, sql } from 'drizzle-orm';
 import { kv } from '../../api/_utils/kv.js';
 
-import { vi } from 'vitest';
 
 /**
  * @param {{

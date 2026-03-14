@@ -6,7 +6,6 @@ import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { db } from '../../src/db/index.js';
 import * as schema from '../../src/db/schema.js';
 import { eq, sql } from 'drizzle-orm';
-import { vi } from 'vitest';
 import monitorCronActualites from '../../api/_handlers/monitor/cron-actualites.js';
 
 function mockReq(overrides = {}) {

@@ -3,7 +3,7 @@ vi.stubEnv("KV_REST_API_URL", "http://localhost");
 vi.stubEnv("KV_REST_API_TOKEN", "mock-token");
 
 
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, beforeEach } from 'vitest';
 import pipelineHandler from '../../api/_handlers/cron/pipeline.js';
 import { runIngestStructures } from '../../api/_handlers/cron/ingest-structures.js';
 import { runIngestAids } from '../../api/_handlers/cron/ingest-aids.js';

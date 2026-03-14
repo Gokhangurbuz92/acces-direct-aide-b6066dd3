@@ -4,6 +4,7 @@ import { eq } from 'drizzle-orm';
 import { requireProStructureContext } from '../../_utils/auth.js';
 import { normalizeAvailabilityRules, rulesToSlotsJson, slotsJsonToRules } from '../../_utils/pro-rdv.js';
 import { withProRdvHandler } from '../../_utils/with-pro-rdv-handler.js';
+import { availabilityPayloadSchema } from '../../../src/db/drizzle-schemas.js';
 
 /**
  * @param {unknown} value
@@ -43,25 +44,28 @@ async function handler(req, res) {
   }
 
   if (req.method === 'PUT' || req.method === 'POST') {
-    const body = req.body && typeof req.body === 'object' ? req.body : {};
-    const timezone = String(body.timezone || 'Europe/Paris');
+    const parsed = availabilityPayloadSchema.safeParse(req.body);
+    if (!parsed.success) {
+      const firstError = parsed.error.errors[0]?.message || 'Invalid input';
+      return res.status(400).json({ error: firstError });
+    }
+    const data = parsed.data;
+    const timezone = data.timezone || 'Europe/Paris';
 
     /** @type {Array<{weekday:number,startTime:string,endTime:string,timezone:string,isActive:boolean}>} */
     let normalizedRules = [];
-    if (Array.isArray(body.rules)) {
+    if (Array.isArray(data.rules) && data.rules.length > 0) {
       normalizedRules = normalizeAvailabilityRules(
-        body.rules.map((rule /** @type {any} */) => ({
-          weekday: toInt(/** @type {any} */ (rule)?.weekday),
-          startTime: String(/** @type {any} */ (rule)?.startTime || ''),
-          endTime: String(/** @type {any} */ (rule)?.endTime || ''),
-          timezone: String(/** @type {any} */ (rule)?.timezone || timezone),
-          isActive: Boolean(/** @type {any} */ (rule)?.isActive ?? true),
+        data.rules.map((rule) => ({
+          weekday: rule.weekday,
+          startTime: rule.startTime,
+          endTime: rule.endTime,
+          timezone: rule.timezone || timezone,
+          isActive: rule.isActive !== false,
         })),
       );
-    } else if (body.slots_json && typeof body.slots_json === 'object') {
-      normalizedRules = slotsJsonToRules(/** @type {Record<string, unknown>} */ (body.slots_json), timezone);
-    } else {
-      return res.status(400).json({ error: 'rules or slots_json is required' });
+    } else if (data.slots_json && typeof data.slots_json === 'object') {
+      normalizedRules = slotsJsonToRules(/** @type {Record<string, unknown>} */ (data.slots_json), timezone);
     }
 
     await db.transaction(async (tx) => {

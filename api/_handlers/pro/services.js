@@ -4,7 +4,7 @@ import { ProRdvService, Service, ProAppointment } from '../../../src/db/schema.j
 import { eq, desc, and, inArray, sql } from 'drizzle-orm';
 import { AUTH_ROLE, requireProStructureContext } from '../../_utils/auth.js';
 import { withProRdvHandler } from '../../_utils/with-pro-rdv-handler.js';
-import { createServiceSchema } from '../../../src/db/drizzle-schemas.js';
+import { createServiceSchema, updateServiceSchema } from '../../../src/db/drizzle-schemas.js';
 
 /**
  * @param {unknown} value
@@ -107,44 +107,32 @@ async function handler(req, res) {
     }
     if (existing.structureId !== structureId) return res.status(403).json({ error: 'Forbidden' });
 
+    const parsed = updateServiceSchema.safeParse(body);
+    if (!parsed.success) {
+      const firstError = parsed.error.errors[0]?.message || 'Invalid input';
+      return res.status(400).json({ error: firstError });
+    }
+    const data = parsed.data;
+
     /** @type {Record<string, any>} */
     const updates = {};
-    if (typeof body.name === 'string' && body.name.trim()) updates.name = body.name.trim();
+    if (data.name) updates.name = data.name;
 
-    if (typeof body.durationMinutes !== 'undefined' || typeof body.duration_minutes !== 'undefined') {
-      const durationMinutes = toInt(body.durationMinutes ?? body.duration_minutes);
-      if (!Number.isFinite(durationMinutes) || durationMinutes <= 0) {
-        return res.status(400).json({ error: 'durationMinutes must be a positive number' });
-      }
-      updates.durationMinutes = durationMinutes;
-    }
+    const durationMinutes = data.durationMinutes ?? data.duration_minutes;
+    if (typeof durationMinutes === 'number') updates.durationMinutes = durationMinutes;
+
+    const bufferBefore = data.bufferBeforeMinutes ?? data.buffer_before_minutes;
+    if (typeof bufferBefore === 'number') updates.bufferBeforeMinutes = Math.max(0, bufferBefore);
+
+    const bufferAfter = data.bufferAfterMinutes ?? data.buffer_after_minutes;
+    if (typeof bufferAfter === 'number') updates.bufferAfterMinutes = Math.max(0, bufferAfter);
+
+    const isActive = data.isActive ?? data.is_active;
+    if (typeof isActive === 'boolean') updates.isActive = isActive;
 
     updates.updatedAt = new Date();
 
-    if (
-      typeof body.bufferBeforeMinutes !== 'undefined' ||
-      typeof body.buffer_before_minutes !== 'undefined'
-    ) {
-      const bufferBeforeMinutes = Math.max(
-        0,
-        toInt(body.bufferBeforeMinutes ?? body.buffer_before_minutes),
-      );
-      updates.bufferBeforeMinutes = bufferBeforeMinutes;
-    }
-
-    if (
-      typeof body.bufferAfterMinutes !== 'undefined' ||
-      typeof body.buffer_after_minutes !== 'undefined'
-    ) {
-      const bufferAfterMinutes = Math.max(0, toInt(body.bufferAfterMinutes ?? body.buffer_after_minutes));
-      updates.bufferAfterMinutes = bufferAfterMinutes;
-    }
-
-    if (typeof body.isActive !== 'undefined' || typeof body.is_active !== 'undefined') {
-      updates.isActive = Boolean(body.isActive ?? body.is_active);
-    }
-
-    if (Object.keys(updates).length === 0) {
+    if (Object.keys(updates).length <= 1) {
       return res.status(200).json(serialize(existing));
     }
 

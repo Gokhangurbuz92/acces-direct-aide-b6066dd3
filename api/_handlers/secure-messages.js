@@ -3,6 +3,7 @@ import logger from '../_utils/logger.js';
 import { db } from '../../src/db/index.js';
 import * as schema from '../../src/db/schema.js';
 import { eq } from 'drizzle-orm';
+import { encrypt, decrypt } from '../lib/crypto.js';
 
 /**
  * Secure Messages API Handler
@@ -42,11 +43,12 @@ export default async function handler(req, res) {
                 },
             });
 
-            // Map to E2EE-compatible shape — `body` holds the encrypted blob
+            // Map to E2EE-compatible shape — decrypt server-side encryption,
+            // then return the client-encrypted blob
             const items = messages.map((m) => ({
                 id: m.id,
                 senderId: m.senderCitizenUserId || m.senderProUserId || m.senderType,
-                encryptedContent: m.body,
+                encryptedContent: m.body?.startsWith('v1:') ? decrypt(m.body) : m.body,
                 createdAt: m.createdAt,
             }));
 
@@ -79,7 +81,7 @@ export default async function handler(req, res) {
                 senderType,
                 senderCitizenUserId: isCitizen ? senderId : null,
                 senderProUserId: !isCitizen ? senderId : null,
-                body: encryptedContent, // Opaque encrypted blob — server cannot read
+                body: encrypt(encryptedContent), // Server-side AES wrap around client E2EE blob
             }).returning();
 
             // Update conversation timestamp

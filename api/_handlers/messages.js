@@ -1,11 +1,11 @@
 // @ts-nocheck
 import crypto from 'node:crypto';
-import fs from 'fs';
 import { db } from '../../src/db/index.js';
 import * as schema from '../../src/db/schema.js';
 import { eq, and, desc, asc } from 'drizzle-orm';
 import { checkRateLimit, getClientIp, getRateLimitStatus } from '../_utils/rateLimit.js';
 import { requireCitizenUser } from '../_utils/rdv-public-auth.js';
+import { encrypt } from '../lib/crypto.js';
 import {
   notifyConversationMessage,
   sanitizeMessageBody,
@@ -121,7 +121,6 @@ async function getConversations(req, res, user) {
       },
     });
   } catch (err) {
-    fs.appendFileSync('API_ERROR.txt', 'GET CONV ERROR: ' + err.stack + ' | CODE: ' + err.code + ' | DETAIL: ' + err.detail + '\n');
     throw err;
   }
 
@@ -200,7 +199,7 @@ async function sendMessage(req, res, user, conversationId) {
         conversationId: conversation.id,
         senderType: 'USER',
         senderCitizenUserId: user.id,
-        body,
+        body: encrypt(body),
       }).returning())[0];
 
       await tx.update(schema.RdvConversation).set({
@@ -210,7 +209,6 @@ async function sendMessage(req, res, user, conversationId) {
       return { conversation, message, forbidden: false };
     });
   } catch (err) {
-    fs.appendFileSync('API_ERROR.txt', 'TX ERROR: ' + err.stack + ' | CODE: ' + err.code + ' | DETAIL: ' + err.detail + ' | MSG: ' + err.message + '\n');
     throw err;
   }
 
@@ -315,7 +313,6 @@ async function getOrCreateFromAppointment(req, res, user, appointmentId) {
       },
     });
   } catch (err) {
-    fs.appendFileSync('API_ERROR.txt', 'UPSERT ERROR: ' + err.stack + ' | CODE: ' + err.code + ' | DETAIL: ' + err.detail + ' | MSG: ' + err.message + '\n');
     throw err;
   }
 }

@@ -5,6 +5,7 @@ import { eq, desc, asc } from 'drizzle-orm';
 import { requireProStructureContext } from '../../_utils/auth.js';
 import { checkRateLimit, getClientIp, getRateLimitStatus } from '../../_utils/rateLimit.js';
 import { withProRdvHandler } from '../../_utils/with-pro-rdv-handler.js';
+import { encrypt } from '../../lib/crypto.js';
 import {
   notifyConversationMessage,
   sanitizeMessageBody,
@@ -197,7 +198,7 @@ async function sendMessage(req, res, proCtx, conversationId) {
         conversationId: conversation.id,
         senderType: 'PRO',
         senderProUserId: proCtx.userId,
-        body,
+        body: encrypt(body),
     }).returning();
 
     await tx.update(RdvConversation).set({

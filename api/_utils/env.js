@@ -19,16 +19,11 @@ const strictEnvSchema = z.object({
 try {
   strictEnvSchema.parse(process.env);
 } catch (error) {
-  console.error("❌ ERREUR CRITIQUE D'ENVIRONNEMENT : Variables requises manquantes ou invalides.");
+  console.error("⚠️ ENVIRONNEMENT : Variables requises manquantes ou invalides.");
   console.error(error.errors);
-  // Don't kill the process in test/E2E/CI mock environments where
-  // the backend is fully mocked and these secrets are never used.
-  const isSafeToSkip = process.env.NODE_ENV === 'test'
-    || process.env.USE_MOCKS === 'true'
-    || process.env.VITEST === 'true';
-  if (!isSafeToSkip) {
-    process.exit(1);
-  }
+  // NEVER call process.exit() in a serverless function — it kills the entire
+  // function instance and makes ALL routes return 500 with no diagnostic info.
+  // Instead, let individual handlers fail gracefully when they use a missing var.
 }
 
 /**

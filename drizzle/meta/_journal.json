@@ -9,6 +9,9 @@
       "tag": "0000_fuzzy_fallen_one",
       "breakpoints": true
 <<<<<<< HEAD
+<<<<<<< HEAD
+=======
+>>>>>>> fd2f117 (refactor: remove dead System C messaging code and ProMessage table)
     },
     {
       "idx": 1,
@@ -16,6 +19,7 @@
       "when": 1773510503465,
       "tag": "0001_organic_morlun",
       "breakpoints": true
+<<<<<<< HEAD
     },
     {
       "idx": 2,
@@ -32,6 +36,8 @@
       "breakpoints": true
 =======
 >>>>>>> 241663f (refactor(schema): drop 6 legacy tables + clean 35 handler files)
+=======
+>>>>>>> fd2f117 (refactor: remove dead System C messaging code and ProMessage table)
     }
   ]
 }

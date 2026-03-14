@@ -29,7 +29,6 @@ function safeShortString(value) {
  * Create/update a traceability SourceDocument row and return its id.
  * Reuses the latest row when `(source_url, content_hash)` already exists.
  *
- * @param {any} unusedPrismaClient - Kept for signature compatibility but unused
  * @param {{
  *   sourceUrl?: string | null,
  *   rawContent?: string | null,
@@ -37,7 +36,7 @@ function safeShortString(value) {
  * }} input
  * @returns {Promise<{ id: string | null, contentHash: string | null }>}
  */
-export async function upsertSourceDocument(unusedPrismaClient, input) {
+export async function upsertSourceDocument(input) {
   const sourceUrl = safeString(input?.sourceUrl);
   const rawContent = safeString(input?.rawContent);
 

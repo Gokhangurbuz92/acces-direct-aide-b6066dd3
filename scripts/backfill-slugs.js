@@ -9,12 +9,22 @@
  *   node scripts/backfill-slugs.js --apply --report      (save JSON report)
  */
 
-import prisma from '../api/_utils/prisma.js';
+import { db } from '../src/db/index.js';
+import * as schema from '../src/db/schema.js';
+import { eq, isNull } from 'drizzle-orm';
 import { generateUniqueSlug } from '../api/lib/slug.js';
 import slugify from '@sindresorhus/slugify';
 import fs from 'fs';
 
-
+/**
+ * Model name → { table, titleField } mapping
+ */
+const MODEL_MAP = {
+  Aide:       { table: schema.Aide,       titleField: 'titre' },
+  Demarche:   { table: schema.Demarche,   titleField: 'titre' },
+  Structure:  { table: schema.Structure,  titleField: 'nom'   },
+  Actualite:  { table: schema.Actualite,  titleField: 'titre' },
+};
 
 // Parse CLI args
 const args = process.argv.slice(2);
@@ -45,24 +55,25 @@ if (isReport) console.log(`Report: ${reportFile}\n`);
 /**
  * Backfill slugs for a specific model
  */
-async function backfillModel(modelName, titleField) {
+async function backfillModel(modelName) {
+    const config = MODEL_MAP[modelName];
+    if (!config) throw new Error(`Unknown model: ${modelName}`);
+
+    const { table, titleField } = config;
     console.log(`\n📦 Processing model: ${modelName}`);
     console.log(`─────────────────────────────────────`);
 
     // Find items without slug
-    // If limit is set, we just take that many.
-    // This acts as a cursor/resume mechanism naturally: 
-    // each run picks up the next batch of NULL slugs.
-    const itemsWithoutSlug = await prisma[modelName.toLowerCase()].findMany({
-        where: {
-            slug: null
-        },
-        select: {
-            id: true,
-            [titleField]: true
-        },
-        take: limit || undefined
-    });
+    let query = db
+        .select({ id: table.id, [titleField]: table[titleField] })
+        .from(table)
+        .where(isNull(table.slug));
+
+    if (limit) {
+        query = query.limit(limit);
+    }
+
+    const itemsWithoutSlug = await query;
 
     // Filter out items without title/nom
     const validItems = itemsWithoutSlug.filter(item => item[titleField] && item[titleField].trim() !== '');
@@ -85,22 +96,18 @@ async function backfillModel(modelName, titleField) {
         const titleValue = item[titleField];
 
         try {
-            const newSlug = await generateUniqueSlug(prisma, modelName.toLowerCase(), titleValue, item.id);
+            const newSlug = await generateUniqueSlug(modelName.toLowerCase(), titleValue, item.id);
 
             // Detect collision (slug had to get a suffix)
             const baseSlug = slugify(titleValue, { locale: 'fr' });
-            // Simple check: if newSlug starts with baseSlug but is longer
             let isCollision = false;
             if (newSlug !== baseSlug && newSlug.startsWith(baseSlug)) {
-                // verify it's a suffix like -1, -2
                 const suffix = newSlug.replace(baseSlug, '');
                 if (/^-\d+$/.test(suffix)) {
                     isCollision = true;
                     collisions++;
                 }
             }
-            // Edge case: title "foo" -> "foo" (ok). title "foo" -> "foo-1" (collision).
-            // Edge case: title "foo?" -> "foo" (ok). 
 
             updates.push({
                 id: item.id,
@@ -130,14 +137,8 @@ async function backfillModel(modelName, titleField) {
     if (!isDryRun && updates.length > 0) {
         console.log(`\n✍️  Writing ${updates.length} slugs to database...`);
 
-        // Serial update to prevent DB lock issues with large batches, 
-        // though parallel is faster. For safety/robustness we go serial or small Promise.all batches.
-        // Given existing code was serial, we stick to it for maximum safety.
         for (const update of updates) {
-            await prisma[modelName.toLowerCase()].update({
-                where: { id: update.id },
-                data: { slug: update.newSlug }
-            });
+            await db.update(table).set({ slug: update.newSlug }).where(eq(table.id, update.id));
 
             if (isReport) {
                 fullReport.details.push({
@@ -172,21 +173,14 @@ async function backfillModel(modelName, titleField) {
  * Main execution
  */
 async function main() {
-    const models = [
-        { name: 'Aide', titleField: 'titre' },
-        { name: 'Demarche', titleField: 'titre' },
-        { name: 'Structure', titleField: 'nom' },
-        { name: 'Actualite', titleField: 'titre' }
-    ];
-
     const results = {};
 
-    for (const model of models) {
+    for (const modelName of Object.keys(MODEL_MAP)) {
         try {
-            results[model.name] = await backfillModel(model.name, model.titleField);
+            results[modelName] = await backfillModel(modelName);
         } catch (error) {
-            console.error(`\n❌ Fatal error processing ${model.name}:`, error);
-            results[model.name] = { error: error.message };
+            console.error(`\n❌ Fatal error processing ${modelName}:`, error);
+            results[modelName] = { error: error.message };
         }
     }
 
@@ -227,7 +221,4 @@ main()
     .catch(error => {
         console.error('\n❌ Fatal error:', error);
         process.exit(1);
-    })
-    .finally(async () => {
-        await prisma.$disconnect();
     });

@@ -123,7 +123,6 @@ function buildActualiteSlug(baseSlug, canonicalHash) {
 
 /**
  * @param {{
- *   unusedPrismaClient?: any,
  *   source: { id: string, name: string },
  *   feedUrl: string,
  *   category: string | null,
@@ -167,7 +166,7 @@ export async function upsertActualiteFromFeedItem(input) {
   });
 
   let sourceDocumentId = null;
-  const sourceDocument = await upsertSourceDocument(null, {
+  const sourceDocument = await upsertSourceDocument({
     sourceUrl: canonicalUrl,
     rawContent: JSON.stringify({
       title,
@@ -257,8 +256,7 @@ export async function upsertActualiteFromFeedItem(input) {
   const updateData = {
     ...insertData,
   };
-  // remove fields we don't want to update if it exists, though Prisma did update them in your code
-  // We'll mimic Prisma's behavior by passing everything.
+
 
   await db.insert(Actualite).values(insertData).onConflictDoUpdate({
     target: [Actualite.canonical_url],

@@ -208,7 +208,7 @@ export class IngestionPipelineCore {
         // 1. Source Document Creation/Enrichment
         let sourceDocumentId = null;
         try {
-            const sourceDoc = await upsertSourceDocument(null, {
+            const sourceDoc = await upsertSourceDocument({
                 sourceUrl: data.source_url || url,
                 rawContent: typeof rawContent === 'string' ? rawContent.slice(0, 20000) : JSON.stringify(rawContent),
                 metadata: {

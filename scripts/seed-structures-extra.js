@@ -1,6 +1,5 @@
-import prisma from '../api/_utils/prisma.js';
-
-
+import { db } from '../src/db/index.js';
+import { Structure } from '../src/db/schema.js';
 
 const extraStructures = [
     {
@@ -73,18 +72,10 @@ async function main() {
     console.log('Seeding extra structures...');
 
     for (const s of extraStructures) {
-        await prisma.structure.upsert({
-            where: { nom: s.nom }, // Using name for simple upsert here
-            update: {
-                ...s,
-                statut: "actif",
-                published_at: new Date()
-            },
-            create: {
-                ...s,
-                statut: "actif",
-                published_at: new Date()
-            },
+        const data = { ...s, statut: 'actif', published_at: new Date() };
+        await db.insert(Structure).values(data).onConflictDoUpdate({
+            target: [Structure.nom],
+            set: data,
         });
     }
 
@@ -95,7 +86,4 @@ main()
     .catch((e) => {
         console.error(e);
         process.exit(1);
-    })
-    .finally(async () => {
-        await prisma.$disconnect();
     });

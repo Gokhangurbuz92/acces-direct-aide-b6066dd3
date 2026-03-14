@@ -3,51 +3,32 @@
 /**
  * add-aide.js
  *
- * Ajoute une aide depuis un fichier JSON et génère son embedding 3072d immédiatement.
- * Réutilise la logique d'embedding de embed-aides.js pour garantir la cohérence.
+ * Ajoute une aide depuis un fichier JSON et génère son embedding immédiatement.
  *
  * Usage:
  *   GEMINI_API_KEY=xxx node scripts/add-aide.js path/to/aide.json
  *   GEMINI_API_KEY=xxx node scripts/add-aide.js path/to/aide.json --dry-run
- *
- * Le fichier JSON doit contenir au minimum :
- *   { "titre": "...", "cest_quoi": "..." }
- *
- * Champs optionnels supportés :
- *   pour_qui, ce_que_ca_aide, summary_falc, conditions_falc, montant_falc,
- *   categorie, slug, est_urgent, territoires, delai_indicatif, ou_demander,
- *   lien_demande, documents_necessaires, mots_cles, audiences, departements,
- *   situations_vie, lien_demarche, montant_max, echelon_territorial, source_donnee
- *
- * Pre-requisite: pgvector extension must be enabled on the database.
  */
 
 import { GoogleGenerativeAI } from '@google/generative-ai';
-import { PrismaClient } from '@prisma/client';
+import { db } from '../src/db/index.js';
+import { Aide } from '../src/db/schema.js';
+import { eq, sql } from 'drizzle-orm';
 import { readFileSync } from 'fs';
 import { resolve } from 'path';
 import * as dotenv from 'dotenv';
 
 dotenv.config();
 
-const prisma = new PrismaClient();
-
-/**
- * Generate a URL-safe slug from a title string.
- * Fallback slug generator — no external dependency.
- */
 function toSlug(text) {
     return text
         .toLowerCase()
         .normalize('NFD')
-        .replace(/[\u0300-\u036f]/g, '') // strip diacritics
+        .replace(/[\u0300-\u036f]/g, '')
         .replace(/[^a-z0-9]+/g, '-')
         .replace(/^-+|-+$/g, '');
 }
 
-/**
- * Build the text blob to embed, matching embed-aides.js logic exactly.
- */
 function buildEmbedText(aide) {
     const parts = [aide.titre];
     if (aide.cest_quoi) parts.push(aide.cest_quoi);
@@ -73,7 +54,6 @@ async function main() {
         process.exit(1);
     }
 
-    // 1. Lire et valider le JSON
     let aideData;
     try {
         const rawData = readFileSync(resolve(filePath), 'utf8');
@@ -97,16 +77,17 @@ async function main() {
     console.log(`\n🚀 Traitement de l'aide : "${aideData.titre}"`);
     console.log(`   Slug : ${slug}`);
 
-    // 2. Vérifier qu'aucune aide avec ce slug n'existe déjà
-    const existing = await prisma.aide.findUnique({ where: { slug }, select: { id: true } });
+    const existing = await db.query.Aide.findFirst({
+        where: eq(Aide.slug, slug),
+        columns: { id: true },
+    });
     if (existing) {
         console.error(`❌ Une aide avec le slug "${slug}" existe déjà (ID: ${existing.id}).`);
         console.error('   Utilisez un slug différent ou modifiez l\'aide existante.');
         process.exit(1);
     }
 
-    // 3. Générer l'embedding
-    console.log('   ⚡ Génération du vecteur 3072d (gemini-embedding-001)...');
+    console.log('   ⚡ Génération du vecteur (gemini-embedding-001)...');
     const genAI = new GoogleGenerativeAI(apiKey);
     const embedModel = genAI.getGenerativeModel({ model: 'gemini-embedding-001' });
 
@@ -121,7 +102,7 @@ async function main() {
     } catch (err) {
         console.error(`❌ Erreur Gemini : ${err.message}`);
         if (err.message?.includes('429') || err.message?.includes('quota')) {
-            console.error('   💡 Quota épuisé. Réessayez demain ou utilisez embed-aides.js pour un backfill différé.');
+            console.error('   💡 Quota épuisé. Réessayez demain.');
         }
         process.exit(1);
     }
@@ -136,45 +117,35 @@ async function main() {
         return;
     }
 
-    // 4. Insertion en base
     console.log('   💾 Insertion en base de données...');
-    const newAide = await prisma.aide.create({
-        data: {
-            titre: aideData.titre,
-            slug,
-            cest_quoi: aideData.cest_quoi || null,
-            pour_qui: aideData.pour_qui || null,
-            ce_que_ca_aide: aideData.ce_que_ca_aide || null,
-            summary_falc: aideData.summary_falc || null,
-            conditions_falc: aideData.conditions_falc || null,
-            montant_falc: aideData.montant_falc || null,
-            categorie: aideData.categorie || null,
-            est_urgent: aideData.est_urgent || false,
-            territoires: aideData.territoires || [],
-            delai_indicatif: aideData.delai_indicatif || null,
-            ou_demander: aideData.ou_demander || null,
-            lien_demande: aideData.lien_demande || null,
-            documents_necessaires: aideData.documents_necessaires || [],
-            mots_cles: aideData.mots_cles || [],
-            audiences: aideData.audiences || [],
-            departements: aideData.departements || [],
-            situations_vie: aideData.situations_vie || [],
-            // Cahier des charges
-            montant_max: aideData.montant_max || null,
-            echelon_territorial: aideData.echelon_territorial || null,
-            lien_demarche: aideData.lien_demarche || null,
-            source_donnee: aideData.source_donnee || 'MANUAL',
-            // Publication
-            statut: aideData.statut || 'brouillon',
-        },
-    });
+    const [newAide] = await db.insert(Aide).values({
+        titre: aideData.titre,
+        slug,
+        cest_quoi: aideData.cest_quoi || null,
+        pour_qui: aideData.pour_qui || null,
+        ce_que_ca_aide: aideData.ce_que_ca_aide || null,
+        summary_falc: aideData.summary_falc || null,
+        conditions_falc: aideData.conditions_falc || null,
+        montant_falc: aideData.montant_falc || null,
+        categorie: aideData.categorie || null,
+        est_urgent: aideData.est_urgent || false,
+        territoires: aideData.territoires || [],
+        delai_indicatif: aideData.delai_indicatif || null,
+        ou_demander: aideData.ou_demander || null,
+        lien_demande: aideData.lien_demande || null,
+        documents_necessaires: aideData.documents_necessaires || [],
+        mots_cles: aideData.mots_cles || [],
+        audiences: aideData.audiences || [],
+        departements: aideData.departements || [],
+        situations_vie: aideData.situations_vie || [],
+        montant_max: aideData.montant_max || null,
+        echelon_territorial: aideData.echelon_territorial || null,
+        lien_demarche: aideData.lien_demarche || null,
+        source_donnee: aideData.source_donnee || 'MANUAL',
+        statut: aideData.statut || 'brouillon',
+    }).returning();
 
-    // 5. Écrire le vecteur via raw SQL (type vector non supporté nativement par Prisma)
-    await prisma.$executeRawUnsafe(
-        `UPDATE "Aide" SET embedding = $1::vector WHERE id = $2`,
-        vectorStr,
-        newAide.id,
-    );
+    await db.execute(sql`UPDATE "Aide" SET embedding = ${vectorStr}::vector WHERE id = ${newAide.id}`);
 
     console.log(`\n✅ Aide ajoutée et indexée avec succès !`);
     console.log(`   ID    : ${newAide.id}`);
@@ -188,5 +159,4 @@ main()
     .catch(err => {
         console.error('Erreur fatale:', err);
         process.exit(1);
-    })
-    .finally(() => prisma.$disconnect());
+    });

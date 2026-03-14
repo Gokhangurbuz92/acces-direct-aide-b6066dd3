@@ -9,9 +9,10 @@
  * Keeps the one with the "clean" slug (no hash suffix), deletes others.
  */
 
-import { PrismaClient } from '@prisma/client';
+import { db } from '../src/db/index.js';
+import { Aide } from '../src/db/schema.js';
+import { eq } from 'drizzle-orm';
 
-const prisma = new PrismaClient();
 const DRY_RUN = process.env.DRY_RUN !== 'false';
 
 function normalizeTitle(title) {
@@ -25,16 +26,16 @@ function normalizeTitle(title) {
 async function main() {
     console.log(`\n🔍 DREES Deduplication — DRY_RUN=${DRY_RUN}\n`);
 
-    const dreesAides = await prisma.aide.findMany({
-        where: { providerName: 'drees' },
-        select: {
+    const dreesAides = await db.query.Aide.findMany({
+        where: eq(Aide.providerName, 'drees'),
+        columns: {
             id: true,
             slug: true,
             titre: true,
             updatedAt: true,
             content_hash: true,
         },
-        orderBy: { updatedAt: 'desc' },
+        orderBy: (t, { desc }) => [desc(t.updatedAt)],
     });
 
     console.log(`Found ${dreesAides.length} DREES aides total`);
@@ -71,18 +72,16 @@ async function main() {
         for (const d of toDelete) {
             console.log(`  ❌ DELETE: ${d.slug} (id: ${d.id.slice(0, 8)}...)`);
             if (!DRY_RUN) {
-                await prisma.aide.delete({ where: { id: d.id } });
+                await db.delete(Aide).where(eq(Aide.id, d.id));
             }
             deletedCount++;
         }
     }
 
     console.log(`\n🏁 ${DRY_RUN ? 'Would delete' : 'Deleted'}: ${deletedCount} duplicate(s)`);
-    await prisma.$disconnect();
 }
 
 main().catch((e) => {
     console.error('Error:', e);
-    prisma.$disconnect();
     process.exit(1);
 });

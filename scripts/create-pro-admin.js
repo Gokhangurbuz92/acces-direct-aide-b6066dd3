@@ -1,9 +1,9 @@
 
-import prisma from '../api/_utils/prisma.js';
+import { db } from '../src/db/index.js';
+import { Structure, ProUser } from '../src/db/schema.js';
+import { eq } from 'drizzle-orm';
 import bcrypt from 'bcryptjs';
 import readline from 'readline';
-
-
 
 const rl = readline.createInterface({
     input: process.stdin,
@@ -21,7 +21,9 @@ async function main() {
     const structureSlug = await question("Structure Slug (e.g. structure-pro-test): ");
 
     // Find Structure
-    const structure = await prisma.structure.findUnique({ where: { slug: structureSlug } });
+    const structure = await db.query.Structure.findFirst({
+        where: eq(Structure.slug, structureSlug),
+    });
     if (!structure) {
         console.error(`Structure '${structureSlug}' not found.`);
         process.exit(1);
@@ -35,17 +37,16 @@ async function main() {
 
     const password_hash = await bcrypt.hash(password, 10);
 
-    const user = await prisma.proUser.upsert({
-        where: { structureId_email: { structureId: structure.id, email } },
-        update: { password_hash, role: 'STRUCTURE_ADMIN', status: 'active' },
-        create: {
-            structureId: structure.id,
-            email,
-            password_hash,
-            role: 'STRUCTURE_ADMIN',
-            status: 'active'
-        }
-    });
+    const [user] = await db.insert(ProUser).values({
+        structureId: structure.id,
+        email,
+        password_hash,
+        role: 'STRUCTURE_ADMIN',
+        status: 'active',
+    }).onConflictDoUpdate({
+        target: [ProUser.structureId, ProUser.email],
+        set: { password_hash, role: 'STRUCTURE_ADMIN', status: 'active' },
+    }).returning();
 
     console.log(`\nUser ${user.email} created as STRUCTURE_ADMIN for ${structure.nom}.`);
     console.log("Details:", user.id);
@@ -53,7 +54,6 @@ async function main() {
 
 main()
     .catch(console.error)
-    .finally(async () => {
-        await prisma.$disconnect();
+    .finally(() => {
         rl.close();
     });

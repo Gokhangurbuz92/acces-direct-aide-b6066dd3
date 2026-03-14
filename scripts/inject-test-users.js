@@ -1,33 +1,41 @@
-import { PrismaClient } from '@prisma/client';
+import { db } from '../src/db/index.js';
+import { Structure, ProUser, AdminUser } from '../src/db/schema.js';
+import { eq, and } from 'drizzle-orm';
 import bcrypt from 'bcryptjs';
-
-const prisma = new PrismaClient();
 
 async function main() {
   const password = await bcrypt.hash('Password123!', 10);
-  
+
   // 1. Pro User
-  let structure = await prisma.structure.findFirst();
-  
+  const [structure] = await db.query.Structure.findMany({ limit: 1 });
+
   try {
-      await prisma.proUser.upsert({
-        where: { structureId_email: { structureId: structure.id, email: 'testpro@accesdirectaide.fr' } },
-        update: { password_hash: password, role: 'STRUCTURE_ADMIN', status: 'active' },
-        create: { email: 'testpro@accesdirectaide.fr', password_hash: password, role: 'STRUCTURE_ADMIN', status: 'active', structureId: structure.id }
+      await db.insert(ProUser).values({
+        email: 'testpro@accesdirectaide.fr',
+        password_hash: password,
+        role: 'STRUCTURE_ADMIN',
+        status: 'active',
+        structureId: structure.id,
+      }).onConflictDoUpdate({
+        target: [ProUser.structureId, ProUser.email],
+        set: { password_hash: password, role: 'STRUCTURE_ADMIN', status: 'active' },
       });
       console.log("Pro user injected");
   } catch(e) { console.error("Could not create pro user", e); }
 
   // 2. Admin User
   try {
-      await prisma.adminUser.upsert({
-        where: { email: 'testadmin@accesdirectaide.fr' },
-        update: { password: password, role: 'admin' },
-        create: { email: 'testadmin@accesdirectaide.fr', password: password, role: 'admin' }
+      await db.insert(AdminUser).values({
+        email: 'testadmin@accesdirectaide.fr',
+        password: password,
+        role: 'admin',
+      }).onConflictDoUpdate({
+        target: [AdminUser.email],
+        set: { password: password, role: 'admin' },
       });
       console.log("Admin user injected");
   } catch(e) { console.error("Could not create admin user", e); }
 
   console.log("Test PRO and Admin injected!");
 }
-main().catch(console.error).finally(() => prisma.$disconnect());
+main().catch(console.error);

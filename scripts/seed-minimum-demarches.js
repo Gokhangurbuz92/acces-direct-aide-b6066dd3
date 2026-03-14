@@ -1,5 +1,6 @@
 
-import prisma from '../api/_utils/prisma.js';
+import { db } from '../src/db/index.js';
+import { Demarche } from '../src/db/schema.js';
 
 
 const demarches = [
@@ -826,10 +827,9 @@ async function main() {
             mots_cles: demarcheData.mots_cles || []
         };
 
-        await prisma.demarche.upsert({
-            where: { slug: finalData.slug },
-            update: finalData,
-            create: finalData,
+        await db.insert(Demarche).values(finalData).onConflictDoUpdate({
+            target: [Demarche.slug],
+            set: finalData,
         });
     }
     console.log('Seeding demarches complete.');
@@ -839,7 +839,4 @@ main()
     .catch((e) => {
         console.error(e);
         process.exit(1);
-    })
-    .finally(async () => {
-        await prisma.$disconnect();
     });

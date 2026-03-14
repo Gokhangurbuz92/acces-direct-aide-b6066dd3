@@ -4,7 +4,7 @@ import { describe, it, expect, vi } from 'vitest';
 vi.mock('../_utils/env.js', () => ({
     env: {
         secrets: {
-            adaEncryptionKey: '0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef',
+            adaEncryptionKey: '0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef', // gitleaks:allow (test fixture)
         },
         runtime: {
             vercelEnv: 'test',

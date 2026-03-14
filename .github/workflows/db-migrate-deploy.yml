@@ -33,17 +33,11 @@ jobs:
             echo "skip=false" >> "$GITHUB_OUTPUT"
           fi
 
-      - name: Prisma migrate deploy (staging)
+      - name: Drizzle push schema (staging)
         if: steps.staging_guard.outputs.skip == 'false'
         env:
           DATABASE_URL: ${{ secrets.DATABASE_URL_STAGING }}
-        run: npx prisma migrate deploy
-
-      - name: Prisma migrate status (staging)
-        if: steps.staging_guard.outputs.skip == 'false'
-        env:
-          DATABASE_URL: ${{ secrets.DATABASE_URL_STAGING }}
-        run: npx prisma migrate status
+        run: npx drizzle-kit push
 
   deploy-prod:
     name: Deploy Migrations (prod)
@@ -71,14 +65,8 @@ jobs:
             echo "skip=false" >> "$GITHUB_OUTPUT"
           fi
 
-      - name: Prisma migrate deploy (prod)
+      - name: Drizzle push schema (prod)
         if: steps.prod_guard.outputs.skip == 'false'
         env:
           DATABASE_URL: ${{ secrets.DATABASE_URL_PROD }}
-        run: npx prisma migrate deploy
-
-      - name: Prisma migrate status (prod)
-        if: steps.prod_guard.outputs.skip == 'false'
-        env:
-          DATABASE_URL: ${{ secrets.DATABASE_URL_PROD }}
-        run: npx prisma migrate status
+        run: npx drizzle-kit push

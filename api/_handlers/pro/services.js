@@ -4,6 +4,7 @@ import { ProRdvService, Service, ProAppointment } from '../../../src/db/schema.j
 import { eq, desc, and, inArray, sql } from 'drizzle-orm';
 import { AUTH_ROLE, requireProStructureContext } from '../../_utils/auth.js';
 import { withProRdvHandler } from '../../_utils/with-pro-rdv-handler.js';
+import { createServiceSchema } from '../../../src/db/drizzle-schemas.js';
 
 /**
  * @param {unknown} value
@@ -63,23 +64,17 @@ async function handler(req, res) {
   }
 
   if (req.method === 'POST') {
-    const body = req.body && typeof req.body === 'object' ? req.body : {};
-    const name = String(body.name || '').trim();
-    const durationMinutes = toInt(body.durationMinutes ?? body.duration_minutes);
-    const bufferBeforeMinutes = Math.max(
-      0,
-      toInt(body.bufferBeforeMinutes ?? body.buffer_before_minutes ?? 0),
-    );
-    const bufferAfterMinutes = Math.max(
-      0,
-      toInt(body.bufferAfterMinutes ?? body.buffer_after_minutes ?? 0),
-    );
-    const isActive = body.isActive ?? body.is_active ?? true;
-
-    if (!name) return res.status(400).json({ error: 'Name is required' });
-    if (!Number.isFinite(durationMinutes) || durationMinutes <= 0) {
-      return res.status(400).json({ error: 'durationMinutes must be a positive number' });
+    const parsed = createServiceSchema.safeParse(req.body);
+    if (!parsed.success) {
+      const firstError = parsed.error.errors[0]?.message || 'Invalid input';
+      return res.status(400).json({ error: firstError });
     }
+    const data = parsed.data;
+    const name = data.name;
+    const durationMinutes = data.durationMinutes ?? data.duration_minutes;
+    const bufferBeforeMinutes = Math.max(0, data.bufferBeforeMinutes ?? data.buffer_before_minutes ?? 0);
+    const bufferAfterMinutes = Math.max(0, data.bufferAfterMinutes ?? data.buffer_after_minutes ?? 0);
+    const isActive = data.isActive ?? data.is_active ?? true;
 
     const [created] = await db.insert(ProRdvService).values({
         id: crypto.randomUUID(),

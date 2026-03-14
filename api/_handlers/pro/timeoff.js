@@ -4,6 +4,7 @@ import { ProTimeOff } from '../../../src/db/schema.js';
 import { eq, and, gt, lt, gte, lte, asc } from 'drizzle-orm';
 import { requireProStructureContext } from '../../_utils/auth.js';
 import { withProRdvHandler } from '../../_utils/with-pro-rdv-handler.js';
+import { createTimeOffSchema } from '../../../src/db/drizzle-schemas.js';
 
 /**
  * @param {unknown} value
@@ -69,20 +70,20 @@ async function handler(req, res) {
   }
 
   if (req.method === 'POST') {
-    const body = req.body && typeof req.body === 'object' ? req.body : {};
-    const startAt = toDate(body.startAt);
-    const endAt = toDate(body.endAt);
-    const reason = typeof body.reason === 'string' ? body.reason.trim() : null;
-
-    const rangeError = validateRange(startAt, endAt);
-    if (rangeError) return res.status(400).json({ error: rangeError });
+    const parsed = createTimeOffSchema.safeParse(req.body);
+    if (!parsed.success) {
+      const firstError = parsed.error.errors[0]?.message || 'Invalid input';
+      return res.status(400).json({ error: firstError });
+    }
+    const { startAt, endAt, reason: rawReason } = parsed.data;
+    const reason = typeof rawReason === 'string' ? rawReason.trim() || null : null;
 
     const [created] = await db.insert(ProTimeOff).values({
         id: crypto.randomUUID(),
         structureId: proCtx.structureId,
-        startAt: /** @type {Date} */ (startAt),
-        endAt: /** @type {Date} */ (endAt),
-        reason: reason || null,
+        startAt,
+        endAt,
+        reason,
         createdAt: new Date(),
         updatedAt: new Date(),
     }).returning();

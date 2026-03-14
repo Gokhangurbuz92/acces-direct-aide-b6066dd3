@@ -1,6 +1,6 @@
 import crypto from 'node:crypto';
 import { relations, sql } from 'drizzle-orm'
-import { boolean, doublePrecision, foreignKey, integer, jsonb, pgEnum, pgTable, serial, text, timestamp, uniqueIndex } from 'drizzle-orm/pg-core'
+import { boolean, doublePrecision, foreignKey, index, integer, jsonb, pgEnum, pgTable, serial, text, timestamp, uniqueIndex, vector } from 'drizzle-orm/pg-core'
 
 export const ContentType = pgEnum('ContentType', ['AIDE', 'DEMARCHE', 'STRUCTURE', 'ACTUALITE'])
 
@@ -94,7 +94,9 @@ export const Aide = pgTable('Aide', {
 	retrieved_at: timestamp('retrieved_at', { precision: 3 }),
 	last_checked_at: timestamp('last_checked_at', { precision: 3 }),
 	source_document_id: text('source_document_id'),
-	externalId: text('externalId').unique()
+	externalId: text('externalId').unique(),
+	// pgvector: 768 dimensions to match gemini-embedding-001 model
+	embedding: vector('embedding', { dimensions: 768 }),
 }, (Aide) => ({
 	'Aide_category_fkey': foreignKey({
 		name: 'Aide_category_fkey',
@@ -116,7 +118,10 @@ export const Aide = pgTable('Aide', {
 		foreignColumns: [SourceDocument.id]
 	})
 		.onDelete('cascade')
-		.onUpdate('cascade')
+		.onUpdate('cascade'),
+	// HNSW index for fast cosine similarity search (pgvector)
+	'Aide_embedding_hnsw_idx': index('Aide_embedding_hnsw_idx')
+		.using('hnsw', Aide.embedding.op('vector_cosine_ops')),
 }));
 
 export const AidCategory = pgTable('AidCategory', {
@@ -177,9 +182,10 @@ export const AidSource = pgTable('AidSource', {
 
 export const Structure = pgTable('Structure', {
 	id: text('id').notNull().primaryKey().$defaultFn(() => crypto.randomUUID()),
+	createdAt: timestamp('createdAt', { precision: 3 }).notNull().defaultNow(),
 	nom: text('nom').notNull(),
 	type_structure: text('type_structure'),
-	accessibilite_pmr: boolean('accessibilite_pmr').notNull().default(false),
+	accessibilite_pmr: boolean('accessibilite_pmr').default(false).notNull(),
 	description_courte: text('description_courte'),
 	adresse: text('adresse'),
 	code_postal: text('code_postal'),
@@ -205,9 +211,9 @@ export const Structure = pgTable('Structure', {
 	mots_cles: text('mots_cles').array().notNull().default(sql`'{}'`),
 	slug: text('slug').unique(),
 	summary_falc: text('summary_falc'),
-	is_pro_enabled: boolean('is_pro_enabled').notNull().default(false),
+	is_pro_enabled: boolean('is_pro_enabled').default(false).notNull(),
 	settings_json: jsonb('settings_json').default("{}"),
-	auto_publish: boolean('auto_publish').notNull().default(false),
+	auto_publish: boolean('auto_publish').default(false).notNull(),
 	geoloc_status: text('geoloc_status'),
 	import_batch: text('import_batch'),
 	import_status: text('import_status').notNull().default("pending"),
@@ -540,30 +546,7 @@ export const ProUser = pgTable('ProUser', {
 		.on(ProUser.structureId, ProUser.email)
 }));
 
-export const Service = pgTable('Service', {
-	id: text('id').notNull().primaryKey().$defaultFn(() => crypto.randomUUID()),
-	structureId: text('structureId').notNull(),
-	slug: text('slug').notNull(),
-	name: text('name').notNull(),
-	description_falc: text('description_falc'),
-	duration_minutes: integer('duration_minutes'),
-	modes: jsonb('modes'),
-	required_docs: text('required_docs').array().notNull(),
-	audiences: text('audiences').array().notNull(),
-	is_active: boolean('is_active').notNull().default(true),
-	createdAt: timestamp('createdAt', { precision: 3 }).notNull().defaultNow(),
-	updatedAt: timestamp('updatedAt', { precision: 3, mode: 'date' }).$defaultFn(() => new Date()).$onUpdate(() => new Date()).notNull()
-}, (Service) => ({
-	'Service_structure_fkey': foreignKey({
-		name: 'Service_structure_fkey',
-		columns: [Service.structureId],
-		foreignColumns: [Structure.id]
-	})
-		.onDelete('cascade')
-		.onUpdate('cascade'),
-	'Service_structureId_slug_unique_idx': uniqueIndex('Service_structureId_slug_key')
-		.on(Service.structureId, Service.slug)
-}));
+// [LEGACY] Service table removed — replaced by ProRdvService
 
 export const ProRdvService = pgTable('ProRdvService', {
 	id: text('id').notNull().primaryKey().$defaultFn(() => crypto.randomUUID()),
@@ -815,123 +798,8 @@ export const ConsentLog = pgTable('ConsentLog', {
 	created_at: timestamp('created_at', { precision: 3 }).notNull().defaultNow()
 });
 
-export const Availability = pgTable('Availability', {
-	id: text('id').notNull().primaryKey().$defaultFn(() => crypto.randomUUID()),
-	structureId: text('structureId').notNull(),
-	proId: text('proId'),
-	slots_json: jsonb('slots_json').notNull().default("{}"),
-	exceptions_json: jsonb('exceptions_json').notNull().default("[]"),
-	createdAt: timestamp('createdAt', { precision: 3 }).notNull().defaultNow(),
-	updatedAt: timestamp('updatedAt', { precision: 3, mode: 'date' }).$defaultFn(() => new Date()).$onUpdate(() => new Date()).notNull()
-}, (Availability) => ({
-	'Availability_pro_fkey': foreignKey({
-		name: 'Availability_pro_fkey',
-		columns: [Availability.proId],
-		foreignColumns: [ProUser.id]
-	})
-		.onDelete('cascade')
-		.onUpdate('cascade'),
-	'Availability_structure_fkey': foreignKey({
-		name: 'Availability_structure_fkey',
-		columns: [Availability.structureId],
-		foreignColumns: [Structure.id]
-	})
-		.onDelete('cascade')
-		.onUpdate('cascade'),
-	'Availability_structureId_proId_unique_idx': uniqueIndex('Availability_structureId_proId_key')
-		.on(Availability.structureId, Availability.proId)
-}));
-
-export const Beneficiary = pgTable('Beneficiary', {
-	id: text('id').notNull().primaryKey().$defaultFn(() => crypto.randomUUID()),
-	contact_encrypted: text('contact_encrypted').notNull(),
-	contact_hash: text('contact_hash').notNull(),
-	first_name_encrypted: text('first_name_encrypted'),
-	createdAt: timestamp('createdAt', { precision: 3 }).notNull().defaultNow()
-});
-
-export const Appointment = pgTable('Appointment', {
-	id: text('id').notNull().primaryKey().$defaultFn(() => crypto.randomUUID()),
-	structureId: text('structureId').notNull(),
-	serviceId: text('serviceId').notNull(),
-	proId: text('proId'),
-	beneficiaryId: text('beneficiaryId').notNull(),
-	status: text('status').notNull().default("requested"),
-	start_at: timestamp('start_at', { precision: 3 }).notNull(),
-	end_at: timestamp('end_at', { precision: 3 }).notNull(),
-	timezone: text('timezone').notNull().default("Europe/Paris"),
-	mode: text('mode').notNull(),
-	lock_expires_at: timestamp('lock_expires_at', { precision: 3 }),
-	cancel_token_hash: text('cancel_token_hash'),
-	createdAt: timestamp('createdAt', { precision: 3 }).notNull().defaultNow(),
-	updatedAt: timestamp('updatedAt', { precision: 3, mode: 'date' }).$defaultFn(() => new Date()).$onUpdate(() => new Date()).notNull(),
-	access_token_hash: text('access_token_hash'),
-	metadata: jsonb('metadata').default("{}")
-}, (Appointment) => ({
-	'Appointment_beneficiary_fkey': foreignKey({
-		name: 'Appointment_beneficiary_fkey',
-		columns: [Appointment.beneficiaryId],
-		foreignColumns: [Beneficiary.id]
-	})
-		.onDelete('cascade')
-		.onUpdate('cascade'),
-	'Appointment_pro_fkey': foreignKey({
-		name: 'Appointment_pro_fkey',
-		columns: [Appointment.proId],
-		foreignColumns: [ProUser.id]
-	})
-		.onDelete('cascade')
-		.onUpdate('cascade'),
-	'Appointment_service_fkey': foreignKey({
-		name: 'Appointment_service_fkey',
-		columns: [Appointment.serviceId],
-		foreignColumns: [Service.id]
-	})
-		.onDelete('cascade')
-		.onUpdate('cascade'),
-	'Appointment_structure_fkey': foreignKey({
-		name: 'Appointment_structure_fkey',
-		columns: [Appointment.structureId],
-		foreignColumns: [Structure.id]
-	})
-		.onDelete('cascade')
-		.onUpdate('cascade')
-}));
-
-export const Message = pgTable('Message', {
-	id: text('id').notNull().primaryKey().$defaultFn(() => crypto.randomUUID()),
-	appointmentId: text('appointmentId').notNull(),
-	sender: text('sender').notNull(),
-	content_encrypted: text('content_encrypted').notNull(),
-	createdAt: timestamp('createdAt', { precision: 3 }).notNull().defaultNow(),
-	read_at: timestamp('read_at', { precision: 3 })
-}, (Message) => ({
-	'Message_appointment_fkey': foreignKey({
-		name: 'Message_appointment_fkey',
-		columns: [Message.appointmentId],
-		foreignColumns: [Appointment.id]
-	})
-		.onDelete('cascade')
-		.onUpdate('cascade')
-}));
-
-export const Attachment = pgTable('Attachment', {
-	id: text('id').notNull().primaryKey().$defaultFn(() => crypto.randomUUID()),
-	messageId: text('messageId').notNull(),
-	filename_encrypted: text('filename_encrypted').notNull(),
-	mime_type: text('mime_type').notNull(),
-	size_bytes: integer('size_bytes').notNull(),
-	storage_key: text('storage_key').notNull(),
-	createdAt: timestamp('createdAt', { precision: 3 }).notNull().defaultNow()
-}, (Attachment) => ({
-	'Attachment_message_fkey': foreignKey({
-		name: 'Attachment_message_fkey',
-		columns: [Attachment.messageId],
-		foreignColumns: [Message.id]
-	})
-		.onDelete('cascade')
-		.onUpdate('cascade')
-}));
+// [LEGACY] Availability, Beneficiary, Appointment, Message, Attachment tables removed
+// Replaced by ProAvailabilityRule, ProAppointment, RdvConversation, RdvConversationMessage
 
 export const Guide = pgTable('Guide', {
 	id: text('id').notNull().primaryKey().$defaultFn(() => crypto.randomUUID()),
@@ -1159,15 +1027,7 @@ export const ProAuditLog = pgTable('ProAuditLog', {
 		.onUpdate('cascade')
 }));
 
-export const ProMessage = pgTable('ProMessage', {
-	id: text('id').notNull().primaryKey().$defaultFn(() => crypto.randomUUID()),
-	createdAt: timestamp('createdAt', { precision: 3 }).notNull().defaultNow(),
-	conversationId: text('conversationId').notNull(),
-	senderId: text('senderId').notNull(),
-	contentEncrypted: text('contentEncrypted').notNull(),
-	iv: text('iv').notNull(),
-	readAt: timestamp('readAt', { precision: 3 })
-});
+// [LEGACY] ProMessage table removed — System C eradicated (dead code, replaced by RdvConversationMessage)
 
 export const UserConsent = pgTable('UserConsent', {
 	id: text('id').notNull().primaryKey().$defaultFn(() => crypto.randomUUID()),
@@ -1290,20 +1150,11 @@ export const StructureRelations = relations(Structure, ({ one, many }) => ({
 		fields: [Structure.source_document_id],
 		references: [SourceDocument.id]
 	}),
-	appointments: many(Appointment, {
-		relationName: 'AppointmentToStructure'
-	}),
-	availabilities: many(Availability, {
-		relationName: 'AvailabilityToStructure'
-	}),
 	invitations: many(Invitation, {
 		relationName: 'InvitationToStructure'
 	}),
 	proUsers: many(ProUser, {
 		relationName: 'ProUserToStructure'
-	}),
-	proServices: many(Service, {
-		relationName: 'ServiceToStructure'
 	}),
 	proRdvServices: many(ProRdvService, {
 		relationName: 'ProRdvServiceToStructure'
@@ -1373,12 +1224,7 @@ export const AuthTokenRelations = relations(AuthToken, ({ one }) => ({
 }));
 
 export const ProUserRelations = relations(ProUser, ({ many, one }) => ({
-	appointments: many(Appointment, {
-		relationName: 'AppointmentToProUser'
-	}),
-	availability: many(Availability, {
-		relationName: 'AvailabilityToProUser'
-	}),
+
 	proAppointmentsCreated: many(ProAppointment, {
 		relationName: 'ProAppointmentCreatedBy'
 	}),
@@ -1401,16 +1247,7 @@ export const ProUserRelations = relations(ProUser, ({ many, one }) => ({
 	})
 }));
 
-export const ServiceRelations = relations(Service, ({ many, one }) => ({
-	appointments: many(Appointment, {
-		relationName: 'AppointmentToService'
-	}),
-	structure: one(Structure, {
-		relationName: 'ServiceToStructure',
-		fields: [Service.structureId],
-		references: [Structure.id]
-	})
-}));
+// [LEGACY] ServiceRelations removed
 
 export const ProRdvServiceRelations = relations(ProRdvService, ({ many, one }) => ({
 	appointments: many(ProAppointment, {
@@ -1539,69 +1376,8 @@ export const InvitationRelations = relations(Invitation, ({ one }) => ({
 	})
 }));
 
-export const AvailabilityRelations = relations(Availability, ({ one }) => ({
-	pro: one(ProUser, {
-		relationName: 'AvailabilityToProUser',
-		fields: [Availability.proId],
-		references: [ProUser.id]
-	}),
-	structure: one(Structure, {
-		relationName: 'AvailabilityToStructure',
-		fields: [Availability.structureId],
-		references: [Structure.id]
-	})
-}));
-
-export const BeneficiaryRelations = relations(Beneficiary, ({ many }) => ({
-	appointments: many(Appointment, {
-		relationName: 'AppointmentToBeneficiary'
-	})
-}));
-
-export const AppointmentRelations = relations(Appointment, ({ one, many }) => ({
-	beneficiary: one(Beneficiary, {
-		relationName: 'AppointmentToBeneficiary',
-		fields: [Appointment.beneficiaryId],
-		references: [Beneficiary.id]
-	}),
-	pro: one(ProUser, {
-		relationName: 'AppointmentToProUser',
-		fields: [Appointment.proId],
-		references: [ProUser.id]
-	}),
-	service: one(Service, {
-		relationName: 'AppointmentToService',
-		fields: [Appointment.serviceId],
-		references: [Service.id]
-	}),
-	structure: one(Structure, {
-		relationName: 'AppointmentToStructure',
-		fields: [Appointment.structureId],
-		references: [Structure.id]
-	}),
-	messages: many(Message, {
-		relationName: 'AppointmentToMessage'
-	})
-}));
-
-export const MessageRelations = relations(Message, ({ many, one }) => ({
-	attachments: many(Attachment, {
-		relationName: 'AttachmentToMessage'
-	}),
-	appointment: one(Appointment, {
-		relationName: 'AppointmentToMessage',
-		fields: [Message.appointmentId],
-		references: [Appointment.id]
-	})
-}));
-
-export const AttachmentRelations = relations(Attachment, ({ one }) => ({
-	message: one(Message, {
-		relationName: 'AttachmentToMessage',
-		fields: [Attachment.messageId],
-		references: [Message.id]
-	})
-}));
+// [LEGACY] AvailabilityRelations, BeneficiaryRelations, AppointmentRelations,
+// MessageRelations, AttachmentRelations removed — superseded by Pro/Rdv equivalents
 
 export const DispositifRelations = relations(Dispositif, ({ one }) => ({
 	sourceDocument: one(SourceDocument, {

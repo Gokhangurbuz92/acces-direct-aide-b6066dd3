@@ -25,9 +25,19 @@ export default defineConfig({
   },
 
   projects: [
+    // Fast mode: mocked API, no DB dependency (USE_MOCKS=true)
     {
       name: 'chromium',
       use: { ...devices['Desktop Chrome'] },
+    },
+    // Integration mode: real Neon branch DB via Vercel preview URL
+    // Usage: PLAYWRIGHT_BASE_URL=https://my-pr-preview.vercel.app npx playwright test --project=integration
+    // The DATABASE_URL is automatically injected by Vercel and points to a Neon branch.
+    // Mocks are NOT loaded (USE_MOCKS is not set), so tests hit the real API.
+    {
+      name: 'integration',
+      use: { ...devices['Desktop Chrome'] },
+      testMatch: /smoke-|vital-|aides-flow|booking/,
     },
   ],
 
@@ -40,3 +50,4 @@ export default defineConfig({
     }
     : undefined,
 });
+

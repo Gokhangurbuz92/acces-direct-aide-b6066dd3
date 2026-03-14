@@ -4,7 +4,7 @@ import { ProTimeOff } from '../../../src/db/schema.js';
 import { eq, and, gt, lt, gte, lte, asc } from 'drizzle-orm';
 import { requireProStructureContext } from '../../_utils/auth.js';
 import { withProRdvHandler } from '../../_utils/with-pro-rdv-handler.js';
-import { createTimeOffSchema } from '../../../src/db/drizzle-schemas.js';
+import { createTimeOffSchema, updateTimeOffSchema } from '../../../src/db/drizzle-schemas.js';
 
 /**
  * @param {unknown} value
@@ -100,17 +100,21 @@ async function handler(req, res) {
     if (!existing) return res.status(404).json({ error: 'Time off not found' });
     if (existing.structureId !== proCtx.structureId) return res.status(403).json({ error: 'Forbidden' });
 
-    const nextStartAt = typeof body.startAt === 'undefined' ? existing.startAt : toDate(body.startAt);
-    const nextEndAt = typeof body.endAt === 'undefined' ? existing.endAt : toDate(body.endAt);
-    const rangeError = validateRange(nextStartAt, nextEndAt);
-    if (rangeError) return res.status(400).json({ error: rangeError });
+    const parsed = updateTimeOffSchema.safeParse(body);
+    if (!parsed.success) {
+      const firstError = parsed.error.errors[0]?.message || 'Invalid input';
+      return res.status(400).json({ error: firstError });
+    }
+    const data = parsed.data;
 
-    const nextReason =
-      typeof body.reason === 'undefined'
-        ? existing.reason
-        : typeof body.reason === 'string'
-          ? body.reason.trim() || null
-          : null;
+    const nextStartAt = data.startAt ?? existing.startAt;
+    const nextEndAt = data.endAt ?? existing.endAt;
+
+    if (nextEndAt <= nextStartAt) {
+      return res.status(400).json({ error: 'endAt must be greater than startAt' });
+    }
+
+    const nextReason = typeof data.reason !== 'undefined' ? (data.reason?.trim() || null) : existing.reason;
 
     const noChanges =
       /** @type {Date} */ (nextStartAt).toISOString() === existing.startAt.toISOString() &&

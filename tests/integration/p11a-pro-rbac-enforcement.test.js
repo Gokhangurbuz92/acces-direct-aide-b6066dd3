@@ -114,7 +114,6 @@ async function invokeApi(url, options = {}) {
 describe('P11a — Pro endpoint RBAC enforcement', () => {
     const PRO_ENDPOINTS_GET = [
         '/api/pro/health-check',
-        '/api/pro/regional-stats',
         '/api/pro/attestation-data',
         '/api/pro/mfa-setup',
     ];

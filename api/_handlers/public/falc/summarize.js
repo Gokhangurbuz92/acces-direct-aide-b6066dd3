@@ -97,29 +97,48 @@ export default async function handler(req, res) {
         // 4. FALC prompt engineering (entity-aware)
         const prompt = `Tu es un expert en accessibilité cognitive certifié FALC (Facile À Lire et à Comprendre).
 
-MISSION : Simplifie ${config.contextLabel} en langage FALC.
+MISSION : Simplifie ${config.contextLabel} en langage FALC en suivant un raisonnement en chaîne.
 
-RÈGLES STRICTES :
-- Phrases très courtes : Sujet + Verbe + Complément
-- Un seul message par phrase
-- Utilise "Vous" pour t'adresser au lecteur
-- Supprime tout jargon administratif
-- Développe les sigles (ex: CAF = Caisse d'Allocations Familiales)
-- Pas de voix passive
-- Mots de 3 syllabes maximum quand possible
+═══ ÉTAPE 1 — ANALYSE ═══
+Lis le texte ci-dessous. Identifie mentalement :
+- Le sujet principal (en 1 mot)
+- Les 3-4 informations essentielles
+- Les termes techniques/jargon à remplacer
+- Les sigles à développer
 
-TEXTE À SIMPLIFIER :
+═══ ÉTAPE 2 — SIMPLIFICATION STRICTE ═══
+Réécris CHAQUE information selon ces règles IMPÉRATIVES :
+- Maximum 8 mots par phrase
+- Structure : Sujet + Verbe + Complément
+- 1 seule idée par phrase
+- 1 seule phrase par ligne
+- Utilise "Vous" pour le lecteur
+- Mots de 3 syllabes maximum
+- Pas de voix passive (jamais "est donné", toujours "vous recevez")
+- Pas de jargon (remplace "éligibilité" par "droit", "bénéficiaire" par "personne aidée")
+- Développe les sigles : CAF = Caisse d'Allocations Familiales
+
+═══ ÉTAPE 3 — AUTO-VÉRIFICATION ═══
+Avant de répondre, vérifie CHAQUE phrase :
+✅ Contient-elle 8 mots ou moins ?
+✅ Est-elle en voix active ?
+✅ Utilise-t-elle des mots simples ?
+Si une phrase échoue, réécris-la.
+
+═══ TEXTE À SIMPLIFIER ═══
 Titre : "${entity[config.titleField]}"
 ${sourceText}
 
-RÉPONDS UNIQUEMENT en JSON valide avec cette structure exacte :
+═══ FORMAT DE RÉPONSE ═══
+RÉPONDS UNIQUEMENT en JSON valide :
 {
-  "titre_simple": "Le titre simplifié",
-  "summary_falc": "1-2 phrases très simples expliquant le contenu",
+  "titre_simple": "Titre en 5 mots maximum",
+  "summary_falc": "2 phrases très simples. Maximum 8 mots chacune.",
   "points_cles": ["Point simple 1", "Point simple 2", "Point simple 3"],
-  "conditions_simples": "Qui est concerné (1-2 phrases simples)",
-  "action": "Texte du bouton d'action"
+  "conditions_simples": "Qui peut en profiter. 1-2 phrases simples.",
+  "action": "Texte du bouton (3 mots max)"
 }`;
+
 
         // 5. Call Gemini 2.0 Flash
         logger.info(`[FALC] Generating for ${type}=${entityId} titre="${entity[config.titleField]}"`);

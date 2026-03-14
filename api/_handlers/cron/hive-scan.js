@@ -140,7 +140,9 @@ export default async function handler(req, res) {
                         created++;
                     } catch (dbErr) {
                         // Unique constraint violation = duplicate, skip silently
-                        if (dbErr?.code !== 'P2002') {
+                        // PostgreSQL native code 23505 (was Prisma P2002)
+                        const pgCode = dbErr?.cause?.code || dbErr?.code;
+                        if (pgCode !== '23505') {
                             logger.error({ requestId, category, error: dbErr.message }, 'cron.hive_scan.db_error');
                         }
                     }

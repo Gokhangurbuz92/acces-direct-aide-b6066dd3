@@ -135,3 +135,33 @@ export const patchAppointmentSchema = z.object({
   }),
   notes: z.string().optional(),
 });
+
+/** pro/timeoff.js — PATCH update time off */
+export const updateTimeOffSchema = z.object({
+  id: z.string().min(1).optional(),
+  startAt: z.coerce.date().optional(),
+  endAt: z.coerce.date().optional(),
+  reason: z.string().optional().nullable(),
+});
+
+/** Single availability rule entry */
+const availabilityRuleItemSchema = z.object({
+  weekday: z.coerce.number().int().min(0).max(6),
+  startTime: z.string().regex(/^\d{2}:\d{2}$/, 'Format HH:MM required'),
+  endTime: z.string().regex(/^\d{2}:\d{2}$/, 'Format HH:MM required'),
+  timezone: z.string().optional(),
+  isActive: z.boolean().optional().default(true),
+}).refine(
+  (d) => d.endTime > d.startTime,
+  { message: 'endTime must be after startTime', path: ['endTime'] },
+);
+
+/** pro/availability.js — PUT/POST availability rules */
+export const availabilityPayloadSchema = z.object({
+  timezone: z.string().optional().default('Europe/Paris'),
+  rules: z.array(availabilityRuleItemSchema).optional(),
+  slots_json: z.record(z.unknown()).optional(),
+}).refine(
+  (d) => d.rules || d.slots_json,
+  { message: 'rules or slots_json is required' },
+);

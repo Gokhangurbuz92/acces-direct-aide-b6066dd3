@@ -2,7 +2,9 @@
   "buildCommand": "npm run vercel-build",
   "functions": {
     "api/index.js": {
-      "maxDuration": 300
+      "maxDuration": 300,
+      "memory": 1024,
+      "regions": ["fra1"]
     }
   },
   "crons": [
@@ -130,7 +132,7 @@
         },
         {
           "key": "Content-Security-Policy",
-          "value": "default-src 'self'; script-src 'self' 'unsafe-inline' https://va.vercel-scripts.com; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; connect-src 'self' https://api.service-public.fr https://api.accesdirectaide.fr;"
+          "value": "default-src 'self'; script-src 'self' 'unsafe-inline' https://va.vercel-scripts.com; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; connect-src 'self' https://api.service-public.fr https://api.accesdirectaide.fr; font-src 'self'; frame-ancestors 'none';"
         }
       ]
     }

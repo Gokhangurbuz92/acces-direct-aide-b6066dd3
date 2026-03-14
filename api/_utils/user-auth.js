@@ -221,7 +221,7 @@ export function buildUserSessionCookie(token, options = {}) {
     `${USER_SESSION_COOKIE_NAME}=${encoded}`,
     'Path=/',
     'HttpOnly',
-    'SameSite=Lax',
+    'SameSite=Strict',
     `Max-Age=${Math.max(0, Math.floor(maxAge))}`,
   ];
   if (secure) parts.push('Secure');
@@ -237,7 +237,7 @@ export function buildUserSessionCookieClear() {
     `${USER_SESSION_COOKIE_NAME}=`,
     'Path=/',
     'HttpOnly',
-    'SameSite=Lax',
+    'SameSite=Strict',
     'Max-Age=0',
   ];
   if (secure) parts.push('Secure');

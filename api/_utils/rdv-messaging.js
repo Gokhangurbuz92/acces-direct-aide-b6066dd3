@@ -3,6 +3,7 @@ import { db } from '../../src/db/index.js';
 import { RdvNotificationLog } from '../../src/db/schema.js';
 import { sendMail } from './mailer.js';
 import { buildAppUrl } from './user-auth.js';
+import { decrypt } from '../lib/crypto.js';
 
 export const MAX_MESSAGE_LENGTH = 2000;
 
@@ -58,9 +59,30 @@ export function serializeRdvMessage(message) {
   return {
     id: message.id,
     senderType: message.senderType,
-    body: message.body,
+    body: decryptMessageBody(message.body),
     createdAt: toIso(message.createdAt),
   };
+}
+
+/**
+ * Decrypt a RdvConversationMessage body.
+ * Supports both encrypted (v1:iv:tag:data) and legacy plaintext.
+ * @param {string | null} body
+ * @returns {string | null}
+ */
+export function decryptMessageBody(body) {
+  if (!body) return null;
+  // Encrypted messages start with 'v1:' prefix
+  if (body.startsWith('v1:')) {
+    try {
+      return decrypt(body);
+    } catch {
+      // If decryption fails, return placeholder
+      return '[Message indéchiffrable]';
+    }
+  }
+  // Legacy plaintext — return as-is (backward compatibility)
+  return body;
 }
 
 /**
@@ -89,7 +111,7 @@ export function serializeConversationListItem(conversation) {
         }
       : null,
     lastMessageAt: toIso(conversation.lastMessageAt),
-    lastMessagePreview: latestMessage ? buildMessagePreview(latestMessage.body) : null,
+    lastMessagePreview: latestMessage ? buildMessagePreview(decryptMessageBody(latestMessage.body)) : null,
   };
 }
 

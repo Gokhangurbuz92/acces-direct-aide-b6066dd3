@@ -1,3 +1,7 @@
+// Load .env.local (DATABASE_URL etc.) before anything else
+import dotenv from 'dotenv';
+dotenv.config({ path: '.env.local' });
+
 process.env.NODE_ENV = process.env.NODE_ENV || 'test';
 process.env.VERCEL_ENV = process.env.VERCEL_ENV || 'test';
 
@@ -49,10 +53,16 @@ console.warn = (...args) => {
 
 // --- Drizzle Universal Teardown ---
 import { afterEach } from 'vitest';
-import { sql } from 'drizzle-orm';
-import { db } from '../src/db/index.js';
 
 export async function resetDatabase() {
+  // Dynamic import to avoid ESM hoisting issue (db requires DATABASE_URL at import time)
+  const { db } = await import('../src/db/index.js');
+
+  // Skip teardown if db is a dummy object (USE_MOCKS / VITE_SKIP_DB)
+  if (typeof db.execute !== 'function') return;
+
+  const { sql } = await import('drizzle-orm');
+
   // Récupère toutes les tables du schéma public
   const { rows: tablenames } = await db.execute(
     sql`SELECT tablename FROM pg_tables WHERE schemaname='public'`

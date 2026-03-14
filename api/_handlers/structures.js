@@ -137,35 +137,41 @@ async function handler(req, res) {
 
     // 1. Single Item (ID or Slug)
     if (effectiveParams.id || effectiveParams.slug) {
-      const structure = await db.query.Structure.findFirst({
-        where: effectiveParams.id ? eq(Structure.id, effectiveParams.id) : eq(Structure.slug, effectiveParams.slug),
-        columns: {
-          raw_data_hash: false,
-          content_hash: false,
-          import_batch: false,
-          import_status: false,
-          geoloc_status: false,
-          source_last_modified: false,
-          retrieved_at: false,
-          last_checked_at: false,
-          source_document_id: false,
-        },
-        with: {
-          proServices: true,
-          rdvSettings: {
-            columns: {
-              isPublished: true,
-              bookingMode: true,
-            },
+      let structure;
+      try {
+        structure = await db.query.Structure.findFirst({
+          where: effectiveParams.id ? eq(Structure.id, effectiveParams.id) : eq(Structure.slug, effectiveParams.slug),
+          columns: {
+            raw_data_hash: false,
+            content_hash: false,
+            import_batch: false,
+            import_status: false,
+            geoloc_status: false,
+            source_last_modified: false,
+            retrieved_at: false,
+            last_checked_at: false,
+            source_document_id: false,
           },
-          sourceDocument: {
-            columns: {
-              fetched_at: true,
-              source_url: true,
+          with: {
+            proServices: true,
+            rdvSettings: {
+              columns: {
+                isPublished: true,
+                bookingMode: true,
+              },
             },
-          },
-        }
-      });
+            sourceDocument: {
+              columns: {
+                fetched_at: true,
+                source_url: true,
+              },
+            },
+          }
+        });
+      } catch (findErr) {
+        logger.error('Structure findFirst error:', findErr);
+        return res.status(404).json({ error: "Structure non trouvée" });
+      }
 
       if (!structure || structure.statut !== 'actif') {
         return res.status(404).json({ error: "Structure non trouvée" });

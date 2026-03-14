@@ -20,6 +20,9 @@
       "tag": "0001_organic_morlun",
       "breakpoints": true
 <<<<<<< HEAD
+<<<<<<< HEAD
+=======
+>>>>>>> c807455 (feat(ai): add pgvector extension + embedding column with HNSW cosine index)
     },
     {
       "idx": 2,
@@ -34,10 +37,13 @@
       "when": 1773512983484,
       "tag": "0003_free_crusher_hogan",
       "breakpoints": true
+<<<<<<< HEAD
 =======
 >>>>>>> 241663f (refactor(schema): drop 6 legacy tables + clean 35 handler files)
 =======
 >>>>>>> fd2f117 (refactor: remove dead System C messaging code and ProMessage table)
+=======
+>>>>>>> c807455 (feat(ai): add pgvector extension + embedding column with HNSW cosine index)
     }
   ]
 }

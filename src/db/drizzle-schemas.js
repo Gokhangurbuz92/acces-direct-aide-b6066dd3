@@ -72,3 +72,66 @@ export const reviewQueueBulkPatchSchema = z.object({
   ids: z.array(z.string().min(1)).min(1).max(200),
   status: z.enum(['resolved', 'dismissed', 'ignored', 'resolved_by_ai']),
 });
+
+// ─── Pro Handler-Specific Schemas ────────────────────────────────────────────
+
+/** pro/services.js — POST create service */
+export const createServiceSchema = z.object({
+  name: z.string().min(1, 'Name is required'),
+  durationMinutes: z.coerce.number().int().positive().optional(),
+  duration_minutes: z.coerce.number().int().positive().optional(),
+  bufferBeforeMinutes: z.coerce.number().int().min(0).optional(),
+  buffer_before_minutes: z.coerce.number().int().min(0).optional(),
+  bufferAfterMinutes: z.coerce.number().int().min(0).optional(),
+  buffer_after_minutes: z.coerce.number().int().min(0).optional(),
+  isActive: z.boolean().optional(),
+  is_active: z.boolean().optional(),
+}).refine(
+  (d) => {
+    const dur = d.durationMinutes ?? d.duration_minutes;
+    return typeof dur === 'number' && dur > 0;
+  },
+  { message: 'durationMinutes must be a positive number', path: ['durationMinutes'] },
+);
+
+/** pro/services.js — PATCH update service (partial, only validates provided fields) */
+export const updateServiceSchema = z.object({
+  id: z.string().min(1).optional(),
+  name: z.string().min(1).optional(),
+  durationMinutes: z.coerce.number().int().positive().optional(),
+  duration_minutes: z.coerce.number().int().positive().optional(),
+  bufferBeforeMinutes: z.coerce.number().int().min(0).optional(),
+  buffer_before_minutes: z.coerce.number().int().min(0).optional(),
+  bufferAfterMinutes: z.coerce.number().int().min(0).optional(),
+  buffer_after_minutes: z.coerce.number().int().min(0).optional(),
+  isActive: z.boolean().optional(),
+  is_active: z.boolean().optional(),
+});
+
+/** pro/timeoff.js — POST create time off */
+export const createTimeOffSchema = z.object({
+  startAt: z.coerce.date({ required_error: 'startAt is required' }),
+  endAt: z.coerce.date({ required_error: 'endAt is required' }),
+  reason: z.string().optional(),
+}).refine(
+  (d) => d.endAt > d.startAt,
+  { message: 'endAt must be greater than startAt', path: ['endAt'] },
+);
+
+/** pro/appointments/index.js — POST create appointment */
+export const createAppointmentSchema = z.object({
+  serviceId: z.string().min(1, 'serviceId is required'),
+  startAt: z.coerce.date({ required_error: 'startAt is required' }),
+  beneficiaryName: z.string().min(1, 'beneficiaryName is required'),
+  beneficiaryPhone: z.string().optional(),
+  notes: z.string().optional(),
+});
+
+/** pro/appointments/index.js — PATCH update appointment status */
+export const patchAppointmentSchema = z.object({
+  id: z.string().min(1).optional(),
+  status: z.enum(['cancelled', 'done'], {
+    errorMap: () => ({ message: 'status must be cancelled or done' }),
+  }),
+  notes: z.string().optional(),
+});

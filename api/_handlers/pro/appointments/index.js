@@ -8,6 +8,7 @@ import {
   toBusyWindows,
 } from '../../../_utils/pro-rdv.js';
 import { withProRdvHandler } from '../../../_utils/with-pro-rdv-handler.js';
+import { createAppointmentSchema, patchAppointmentSchema } from '../../../../src/db/drizzle-schemas.js';
 
 /**
  * @param {unknown} value
@@ -128,21 +129,14 @@ async function handler(req, res) {
   }
 
   if (req.method === 'POST') {
-    const body = req.body && typeof req.body === 'object' ? req.body : {};
-    const serviceId = String(body.serviceId || '').trim();
-    const startAtRaw = String(body.startAt || '').trim();
-    const beneficiaryName = String(body.beneficiaryName || '').trim();
-    const beneficiaryPhone = typeof body.beneficiaryPhone === 'string' ? body.beneficiaryPhone.trim() : null;
-    const notes = typeof body.notes === 'string' ? body.notes.trim() : null;
-
-    if (!serviceId) return res.status(400).json({ error: 'serviceId is required' });
-    if (!startAtRaw) return res.status(400).json({ error: 'startAt is required' });
-    if (!beneficiaryName) return res.status(400).json({ error: 'beneficiaryName is required' });
-
-    const startAt = new Date(startAtRaw);
-    if (Number.isNaN(startAt.getTime())) {
-      return res.status(400).json({ error: 'Invalid startAt' });
+    const parsed = createAppointmentSchema.safeParse(req.body);
+    if (!parsed.success) {
+      const firstError = parsed.error.errors[0]?.message || 'Invalid input';
+      return res.status(400).json({ error: firstError });
     }
+    const { serviceId, startAt, beneficiaryName, beneficiaryPhone: rawPhone, notes: rawNotes } = parsed.data;
+    const beneficiaryPhone = typeof rawPhone === 'string' ? rawPhone.trim() || null : null;
+    const notes = typeof rawNotes === 'string' ? rawNotes.trim() || null : null;
 
     const service = await db.query.ProRdvService.findFirst({
       where: (s, { eq }) => eq(s.id, serviceId),
@@ -242,15 +236,16 @@ async function handler(req, res) {
   }
 
   if (req.method === 'PATCH') {
-    const body = req.body && typeof req.body === 'object' ? req.body : {};
-    const id = String(req.query.id || body.id || '').trim();
-    const status = String(body.status || '').trim();
-    const notes = typeof body.notes === 'string' ? body.notes.trim() : undefined;
+    const parsed = patchAppointmentSchema.safeParse(req.body);
+    if (!parsed.success) {
+      const firstError = parsed.error.errors[0]?.message || 'Invalid input';
+      return res.status(400).json({ error: firstError });
+    }
+    const id = String(req.query.id || parsed.data.id || '').trim();
+    const status = parsed.data.status;
+    const notes = typeof parsed.data.notes === 'string' ? parsed.data.notes.trim() : undefined;
 
     if (!id) return res.status(400).json({ error: 'id is required' });
-    if (!['cancelled', 'done'].includes(status)) {
-      return res.status(400).json({ error: 'status must be cancelled or done' });
-    }
 
     const existing = await db.query.ProAppointment.findFirst({
       where: (pa, { eq }) => eq(pa.id, id),

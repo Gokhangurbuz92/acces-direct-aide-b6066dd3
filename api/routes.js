@@ -15,7 +15,7 @@ const lazy = (path) => () => import(path);
 /** @type {Route[]} */
 export const routes = [
     // --- Special / Root ---
-    { path: 'upload', match: 'exact', handler: lazy('./_handlers/upload.js') },
+    // [REMOVED] upload — references deleted Appointment/Message/Attachment tables
     { path: 'download', match: 'exact', handler: lazy('./_handlers/download.js') },
     { path: 'health', match: 'exact', handler: lazy('./_handlers/health.js') },
     { path: 'health/deep', match: 'exact', handler: lazy('./_handlers/health-deep.js') },
@@ -53,19 +53,13 @@ export const routes = [
     { path: 'pro/auth/refresh', match: 'exact', handler: lazy('./_handlers/pro/auth/refresh.js') },
     { path: 'pro/me', match: 'exact', handler: lazy('./_handlers/pro/me.js') },
     { path: 'pro/mfa-setup', match: 'exact', handler: lazy('./_handlers/pro/mfa-setup.js') },
-    { path: 'pro/services', match: 'exact', handler: lazy('./_handlers/pro/services.js') },
+    // [REMOVED] pro/services, pro/slots, pro/messages, pro/appointments/* — legacy tables deleted
     { path: 'pro/slots', match: 'exact', handler: lazy('./_handlers/pro/slots.js') },
-    { path: 'pro/messages', match: 'exact', handler: lazy('./_handlers/pro/messages.js') },
-    // [REMOVED] pro/messages/send — System C dead code purged (commit fd2f117)
-    { path: 'pro/messages/conversations', match: 'prefix', handler: lazy('./_handlers/pro/messages-conversations.js') },
-    { path: 'pro/appointments', match: 'exact', handler: lazy('./_handlers/pro/appointments/index.js') },
-    { path: 'pro/appointments/cancel', match: 'exact', handler: lazy('./_handlers/pro/appointments/cancel.js') },
-    { path: 'pro/appointments/start-visio', match: 'exact', handler: lazy('./_handlers/pro/appointments/start-visio.js') },
     { path: 'pro/availability', match: 'exact', handler: lazy('./_handlers/pro/availability.js') },
     { path: 'pro/timeoff', match: 'exact', handler: lazy('./_handlers/pro/timeoff.js') },
     { path: 'pro/rdv/settings', match: 'exact', handler: lazy('./_handlers/pro/rdv-settings.js') },
     { path: 'pro/outlook/availability', match: 'exact', handler: lazy('./_handlers/pro/outlook-availability.js') },
-    { path: 'pro/team/stats', match: 'exact', handler: lazy('./_handlers/pro/team-stats.js') },
+    // [REMOVED] pro/team/stats — references deleted ProAppointment/RdvConversation tables
     { path: 'pro/team', match: 'exact', handler: lazy('./_handlers/pro/team.js') },
     { path: 'pro/invite', match: 'exact', handler: lazy('./_handlers/pro/invite.js') },
     { path: 'pro/resend-invite', match: 'exact', handler: lazy('./_handlers/pro/resend-invite.js') },
@@ -80,7 +74,7 @@ export const routes = [
     { path: 'pro/dossier/views', match: 'exact', handler: lazy('./_handlers/pro/dossier/views.js') },
     { path: 'pro/consent', match: 'exact', handler: lazy('./_handlers/pro/consent.js') },
     { path: 'pro/dossier-synthesis', match: 'exact', handler: lazy('./_handlers/pro/dossier-synthesis.js') },
-    { path: 'pro/regional-stats', match: 'exact', handler: lazy('./_handlers/pro/regional-stats.js') },
+    // [REMOVED] pro/regional-stats — references deleted ProAppointment/SharedDiagnostic tables
     { path: 'pro/attestation-data', match: 'exact', handler: lazy('./_handlers/pro/attestation-data.js') },
     { path: 'pro/interop-siao', match: 'exact', handler: lazy('./_handlers/pro/interop-siao.js') },
     { path: 'pro/system-maintenance', match: 'exact', handler: lazy('./_handlers/pro/system-maintenance.js') },
@@ -91,19 +85,14 @@ export const routes = [
     { path: 'tts', match: 'exact', handler: lazy('./_handlers/tts.js') },
 
     // --- Public Content ---
-    { path: 'public/messages', match: 'exact', handler: lazy('./_handlers/public/messages.js') },
+    // [REMOVED] public/messages — references deleted legacy tables
     { path: 'public/dossier-revoke', match: 'exact', handler: lazy('./_handlers/public/dossier-revoke.js') },
     { path: 'public/passport', match: 'exact', handler: lazy('./_handlers/public/passport.js') },
     { path: 'public/sms-notify', match: 'exact', handler: lazy('./_handlers/public/sms-notify.js') },
     { path: 'public/falc/summarize', match: 'exact', handler: lazy('./_handlers/public/falc/summarize.js') },
     { path: 'public/assistant/orient', match: 'exact', handler: lazy('./_handlers/public/assistant/orient.js') },
-    { path: 'messages', match: 'prefix', handler: lazy('./_handlers/messages.js') },
+    // [REMOVED] messages, public/stats, public/availability, appointments/* — legacy tables deleted
     { path: 'public/suggest-structure', match: 'exact', handler: lazy('./_handlers/public/suggest-structure.js') },
-    { path: 'public/stats', match: 'exact', handler: lazy('./_handlers/public/stats.js') },
-    { path: 'public/availability', match: 'exact', handler: lazy('./_handlers/public/availability.js') },
-    { path: 'appointments', match: 'exact', handler: lazy('./_handlers/public/appointments/create.js') },
-    { path: 'appointments/cancel', match: 'exact', handler: lazy('./_handlers/public/appointments/cancel.js') },
-    { path: 'appointments/reschedule', match: 'exact', handler: lazy('./_handlers/public/appointments/reschedule.js') },
 
     // --- Core Data ---
     { path: 'aides', match: 'prefix', handler: lazy('./_handlers/aides.js') },
@@ -135,13 +124,12 @@ export const routes = [
     { path: 'cron/hive-scan', match: 'exact', handler: lazy('./_handlers/cron/hive-scan.js') },
     { path: 'cron/ingest-structures', match: 'exact', handler: lazy('./_handlers/cron/ingest-structures.js') },
     { path: 'cron/ingest-aids', match: 'exact', handler: lazy('./_handlers/cron/ingest-aids.js') },
-    { path: 'cron/purge', match: 'exact', handler: lazy('./_handlers/cron/purge.js') },
+    // [REMOVED] cron/purge — references deleted Appointment/Beneficiary/Attachment/Message tables
     { path: 'cron/link-check', match: 'exact', handler: lazy('./_handlers/cron/link-check.js') },
     { path: 'cron/rdv-reminder', match: 'exact', handler: lazy('./_handlers/cron/rdv-reminder.js') },
 
     // --- Admin ---
-    { path: 'admin/privacy/export', match: 'exact', handler: lazy('./_handlers/admin/privacy/export.js') },
-    { path: 'admin/privacy/delete', match: 'exact', handler: lazy('./_handlers/admin/privacy/delete.js') },
+    // [REMOVED] admin/privacy/export, admin/privacy/delete — reference deleted Beneficiary table
     { path: 'admin/inbox', match: 'exact', handler: lazy('./_handlers/admin/inbox.js') },
     { path: 'admin/actions', match: 'exact', handler: lazy('./_handlers/admin/actions.js') },
     { path: 'admin/runs', match: 'exact', handler: lazy('./_handlers/admin/runs.js') },

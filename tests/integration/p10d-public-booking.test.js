@@ -217,6 +217,7 @@ async function createPublicBookingFixture() {
       department_codes: [],
       insee_codes: [],
       is_pro_enabled: true,
+      accessibilite_pmr: false,
     },
   ).returning())[0];
   createdStructureIds.push(structure.id);

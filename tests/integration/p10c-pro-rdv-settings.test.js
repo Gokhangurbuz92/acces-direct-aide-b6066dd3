@@ -11,7 +11,6 @@ import apiHandler from '../../api/index.js';
 import { db } from '../../src/db/index.js';
 import * as schema from '../../src/db/schema.js';
 import { signProToken } from '../../api/_utils/auth.js';
-import { vi } from 'vitest';
 
 vi.mock('../../api/_utils/pro-rdv-readiness.js', () => ({
   getProRdvReadiness: vi.fn(),
@@ -179,6 +178,7 @@ async function createProFixture(isProEnabled = false) {
       department_codes: [],
       insee_codes: [],
       is_pro_enabled: isProEnabled,
+      accessibilite_pmr: false,
     },
   ).returning())[0];
 

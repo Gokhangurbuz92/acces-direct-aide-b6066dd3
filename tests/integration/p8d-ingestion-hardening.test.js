@@ -2,7 +2,7 @@ import { vi } from "vitest";
 vi.stubEnv("KV_REST_API_URL", "http://localhost");
 vi.stubEnv("KV_REST_API_TOKEN", "mock-token");
 
-import { afterEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, describe, expect, it } from 'vitest';
 
 vi.stubEnv('KV_REST_API_URL', 'mock-url');
 vi.stubEnv('KV_REST_API_TOKEN', 'mock-token');

@@ -212,6 +212,7 @@ async function createFixture() {
       department_codes: [],
       insee_codes: [],
       is_pro_enabled: true,
+      accessibilite_pmr: false,
     },
   ).returning())[0];
 
@@ -228,6 +229,7 @@ async function createFixture() {
       department_codes: [],
       insee_codes: [],
       is_pro_enabled: true,
+      accessibilite_pmr: false,
     },
   ).returning())[0];
 

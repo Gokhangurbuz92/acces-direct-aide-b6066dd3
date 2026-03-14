@@ -142,6 +142,7 @@ describe('P8-E provenance public contract', () => {
         territoires: ['national'],
         documents_necessaires: ['piece-identite'],
         statut: 'publie',
+        est_urgent: false,
         date_verification: verifiedAt,
         published_at: new Date('2099-01-01T00:00:00.000Z'),
         source_document_id: sourceDocument.id,

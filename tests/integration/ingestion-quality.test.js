@@ -2,7 +2,7 @@ import { vi } from "vitest";
 vi.stubEnv("KV_REST_API_URL", "http://localhost");
 vi.stubEnv("KV_REST_API_TOKEN", "mock-token");
 
-import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { db } from '../../src/db/index.js';
 import * as schema from '../../src/db/schema.js';
 import { eq, sql, inArray, and, or } from 'drizzle-orm';
@@ -40,7 +40,9 @@ describe('Ingestion Quality - Phase 7', () => {
         source_url: 'https://example.com/test',
         content_hash: crypto.createHash('md5').update('test-content').digest('hex'),
         statut: 'publie',
-        published_at: new Date()
+        published_at: new Date(),
+        territoires: ['national'],
+        documents_necessaires: [],
       };
 
       // First ingestion
@@ -69,7 +71,9 @@ describe('Ingestion Quality - Phase 7', () => {
           cest_quoi: 'Original content',
           content_hash: originalHash,
           statut: 'publie',
-          published_at: new Date()
+          published_at: new Date(),
+          territoires: ['national'],
+          documents_necessaires: [],
         }
       ).returning())[0];
 
@@ -96,7 +100,9 @@ describe('Ingestion Quality - Phase 7', () => {
           content_hash: contentHash,
           last_checked_at: originalDate,
           statut: 'publie',
-          published_at: new Date()
+          published_at: new Date(),
+          territoires: ['national'],
+          documents_necessaires: [],
         }
       ).returning())[0];
 
@@ -119,7 +125,9 @@ describe('Ingestion Quality - Phase 7', () => {
           cest_quoi: 'Test content',
           retrieved_at: retrievedAt,
           statut: 'publie',
-          published_at: new Date()
+          published_at: new Date(),
+          territoires: ['national'],
+          documents_necessaires: [],
         }
       ).returning())[0];
 
@@ -136,7 +144,9 @@ describe('Ingestion Quality - Phase 7', () => {
           cest_quoi: 'Test content',
           last_checked_at: lastChecked,
           statut: 'publie',
-          published_at: new Date()
+          published_at: new Date(),
+          territoires: ['national'],
+          documents_necessaires: [],
         }
       ).returning())[0];
 
@@ -154,7 +164,9 @@ describe('Ingestion Quality - Phase 7', () => {
           source_url: 'https://example.com/aide',
           source_url_exact: exactUrl,
           statut: 'publie',
-          published_at: new Date()
+          published_at: new Date(),
+          territoires: ['national'],
+          documents_necessaires: [],
         }
       ).returning())[0];
 
@@ -231,6 +243,8 @@ describe('Ingestion Quality - Phase 7', () => {
           status: 'PARTIAL',
           items_total: 10,
           items_new: 8,
+          items_updated: 0,
+          items_skipped: 0,
           error_count: errors.length,
           logs: JSON.stringify(errors),
           duration_ms: 1500

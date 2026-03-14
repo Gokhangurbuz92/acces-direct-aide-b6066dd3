@@ -10,7 +10,7 @@ const mockWhere = vi.fn();
 const mockLimit = vi.fn();
 const mockThen = vi.fn();
 
-vi.mock('../../src/db/index.js', () => ({
+vi.mock('../src/db/index.js', () => ({
     db: {
         select: (...args) => {
             mockSelect(...args);
@@ -36,7 +36,7 @@ vi.mock('../../src/db/index.js', () => ({
     },
 }));
 
-import { generateUniqueSlug, ensureSlug } from '../../api/lib/slug.js';
+import { generateUniqueSlug, ensureSlug } from '../api/lib/slug.js';
 
 beforeEach(() => {
     vi.clearAllMocks();

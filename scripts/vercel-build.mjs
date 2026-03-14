@@ -28,18 +28,9 @@ const isProduction = vercelEnv === 'production';
 
 console.log(`[vercel-build] start (VERCEL_ENV=${vercelEnv})`);
 
-// Drizzle ORM does not require a generate step (no client codegen).
-
-if (isProduction) {
-  console.log('[vercel-build] production detected -> running drizzle-kit push');
-  try {
-    run('npx drizzle-kit push');
-  } catch (err) {
-    console.warn('[vercel-build] drizzle-kit push failed (non-fatal):', err.message);
-  }
-} else {
-  console.log('[vercel-build] skipping drizzle-kit push (not production)');
-}
+// Schema migrations are handled separately via the db-migrate-deploy workflow.
+// Do NOT run drizzle-kit push here — it requires interactive confirmation and
+// should never run automatically during builds.
 
 // Step 1: Build the frontend bundle (always).
 run('npx vite build');

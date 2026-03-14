@@ -49,6 +49,19 @@ storybook-static/
 cookies*.txt
 test-img*.jpg
 test-img*
+test-failures.*
+test-results.txt
+failing-files.txt
+failing-tests.txt
+failing_tests.txt
+blob-report/
+
+# Debug & error files (never commit)
+API_ERROR.txt
+snapshot.png
+fix-auth.js
+*.error.log
+p10c-error*.log
 
 # Local Storage (Mock)
 uploads_mock/

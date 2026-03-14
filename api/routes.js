@@ -56,7 +56,7 @@ export const routes = [
     { path: 'pro/services', match: 'exact', handler: lazy('./_handlers/pro/services.js') },
     { path: 'pro/slots', match: 'exact', handler: lazy('./_handlers/pro/slots.js') },
     { path: 'pro/messages', match: 'exact', handler: lazy('./_handlers/pro/messages.js') },
-    { path: 'pro/messages/send', match: 'exact', handler: lazy('./_handlers/pro/messages/send.js') },
+    // [REMOVED] pro/messages/send — System C dead code purged (commit fd2f117)
     { path: 'pro/messages/conversations', match: 'prefix', handler: lazy('./_handlers/pro/messages-conversations.js') },
     { path: 'pro/appointments', match: 'exact', handler: lazy('./_handlers/pro/appointments/index.js') },
     { path: 'pro/appointments/cancel', match: 'exact', handler: lazy('./_handlers/pro/appointments/cancel.js') },

@@ -8,6 +8,8 @@ import { env, getEnv } from './_utils/env.js';
 import { applyNoIndex, isTechnicalNoIndexPath } from './_utils/robots.js';
 import { checkRateLimit, getClientIp, getRateLimitStatus } from './_utils/rateLimit.js';
 import { waitUntil } from '@vercel/functions';
+import { validationRegistry } from './_utils/validation-registry.js';
+import { z } from 'zod';
 
 // Vercel Serverless Function config — Pro plan supports up to 300s
 export const config = {
@@ -237,6 +239,32 @@ export default async function handler(req, res) {
         if (!routeHandler) {
             log.warn({ msg: "Route Not Found", path });
             return res.status(404).json({ error: "Not Found" });
+        }
+
+        // 4b. Auto-validate input via registry (SEC-05)
+        const routeSchema = validationRegistry[path];
+        if (routeSchema && ['POST', 'PUT', 'PATCH', 'DELETE'].includes(req.method)) {
+            try {
+                const body = typeof req.body === 'string' ? JSON.parse(req.body) : (req.body || {});
+                req.validatedBody = routeSchema.parse(body);
+            } catch (valErr) {
+                if (valErr instanceof z.ZodError) {
+                    log.warn({ msg: 'input_validation_failed', path, errors: valErr.errors.length });
+                    return res.status(400).json({
+                        error: 'validation_failed',
+                        requestId,
+                        details: valErr.errors.map(e => ({
+                            field: e.path.join('.'),
+                            message: e.message,
+                            code: e.code,
+                        })),
+                    });
+                }
+                if (valErr instanceof SyntaxError) {
+                    return res.status(400).json({ error: 'invalid_json', requestId });
+                }
+                throw valErr;
+            }
         }
 
         // 5. Execute Handler

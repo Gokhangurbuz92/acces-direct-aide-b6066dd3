@@ -267,5 +267,21 @@ export default defineConfig({
     ],
     exclude: ["node_modules", "dist", ".vercel", "e2e", "**/*.spec.js", "**/*.spec.ts"],
     setupFiles: ["./tests/setup-env.js"],
+    coverage: {
+      provider: "v8",
+      reporter: ["text", "json", "html"],
+      reportsDirectory: "./coverage",
+      exclude: [
+        "node_modules/",
+        "dist/",
+        "e2e/",
+        "tests/",
+        "scripts/_deprecated/",
+        ".storybook/",
+        "**/*.test.*",
+        "**/*.spec.*",
+        "vite.config.js",
+      ],
+    },
   },
 });

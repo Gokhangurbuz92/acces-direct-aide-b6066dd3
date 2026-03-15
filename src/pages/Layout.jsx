@@ -16,10 +16,9 @@ import {
   Info,
   Calendar,
   ChevronDown,
-  LogIn,
-  UserPlus
 } from 'lucide-react';
-import { Button, buttonVariants } from "@/components/ui/button";
+import { Button } from "@/components/ui/button";
+import { AuthHeaderActions, AuthMobileActions } from '@/components/auth/AuthHeaderActions';
 import AccessibilityPanel from '@/components/ui/AccessibilityPanel';
 import HideScreenButton from '@/components/ui/HideScreenButton';
 import DarkModeToggle from '@/components/ui/DarkModeToggle';
@@ -296,22 +295,7 @@ export default function Layout({ children, currentPageName }) {
 
             {/* Auth links — desktop */}
             <div className="hidden items-center gap-2 lg:flex">
-              <Link
-                to="/login"
-                className={buttonVariants({ variant: 'ghost', size: 'sm' })}
-                aria-label="Se connecter"
-              >
-                <LogIn className="mr-1.5 h-4 w-4" aria-hidden="true" />
-                Se connecter
-              </Link>
-              <Link
-                to="/pro/register"
-                className={buttonVariants({ variant: 'solid', size: 'sm' })}
-                aria-label="Créer un compte professionnel"
-              >
-                <UserPlus className="mr-1.5 h-4 w-4" aria-hidden="true" />
-                Créer un compte (Pro)
-              </Link>
+              <AuthHeaderActions />
             </div>
 
             {/* Actions */}
@@ -385,32 +369,7 @@ export default function Layout({ children, currentPageName }) {
 
               {/* Auth links — mobile */}
               <hr className="my-2 border-border" />
-              <Link
-                to="/login"
-                className={buttonVariants({ variant: 'ghost' })}
-                onClick={() => setMobileMenuOpen(false)}
-                aria-label="Se connecter"
-              >
-                <LogIn className="mr-1.5 h-4 w-4" aria-hidden="true" />
-                Se connecter
-              </Link>
-              <Link
-                to="/pro/register"
-                className={buttonVariants({ variant: 'solid' })}
-                onClick={() => setMobileMenuOpen(false)}
-                aria-label="Créer un compte professionnel"
-              >
-                <UserPlus className="mr-1.5 h-4 w-4" aria-hidden="true" />
-                Créer un compte (Pro)
-              </Link>
-              <Link
-                to="/pro/login"
-                className="flex items-center gap-3 px-4 py-3 rounded-lg text-text-body hover:bg-brand-highlight/10 hover:text-brand-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-primary focus-visible:ring-inset"
-                onClick={() => setMobileMenuOpen(false)}
-                aria-label="Accéder à l'espace professionnel"
-              >
-                Espace Pro
-              </Link>
+              <AuthMobileActions onNavigate={() => setMobileMenuOpen(false)} />
             </nav>
           </div>
         )}

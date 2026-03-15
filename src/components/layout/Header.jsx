@@ -1,10 +1,10 @@
 import { useState } from "react";
 import { NavLink } from "react-router-dom";
-import { Menu, X, LogIn, UserPlus, Brain } from "lucide-react";
-import { buttonVariants } from "@/components/ui/button";
+import { Menu, X, Brain } from "lucide-react";
 import ADALogo from "@/components/Brand/ADALogo";
 import brand from "@/lib/brand-config";
 import { useFalc } from "@/contexts/FalcContext";
+import { AuthHeaderActions, AuthMobileActions } from "@/components/auth/AuthHeaderActions";
 
 const NAV_ITEMS = [
   { label: "Accueil", to: "/" },
@@ -94,22 +94,7 @@ export function Header() {
               >
                 <Brain className="h-5 w-5" aria-hidden="true" />
               </button>
-              <NavLink
-                to="/login"
-                className={buttonVariants({ variant: "ghost", size: "sm" })}
-                aria-label="Se connecter"
-              >
-                <LogIn className="mr-1.5 h-4 w-4" aria-hidden="true" />
-                Se connecter
-              </NavLink>
-              <NavLink
-                to="/pro/register"
-                className={buttonVariants({ variant: "solid", size: "sm" })}
-                aria-label="Créer un compte professionnel"
-              >
-                <UserPlus className="mr-1.5 h-4 w-4" aria-hidden="true" />
-                Créer un compte
-              </NavLink>
+              <AuthHeaderActions />
             </div>
 
             <button
@@ -154,32 +139,8 @@ export function Header() {
                 <Brain className="h-4 w-4" aria-hidden="true" />
                 {isFalcEnabled ? 'Mode simplifié ✓' : 'Lecture simplifiée'}
               </button>
-              <NavLink
-                to="/login"
-                className={buttonVariants({ variant: "ghost" })}
-                onClick={() => setMobileOpen(false)}
-                aria-label="Se connecter"
-              >
-                <LogIn className="mr-1.5 h-4 w-4" aria-hidden="true" />
-                Se connecter
-              </NavLink>
-              <NavLink
-                to="/pro/register"
-                className={buttonVariants({ variant: "solid" })}
-                onClick={() => setMobileOpen(false)}
-                aria-label="Créer un compte professionnel"
-              >
-                <UserPlus className="mr-1.5 h-4 w-4" aria-hidden="true" />
-                Créer un compte (Pro)
-              </NavLink>
-              <NavLink
-                to="/pro/login"
-                className={({ isActive }) => navClassName(isActive)}
-                onClick={() => setMobileOpen(false)}
-                aria-label="Accéder à l'espace professionnel"
-              >
-                Espace Pro
-              </NavLink>
+              <hr className="my-2 border-slate-200" />
+              <AuthMobileActions onNavigate={() => setMobileOpen(false)} />
             </nav>
           </div>
         )}

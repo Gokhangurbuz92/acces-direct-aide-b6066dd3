@@ -150,6 +150,18 @@ export default async function handler(req, res) {
         res.setHeader('X-XSS-Protection', '0'); // Modern best practice: disable, rely on CSP
         res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
         res.setHeader('Permissions-Policy', 'camera=(), microphone=(), geolocation=()');
+        res.setHeader('Content-Security-Policy', [
+            "default-src 'self'",
+            "script-src 'self' https://va.vercel-scripts.com",
+            "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
+            "font-src 'self' https://fonts.gstatic.com",
+            "img-src 'self' data: https:",
+            "connect-src 'self' https://*.vercel-analytics.com https://*.sentry.io",
+            "frame-ancestors 'none'",
+            "base-uri 'self'",
+            "form-action 'self'",
+            "upgrade-insecure-requests",
+        ].join('; '));
 
         const vercelGitSha = getEnv('VERCEL_GIT_COMMIT_SHA');
         if (vercelGitSha) {

@@ -159,3 +159,92 @@ export const updateAidSchema = z.object({
     status: z.enum(['published', 'draft', 'archived']).optional(),
     data: z.record(z.unknown()).optional(),
 });
+
+export const adminPartnershipSchema = z.object({
+    id: z.string().min(1),
+    status: z.string().min(1),
+});
+
+export const adminVersionSchema = z.object({
+    versionId: z.string().min(1),
+});
+
+// ─── CRUD (categories, guides, tools) ─────────────────
+
+export const crudUpdateSchema = z.object({
+    id: z.string().min(1),
+}).passthrough(); // Allow additional fields for generic CRUD
+
+// ─── Pro Extended Operations ──────────────────────────
+
+export const proDossierUpdateSchema = z.object({
+    status: z.string().optional(),
+    internalNote: z.string().max(2000).optional(),
+});
+
+export const proUploadSecureSchema = z.object({
+    shareId: z.string().min(1, 'shareId requis'),
+    originalName: z.string().min(1, 'Nom de fichier requis'),
+    mimeType: z.string().min(1, 'Type MIME requis'),
+});
+
+export const proInteropSiaoSchema = z.object({
+    shareId: z.string().min(1, 'shareId requis'),
+});
+
+export const proNotificationsActionSchema = z.object({
+    ids: z.array(z.string().min(1)),
+    action: z.string().min(1),
+});
+
+export const proStructureUpdateSchema = z.object({
+    summary_falc: z.string().optional(),
+    is_pro_enabled: z.boolean().optional(),
+});
+
+export const proSystemMaintenanceSchema = z.object({
+    action: z.string().min(1, 'Action requise'),
+});
+
+export const proTeamActionSchema = z.object({
+    targetUserId: z.string().min(1),
+    role: z.string().min(1),
+});
+
+// ─── Public Extended ──────────────────────────────────
+
+export const publicAppointmentCancelSchema = z.object({
+    id: z.string().optional(),
+    token: z.string().optional(),
+});
+
+export const publicDossierRevokeSchema = z.object({
+    shareId: z.string().min(1, 'shareId requis'),
+});
+
+export const publicMessageSchema = z.object({
+    content: z.string().min(1).max(5000),
+});
+
+// ─── Utility ──────────────────────────────────────────
+
+export const secureMessageSchema = z.object({
+    shareId: z.string().min(1),
+    senderId: z.string().min(1),
+    receiverId: z.string().min(1),
+    encryptedContent: z.string().min(1),
+});
+
+export const shareCreateSchema = z.object({
+    situation: z.record(z.unknown()).optional(),
+    results: z.record(z.unknown()).optional(),
+});
+
+export const ttsSchema = z.object({
+    text: z.string().min(1).max(5000),
+    voice: z.string().optional(),
+});
+
+export const proDossierSynthesisSchema = z.object({
+    shareId: z.string().min(1, 'shareId requis'),
+});

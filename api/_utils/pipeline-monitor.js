@@ -39,6 +39,22 @@ export async function trackPipeline(pipelineName, status, details = {}) {
 
         if (status === 'failure') {
             log.error({ msg: 'pipeline_failure', ...details });
+
+            // Webhook alerting (Slack/Discord compatible)
+            const webhookUrl = process.env.WEBHOOK_URL;
+            if (webhookUrl) {
+                try {
+                    await fetch(webhookUrl, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            text: `🚨 *Pipeline Failure*: \`${pipelineName}\`\n${JSON.stringify(details)}`,
+                        }),
+                    });
+                } catch (webhookErr) {
+                    log.warn({ msg: 'webhook_send_failed', error: webhookErr.message });
+                }
+            }
         } else {
             log.info({ msg: 'pipeline_success', ...details });
         }

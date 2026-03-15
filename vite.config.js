@@ -267,6 +267,9 @@ export default defineConfig({
     ],
     exclude: ["node_modules", "dist", ".vercel", "e2e", "**/*.spec.js", "**/*.spec.ts"],
     setupFiles: ["./tests/setup-env.js"],
+    environmentMatchGlobs: [
+      ["tests/components/**", "jsdom"],
+    ],
     coverage: {
       provider: "v8",
       reporter: ["text", "json", "html"],

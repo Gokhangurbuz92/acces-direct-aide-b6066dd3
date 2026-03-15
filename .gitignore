@@ -98,3 +98,4 @@ scripts/check-db-extensions.cjs
 .env*.local
 !docs/ROTATE_SECRETS.md
 storybook-static
+audit_complet_*.md

@@ -21,7 +21,6 @@ import {
     Link as LinkIcon,
 } from 'lucide-react';
 import QRCode from 'react-qr-code';
-import { generateSocialPassport } from '@/lib/pdf-generator';
 import { Button } from '@/components/ui/button';
 import { useSituation } from '@/hooks/useSituation';
 
@@ -391,8 +390,9 @@ function ResultsDisplay({ results, situation }) {
     const nonEligibleRights = rights.filter((r) => !r.eligible);
     const totalMonthly = eligibleRights.reduce((sum, r) => sum + (r.amount || 0), 0);
 
-    const handleDownloadPDF = () => {
+    const handleDownloadPDF = async () => {
         try {
+            const { generateSocialPassport } = await import('@/lib/pdf-generator');
             generateSocialPassport(situation || {}, results);
         } catch (err) {
             if (import.meta.env.DEV) console.error('[PDF] Generation failed:', err);

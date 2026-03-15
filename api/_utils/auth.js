@@ -3,8 +3,9 @@ import jwt from 'jsonwebtoken';
 import { env } from './env.js';
 import logger from './logger.js';
 import { db } from '../../src/db/index.js';
-import { AuditLog } from '../../src/db/schema.js';
+import { AuditLog, AuthToken } from '../../src/db/schema.js';
 import { checkRateLimit as checkRateLimitUtil } from './rateLimit.js';
+import { eq, and } from 'drizzle-orm';
 
 const ADMIN_SESSION_ISSUER = 'accesdirectaide';
 const ADMIN_SESSION_AUDIENCE = 'accesdirectaide-admin';
@@ -45,13 +46,16 @@ export function signProToken(user) {
         throw new Error("JWT_SECRET is missing");
     }
 
+    const jti = crypto.randomUUID();
+
     return jwt.sign(
         {
             userId: user.id,
             email: user.email,
             structureId: user.structureId,
             role: user.role,
-            scope: 'pro'
+            scope: 'pro',
+            jti,
         },
         JWT_SECRET,
         {
@@ -134,6 +138,46 @@ export async function logProAudit(action, actorId, structureId, details, ip) {
         });
     } catch (e) {
         logger.error("Audit Log Error", e);
+    }
+}
+
+/**
+ * Revoke a pro JWT by storing its jti in the AuthToken table.
+ * @param {string} jti - JWT ID to revoke
+ * @param {string} userId - User who owns the token
+ * @param {number} exp - Token expiration timestamp (unix seconds)
+ */
+export async function revokeProToken(jti, userId, exp) {
+    if (!jti) return;
+    try {
+        const tokenHash = crypto.createHash('sha256').update(jti).digest('hex');
+        await db.insert(AuthToken).values({
+            userId,
+            type: 'revoked_pro',
+            tokenHash,
+            expiresAt: new Date(exp * 1000),
+        }).onConflictDoNothing();
+        logger.info('[Auth] Token revoked', { jti: jti.slice(0, 8) });
+    } catch (e) {
+        logger.error('[Auth] Token revocation failed', e);
+    }
+}
+
+/**
+ * Check if a JWT has been revoked.
+ * @param {string} jti - JWT ID to check
+ * @returns {Promise<boolean>} true if revoked
+ */
+export async function isTokenRevoked(jti) {
+    if (!jti) return false;
+    try {
+        const tokenHash = crypto.createHash('sha256').update(jti).digest('hex');
+        const found = await db.query.AuthToken.findFirst({
+            where: and(eq(AuthToken.tokenHash, tokenHash), eq(AuthToken.type, 'revoked_pro')),
+        });
+        return !!found;
+    } catch {
+        return false; // Fail-open: if DB is down, don't block auth
     }
 }
 

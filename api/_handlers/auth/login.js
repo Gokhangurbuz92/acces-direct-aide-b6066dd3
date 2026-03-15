@@ -4,6 +4,8 @@ import { db } from '../../../src/db/index.js';
 import { AdminUser, CitizenUser } from '../../../src/db/schema.js';
 import { eq } from 'drizzle-orm';
 import { checkRateLimit, getRateLimitStatus } from '../../_utils/rateLimit.js';
+import { validate } from '../../_utils/validate.js';
+import { loginSchema } from '../../_utils/schemas.js';
 import {
     buildUserSessionCookie,
     getClientIp,
@@ -17,15 +19,15 @@ import {
  * @param {import('../../_utils/http-types').ApiRequest} req
  * @param {import('../../_utils/http-types').ApiResponse} res
  */
-export default async function handler(req, res) {
+async function loginHandler(req, res) {
     if (req.method !== 'POST') {
         return res.status(405).json({ error: 'Method Not Allowed' });
     }
 
     const authMode = String(env.auth.mode || 'token').toLowerCase();
-    const email = normalizeEmail(req.body?.email);
-    const password = String(req.body?.password || '');
-    const mode = String(req.body?.mode || '').trim().toLowerCase();
+    const email = normalizeEmail(req.validatedBody?.email || req.body?.email);
+    const password = String(req.validatedBody?.password || req.body?.password || '');
+    const mode = String(req.validatedBody?.mode || req.body?.mode || '').trim().toLowerCase();
 
     // Hardcoded check against Environment Variables
     const validEmail = env.secrets.adminEmail || 'admin@accesdirectaide.fr';
@@ -146,3 +148,5 @@ export default async function handler(req, res) {
         return res.status(500).json({ error: 'Internal error' });
     }
 }
+
+export default validate(loginSchema, loginHandler);

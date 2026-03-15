@@ -1,0 +1,136 @@
+{
+  "organisme": "Accès Direct Aide",
+  "dpo_contact": "dpo@accesdirectaide.fr",
+  "date_mise_a_jour": "2026-03-15",
+  "traitements": [
+    {
+      "nom": "Gestion des comptes citoyens",
+      "finalite": "Création et gestion des comptes utilisateurs citoyens",
+      "base_legale": "Consentement (Article 6.1.a)",
+      "categories_donnees": [
+        "Email",
+        "Mot de passe (hashé)",
+        "Numéro de téléphone (optionnel)"
+      ],
+      "categories_personnes": [
+        "Citoyens bénéficiaires"
+      ],
+      "destinataires": [
+        "Équipe technique Accès Direct Aide"
+      ],
+      "duree_conservation": "3 ans après la dernière activité, puis suppression via cron GDPR purge",
+      "mesures_securite": "Chiffrement AES-256-GCM, hashage bcrypt, JWT avec révocation"
+    },
+    {
+      "nom": "Diagnostic social (simulateur OpenFisca)",
+      "finalite": "Estimation des droits sociaux des citoyens",
+      "base_legale": "Consentement (Article 6.1.a)",
+      "categories_donnees": [
+        "Revenus",
+        "Situation logement",
+        "Composition foyer",
+        "Date de naissance"
+      ],
+      "categories_personnes": [
+        "Citoyens bénéficiaires"
+      ],
+      "destinataires": [
+        "Aucun — traitement local uniquement"
+      ],
+      "duree_conservation": "Données non stockées côté serveur (traitement éphémère)",
+      "mesures_securite": "Données traitées en mémoire, aucune persistance"
+    },
+    {
+      "nom": "Assistant IA conversationnel",
+      "finalite": "Orientation vers les aides sociales via chatbot IA",
+      "base_legale": "Intérêt légitime (Article 6.1.f)",
+      "categories_donnees": [
+        "Messages texte (tronqués à 500 caractères)",
+        "Intent détecté"
+      ],
+      "categories_personnes": [
+        "Citoyens bénéficiaires"
+      ],
+      "destinataires": [
+        "Google Gemini API (sous-traitant)"
+      ],
+      "duree_conservation": "Logs de conversation conservés 1 an",
+      "mesures_securite": "PII blocking (NIR/IBAN/CB), filtre de sortie avec disclaimer, rate limiting"
+    },
+    {
+      "nom": "Espace professionnel & rendez-vous",
+      "finalite": "Mise en relation citoyen — travailleur social",
+      "base_legale": "Exécution du contrat (Article 6.1.b)",
+      "categories_donnees": [
+        "Identité pro",
+        "Agendas",
+        "Messages chiffrés",
+        "Emails citoyens"
+      ],
+      "categories_personnes": [
+        "Travailleurs sociaux",
+        "Citoyens bénéficiaires"
+      ],
+      "destinataires": [
+        "Équipe technique Accès Direct Aide"
+      ],
+      "duree_conservation": "Durée de la relation contractuelle + 2 ans",
+      "mesures_securite": "Vault Zero-Knowledge pour messages, RBAC par structure, audit logs"
+    },
+    {
+      "nom": "Ingestion de données publiques",
+      "finalite": "Actualisation de la base d'aides, structures et actualités",
+      "base_legale": "Intérêt légitime (Article 6.1.f)",
+      "categories_donnees": [
+        "Données publiques open-data (aides, structures, actualités)"
+      ],
+      "categories_personnes": [
+        "Aucune personne physique"
+      ],
+      "destinataires": [
+        "Base de données interne"
+      ],
+      "duree_conservation": "Mise à jour continue, pas de données personnelles",
+      "mesures_securite": "Pipeline lock distribué, monitoring heartbeat"
+    }
+  ],
+  "sous_traitants": [
+    {
+      "nom": "Vercel Inc.",
+      "role": "Hébergement",
+      "localisation": "USA (SCCs)",
+      "dpa": "Oui"
+    },
+    {
+      "nom": "Neon Inc.",
+      "role": "Base de données PostgreSQL",
+      "localisation": "USA/EU",
+      "dpa": "Oui"
+    },
+    {
+      "nom": "Upstash",
+      "role": "Cache Redis / Rate limiting",
+      "localisation": "EU",
+      "dpa": "Oui"
+    },
+    {
+      "nom": "Google (Gemini AI)",
+      "role": "Modèle IA conversationnel",
+      "localisation": "USA (SCCs)",
+      "dpa": "Oui"
+    },
+    {
+      "nom": "Sentry",
+      "role": "Monitoring erreurs (PII scrubbed)",
+      "localisation": "USA",
+      "dpa": "Oui"
+    }
+  ],
+  "droits_exercables": [
+    "Droit d'accès (Article 15)",
+    "Droit de rectification (Article 16)",
+    "Droit à l'effacement (Article 17) — via cron GDPR purge",
+    "Droit à la portabilité (Article 20) — via script gdpr-suite.mjs export",
+    "Droit d'opposition (Article 21)"
+  ]
+}

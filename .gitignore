@@ -100,3 +100,4 @@ scripts/check-db-extensions.cjs
 storybook-static
 audit_complet_*.md
 backups/
+exports/

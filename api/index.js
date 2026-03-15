@@ -142,6 +142,13 @@ export default async function handler(req, res) {
         res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, x-cron-secret');
         res.setHeader('x-request-id', requestId);
 
+        // 2b. OWASP Security Headers (SEC-02)
+        res.setHeader('X-Content-Type-Options', 'nosniff');
+        res.setHeader('X-Frame-Options', 'DENY');
+        res.setHeader('X-XSS-Protection', '0'); // Modern best practice: disable, rely on CSP
+        res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
+        res.setHeader('Permissions-Policy', 'camera=(), microphone=(), geolocation=()');
+
         const vercelGitSha = getEnv('VERCEL_GIT_COMMIT_SHA');
         if (vercelGitSha) {
             res.setHeader('x-release-sha', vercelGitSha);
@@ -149,6 +156,20 @@ export default async function handler(req, res) {
 
         if (req.method === 'OPTIONS') {
             return res.status(200).end();
+        }
+
+        // 2c. CSRF Protection — block mutating requests from unknown origins (SEC-03)
+        // Cron jobs and monitors have no browser origin, so we allow them
+        const isMutating = ['POST', 'PUT', 'DELETE', 'PATCH'].includes(req.method);
+        const hasBearerToken = (req.headers?.authorization || '').startsWith('Bearer ');
+        const hasCronSecret = !!req.headers?.['x-cron-secret'];
+        if (isMutating && origin && !isAllowedOrigin && !hasBearerToken && !hasCronSecret) {
+            log.warn({ msg: 'CSRF blocked', origin, method: req.method });
+            return res.status(403).json({
+                error: 'Forbidden',
+                message: 'Origin not allowed (CSRF protection)',
+                requestId,
+            });
         }
 
         // 3. Request Logging

@@ -154,6 +154,25 @@ export default async function handler(req, res) {
     try {
         const { answer, meta } = await chatWithRulePack(trimmedMessage);
 
+        // --- OUTPUT SAFETY FILTER (SEC-04) ---
+        // Check if the response references official French government sources.
+        // If not, append a disclaimer to protect users from unverified advice.
+        const OFFICIAL_DOMAINS = [
+            'service-public.fr',
+            '.gouv.fr',
+            'caf.fr',
+            'ameli.fr',
+            'msa.fr',
+            'pole-emploi.fr',
+            'francetravail.fr',
+            'legifrance.gouv.fr',
+        ];
+        const answerLower = (answer || '').toLowerCase();
+        const hasOfficialSource = OFFICIAL_DOMAINS.some(domain => answerLower.includes(domain));
+        const DISCLAIMER = '\n\n⚠️ *Cette réponse n\'a pas pu être vérifiée contre une source officielle. ' +
+            'Consultez [service-public.fr](https://www.service-public.fr) pour confirmer vos droits.*';
+        const filteredAnswer = hasOfficialSource ? answer : (answer + DISCLAIMER);
+
         // --- Log the conversation (await to get logId for feedback) ---
         let logId = null;
         try {
@@ -168,12 +187,13 @@ export default async function handler(req, res) {
             log.warn({ msg: 'assistant.log_write_failed', error: logErr.message, requestId });
         }
 
-        log.info({ msg: 'assistant.chat_success', searchMode: meta.searchMode, sourceCount: meta.sourceCount, requestId });
+        log.info({ msg: 'assistant.chat_success', searchMode: meta.searchMode, sourceCount: meta.sourceCount, hasOfficialSource, requestId });
 
         return res.status(200).json({
-            answer,
+            answer: filteredAnswer,
             citations: [],
             logId,
+            verified: hasOfficialSource,
             meta: {
                 model: 'gemini-2.0-flash',
                 rulepack: meta.intent || 'apl_v1',

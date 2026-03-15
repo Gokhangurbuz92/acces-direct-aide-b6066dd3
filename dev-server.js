@@ -70,12 +70,12 @@ const server = http.createServer(async (req, res) => {
         for (const route of routes) {
             if (route.match === 'exact') {
                 if (path === route.path) {
-                    routeHandler = route.handler;
+                    routeHandler = route;
                     break;
                 }
             } else if (route.match === 'prefix') {
                 if (path === route.path || path.startsWith(route.path + '/')) {
-                    routeHandler = route.handler;
+                    routeHandler = route;
                     break;
                 }
             }
@@ -84,29 +84,21 @@ const server = http.createServer(async (req, res) => {
         // Also check for dev-specific routes
         if (!routeHandler && path.startsWith('__dev/')) {
             if (process.env.NODE_ENV !== 'production') {
-                // Map to api/_handlers/__dev/...
                 if (path === '__dev/create-test-appointment') {
-                    // We need to dynamically import this one as it's not in routes.js
-                    // We return the path string to indicate it needs importing
-                    routeHandler = './_handlers/__dev/create-test-appointment.js';
+                    routeHandler = { handler: () => import('./api/_handlers/__dev/create-test-appointment.js') };
                 }
             }
         }
 
         if (routeHandler) {
             try {
-                if (typeof routeHandler === 'string') {
-                    // Dynamic import for dev tools
-                    const importPath = './api/' + routeHandler.replace(/^\.\//, '');
-                    const handlerModule = await import(importPath);
-                    if (handlerModule && handlerModule.default) {
-                        await handlerModule.default(req, res);
-                    } else {
-                        res.status(500).json({ error: 'Handler module missing default export' });
-                    }
+                // Lazy-loaded handlers: handler() returns a Promise<module>,
+                // then we call module.default(req, res)
+                const mod = await routeHandler.handler();
+                if (mod && mod.default) {
+                    await mod.default(req, res);
                 } else {
-                    // Standard route (already imported function)
-                    await routeHandler(req, res);
+                    res.status(500).json({ error: 'Handler module missing default export' });
                 }
             } catch (err) {
                 console.error(`[DevServer] Failed to load/execute handler for ${path}: ${err.message}`);

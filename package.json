@@ -11,6 +11,8 @@
   ],
   "scripts": {
     "dev": "vite",
+    "dev:api": "npx tsx dev-server.js",
+    "dev:full": "npx concurrently \"npm run dev\" \"npm run dev:api\"",
     "build": "vite build && node scripts/prerender.mjs && node scripts/generate-sitemap.mjs",
     "vercel-build": "node scripts/vercel-build.mjs",
     "db:generate": "drizzle-kit generate",

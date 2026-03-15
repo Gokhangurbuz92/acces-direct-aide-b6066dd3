@@ -5,84 +5,44 @@ import path from "path";
 import { config as dotenvConfig } from "dotenv";
 
 function apiMiddlewarePlugin() {
-  let apiEntry = null;
-  let apiEntryPromise = null;
-  let envLoaded = false;
-
-  async function loadApiEntry() {
-    if (!envLoaded) {
-      // Ensure server-side handlers have access to non-VITE_* env vars during `vite` dev/e2e runs.
-      // (Some modules throw at import-time if critical secrets are missing.)
-      dotenvConfig({ path: ".env.local", override: false, quiet: true });
-      dotenvConfig({ path: ".env", override: false, quiet: true });
-      envLoaded = true;
-    }
-
-    if (apiEntry) return apiEntry;
-    if (!apiEntryPromise) {
-      apiEntryPromise = import("./api/index.js").then((mod) => {
-        apiEntry = mod.default;
-        return apiEntry;
-      });
-    }
-    return apiEntryPromise;
-  }
-
   return {
-    name: "accesdirectaide-api-middleware",
+    name: "accesdirectaide-api-proxy",
     configureServer(server) {
+      // Proxy /api/* requests to the tsx dev-server on port 3000.
+      // Run `npm run dev:api` in a separate terminal first.
       server.middlewares.use(async (req, res, next) => {
         const url = req.url || "";
         if (!(url.startsWith("/api") || url === "/robots.txt" || url === "/sitemap.xml")) {
           return next();
         }
 
-        // Vercel-style helpers expected by handlers.
-        res.status = (code) => {
-          res.statusCode = code;
-          return res;
-        };
-        res.json = (data) => {
-          if (!res.headersSent) res.setHeader("Content-Type", "application/json");
-          res.end(JSON.stringify(data));
-          return res;
-        };
-        res.send = (data) => {
-          res.end(data);
-          return res;
+        const http = await import("http");
+        const options = {
+          hostname: "localhost",
+          port: 3000,
+          path: url,
+          method: req.method,
+          headers: { ...req.headers, host: "localhost:3000" },
         };
 
-        // Add req.query and parse JSON bodies for non-upload routes.
-        try {
-          const parsed = new URL(url, `http://${req.headers.host || "localhost"}`);
-          req.query = Object.fromEntries(parsed.searchParams);
+        const proxyReq = http.request(options, (proxyRes) => {
+          res.writeHead(proxyRes.statusCode || 500, proxyRes.headers);
+          proxyRes.pipe(res);
+        });
 
-          const isUpload = parsed.pathname === "/api/upload";
-          const hasBody = ["POST", "PUT", "PATCH", "DELETE"].includes(req.method || "");
-          if (!isUpload && hasBody) {
-            const chunks = [];
-            for await (const chunk of req) chunks.push(chunk);
-            const bodyStr = Buffer.concat(chunks).toString("utf8");
-            try {
-              req.body = bodyStr ? JSON.parse(bodyStr) : {};
-            } catch {
-              req.body = {};
-            }
-          }
-
-          const handler = await loadApiEntry();
-          await handler(req, res);
-        } catch (error) {
-          // If the handler already wrote a response, don't double-send.
+        proxyReq.on("error", (err) => {
           if (!res.headersSent) {
-            res.status(500).json({
-              error: "Dev API Error",
-              message: String(error?.message || error),
-            });
-          } else {
-            res.end();
+            res.writeHead(503, { "Content-Type": "application/json" });
+            res.end(JSON.stringify({
+              error: "API Dev Server Unavailable",
+              message: "Run `npm run dev:api` in a separate terminal to start the API server.",
+              details: err.message,
+            }));
           }
-        }
+        });
+
+        // Pipe request body to proxy
+        req.pipe(proxyReq, { end: true });
       });
     },
   };

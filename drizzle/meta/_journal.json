@@ -8,10 +8,6 @@
       "when": 1773507815198,
       "tag": "0000_fuzzy_fallen_one",
       "breakpoints": true
-<<<<<<< HEAD
-<<<<<<< HEAD
-=======
->>>>>>> fd2f117 (refactor: remove dead System C messaging code and ProMessage table)
     },
     {
       "idx": 1,
@@ -19,10 +15,6 @@
       "when": 1773510503465,
       "tag": "0001_organic_morlun",
       "breakpoints": true
-<<<<<<< HEAD
-<<<<<<< HEAD
-=======
->>>>>>> c807455 (feat(ai): add pgvector extension + embedding column with HNSW cosine index)
     },
     {
       "idx": 2,
@@ -37,15 +29,6 @@
       "when": 1773512983484,
       "tag": "0003_free_crusher_hogan",
       "breakpoints": true
-<<<<<<< HEAD
-<<<<<<< HEAD
-=======
->>>>>>> 241663f (refactor(schema): drop 6 legacy tables + clean 35 handler files)
-=======
->>>>>>> fd2f117 (refactor: remove dead System C messaging code and ProMessage table)
-=======
->>>>>>> c807455 (feat(ai): add pgvector extension + embedding column with HNSW cosine index)
-=======
     },
     {
       "idx": 4,
@@ -53,7 +36,6 @@
       "when": 1773564905531,
       "tag": "0004_confused_korvac",
       "breakpoints": true
->>>>>>> 9771ad4 (chore: Phase 1+2 — nettoyage root + migration DB versionnée)
     }
   ]
 }

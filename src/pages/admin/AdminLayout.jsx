@@ -273,7 +273,11 @@ export default function AdminLayout() {
                 <div className="fixed inset-0 z-50 md:hidden">
                     <div
                         className="absolute inset-0 bg-black/50"
+                        role="button"
+                        tabIndex={0}
+                        aria-label="Fermer le menu"
                         onClick={() => setMobileMenuOpen(false)}
+                        onKeyDown={(e) => { if (e.key === 'Enter' || e.key === 'Escape') setMobileMenuOpen(false); }}
                     />
                     <aside className="relative w-72 h-full bg-white flex flex-col shadow-xl">
                         {sidebarContent}

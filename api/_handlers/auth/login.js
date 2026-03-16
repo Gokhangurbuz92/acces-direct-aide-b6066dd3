@@ -95,7 +95,7 @@ async function loginHandler(req, res) {
     }
 
     if (wantsAdminMode) {
-        if (!validPassword) {
+        if (!(adminPasswordHash || adminPasswordLegacy)) {
             return res.status(500).json({ error: 'Server misconfiguration: ADMIN_PASSWORD missing' });
         }
         return res.status(401).json({ error: 'Invalid credentials' });

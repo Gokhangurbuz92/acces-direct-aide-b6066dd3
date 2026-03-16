@@ -17,7 +17,7 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const distPath = path.resolve(__dirname, '../dist');
 
 const BASE_URL = 'https://www.accesdirectaide.fr';
-const DEFAULT_LIMIT = 50;
+const DEFAULT_LIMIT = 10;
 
 // ---------------------------------------------------------------------------
 // Parse CLI args

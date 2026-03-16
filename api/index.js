@@ -239,6 +239,8 @@ export default async function handler(req, res) {
                 const msg = healthErr instanceof Error ? healthErr.message : String(healthErr);
                 log.error({ msg: 'health.crash', error: msg });
                 if (!res.headersSent) {
+                    res.setHeader('Cache-Control', 'no-store');
+                    res.setHeader('x-robots-tag', 'noindex, nofollow');
                     return res.status(200).json({
                         ok: false,
                         status: 'degraded',

@@ -20,7 +20,7 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const distPath = path.resolve(__dirname, '../dist');
 const serverOutDir = path.resolve(__dirname, '../dist/server');
 
-const DEFAULT_LIMIT = 50;
+const DEFAULT_LIMIT = 10;
 
 // ---------------------------------------------------------------------------
 // Fetch top N aide slugs + titles from DB (graceful)

@@ -35,11 +35,13 @@ console.log(`[vercel-build] start (VERCEL_ENV=${vercelEnv})`);
 // Step 1: Build the frontend bundle (always).
 run('npx vite build');
 
-// Step 2: SSR prerender + sitemap (production only).
-// Preview/branch deployments skip these to avoid build timeouts
-// (the SSR prerender bundles all node_modules and can exceed Vercel's memory/time limits).
-if (isProduction) {
-  console.log('[vercel-build] production -> running SSR prerender + sitemap');
+// Step 2: SSR prerender + sitemap (opt-in via ENABLE_PRERENDER=1).
+// DISABLED BY DEFAULT: prerender takes 30+ minutes on Vercel, hitting the
+// 45-minute build limit. Re-enable once production is stable by setting
+// ENABLE_PRERENDER=1 in Vercel environment variables.
+const enablePrerender = process.env.ENABLE_PRERENDER === '1';
+if (isProduction && enablePrerender) {
+  console.log('[vercel-build] production + ENABLE_PRERENDER=1 -> running SSR prerender + sitemap');
   try {
     run('NODE_NO_WARNINGS=1 npx tsx scripts/prerender.mjs');
   } catch (err) {
@@ -51,7 +53,7 @@ if (isProduction) {
     console.warn('[vercel-build] sitemap generation failed (non-fatal):', err.message);
   }
 } else {
-  console.log('[vercel-build] preview -> skipping prerender + sitemap');
+  console.log(`[vercel-build] skipping prerender (env=${vercelEnv}, prerender=${enablePrerender})`);
 }
 
 console.log('[vercel-build] done');

@@ -35,7 +35,7 @@ function decrypt(content, ivHex, key) {
 
 describe('Vault — AES-256-GCM Resilience', () => {
 
-    const SECRET = 'my-super-secret-key-for-testing-only';
+    const SECRET = 'my-super-secret-key-for-testing-only'; // gitleaks:allow — test fixture, not a real secret
     const key = makeKey(SECRET);
 
     it('encrypts and decrypts correctly', () => {

@@ -4,7 +4,7 @@ import { expectNoA11yIssues } from './a11y.utils';
 test.describe('Navigation a11y — Header links + focus-visible', () => {
     test('header navigation contains accessible links', async ({ page }) => {
         await page.setViewportSize({ width: 1280, height: 720 });
-        await page.goto('/', { waitUntil: 'networkidle' });
+        await page.goto('/', { waitUntil: 'domcontentloaded' });
         await page.waitForSelector('header', { state: 'attached' });
 
         // Verify at least 3 links exist in the header area
@@ -25,7 +25,7 @@ test.describe('Navigation a11y — Header links + focus-visible', () => {
 
     test('keyboard focus reaches header links with visible indicator', async ({ page }) => {
         await page.setViewportSize({ width: 1280, height: 720 });
-        await page.goto('/', { waitUntil: 'networkidle' });
+        await page.goto('/', { waitUntil: 'domcontentloaded' });
         await page.waitForSelector('header', { state: 'attached' });
 
         const focusedElements: Array<{ tag: string; text: string; hasFocusIndicator: boolean }> = [];
@@ -82,7 +82,7 @@ test.describe('Navigation a11y — Header links + focus-visible', () => {
 
     test('no critical/serious a11y violations on Home page (Axe)', async ({ page }) => {
         await page.setViewportSize({ width: 1280, height: 720 });
-        await page.goto('/', { waitUntil: 'networkidle' });
+        await page.goto('/', { waitUntil: 'domcontentloaded' });
         await page.waitForSelector('header', { state: 'attached' });
         await expectNoA11yIssues(page);
     });

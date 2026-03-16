@@ -5,19 +5,27 @@ import { CheckCircle2, Eye, Keyboard, Type } from 'lucide-react';
 
 export default function Accessibilite() {
   return (
-    <div className="min-h-screen bg-slate-50 py-12">
+    <div className="min-h-screen bg-slate-50 pb-20">
       <SEO
         title="Accessibilité"
         description="Un site conçu pour être accessible à tous"
         path="/accessibilite"
       />
-      <div className="max-w-4xl mx-auto px-4 sm:px-6">
-        <h1 className="text-3xl font-bold text-slate-900 mb-4">
-          Accessibilité
-        </h1>
-        <p className="text-lg text-slate-600 mb-8">
-          Un site conçu pour être accessible à tous
-        </p>
+
+      {/* Hero Section */}
+      <div className="bg-slate-900 text-white pt-16 pb-24 border-b border-slate-800">
+        <div className="max-w-4xl mx-auto px-4 sm:px-6 text-center">
+          <div className="inline-flex justify-center items-center w-16 h-16 rounded-2xl bg-indigo-500/20 text-indigo-400 mb-6 ring-1 ring-indigo-500/30">
+            <Eye className="w-8 h-8" />
+          </div>
+          <h1 className="text-3xl md:text-5xl font-bold mb-6 tracking-tight text-slate-50">Accessibilité</h1>
+          <p className="text-lg md:text-xl text-slate-300 max-w-2xl mx-auto leading-relaxed">
+            Un site conçu pour être accessible à tous, quel que soit votre équipement ou vos capacités.
+          </p>
+        </div>
+      </div>
+
+      <div className="max-w-4xl mx-auto px-4 sm:px-6 -mt-10 relative z-10 space-y-6">
 
         {/* Engagement */}
         <Card className="mb-8">

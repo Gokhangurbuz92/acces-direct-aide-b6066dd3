@@ -85,6 +85,7 @@ const StructureDetail = lazy(() => import("./StructureDetail.jsx"));
 const DiagnosticPage = lazy(() => import("./DiagnosticPage.jsx"));
 const SharedDiagnostic = lazy(() => import("./SharedDiagnostic.jsx"));
 const AdminAudit = lazy(() => import("./AdminAudit.jsx"));
+const AdminParametres = lazy(() => import("./admin/AdminParametres.jsx"));
 const ServiceError = lazy(() => import("./ServiceError.jsx"));
 
 const BeneficiaryMessages = lazy(() => import("./BeneficiaryMessages.jsx"));
@@ -111,9 +112,11 @@ const AuthForgotPassword = lazy(() => import("./AuthForgotPassword.jsx"));
 const AuthResetPassword = lazy(() => import("./AuthResetPassword.jsx"));
 const CompteMessages = lazy(() => import("./CompteMessages.jsx"));
 const CompteMessageThread = lazy(() => import("./CompteMessageThread.jsx"));
+const CompteParametres = lazy(() => import("./CompteParametres.jsx"));
 const Layout = lazy(() => import("./Layout.jsx"));
 const AdminGuard = lazy(() => import("@/components/AdminGuard"));
 const ProGuard = lazy(() => import("@/components/ProGuard"));
+const AdminLayout = lazy(() => import("./admin/AdminLayout.jsx"));
 
 // Admin
 const AdminLogin = lazy(() => import("./AdminLogin.jsx"));
@@ -152,6 +155,7 @@ const ProServices = lazy(() => import("./pro/Services.jsx"));
 const ProAvailability = lazy(() => import("./pro/Availability.jsx"));
 const ProTeam = lazy(() => import("./pro/Team.jsx"));
 const ProStructure = lazy(() => import("./pro/Structure.jsx"));
+const ProParametres = lazy(() => import("./pro/ProParametres.jsx"));
 const ProAppointments = lazy(() => import("./pro/Appointments.jsx"));
 const ProAppointmentDetail = lazy(() => import("./pro/AppointmentDetail.jsx"));
 const ProRdvLayout = lazy(() => import("./pro/RdvLayout.jsx"));
@@ -242,6 +246,58 @@ function PagesContent() {
 
     const currentPage = _getCurrentPage(location.pathname);
 
+    // Admin Routes (Bypass Public Layout — AdminLayout provides sidebar navigation + auth)
+    if (location.pathname.startsWith('/admin')) {
+        return (
+            <Suspense fallback={<PageLoader />}>
+                <LazyMotion features={domAnimation} strict>
+                    <AnimatePresence mode="wait">
+                        <m.div
+                            key={location.pathname}
+                            initial={shouldReduceMotion ? false : { opacity: 0, scale: 0.98 }}
+                            animate={{ opacity: 1, scale: 1 }}
+                            exit={shouldReduceMotion ? undefined : { opacity: 0, scale: 0.98 }}
+                            transition={shouldReduceMotion ? { duration: 0 } : { duration: 0.25, ease: 'easeInOut' }}
+                            className="w-full h-full min-h-screen"
+                        >
+                            <Routes location={location}>
+                                <Route path="/admin" element={<AdminLayout />}>
+                                    <Route index element={<Navigate to="dashboard" replace />} />
+                                    <Route path="login" element={<AdminLogin />} />
+                                    <Route path="dashboard" element={<AdminDashboard />} />
+                                    <Route path="aides" element={<AdminAides />} />
+                                    <Route path="aides/:id" element={<AdminAideEdit />} />
+                                    <Route path="structures" element={<AdminStructures />} />
+                                    <Route path="demarches" element={<AdminDemarches />} />
+                                    <Route path="demarches/:id" element={<AdminDemarcheEdit />} />
+                                    <Route path="sources" element={<AdminSources />} />
+                                    <Route path="appointments" element={<AdminAppointments />} />
+                                    <Route path="messages" element={<AdminMessages />} />
+                                    <Route path="inbox" element={<AdminInbox />} />
+                                    <Route path="review" element={<AdminReview />} />
+                                    <Route path="review-queue" element={<AdminReviewQueue />} />
+                                    <Route path="orchestrator" element={<AIOrchestrator />} />
+                                    <Route path="features" element={<AdminFeatures />} />
+                                    <Route path="conversations" element={<AdminConversations />} />
+                                    <Route path="national" element={<AdminNationalDashboard />} />
+                                    <Route path="sync" element={<AdminSync />} />
+                                    <Route path="sync/test" element={<AdminTestSync />} />
+                                    <Route path="sync/recent" element={<AdminRecentSyncs />} />
+                                    <Route path="guides/sync" element={<AdminGuideSync />} />
+                                    <Route path="health" element={<AdminHealth />} />
+                                    <Route path="observability" element={<AdminObservability />} />
+                                    <Route path="runs" element={<AdminRuns />} />
+                                    <Route path="audit" element={<AdminAudit />} />
+                                    <Route path="parametres" element={<AdminParametres />} />
+                                </Route>
+                            </Routes>
+                        </m.div>
+                    </AnimatePresence>
+                </LazyMotion>
+            </Suspense>
+        );
+    }
+
     // Lot 4: Pro Routes (Bypass Public Layout)
     if (location.pathname.startsWith('/pro')) {
         return (
@@ -295,6 +351,7 @@ function PagesContent() {
                                     <Route path="storybook" element={<ProGuard><StorybookExplorer /></ProGuard>} />
                                     <Route path="rehearsal" element={<ProGuard><ProRehearsal /></ProGuard>} />
                                     <Route path="mfa-settings" element={<ProGuard><ProMfaSettings /></ProGuard>} />
+                                    <Route path="parametres" element={<ProGuard><ProParametres /></ProGuard>} />
                                 </Route>
                             </Routes>
                         </m.div>
@@ -327,6 +384,7 @@ function PagesContent() {
                                 <Route path="/auth/reset" element={<AuthResetPassword />} />
                                 <Route path="/compte/messages" element={<CompteMessages />} />
                                 <Route path="/compte/messages/:conversationId" element={<CompteMessageThread />} />
+                                <Route path="/compte/parametres" element={<CompteParametres />} />
                                 <Route path="/a-propos" element={<APropos />} />
                                 <Route path="/accessibilite" element={<Accessibilite />} />
                                 <Route path="/actualites" element={<Actualites />} />
@@ -334,28 +392,6 @@ function PagesContent() {
                                 <Route path="/actualites/:slug" element={<ActualiteDetail />} />
                                 <Route path="/share/:id" element={<SharedDiagnostic />} />
 
-                                <Route path="/admin/login" element={<AdminLogin />} />
-                                <Route path="/admin/health" element={<AdminGuard><AdminHealth /></AdminGuard>} />
-                                <Route path="/admin/observability" element={<AdminGuard><AdminObservability /></AdminGuard>} />
-                                <Route path="/admin/review-queue" element={<AdminGuard><AdminReviewQueue /></AdminGuard>} />
-                                <Route path="/admin/inbox" element={<AdminGuard><AdminInbox /></AdminGuard>} />
-                                <Route path="/admin/runs" element={<AdminGuard><AdminRuns /></AdminGuard>} />
-                                <Route path="/admin/aides/:id" element={<AdminGuard><AdminAideEdit /></AdminGuard>} />
-                                <Route path="/admin/aides" element={<AdminGuard><AdminAides /></AdminGuard>} />
-                                <Route path="/admin" element={<Navigate to="/admin/dashboard" replace />} />
-                                <Route path="/admin/dashboard" element={<AdminGuard><AdminDashboard /></AdminGuard>} />
-                                <Route path="/admin/national" element={<AdminGuard><AdminNationalDashboard /></AdminGuard>} />
-                                <Route path="/admin/orchestrator" element={<AdminGuard><AIOrchestrator /></AdminGuard>} />
-                                <Route path="/admin/features" element={<AdminGuard><AdminFeatures /></AdminGuard>} />
-                                <Route path="/admin/conversations" element={<AdminGuard><AdminConversations /></AdminGuard>} />
-                                <Route path="/admin/audit" element={<AdminGuard><AdminAudit /></AdminGuard>} />
-                                <Route path="/admin/guides/sync" element={<AdminGuard><AdminGuideSync /></AdminGuard>} />
-                                <Route path="/admin/messages" element={<AdminGuard><AdminMessages /></AdminGuard>} />
-                                <Route path="/admin/review" element={<AdminGuard><AdminReview /></AdminGuard>} />
-                                <Route path="/admin/sync/recent" element={<AdminGuard><AdminRecentSyncs /></AdminGuard>} />
-                                <Route path="/admin/sources" element={<AdminGuard><AdminSources /></AdminGuard>} />
-                                <Route path="/admin/sync" element={<AdminGuard><AdminSync /></AdminGuard>} />
-                                <Route path="/admin/sync/test" element={<AdminGuard><AdminTestSync /></AdminGuard>} />
                                 <Route path="/appointments/request" element={<AppointmentRequest />} />
                                 <Route path="/appointments/cancel/:token" element={<AppointmentCancel />} />
                                 <Route path="/passport/:shareId" element={<UserPassport />} />
@@ -364,10 +400,6 @@ function PagesContent() {
                                 <Route path="/rdv/:structureSlug/services" element={<PublicRdvEntry view="services" />} />
                                 <Route path="/rdv/:structureSlug/creneaux" element={<PublicRdvEntry view="creneaux" />} />
                                 <Route path="/rdv/:structureSlug/booking" element={<PublicBooking />} />
-                                <Route path="/admin/appointments" element={<AdminGuard><AdminAppointments /></AdminGuard>} />
-                                <Route path="/admin/structures" element={<AdminGuard><AdminStructures /></AdminGuard>} />
-                                <Route path="/admin/demarches" element={<AdminGuard><AdminDemarches /></AdminGuard>} />
-                                <Route path="/admin/demarches/:id" element={<AdminGuard><AdminDemarcheEdit /></AdminGuard>} />
 
                                 {/* Legacy Admin Redirects */}
                                 <Route path="/adminaides" element={<Navigate to="/admin/aides" replace />} />
@@ -446,13 +478,8 @@ function PagesContent() {
                                 {/* Phase 1: /assistant redirect → /orientation */}
                                 <Route path="/assistant" element={<Navigate to="/orientation" replace />} />
 
-                                {/* Mon assistant "bientôt disponible" page */}
-                                <Route path="/mon-assistant" element={
-                                    <div className="p-8 text-center">
-                                        <h1 className="text-2xl font-bold mb-4">Mon Assistant</h1>
-                                        <p>Bientôt disponible</p>
-                                    </div>
-                                } />
+                                {/* P0.5: /mon-assistant → redirect to /orientation */}
+                                <Route path="/mon-assistant" element={<Navigate to="/orientation" replace />} />
 
 
                                 <Route path="*" element={<ServiceError code={404} />} />

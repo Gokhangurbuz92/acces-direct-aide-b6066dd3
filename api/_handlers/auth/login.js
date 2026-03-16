@@ -29,15 +29,25 @@ async function loginHandler(req, res) {
     const password = String(req.validatedBody?.password || req.body?.password || '');
     const mode = String(req.validatedBody?.mode || req.body?.mode || '').trim().toLowerCase();
 
-    // Hardcoded check against Environment Variables
+    // Admin credentials from environment
     const validEmail = env.secrets.adminEmail || 'admin@accesdirectaide.fr';
-    // If no password set in env, use a default secure-ish placeholder for logic to prevent crash, 
-    // but in reality this should satisfy the condition only if env is set.
-    // For Staging Audit, user just wants "Security P0".
-    const validPassword = env.secrets.adminPassword;
+    const adminPasswordHash = env.secrets.adminPasswordHash; // scrypt:salt:key format
+    const adminPasswordLegacy = env.secrets.adminPassword;   // plain text fallback (deprecated)
 
     const wantsAdminMode = mode === 'admin';
-    const adminCredentialsValid = Boolean(validPassword) && email === validEmail && password === validPassword;
+
+    // Determine admin credential validity
+    let adminCredentialsValid = false;
+    if (email === validEmail && password) {
+        if (adminPasswordHash) {
+            // ✅ Secure mode: scrypt hash comparison with timingSafeEqual
+            adminCredentialsValid = await verifyPassword(password, adminPasswordHash);
+        } else if (adminPasswordLegacy) {
+            // ⚠️ Legacy mode: plain text comparison (log warning)
+            console.warn('[SECURITY] Admin login using plain-text ADMIN_PASSWORD. Migrate to ADMIN_PASSWORD_HASH (run: node scripts/hash-admin-password.mjs)');
+            adminCredentialsValid = password === adminPasswordLegacy;
+        }
+    }
 
     if (adminCredentialsValid) {
         // Check if MFA is enabled for this admin

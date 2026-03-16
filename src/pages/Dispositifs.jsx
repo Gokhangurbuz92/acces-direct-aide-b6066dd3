@@ -35,15 +35,29 @@ export default function Dispositifs() {
     }, [filterDept, filterPublic]);
 
     return (
-        <div className="container mx-auto px-4 py-8">
+        <div className="min-h-screen bg-slate-50">
             <SEO
                 title="Dispositifs territoriaux"
                 description="Découvrez les dispositifs locaux et territoriaux pour vous aider."
                 path="/dispositifs"
             />
 
-            <h1 className="text-3xl font-bold mb-6 text-slate-800">Dispositifs Territoriaux</h1>
+            {/* Gradient Banner */}
+            <div
+                className="relative overflow-hidden py-10 sm:py-14"
+                style={{ background: 'linear-gradient(135deg, #020617 0%, #002D5A 30%, #1e3a8a 60%, #3730a3 85%, #4F46E5 100%)' }}
+            >
+                <div className="pointer-events-none absolute inset-0" aria-hidden="true">
+                    <div className="absolute -top-16 -right-16 w-72 h-72 rounded-full opacity-15" style={{ background: 'radial-gradient(circle, #818cf8 0%, transparent 70%)' }} />
+                </div>
+                <div className="pointer-events-none absolute inset-x-0 bottom-0 h-16 bg-gradient-to-t from-slate-50 to-transparent" aria-hidden="true" />
+                <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                    <h1 className="text-2xl sm:text-3xl font-bold text-white drop-shadow-md">Dispositifs Territoriaux</h1>
+                    <p className="mt-2 text-blue-100/80 text-sm sm:text-base">Découvrez les dispositifs locaux et territoriaux pour vous aider.</p>
+                </div>
+            </div>
 
+            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
             <div className="bg-white p-4 rounded-lg shadow mb-8 flex flex-wrap gap-4 items-center">
                 <select
                     className="border p-2 rounded"
@@ -80,6 +94,7 @@ export default function Dispositifs() {
                     )}
                 </div>
             )}
+            </div>
         </div>
     );
 }

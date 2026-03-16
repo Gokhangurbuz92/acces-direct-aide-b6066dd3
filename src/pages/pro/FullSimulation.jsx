@@ -56,7 +56,7 @@ export default function FullSimulation() {
                     </div>
                     <span className="flex items-center gap-1.5 text-[9px] font-bold text-slate-400 uppercase">
                         <ShieldCheck size={10} className="text-[#0f766e]" />
-                        Simulation 10M%
+                        Beta · Simulation
                     </span>
                 </div>
 

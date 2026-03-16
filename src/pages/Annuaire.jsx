@@ -159,16 +159,27 @@ export default function Annuaire() {
         {liveMessage}
       </p>
 
+      {/* Gradient Banner */}
+      <div
+        className="relative overflow-hidden py-10 sm:py-14"
+        style={{ background: 'linear-gradient(135deg, #020617 0%, #002D5A 30%, #1e3a8a 60%, #3730a3 85%, #4F46E5 100%)' }}
+      >
+        <div className="pointer-events-none absolute inset-0" aria-hidden="true">
+          <div className="absolute -top-16 -right-16 w-72 h-72 rounded-full opacity-15" style={{ background: 'radial-gradient(circle, #818cf8 0%, transparent 70%)' }} />
+        </div>
+        <div className="pointer-events-none absolute inset-x-0 bottom-0 h-16 bg-gradient-to-t from-slate-50 to-transparent" aria-hidden="true" />
+        <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <h1 className="text-2xl sm:text-3xl font-bold text-white drop-shadow-md">Annuaire</h1>
+          <p className="mt-2 text-blue-100/80 text-sm sm:text-base">
+            Recherchez une structure et filtrez par type ou localisation.
+          </p>
+        </div>
+      </div>
+
       {/* Header */}
-      <div className="bg-white border-b border-slate-200 py-6 sticky top-16 z-20 shadow-sm">
+      <div className="bg-white border-b border-slate-200 py-4 sticky top-16 z-20 shadow-sm">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col gap-4">
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-            <div>
-              <h1 className="text-2xl font-bold text-slate-900">Annuaire</h1>
-              <p className="text-slate-600 text-sm">
-                Recherchez une structure et filtrez par type ou localisation.
-              </p>
-            </div>
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-end gap-3">
             <Button
               type="button"
               variant="outline"

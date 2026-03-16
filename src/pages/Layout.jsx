@@ -52,17 +52,28 @@ const NAV_ITEMS = [
   { label: 'Admin', page: 'AdminSync', icon: Info, adminOnly: true },
 ];
 
-const FOOTER_LINKS = [
+const FOOTER_RESSOURCES = [
+  { label: 'Bonnes pratiques', href: '/bonnes-pratiques' },
+  { label: 'Outils', href: '/outils' },
+  { label: 'Dispositifs', href: '/dispositifs' },
+  { label: 'Actualités', href: '/actualites' },
+];
+
+const FOOTER_ABOUT = [
   { label: 'À propos', page: 'APropos' },
   { label: 'Sources & méthode', page: 'SourcesMethode' },
   { label: 'Contact', page: 'Contact' },
-  { label: 'Signaler une erreur', href: '/contact?sujet=signalement_erreur' }, // Points to Contact with subject pre-filled
   { label: 'Partenaires', href: '/partenaires' },
   { label: 'Impact', href: '/impact' },
+  { label: 'Signaler une erreur', href: '/contact?sujet=signalement_erreur' },
+];
+
+const FOOTER_LEGAL = [
   { label: 'Accessibilité', page: 'Accessibilite' },
   { label: 'Mentions légales', page: 'MentionsLegales' },
   { label: 'Politique de confidentialité', page: 'Confidentialite' },
   { label: 'Cookies', page: 'Cookies' },
+  { label: 'Sécurité & RGPD', href: '/securite-et-rgpd' },
 ];
 
 export default function Layout({ children, currentPageName }) {
@@ -215,26 +226,27 @@ export default function Layout({ children, currentPageName }) {
       </a>
 
       {/* Header */}
-      <header role="banner" className="bg-surface border-b border-border sticky top-0 z-40 shadow-sm">
+      <header role="banner" className="bg-white border-b border-slate-200 sticky top-0 z-50 shadow-sm">
         <div className="max-w-7xl mx-auto px-4 sm:px-6">
-          <div className="flex items-center justify-between h-16">
+          <div className="flex items-center justify-between h-16 gap-4">
             {/* Logo */}
-            <div className="flex items-center">
-              {/* Mobile: Logo Icon Only */}
+            <div className="flex items-center flex-shrink-0">
+              {/* Mobile: Logo + Short Name */}
               <Link
                 to={createPageUrl('Home')}
                 className="sm:hidden inline-flex items-center gap-2 rounded-full px-2.5 py-1.5 transition-colors hover:bg-slate-50/80 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-600 focus-visible:ring-offset-2"
                 aria-label="Aller à l’accueil"
               >
-                <Logo variant="icon" size={40} />
+                <img src="/favicon.svg" alt="Logo AccesDirectAide" className="h-8 w-8" />
+
               </Link>
-              {/* Desktop: Logo Full */}
+              {/* Desktop: Logo + Name */}
               <Link
                 to={createPageUrl('Home')}
-                className="hidden sm:inline-flex items-center gap-2 rounded-full px-2.5 py-1.5 transition-colors hover:bg-slate-50/80 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-600 focus-visible:ring-offset-2"
-                aria-label="Aller à l’accueil"
+                className="hidden sm:inline-flex items-center gap-2.5 rounded-full px-2.5 py-1.5 transition-colors hover:bg-slate-50/80 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-600 focus-visible:ring-offset-2"
               >
-                <Logo variant="full" size={40} />
+                <img src="/favicon.svg" alt="Logo AccesDirectAide" className="h-9 w-9" />
+                <span className="text-sm font-bold" style={{ background: 'linear-gradient(135deg, #002D5A 0%, #1e40af 50%, #4F46E5 100%)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>AccesDirectAide</span>
               </Link>
             </div>
 
@@ -263,7 +275,7 @@ export default function Layout({ children, currentPageName }) {
                         role="menu"
                         aria-label={`Sous-menu ${item.label}`}
                       >
-                        <div className="bg-surface rounded-xl shadow-lg border border-border py-2 min-w-[180px]">
+                        <div className="bg-white rounded-xl shadow-lg border border-slate-200 py-2 min-w-[180px]">
                           {item.submenu.map((sub, idx) => (
                             <Link
                               key={idx}
@@ -381,33 +393,64 @@ export default function Layout({ children, currentPageName }) {
       </main>
 
       {/* Footer */}
-      <footer role="contentinfo" className="bg-brand-primary text-white">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 py-12">
-          <div className="grid grid-cols-1 gap-8 sm:grid-cols-2 md:grid-cols-4">
+      <footer
+        role="contentinfo"
+        className="relative overflow-hidden text-white"
+        style={{ background: 'linear-gradient(180deg, #020617 0%, #002D5A 50%, #1e3a8a 100%)' }}
+      >
+        {/* Subtle decorative orb */}
+        <div className="pointer-events-none absolute inset-0" aria-hidden="true">
+          <div
+            className="absolute -bottom-32 right-1/4 w-[400px] h-[400px] rounded-full opacity-10"
+            style={{ background: 'radial-gradient(circle, #6366f1 0%, transparent 70%)' }}
+          />
+        </div>
+
+        <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 py-12">
+          <div className="grid grid-cols-1 gap-8 sm:grid-cols-2 lg:grid-cols-4">
             {/* Logo et description */}
-            <div className="md:col-span-2">
-              <div className="mb-6">
-                <Logo variant="full" tone="white" size={48} />
+            <div>
+              <div className="flex items-center gap-3 mb-4">
+                <div className="w-10 h-10 bg-white rounded-lg flex items-center justify-center flex-shrink-0">
+                  <img src="/favicon.svg" alt="Logo" className="h-6 w-6" />
+                </div>
+                <span className="text-xl font-bold text-white">AccesDirectAide</span>
               </div>
-              <p className="text-white text-sm mb-4">
+              <p className="text-white/70 text-sm mb-3">
                 Un site non lucratif pour vous aider à trouver les aides,
                 les démarches et les structures d&apos;accompagnement près de chez vous.
               </p>
-              <p className="text-white text-sm">
+              <p className="text-white/50 text-xs">
                 Toutes les informations sont vérifiées et sourcées.
-                Zéro fake news, zéro approximation.
               </p>
             </div>
 
-            {/* Liens */}
+            {/* Ressources */}
             <div>
-              <h3 className="font-semibold mb-4">Liens utiles</h3>
+              <h3 className="font-semibold mb-4 text-white">Ressources</h3>
               <ul className="space-y-2">
-                {FOOTER_LINKS.slice(0, 6).map((link, idx) => (
+                {FOOTER_RESSOURCES.map((link, idx) => (
                   <li key={link.label + idx}>
                     <Link
                       to={link.href || createPageUrl(link.page)}
-                      className="text-white hover:text-slate-200 text-sm transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-highlight focus-visible:ring-offset-2 focus-visible:ring-offset-brand-primary rounded"
+                      className="text-white/70 hover:text-white text-sm transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-highlight focus-visible:ring-offset-2 focus-visible:ring-offset-brand-primary rounded"
+                    >
+                      {link.label}
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            </div>
+
+            {/* À propos */}
+            <div>
+              <h3 className="font-semibold mb-4 text-white">À propos</h3>
+              <ul className="space-y-2">
+                {FOOTER_ABOUT.map((link, idx) => (
+                  <li key={link.label + idx}>
+                    <Link
+                      to={link.href || createPageUrl(link.page)}
+                      className="text-white/70 hover:text-white text-sm transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-highlight focus-visible:ring-offset-2 focus-visible:ring-offset-brand-primary rounded"
                     >
                       {link.label}
                     </Link>
@@ -418,13 +461,13 @@ export default function Layout({ children, currentPageName }) {
 
             {/* Légal */}
             <div>
-              <h3 className="font-semibold mb-4">Informations légales</h3>
+              <h3 className="font-semibold mb-4 text-white">Informations légales</h3>
               <ul className="space-y-2">
-                {FOOTER_LINKS.slice(6).map((link, idx) => (
+                {FOOTER_LEGAL.map((link, idx) => (
                   <li key={link.label + idx}>
                     <Link
                       to={link.href || createPageUrl(link.page)}
-                      className="text-white hover:text-slate-200 text-sm transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-highlight focus-visible:ring-offset-2 focus-visible:ring-offset-brand-primary rounded"
+                      className="text-white/70 hover:text-white text-sm transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-highlight focus-visible:ring-offset-2 focus-visible:ring-offset-brand-primary rounded"
                     >
                       {link.label}
                     </Link>
@@ -434,9 +477,9 @@ export default function Layout({ children, currentPageName }) {
             </div>
           </div>
 
-          <div className="border-t border-white/20 mt-8 pt-8 text-center text-sm text-white">
+          <div className="border-t border-white/15 mt-8 pt-8 text-center text-sm text-white/80">
             <p>© {new Date().getFullYear()} AccesDirectAide. Site non lucratif.</p>
-            <p className="mt-2">
+            <p className="mt-2 text-white/60">
               Territoire couvert : Alsace (Bas-Rhin, Haut-Rhin) et aides nationales.
             </p>
           </div>

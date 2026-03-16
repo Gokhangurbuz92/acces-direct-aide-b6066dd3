@@ -45,20 +45,17 @@ export function Header() {
         </div>
       )}
 
-      <header className="fixed top-0 z-50 w-full border-b border-slate-200 bg-white/95 backdrop-blur" style={{ top: brand.features.showGouvBanner ? '24px' : 0 }}>
+      <header className="fixed top-0 z-50 w-full border-b border-slate-200 bg-white shadow-sm" style={{ top: brand.features.showGouvBanner ? '24px' : 0 }}>
         <div className="mx-auto max-w-7xl px-4 sm:px-6">
-          <div className="flex h-20 items-center justify-between">
+          <div className="flex h-16 items-center justify-between gap-4">
             <NavLink
               to="/"
-              className="flex items-center gap-3 rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-400"
+              className="flex items-center gap-2 rounded-lg flex-shrink-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-400"
               onClick={() => setMobileOpen(false)}
               aria-label="Aller à l'accueil"
             >
-              <img src={brand.logo} alt={`Logo ${brand.name}`} className="h-9 w-9" />
-              <div className="hidden sm:block">
-                <p className="text-base font-semibold text-slate-900">{brand.name}</p>
-                <p className="text-xs text-slate-500">{brand.tagline}</p>
-              </div>
+              <img src={brand.logo} alt={`Logo ${brand.name}`} className="h-8 w-8 flex-shrink-0" />
+              <span className="hidden sm:block text-sm font-bold text-slate-900">{brand.name}</span>
               {brand.features.showInstitutionBadge && (
                 <span className="hidden md:inline-flex ml-2 px-2 py-0.5 text-[9px] font-bold uppercase tracking-wider rounded-full" style={{ backgroundColor: brand.colors.primaryLight, color: brand.colors.primary }}>
                   {brand.institutionShort}

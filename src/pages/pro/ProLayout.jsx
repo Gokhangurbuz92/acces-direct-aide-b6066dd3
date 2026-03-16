@@ -2,7 +2,7 @@ import { SkeletonList } from '@/components/ui/skeleton';
 // @ts-nocheck
 import { useEffect, useState } from 'react';
 import { useNavigate, useLocation, Link, Outlet } from 'react-router-dom';
-import { Loader2, LayoutDashboard, Building2, Users, FileText, LogOut, CalendarDays, Clock3, MessageCircle, Video, Shield, BarChart3 } from 'lucide-react';
+import { Loader2, LayoutDashboard, Building2, Users, FileText, LogOut, CalendarDays, Clock3, MessageCircle, Video, Shield, BarChart3, Settings } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import SEO from '@/components/SEO';
 import NotificationCenter from '@/components/NotificationCenter';
@@ -15,7 +15,7 @@ export default function ProLayout() {
     const [loading, setLoading] = useState(true);
     const [user, setUser] = useState(null);
     const [showOnboarding, setShowOnboarding] = useState(false);
-    const proLoginEntry = '/login?mode=pro';
+    const proLoginEntry = '/pro/login';
 
     useEffect(() => {
         const token = localStorage.getItem('pro_token');
@@ -102,6 +102,9 @@ export default function ProLayout() {
                         </>
                     ) : null}
                 </nav>
+                <div className="px-4 pb-2">
+                    <NavLink to="/pro/parametres" icon={Settings}>Paramètres</NavLink>
+                </div>
                 <div className="p-4 border-t border-slate-200">
                     <div className="mb-4">
                         <p className="font-medium text-sm text-slate-900">{user?.email}</p>

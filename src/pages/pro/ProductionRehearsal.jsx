@@ -137,7 +137,7 @@ export default function ProductionRehearsal() {
                             <ShieldCheck size={22} />
                         </div>
                         <div>
-                            <h1 className="text-xl font-bold text-slate-900">Répétition Générale</h1>
+                            <h1 className="text-xl font-bold text-slate-900 flex items-center gap-2">Répétition Générale <span className="px-2 py-0.5 text-[9px] font-bold uppercase bg-purple-100 text-purple-700 rounded-full">Beta</span></h1>
                             <p className="text-xs text-slate-500 italic">
                                 Validation des intégrations de production
                             </p>

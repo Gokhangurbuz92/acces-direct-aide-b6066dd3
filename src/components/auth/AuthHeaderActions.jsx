@@ -1,23 +1,100 @@
-import { Link } from 'react-router-dom';
-import { User, Briefcase, ChevronDown, LogIn, UserPlus } from 'lucide-react';
+import { Link, useNavigate } from 'react-router-dom';
+import { User, Briefcase, ChevronDown, LogIn, UserPlus, Settings, MessageCircle, LogOut } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
     DropdownMenu,
     DropdownMenuContent,
     DropdownMenuItem,
+    DropdownMenuSeparator,
     DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { useQuery } from '@tanstack/react-query';
+import { rdvMessagingClient } from '@/api/rdv-messaging-client';
 
 /**
  * AuthHeaderActions — Menus "Se connecter" / "S'inscrire" unifiés
  * 
- * Remplace les anciens boutons directs "Se connecter" + "Créer un compte (Pro)"
- * par deux dropdowns propres Particulier / Professionnel.
+ * Quand l'utilisateur est connecté : affiche un avatar dropdown avec
+ * Paramètres, Messages, Déconnexion.
+ * 
+ * Quand non connecté : affiche les dropdowns Particulier / Professionnel.
  * 
  * Sécurité : le bouton "Administration" est supprimé de la vue publique.
  * L'admin accède via /admin/login directement.
  */
 export function AuthHeaderActions() {
+    const navigate = useNavigate();
+
+    const authQuery = useQuery({
+        queryKey: ['header-auth-check'],
+        queryFn: () => rdvMessagingClient.authMe(),
+        staleTime: 60_000,
+        retry: false,
+        refetchOnWindowFocus: false,
+    });
+
+    const isUser = authQuery.data?.session?.kind === 'user';
+    const userEmail = authQuery.data?.session?.user?.email;
+
+    const handleLogout = async () => {
+        try {
+            await fetch('/api/auth/logout', { method: 'POST', credentials: 'include' });
+        } catch {
+            // best effort
+        }
+        localStorage.removeItem('ada_citizen_prefs');
+        navigate('/');
+        window.location.reload();
+    };
+
+    // ─── Connected user ───────────────────────
+    if (isUser) {
+        return (
+            <div className="flex items-center gap-2">
+                <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                        <Button variant="ghost" size="sm" className="gap-1.5">
+                            <div className="h-7 w-7 rounded-full bg-blue-100 flex items-center justify-center text-blue-700 text-xs font-bold flex-shrink-0">
+                                {userEmail ? userEmail[0].toUpperCase() : 'U'}
+                            </div>
+                            <span className="hidden sm:inline text-sm max-w-[120px] truncate">
+                                {userEmail || 'Mon compte'}
+                            </span>
+                            <ChevronDown className="h-3 w-3 opacity-50" aria-hidden="true" />
+                        </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end" className="w-56">
+                        <div className="px-3 py-2 border-b mb-1">
+                            <p className="text-xs text-slate-500">Connecté en tant que</p>
+                            <p className="text-sm font-medium truncate">{userEmail}</p>
+                        </div>
+                        <DropdownMenuItem asChild>
+                            <Link to="/compte/messages" className="flex items-center gap-2.5 cursor-pointer">
+                                <MessageCircle className="h-4 w-4 text-blue-500" />
+                                <span>Mes messages</span>
+                            </Link>
+                        </DropdownMenuItem>
+                        <DropdownMenuItem asChild>
+                            <Link to="/compte/parametres" className="flex items-center gap-2.5 cursor-pointer">
+                                <Settings className="h-4 w-4 text-slate-500" />
+                                <span>Paramètres</span>
+                            </Link>
+                        </DropdownMenuItem>
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem
+                            className="flex items-center gap-2.5 cursor-pointer text-red-600 focus:text-red-600"
+                            onClick={handleLogout}
+                        >
+                            <LogOut className="h-4 w-4" />
+                            <span>Déconnexion</span>
+                        </DropdownMenuItem>
+                    </DropdownMenuContent>
+                </DropdownMenu>
+            </div>
+        );
+    }
+
+    // ─── Not connected ────────────────────────
     return (
         <div className="flex items-center gap-2">
             {/* Menu "Se connecter" */}
@@ -91,6 +168,49 @@ export function AuthHeaderActions() {
  */
 export function AuthMobileActions({ onNavigate }) {
     const linkClass = "flex items-center gap-2.5 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors hover:bg-slate-50";
+
+    const authQuery = useQuery({
+        queryKey: ['header-auth-check'],
+        queryFn: () => rdvMessagingClient.authMe(),
+        staleTime: 60_000,
+        retry: false,
+        refetchOnWindowFocus: false,
+    });
+
+    const isUser = authQuery.data?.session?.kind === 'user';
+
+    const handleLogout = async () => {
+        try {
+            await fetch('/api/auth/logout', { method: 'POST', credentials: 'include' });
+        } catch {
+            // best effort
+        }
+        localStorage.removeItem('ada_citizen_prefs');
+        if (onNavigate) onNavigate();
+        window.location.href = '/';
+    };
+
+    if (isUser) {
+        return (
+            <div className="space-y-1">
+                <p className="px-3 py-1 text-xs font-semibold uppercase tracking-wider text-slate-400">
+                    Mon compte
+                </p>
+                <Link to="/compte/messages" className={linkClass} onClick={onNavigate}>
+                    <MessageCircle className="h-4 w-4 text-blue-500" />
+                    Mes messages
+                </Link>
+                <Link to="/compte/parametres" className={linkClass} onClick={onNavigate}>
+                    <Settings className="h-4 w-4 text-slate-500" />
+                    Paramètres
+                </Link>
+                <button onClick={handleLogout} className={`${linkClass} w-full text-red-600 hover:bg-red-50`}>
+                    <LogOut className="h-4 w-4" />
+                    Déconnexion
+                </button>
+            </div>
+        );
+    }
 
     return (
         <div className="space-y-1">

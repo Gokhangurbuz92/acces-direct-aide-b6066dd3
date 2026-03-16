@@ -113,7 +113,7 @@ export default function HiveOrchestrator() {
                             <Network size={22} className={scanning ? 'animate-spin' : ''} />
                         </div>
                         <div>
-                            <h1 className="text-xl font-bold text-slate-900">La Ruche IA</h1>
+                            <h1 className="text-xl font-bold text-slate-900 flex items-center gap-2">La Ruche IA <span className="px-2 py-0.5 text-[9px] font-bold uppercase bg-purple-100 text-purple-700 rounded-full">Beta</span></h1>
                             <p className="text-xs text-slate-500 flex items-center gap-1.5">
                                 <RefreshCw size={10} className="text-teal-600" />
                                 Enrichissement autonome du contenu

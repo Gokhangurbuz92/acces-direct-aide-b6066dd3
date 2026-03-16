@@ -117,89 +117,99 @@ export default function AccessibilityPanel() {
             <span className="hidden md:inline">Accessibilité</span>
           </Button>
         </PopoverTrigger>
-        <PopoverContent className="w-72 p-4" align="end">
-          <div className="space-y-4">
-            <h3 className="font-semibold text-foreground text-lg">
-              Adapter l'affichage
-            </h3>
+        <PopoverContent className="w-[280px] p-4 bg-white border border-slate-200 shadow-xl rounded-xl" align="end" sideOffset={8}>
+          <div className="space-y-3">
+            {/* Title with accent */}
+            <div className="flex items-center gap-2 pb-1">
+              <div className="w-1 h-5 rounded-full bg-gradient-to-b from-blue-600 to-indigo-600" />
+              <h3 className="font-bold text-slate-900 text-sm">
+                Adapter l'affichage
+              </h3>
+            </div>
 
             {/* Taille du texte */}
-            <div className="space-y-2">
-              <span className="text-sm font-medium text-muted-foreground">
+            <div className="space-y-1.5">
+              <span className="text-[10px] font-semibold text-slate-400 uppercase tracking-widest">
                 Taille du texte
               </span>
               <div className="flex items-center gap-2">
                 <Button
                   variant="outline"
-                  size="icon"
+                  size="sm"
                   onClick={() => adjustFontSize(-10)}
                   aria-label="Réduire la taille du texte"
                   disabled={settings.fontSize <= 80}
+                  className="h-10 w-10 p-0 text-slate-600 bg-slate-50 border-slate-200 hover:bg-slate-100 hover:border-slate-300 rounded-lg transition-all"
                 >
-                  <Minus className="h-4 w-4" aria-hidden="true" />
+                  <span className="text-xl font-bold leading-none">−</span>
                 </Button>
-                <span className="flex-1 text-center font-medium text-foreground">
+                <span className="flex-1 text-center font-bold text-slate-900 text-lg tabular-nums">
                   {settings.fontSize}%
                 </span>
                 <Button
                   variant="outline"
-                  size="icon"
+                  size="sm"
                   onClick={() => adjustFontSize(10)}
                   aria-label="Augmenter la taille du texte"
                   disabled={settings.fontSize >= 150}
+                  className="h-10 w-10 p-0 text-slate-600 bg-slate-50 border-slate-200 hover:bg-slate-100 hover:border-slate-300 rounded-lg transition-all"
                 >
-                  <Plus className="h-4 w-4" aria-hidden="true" />
+                  <span className="text-xl font-bold leading-none">+</span>
                 </Button>
               </div>
             </div>
 
+            <hr className="border-slate-100" />
+
             {/* Contraste */}
-            <div className="space-y-2">
-              <span className="text-sm font-medium text-muted-foreground">
+            <div className="space-y-1.5">
+              <span className="text-[10px] font-semibold text-slate-400 uppercase tracking-widest">
                 Contraste
               </span>
-              <div className="flex gap-2">
+              <div className="grid grid-cols-3 gap-1.5">
                 <Button
                   variant={settings.contrast === 'normal' ? 'default' : 'outline'}
                   size="sm"
                   onClick={() => setSettings(prev => ({ ...prev, contrast: 'normal' }))}
-                  className="flex-1"
+                  className={`text-xs h-8 ${settings.contrast !== 'normal' ? 'border-slate-200 text-slate-600 bg-slate-50 hover:bg-slate-100' : ''}`}
                 >
-                  <Sun className="h-4 w-4 mr-1" aria-hidden="true" />
+                  <Sun className="h-3 w-3 mr-1" aria-hidden="true" />
                   Normal
                 </Button>
                 <Button
                   variant={settings.contrast === 'high' ? 'default' : 'outline'}
                   size="sm"
                   onClick={() => setSettings(prev => ({ ...prev, contrast: 'high' }))}
-                  className="flex-1"
+                  className={`text-xs h-8 ${settings.contrast !== 'high' ? 'border-slate-200 text-slate-600 bg-slate-50 hover:bg-slate-100' : ''}`}
                 >
-                  <Eye className="h-4 w-4 mr-1" aria-hidden="true" />
+                  <Eye className="h-3 w-3 mr-1" aria-hidden="true" />
                   Fort
                 </Button>
                 <Button
                   variant={settings.contrast === 'dark' ? 'default' : 'outline'}
                   size="sm"
                   onClick={() => setSettings(prev => ({ ...prev, contrast: 'dark' }))}
-                  className="flex-1"
+                  className={`text-xs h-8 ${settings.contrast !== 'dark' ? 'border-slate-200 text-slate-600 bg-slate-50 hover:bg-slate-100' : ''}`}
                 >
-                  <Moon className="h-4 w-4 mr-1" aria-hidden="true" />
+                  <Moon className="h-3 w-3 mr-1" aria-hidden="true" />
                   Sombre
                 </Button>
               </div>
             </div>
 
+            <hr className="border-slate-100" />
+
             {/* Interligne */}
-            <div className="space-y-2">
-              <span className="text-sm font-medium text-muted-foreground">
+            <div className="space-y-1.5">
+              <span className="text-[10px] font-semibold text-slate-400 uppercase tracking-widest">
                 Espacement des lignes
               </span>
-              <div className="flex gap-2">
+              <div className="grid grid-cols-2 gap-1.5">
                 <Button
                   variant={settings.lineHeight === 'normal' ? 'default' : 'outline'}
                   size="sm"
                   onClick={() => setSettings(prev => ({ ...prev, lineHeight: 'normal' }))}
-                  className="flex-1"
+                  className={`text-xs h-8 ${settings.lineHeight !== 'normal' ? 'border-slate-200 text-slate-600 bg-slate-50 hover:bg-slate-100' : ''}`}
                 >
                   Normal
                 </Button>
@@ -207,37 +217,37 @@ export default function AccessibilityPanel() {
                   variant={settings.lineHeight === 'large' ? 'default' : 'outline'}
                   size="sm"
                   onClick={() => setSettings(prev => ({ ...prev, lineHeight: 'large' }))}
-                  className="flex-1"
+                  className={`text-xs h-8 ${settings.lineHeight !== 'large' ? 'border-slate-200 text-slate-600 bg-slate-50 hover:bg-slate-100' : ''}`}
                 >
-                  <Maximize2 className="h-4 w-4 mr-1" aria-hidden="true" />
+                  <Maximize2 className="h-3 w-3 mr-1" aria-hidden="true" />
                   Large
                 </Button>
               </div>
             </div>
 
-            {/* Mode simplifié */}
-            <div className="space-y-2">
+            <hr className="border-slate-100" />
+
+            {/* Mode simplifié + Réinitialiser */}
+            <div className="space-y-1.5">
               <Button
                 variant={settings.simplifiedMode ? 'default' : 'outline'}
                 size="sm"
                 onClick={() => setSettings(prev => ({ ...prev, simplifiedMode: !prev.simplifiedMode }))}
-                className="w-full"
+                className={`w-full text-xs h-8 ${!settings.simplifiedMode ? 'border-slate-200 text-slate-600 bg-slate-50 hover:bg-slate-100' : ''}`}
               >
-                <Type className="h-4 w-4 mr-2" aria-hidden="true" />
+                <Type className="h-3 w-3 mr-1.5" aria-hidden="true" />
                 Mode lecture facile
               </Button>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={resetSettings}
+                className="w-full text-[11px] h-7 text-slate-400 hover:text-slate-600"
+              >
+                <RotateCcw className="h-3 w-3 mr-1.5" aria-hidden="true" />
+                Réinitialiser
+              </Button>
             </div>
-
-            {/* Réinitialiser */}
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={resetSettings}
-              className="w-full text-muted-foreground"
-            >
-              <RotateCcw className="h-4 w-4 mr-2" aria-hidden="true" />
-              Réinitialiser
-            </Button>
           </div>
         </PopoverContent>
       </Popover>

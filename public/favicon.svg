@@ -1,19 +1,43 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120" fill="#002D5A">
-  <!-- Row 1: 3 open brackets (top-left corners) -->
-  <path d="M4 4h12v4H8v12H4z"/>
-  <path d="M44 4h12v4H48v12h-4z"/>
-  <path d="M84 4h16v16h-4V8H84z"/>
+  <!-- ADA grid logo - bold design optimized for all sizes -->
+  <!-- Row 1: Top brackets -->
+  <!-- ⌐ top-left -->
+  <rect x="0" y="0" width="37" height="13"/>
+  <rect x="0" y="0" width="13" height="37"/>
+  <!-- ∩ top-center -->
+  <rect x="42" y="0" width="36" height="13"/>
+  <rect x="42" y="0" width="13" height="37"/>
+  <rect x="65" y="0" width="13" height="37"/>
+  <!-- ⌐ mirror top-right -->
+  <rect x="83" y="0" width="37" height="13"/>
+  <rect x="107" y="0" width="13" height="37"/>
 
-  <!-- Row 2: A D A -->
-  <!-- A -->
-  <path d="M4 44h4v16H4zm12 0h4v16h-4zM8 44h8v4H8zm8 52h4v8h-4z"/>
-  <!-- D -->
-  <path d="M44 44h4v28h-4zm4 0h8v4h-8zm8 4h4v20h-4zm-8 24h8v4h-8z"/>
-  <!-- A -->
-  <path d="M84 44h4v28h-4zm16 0h4v28h-4zm4 0h12v4H92zM88 56h12v4H88z"/>
+  <!-- Row 2: ADA letters -->
+  <!-- A left -->
+  <rect x="0" y="42" width="13" height="36"/>
+  <rect x="24" y="42" width="13" height="36"/>
+  <rect x="0" y="42" width="37" height="13"/>
+  <rect x="0" y="57" width="37" height="11"/>
+  <!-- D center -->
+  <rect x="42" y="42" width="13" height="36"/>
+  <rect x="42" y="42" width="36" height="13"/>
+  <rect x="65" y="47" width="13" height="25"/>
+  <rect x="42" y="65" width="36" height="13"/>
+  <!-- A right -->
+  <rect x="83" y="42" width="13" height="36"/>
+  <rect x="107" y="42" width="13" height="36"/>
+  <rect x="83" y="42" width="37" height="13"/>
+  <rect x="83" y="57" width="37" height="11"/>
 
-  <!-- Row 3: 3 open brackets (bottom-right corners) -->
-  <path d="M4 104v-12h4v8h12v4z"/>
-  <path d="M44 104v-12h4v8h12v4z"/>
-  <path d="M104 104v-12h-4v8H84v4h20z"/>
+  <!-- Row 3: Bottom brackets -->
+  <!-- ⌞ bottom-left -->
+  <rect x="0" y="83" width="13" height="37"/>
+  <rect x="0" y="107" width="37" height="13"/>
+  <!-- ∪ bottom-center -->
+  <rect x="42" y="83" width="13" height="37"/>
+  <rect x="65" y="83" width="13" height="37"/>
+  <rect x="42" y="107" width="36" height="13"/>
+  <!-- ⌟ bottom-right -->
+  <rect x="107" y="83" width="13" height="37"/>
+  <rect x="83" y="107" width="37" height="13"/>
 </svg>

@@ -1,103 +1,52 @@
-import { useState, useCallback } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
-import { Video, ArrowLeft, Copy, Check } from 'lucide-react';
-import VisioWindow from '@/components/Visio/VisioWindow';
+import { useOutletContext, Link } from 'react-router-dom';
+import { Video, Construction, ArrowLeft } from 'lucide-react';
+import SEO from '@/components/SEO';
 
 /**
- * Pro Visio Page
- * Wrapper page for Jitsi video conferencing, accessible at /pro/visio/:roomId
+ * ProVisio — Placeholder "Bientôt disponible"
+ * 
+ * La visioconférence nécessite une infrastructure TURN/STUN
+ * qui n'est pas encore disponible. Cette page informe les
+ * utilisateurs clairement.
  */
 export default function ProVisio() {
-    const { roomId } = useParams();
-    const navigate = useNavigate();
-    const [isInVisio, setIsInVisio] = useState(false);
-    const [copied, setCopied] = useState(false);
-
-    const fullRoomName = `ada-v2-${roomId || crypto.randomUUID()}`;
-    const visioLink = `${window.location.origin}/pro/visio/${roomId || fullRoomName}`;
-
-    const handleClose = useCallback(() => {
-        setIsInVisio(false);
-        navigate('/pro/dashboard');
-    }, [navigate]);
-
-    const handleCopyLink = useCallback(() => {
-        navigator.clipboard.writeText(visioLink).then(() => {
-            setCopied(true);
-            setTimeout(() => setCopied(false), 2000);
-        });
-    }, [visioLink]);
-
-    if (isInVisio) {
-        return (
-            <VisioWindow
-                roomName={fullRoomName}
-                displayName="Professionnel ADA"
-                onClose={handleClose}
-            />
-        );
-    }
+    useOutletContext(); // Keep ProLayout context active
 
     return (
-        <div className="space-y-6 max-w-2xl mx-auto">
-            <button
-                type="button"
-                onClick={() => navigate('/pro/dashboard')}
-                className="flex items-center gap-2 text-slate-500 hover:text-slate-700 transition-colors"
-            >
-                <ArrowLeft size={16} />
-                Retour au tableau de bord
-            </button>
-
-            <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-8">
-                <div className="flex items-center gap-4 mb-6">
-                    <div className="p-3 bg-indigo-100 rounded-xl">
-                        <Video className="text-indigo-600" size={24} />
-                    </div>
-                    <div>
-                        <h1 className="text-xl font-bold text-slate-900">
-                            Rendez-vous en visioconférence
-                        </h1>
-                        <p className="text-sm text-slate-500">
-                            Salle sécurisée propulsée par Jitsi Meet
-                        </p>
-                    </div>
+        <div className="flex items-center justify-center min-h-[60vh]">
+            <SEO
+                title="Visioconférence — Bientôt disponible"
+                description="Module de visioconférence en cours de développement."
+                path="/pro/visio"
+                noindex={true}
+            />
+            <div className="max-w-md w-full bg-white rounded-2xl shadow-lg p-8 text-center">
+                <div className="w-16 h-16 bg-amber-100 rounded-full flex items-center justify-center mx-auto mb-6">
+                    <Video className="w-8 h-8 text-amber-600" />
                 </div>
 
-                <div className="bg-slate-50 rounded-xl p-4 mb-6">
-                    <span className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-2 block">
-                        Lien de la salle
-                    </span>
-                    <div className="flex items-center gap-2">
-                        <code className="flex-1 text-sm bg-white px-3 py-2 rounded-lg border border-slate-200 truncate">
-                            {visioLink}
-                        </code>
-                        <button
-                            type="button"
-                            onClick={handleCopyLink}
-                            className="p-2 rounded-lg border border-slate-200 hover:bg-white transition-colors"
-                            aria-label="Copier le lien"
-                        >
-                            {copied ? (
-                                <Check size={16} className="text-emerald-500" />
-                            ) : (
-                                <Copy size={16} className="text-slate-400" />
-                            )}
-                        </button>
-                    </div>
-                    <p className="text-[11px] text-slate-400 mt-2">
-                        Partagez ce lien avec le bénéficiaire pour rejoindre la visio.
-                    </p>
+                <h1 className="text-2xl font-bold text-slate-900 mb-2">
+                    Visioconférence
+                </h1>
+
+                <div className="inline-flex items-center gap-2 px-3 py-1 bg-amber-100 text-amber-700 rounded-full text-sm font-medium mb-4">
+                    <Construction className="w-4 h-4" />
+                    Bientôt disponible
                 </div>
 
-                <button
-                    type="button"
-                    onClick={() => setIsInVisio(true)}
-                    className="w-full py-3 bg-indigo-600 text-white font-bold rounded-xl hover:bg-indigo-700 transition-colors flex items-center justify-center gap-2 focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-2"
+                <p className="text-slate-600 mb-6">
+                    Cette fonctionnalité est en cours de développement.
+                    Elle permettra de réaliser des consultations vidéo sécurisées
+                    directement depuis la plateforme.
+                </p>
+
+                <Link
+                    to="/pro/dashboard"
+                    className="inline-flex items-center gap-2 text-blue-600 hover:text-blue-800 font-medium"
                 >
-                    <Video size={20} />
-                    Démarrer la visioconférence
-                </button>
+                    <ArrowLeft className="w-4 h-4" />
+                    Retour au tableau de bord
+                </Link>
             </div>
         </div>
     );

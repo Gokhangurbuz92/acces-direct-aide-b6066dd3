@@ -23,21 +23,28 @@ export default function Impact() {
     ];
 
     return (
-        <div className="container mx-auto px-4 py-8">
+        <div className="min-h-screen bg-slate-50 pb-20">
             <SEO
                 title="Impact & Transparence"
                 description="Chiffres clés et impact d'Accès Direct Aide sur l'accès aux droits."
                 path="/impact"
             />
 
-            <header className="mb-12 text-center">
-                <h1 className="text-3xl font-bold text-gray-900 mb-4">Notre Impact</h1>
-                <p className="text-xl text-gray-600 max-w-2xl mx-auto">
-                    Nous mesurons l'utilité de notre plateforme par des indicateurs concrets.
-                    Voici les chiffres clés à ce jour.
-                </p>
-            </header>
+            {/* Hero Section */}
+            <div className="bg-slate-900 text-white pt-16 pb-24 border-b border-slate-800">
+                <div className="max-w-4xl mx-auto px-4 sm:px-6 text-center">
+                    <div className="inline-flex justify-center items-center w-16 h-16 rounded-2xl bg-blue-500/20 text-blue-400 mb-6 ring-1 ring-blue-500/30">
+                        <BarChart className="w-8 h-8" />
+                    </div>
+                    <h1 className="text-3xl md:text-5xl font-bold mb-6 tracking-tight text-slate-50">Notre Impact</h1>
+                    <p className="text-lg md:text-xl text-slate-300 max-w-2xl mx-auto leading-relaxed">
+                        Nous mesurons l'utilité de notre plateforme par des indicateurs concrets.
+                        Voici les chiffres clés à ce jour.
+                    </p>
+                </div>
+            </div>
 
+            <div className="max-w-4xl mx-auto px-4 sm:px-6 -mt-10 relative z-10 space-y-8">
             {/* Counters */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-16">
                 {metrics.map((m, i) => (
@@ -86,6 +93,7 @@ export default function Impact() {
                         Devenir partenaire
                     </a>
                 </div>
+            </div>
             </div>
         </div>
     );

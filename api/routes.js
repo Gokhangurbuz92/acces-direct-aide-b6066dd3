@@ -127,6 +127,9 @@ export const routes = [
     // [REMOVED] cron/purge — references deleted Appointment/Beneficiary/Attachment/Message tables
     { path: 'cron/link-check', match: 'exact', handler: lazy('./_handlers/cron/link-check.js') },
     { path: 'cron/rdv-reminder', match: 'exact', handler: lazy('./_handlers/cron/rdv-reminder.js') },
+    { path: 'cron/ingest-demarches', match: 'exact', handler: lazy('./_handlers/cron/ingest-demarches.js') },
+    { path: 'cron/ingest-annuaire', match: 'exact', handler: lazy('./_handlers/cron/ingest-annuaire.js') },
+    { path: 'cron/backup-db', match: 'exact', handler: lazy('./_handlers/cron/backup-db.js') },
 
     // --- Admin ---
     // [REMOVED] admin/privacy/export, admin/privacy/delete — reference deleted Beneficiary table

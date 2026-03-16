@@ -216,7 +216,7 @@ export default function ContentFactory() {
                             <Cpu size={22} className={running ? 'animate-spin' : ''} />
                         </div>
                         <div>
-                            <h1 className="text-xl font-bold text-slate-900">L&apos;Usine à Contenu</h1>
+                            <h1 className="text-xl font-bold text-slate-900 flex items-center gap-2">L&apos;Usine à Contenu <span className="px-2 py-0.5 text-[9px] font-bold uppercase bg-purple-100 text-purple-700 rounded-full">Beta</span></h1>
                             <p className="text-xs text-slate-500 italic">Orchestration autonome des agents IA</p>
                         </div>
                     </div>

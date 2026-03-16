@@ -243,6 +243,9 @@ export const env = {
     get adminPassword() {
       return getEnv('ADMIN_PASSWORD');
     },
+    get adminPasswordHash() {
+      return getEnv('ADMIN_PASSWORD_HASH');
+    },
     get bypassSecret() {
       return getEnv('BYPASS_SECRET');
     },

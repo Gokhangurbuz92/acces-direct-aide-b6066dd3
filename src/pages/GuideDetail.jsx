@@ -4,6 +4,7 @@ import { useParams, Link } from 'react-router-dom';
 import SEO from '@/components/SEO';
 import { Printer } from 'lucide-react';
 import EmptyState from '@/components/ui/EmptyState';
+import LazyImage from '@/components/ui/LazyImage';
 
 export default function GuideDetail() {
     const { slug } = useParams();
@@ -90,7 +91,7 @@ export default function GuideDetail() {
                             {step.titre && <h3 className="text-2xl font-bold text-blue-900 mb-3">{idx + 1}. {step.titre}</h3>}
                             {step.texte && <div className="prose max-w-none text-gray-700 whitespace-pre-line">{step.texte}</div>}
                             {step.image && (
-                                <img src={step.image} alt="" className="mt-4 rounded shadow max-w-full md:max-w-md" />
+                                <LazyImage src={step.image} alt="" className="mt-4 rounded shadow max-w-full md:max-w-md" />
                             )}
                         </section>
                     ))}

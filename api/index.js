@@ -1,4 +1,5 @@
 import { routes } from './routes.js';
+import { csrfCheck, ensureCsrfCookie } from './_utils/csrf.js';
 import Sentry from './_utils/sentry.js';
 import logger from './_utils/logger.js';
 import { randomUUID } from 'crypto';
@@ -141,7 +142,7 @@ export default async function handler(req, res) {
             res.setHeader('Vary', 'Origin');
         }
         res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS, PUT, PATCH, DELETE');
-        res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, x-cron-secret');
+        res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, x-cron-secret, x-csrf-token');
         res.setHeader('x-request-id', requestId);
 
         // 2b. OWASP Security Headers (SEC-02)
@@ -181,10 +182,23 @@ export default async function handler(req, res) {
             log.warn({ msg: 'CSRF blocked', origin, method: req.method });
             return res.status(403).json({
                 error: 'Forbidden',
-                message: 'Origin not allowed (CSRF protection)',
+                message: 'Origin not allowed (CSRF protection — SEC-03)',
                 requestId,
             });
         }
+
+        // 2d. CSRF Double-Submit Cookie (SEC-04)
+        const csrf = csrfCheck(req, res);
+        if (!csrf.ok) {
+            log.warn({ msg: 'CSRF double-submit rejected', method: req.method });
+            return res.status(403).json({
+                error: 'Forbidden',
+                message: csrf.error,
+                requestId,
+            });
+        }
+        // Ensure CSRF cookie is set for browser clients
+        ensureCsrfCookie(req, res);
 
         // 3. Request Logging
         const urlObj = new URL(req.url, `https://${req.headers.host}`);

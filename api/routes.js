@@ -162,4 +162,7 @@ export const routes = [
     // --- Phase 2: E2EE Messaging & Outlook ---
     { path: 'secure-messages', match: 'exact', handler: lazy('./_handlers/secure-messages.js') },
     { path: 'auth/callback/outlook', match: 'exact', handler: lazy('./_handlers/auth/outlook-callback.js') },
+
+    // --- Documentation ---
+    { path: 'docs/openapi.json', match: 'exact', handler: lazy('./_handlers/openapi.js') },
 ];

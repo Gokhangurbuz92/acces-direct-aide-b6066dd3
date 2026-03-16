@@ -141,6 +141,38 @@ export default async function handler(req, res) {
     // --- Early check: Gemini API key availability ---
     const geminiKey = process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY;
     if (!geminiKey) {
+        // 🧪 MOCK MODE — testable AI in local dev without API keys (Audit Item 7)
+        if (process.env.NODE_ENV === 'development') {
+            log.info({ msg: 'assistant.mock_mode', requestId });
+
+            const MOCK_RESPONSES = [
+                {
+                    answer: `Voici ce que je peux vous dire sur votre demande :\n\n**D'après les informations disponibles**, plusieurs aides pourraient correspondre à votre situation. Je vous recommande de consulter [service-public.fr](https://www.service-public.fr) pour vérifier vos droits.\n\n*[Mode démo — en production, l'IA Gemini fournira une réponse personnalisée]*`,
+                    intent: 'aide_info',
+                },
+                {
+                    answer: `Bonne question ! Voici les étapes principales :\n\n1. **Vérifiez votre éligibilité** sur le site officiel de la CAF\n2. **Rassemblez les pièces justificatives** (avis d'imposition, justificatif de domicile)\n3. **Faites votre demande en ligne** sur [caf.fr](https://www.caf.fr)\n\nLe traitement prend généralement 2 à 4 semaines.\n\n*[Mode démo — réponse simulée]*`,
+                    intent: 'demarche_howto',
+                },
+            ];
+            const mock = MOCK_RESPONSES[Math.floor(Math.random() * MOCK_RESPONSES.length)];
+
+            return res.status(200).json({
+                answer: mock.answer,
+                citations: [],
+                logId: null,
+                verified: false,
+                mock: true,
+                meta: {
+                    model: 'mock-dev',
+                    rulepack: mock.intent,
+                    searchMode: 'mock',
+                    sourceCount: 0,
+                    requestId,
+                },
+            });
+        }
+
         log.warn({ msg: 'assistant.api_key_missing', requestId });
         return res.status(503).json({
             ok: false,

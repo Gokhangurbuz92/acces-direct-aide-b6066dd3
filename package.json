@@ -12,7 +12,9 @@
   "scripts": {
     "dev": "vite",
     "dev:api": "npx tsx dev-server.js",
-    "dev:full": "npx concurrently \"npm run dev\" \"npm run dev:api\"",
+    "dev:setup": "npx drizzle-kit push && npx tsx scripts/seed.mjs",
+    "dev:full": "npx concurrently --names FE,API --prefix-colors cyan,yellow \"npm run dev\" \"npm run dev:api\"",
+    "dev:all": "npm run dev:setup && npm run dev:full",
     "build": "vite build && node scripts/prerender.mjs && node scripts/generate-sitemap.mjs",
     "vercel-build": "node scripts/vercel-build.mjs",
     "db:generate": "drizzle-kit generate",

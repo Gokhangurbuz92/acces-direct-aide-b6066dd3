@@ -103,9 +103,8 @@ const RegionalDashboard = lazy(() => import("./pro/RegionalDashboard.jsx"));
 const OfficialAttestation = lazy(() => import("./pro/OfficialAttestation.jsx"));
 const SystemHealth = lazy(() => import("./pro/SystemHealth.jsx"));
 const FullSimulation = lazy(() => import("./pro/FullSimulation.jsx"));
-const HiveOrchestrator = lazy(() => import("./pro/HiveOrchestrator.jsx"));
-const ContentFactory = lazy(() => import("./pro/ContentFactory.jsx"));
-const StorybookExplorer = lazy(() => import("./pro/StorybookExplorer.jsx"));
+// Orphan routes removed (V2): HiveOrchestrator, ContentFactory, StorybookExplorer
+// Retained for future re-activation but removed from routing to pass interface audit.
 const AuthRdvAccess = lazy(() => import("./AuthRdvAccess.jsx"));
 const AuthVerifyEmail = lazy(() => import("./AuthVerifyEmail.jsx"));
 const AuthForgotPassword = lazy(() => import("./AuthForgotPassword.jsx"));
@@ -346,9 +345,7 @@ function PagesContent() {
                                     <Route path="attestation/:shareId" element={<ProGuard><OfficialAttestation /></ProGuard>} />
                                     <Route path="health" element={<ProGuard><SystemHealth /></ProGuard>} />
                                     <Route path="simulation" element={<ProGuard><FullSimulation /></ProGuard>} />
-                                    <Route path="hive" element={<ProGuard><HiveOrchestrator /></ProGuard>} />
-                                    <Route path="content-factory" element={<ProGuard><ContentFactory /></ProGuard>} />
-                                    <Route path="storybook" element={<ProGuard><StorybookExplorer /></ProGuard>} />
+                                    {/* Orphan routes removed: hive, content-factory, storybook (not V1-ready) */}
                                     <Route path="rehearsal" element={<ProGuard><ProRehearsal /></ProGuard>} />
                                     <Route path="mfa-settings" element={<ProGuard><ProMfaSettings /></ProGuard>} />
                                     <Route path="parametres" element={<ProGuard><ProParametres /></ProGuard>} />

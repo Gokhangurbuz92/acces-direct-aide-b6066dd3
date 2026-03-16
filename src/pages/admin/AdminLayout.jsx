@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import { useNavigate, useLocation, Link, Outlet, Navigate } from 'react-router-dom';
 import { Helmet } from 'react-helmet-async';
 import { apiClient } from '@/api/client';
@@ -11,6 +11,7 @@ import {
     TestTube, Clock, BookOpen,
     LogOut, ChevronDown, ChevronRight, Menu, X, Settings
 } from 'lucide-react';
+import { hasPermission, SIDEBAR_PERMISSIONS } from '@/lib/rbac';
 
 /**
  * AdminLayout — Sidebar navigation layout for all admin pages.
@@ -223,7 +224,13 @@ export default function AdminLayout() {
 
             {/* Navigation */}
             <nav className="flex-1 overflow-y-auto p-3 space-y-1">
-                {SIDEBAR_SECTIONS.map(section => (
+                {SIDEBAR_SECTIONS
+                    .filter(section => {
+                        const requiredPerm = SIDEBAR_PERMISSIONS[section.label];
+                        if (!requiredPerm) return true; // No restriction
+                        return hasPermission(user?.role, requiredPerm);
+                    })
+                    .map(section => (
                     <SidebarSection
                         key={section.label}
                         section={section}
@@ -244,7 +251,14 @@ export default function AdminLayout() {
             <div className="p-4 border-t border-slate-200">
                 <div className="mb-3">
                     <p className="font-medium text-sm text-slate-900">{user?.email || 'Admin'}</p>
-                    <p className="text-xs text-slate-500">{user?.role || 'admin'}</p>
+                    <p className="text-xs text-slate-500 flex items-center gap-1.5">
+                        <span className="inline-block h-1.5 w-1.5 rounded-full bg-green-500" aria-hidden="true" />
+                        {user?.role === 'admin' || user?.role === 'super_admin' ? 'Super Admin' :
+                         user?.role === 'editor' ? 'Éditeur' :
+                         user?.role === 'moderator' ? 'Modérateur' :
+                         user?.role === 'viewer' ? 'Auditeur' :
+                         user?.role || 'admin'}
+                    </p>
                 </div>
                 <button
                     onClick={handleLogout}

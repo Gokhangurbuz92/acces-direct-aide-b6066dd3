@@ -4,7 +4,8 @@
     "api/index.js": {
       "maxDuration": 300,
       "memory": 1024,
-      "regions": ["fra1"]
+      "regions": ["fra1"],
+      "includeFiles": "api/**/*.{js,ts},src/db/**/*.{js,ts}"
     }
   },
   "crons": [

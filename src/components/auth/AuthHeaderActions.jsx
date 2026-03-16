@@ -193,7 +193,7 @@ export function AuthMobileActions({ onNavigate }) {
     if (isUser) {
         return (
             <div className="space-y-1">
-                <p className="px-3 py-1 text-xs font-semibold uppercase tracking-wider text-slate-400">
+                <p className="px-3 py-1 text-xs font-semibold uppercase tracking-wider text-slate-600">
                     Mon compte
                 </p>
                 <Link to="/compte/messages" className={linkClass} onClick={onNavigate}>
@@ -214,7 +214,7 @@ export function AuthMobileActions({ onNavigate }) {
 
     return (
         <div className="space-y-1">
-            <p className="px-3 py-1 text-xs font-semibold uppercase tracking-wider text-slate-400">
+            <p className="px-3 py-1 text-xs font-semibold uppercase tracking-wider text-slate-600">
                 Se connecter
             </p>
             <Link to="/auth/login" className={linkClass} onClick={onNavigate}>
@@ -226,7 +226,7 @@ export function AuthMobileActions({ onNavigate }) {
                 Espace Professionnel
             </Link>
 
-            <p className="px-3 pt-3 pb-1 text-xs font-semibold uppercase tracking-wider text-slate-400">
+            <p className="px-3 pt-3 pb-1 text-xs font-semibold uppercase tracking-wider text-slate-600">
                 S'inscrire
             </p>
             <Link to="/auth/signup" className={linkClass} onClick={onNavigate}>

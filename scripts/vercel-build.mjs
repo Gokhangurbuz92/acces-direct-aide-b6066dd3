@@ -41,12 +41,12 @@ run('npx vite build');
 if (isProduction) {
   console.log('[vercel-build] production -> running SSR prerender + sitemap');
   try {
-    run('npx tsx scripts/prerender.mjs');
+    run('NODE_NO_WARNINGS=1 npx tsx scripts/prerender.mjs');
   } catch (err) {
     console.warn('[vercel-build] prerender failed (non-fatal):', err.message);
   }
   try {
-    run('npx tsx scripts/generate-sitemap.mjs');
+    run('NODE_NO_WARNINGS=1 npx tsx scripts/generate-sitemap.mjs');
   } catch (err) {
     console.warn('[vercel-build] sitemap generation failed (non-fatal):', err.message);
   }

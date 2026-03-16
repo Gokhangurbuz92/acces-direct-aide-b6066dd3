@@ -57,8 +57,8 @@ async function fetchMonitor(path) {
 /** @param {number | null} status */
 function statusText(status) {
   if (status === 200) return 'OK';
-  if (status === 503) return 'Dégradé';
-  if (status == null) return 'Indisponible';
+  if (status === 503) return 'Dégradé (KO)';
+  if (status == null) return 'Indisponible (KO)';
   return `HTTP ${status}`;
 }
 

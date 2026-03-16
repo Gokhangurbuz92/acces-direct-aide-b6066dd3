@@ -80,11 +80,11 @@ test.describe('P10-0 Public credibility fixes', () => {
     await expect(page).toHaveURL(/\/aides/);
   });
 
-  test('mon assistant route shows a complete "bientot disponible" page', async ({ page }) => {
+  test('mon assistant route redirects to orientation', async ({ page }) => {
     await setupPublicMocks(page);
     await page.goto('/mon-assistant');
 
-    await expect(page.getByRole('heading', { level: 1, name: 'Mon Assistant' })).toBeVisible();
-    await expect(page.getByText(/Bientôt disponible/i)).toBeVisible();
+    // /mon-assistant now redirects to /orientation
+    await expect(page).toHaveURL(/\/orientation/, { timeout: 5000 });
   });
 });

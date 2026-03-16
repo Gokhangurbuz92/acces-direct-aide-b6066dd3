@@ -244,6 +244,7 @@ export default function Layout({ children, currentPageName }) {
               <Link
                 to={createPageUrl('Home')}
                 className="hidden sm:inline-flex items-center gap-2.5 rounded-full px-2.5 py-1.5 transition-colors hover:bg-slate-50/80 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-600 focus-visible:ring-offset-2"
+                aria-label="Aller à l'accueil"
               >
                 <img src="/favicon.svg" alt="Logo AccesDirectAide" className="h-9 w-9" />
                 <span className="text-sm font-bold" style={{ background: 'linear-gradient(135deg, #002D5A 0%, #1e40af 50%, #4F46E5 100%)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>AccesDirectAide</span>

@@ -339,19 +339,9 @@ export default async function handler(req, res) {
             logger.info(`PIPELINE_ROUTE_ENTER source=${source} runId=${runId}`);
         }
 
-        await Sentry.withScope(async (scope) => {
+        // Execute with Sentry scope if available, fallback to naked execution
+        async function executeHandler() {
             try {
-                scope.setTag('request_id', requestId);
-                scope.setTag('route', path);
-                scope.setTag('route_group', routeGroup);
-                scope.setTag('vercel_env', env.runtime.vercelEnv);
-                scope.setTag('release', env.sentry.release);
-                scope.setTag('http.method', String(req.method || 'GET').toUpperCase());
-                scope.setContext('http', {
-                    method: String(req.method || 'GET').toUpperCase(),
-                    path: `/${path}`,
-                });
-
                 await routeHandler(req, res);
             } catch (routeError) {
                 const message = routeError instanceof Error ? routeError.message : String(routeError);
@@ -384,7 +374,28 @@ export default async function handler(req, res) {
                     });
                 }
             }
-        });
+        }
+
+        try {
+            await Sentry.withScope(async (scope) => {
+                scope.setTag('request_id', requestId);
+                scope.setTag('route', path);
+                scope.setTag('route_group', routeGroup);
+                scope.setTag('vercel_env', env.runtime.vercelEnv);
+                scope.setTag('release', env.sentry.release);
+                scope.setTag('http.method', String(req.method || 'GET').toUpperCase());
+                scope.setContext('http', {
+                    method: String(req.method || 'GET').toUpperCase(),
+                    path: `/${path}`,
+                });
+
+                await executeHandler();
+            });
+        } catch (sentryError) {
+            // Sentry.withScope itself crashed — run handler without Sentry
+            log.warn({ msg: 'Sentry.withScope crashed, running handler naked', error: String(sentryError) });
+            await executeHandler();
+        }
 
     } catch (bootError) {
         // GLOBAL CATCH: Catches errors before the handler specific try/catch or if it bubble up
@@ -396,6 +407,8 @@ export default async function handler(req, res) {
             try {
                 res.setHeader("Cache-Control", "private, no-store, max-age=0, must-revalidate");
                 res.setHeader("x-error-source", "boot-guard");
+                // Expose error details in header for diagnosis (safe: no secrets)
+                res.setHeader("x-boot-error", String(bootMessage).slice(0, 200));
                 res.status(500).json({
                     error: "Server Boot Error",
                     requestId,

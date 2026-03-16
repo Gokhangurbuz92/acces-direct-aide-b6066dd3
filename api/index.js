@@ -223,6 +223,33 @@ export default async function handler(req, res) {
             userAgent: req.headers['user-agent']
         });
 
+        // ── FAST PATH: Health endpoints bypass Sentry/cache/rate-limit ──
+        // This guarantees /api/health can NEVER return 500 from infra failures.
+        // Fix for Issue #338: smoke test expects 200, Sentry crash caused 500.
+        if (routeGroup === 'health') {
+            try {
+                const route = routes.find(r => r.path === path && r.match === 'exact');
+                if (route) {
+                    const mod = await route.handler();
+                    const healthHandler = mod.default || mod;
+                    await healthHandler(req, res);
+                    return;
+                }
+            } catch (healthErr) {
+                const msg = healthErr instanceof Error ? healthErr.message : String(healthErr);
+                log.error({ msg: 'health.crash', error: msg });
+                if (!res.headersSent) {
+                    return res.status(200).json({
+                        ok: false,
+                        status: 'degraded',
+                        error: env.runtime.nodeEnv === 'production' ? 'health_check_error' : msg,
+                        time: new Date().toISOString(),
+                    });
+                }
+                return;
+            }
+        }
+
         // 3b. Admin Rate Limiting (SEC-01)
         if (routeGroup === 'admin') {
             const ip = getClientIp(req);

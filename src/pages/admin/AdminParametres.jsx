@@ -54,7 +54,7 @@ function ProfilTab({ user }) {
                 <div className="flex items-start gap-4 p-4 rounded-lg border bg-white">
                     <Mail className="h-5 w-5 text-blue-500 mt-0.5 flex-shrink-0" />
                     <div className="flex-1 min-w-0">
-                        <Label className="text-sm font-medium text-slate-500">Email</Label>
+                        <span className="text-sm font-medium text-slate-500">Email</span>
                         <p className="text-sm font-semibold text-slate-900 break-all">{user?.email || '-'}</p>
                     </div>
                 </div>
@@ -62,7 +62,7 @@ function ProfilTab({ user }) {
                 <div className="flex items-start gap-4 p-4 rounded-lg border bg-white">
                     <Shield className="h-5 w-5 text-blue-500 mt-0.5 flex-shrink-0" />
                     <div className="flex-1">
-                        <Label className="text-sm font-medium text-slate-500">Rôle</Label>
+                        <span className="text-sm font-medium text-slate-500">Rôle</span>
                         <div className="mt-1">{roleBadge(user?.role)}</div>
                     </div>
                 </div>
@@ -109,34 +109,34 @@ function NotificationsTab() {
             <div className="space-y-3">
                 <div className="flex items-center justify-between p-4 rounded-lg border bg-white">
                     <div className="space-y-0.5">
-                        <Label className="text-sm font-medium">Erreurs système</Label>
+                        <Label htmlFor="sw-admin-sys-errors" className="text-sm font-medium">Erreurs système</Label>
                         <p className="text-xs text-slate-500">Alertes en cas de panne ou erreur critique</p>
                     </div>
-                    <Switch checked={prefs.systemErrors} onCheckedChange={() => handleToggle('systemErrors')} />
+                    <Switch id="sw-admin-sys-errors" checked={prefs.systemErrors} onCheckedChange={() => handleToggle('systemErrors')} />
                 </div>
 
                 <div className="flex items-center justify-between p-4 rounded-lg border bg-white">
                     <div className="space-y-0.5">
-                        <Label className="text-sm font-medium">Rapports hebdomadaires</Label>
+                        <Label htmlFor="sw-admin-weekly" className="text-sm font-medium">Rapports hebdomadaires</Label>
                         <p className="text-xs text-slate-500">Résumé d'activité plateforme chaque lundi</p>
                     </div>
-                    <Switch checked={prefs.weeklyReport} onCheckedChange={() => handleToggle('weeklyReport')} />
+                    <Switch id="sw-admin-weekly" checked={prefs.weeklyReport} onCheckedChange={() => handleToggle('weeklyReport')} />
                 </div>
 
                 <div className="flex items-center justify-between p-4 rounded-lg border bg-white">
                     <div className="space-y-0.5">
-                        <Label className="text-sm font-medium">Nouvelles validations</Label>
+                        <Label htmlFor="sw-admin-validations" className="text-sm font-medium">Nouvelles validations</Label>
                         <p className="text-xs text-slate-500">Contenu en attente de modération</p>
                     </div>
-                    <Switch checked={prefs.newValidations} onCheckedChange={() => handleToggle('newValidations')} />
+                    <Switch id="sw-admin-validations" checked={prefs.newValidations} onCheckedChange={() => handleToggle('newValidations')} />
                 </div>
 
                 <div className="flex items-center justify-between p-4 rounded-lg border bg-white">
                     <div className="space-y-0.5">
-                        <Label className="text-sm font-medium">Alertes sécurité</Label>
+                        <Label htmlFor="sw-admin-security" className="text-sm font-medium">Alertes sécurité</Label>
                         <p className="text-xs text-slate-500">Tentatives d'accès suspectes, brute force</p>
                     </div>
-                    <Switch checked={prefs.securityAlerts} onCheckedChange={() => handleToggle('securityAlerts')} />
+                    <Switch id="sw-admin-security" checked={prefs.securityAlerts} onCheckedChange={() => handleToggle('securityAlerts')} />
                 </div>
             </div>
 
@@ -158,7 +158,7 @@ function SecurityTab({ user }) {
                     <div className="flex items-start gap-4">
                         <Shield className="h-5 w-5 text-blue-500 mt-0.5 flex-shrink-0" />
                         <div>
-                            <Label className="text-sm font-medium">Mot de passe</Label>
+                            <span className="text-sm font-medium">Mot de passe</span>
                             <p className="text-xs text-slate-500 mt-0.5">Changez régulièrement votre mot de passe admin</p>
                         </div>
                     </div>
@@ -174,7 +174,7 @@ function SecurityTab({ user }) {
                     <div className="flex items-start gap-4">
                         <Shield className="h-5 w-5 text-blue-500 mt-0.5 flex-shrink-0" />
                         <div>
-                            <Label className="text-sm font-medium">Authentification 2FA</Label>
+                            <span className="text-sm font-medium">Authentification 2FA</span>
                             <p className="text-xs text-slate-500 mt-0.5">Fortement recommandé pour les comptes admin</p>
                         </div>
                     </div>
@@ -187,7 +187,7 @@ function SecurityTab({ user }) {
                     <div className="flex items-start gap-4 mb-3">
                         <Eye className="h-5 w-5 text-blue-500 mt-0.5 flex-shrink-0" />
                         <div className="flex-1">
-                            <Label className="text-sm font-medium">Session actuelle</Label>
+                            <span className="text-sm font-medium">Session actuelle</span>
                             <p className="text-xs text-slate-500 mt-0.5">Appareil connecté à l'interface admin</p>
                         </div>
                     </div>
@@ -203,7 +203,7 @@ function SecurityTab({ user }) {
                     <div className="flex items-start gap-4">
                         <Shield className="h-5 w-5 text-blue-500 mt-0.5 flex-shrink-0" />
                         <div className="flex-1">
-                            <Label className="text-sm font-medium">Journal d'audit</Label>
+                            <span className="text-sm font-medium">Journal d'audit</span>
                             <p className="text-xs text-slate-500 mt-1">Historique complet des actions administratives</p>
                             <Button variant="outline" size="sm" className="mt-3" asChild>
                                 <Link to="/admin/audit">

@@ -51,7 +51,7 @@ function StructureTab({ structure, user }) {
                     <div className="flex items-start gap-4 p-4 rounded-lg border bg-white">
                         <Building2 className="h-5 w-5 text-emerald-500 mt-0.5 flex-shrink-0" />
                         <div className="flex-1">
-                            <Label className="text-sm font-medium text-slate-500">Nom de la structure</Label>
+                            <span className="text-sm font-medium text-slate-500">Nom de la structure</span>
                             <p className="text-sm font-semibold text-slate-900">{structure.nom || structure.name || '-'}</p>
                         </div>
                     </div>
@@ -60,7 +60,7 @@ function StructureTab({ structure, user }) {
                         <div className="flex items-start gap-4 p-4 rounded-lg border bg-white">
                             <MapPin className="h-5 w-5 text-emerald-500 mt-0.5 flex-shrink-0" />
                             <div className="flex-1">
-                                <Label className="text-sm font-medium text-slate-500">Adresse</Label>
+                                <span className="text-sm font-medium text-slate-500">Adresse</span>
                                 <p className="text-sm text-slate-900">{structure.adresse || structure.address}</p>
                                 {(structure.code_postal || structure.zipCode) && (
                                     <p className="text-xs text-slate-500 mt-0.5">
@@ -74,7 +74,7 @@ function StructureTab({ structure, user }) {
                     <div className="flex items-start gap-4 p-4 rounded-lg border bg-white">
                         <Mail className="h-5 w-5 text-emerald-500 mt-0.5 flex-shrink-0" />
                         <div className="flex-1">
-                            <Label className="text-sm font-medium text-slate-500">Email de contact</Label>
+                            <span className="text-sm font-medium text-slate-500">Email de contact</span>
                             <p className="text-sm text-slate-900">{user?.email || structure.email || '-'}</p>
                         </div>
                     </div>
@@ -83,7 +83,7 @@ function StructureTab({ structure, user }) {
                         <div className="flex items-start gap-4 p-4 rounded-lg border bg-white">
                             <Phone className="h-5 w-5 text-emerald-500 mt-0.5 flex-shrink-0" />
                             <div className="flex-1">
-                                <Label className="text-sm font-medium text-slate-500">Téléphone</Label>
+                                <span className="text-sm font-medium text-slate-500">Téléphone</span>
                                 <p className="text-sm text-slate-900">{structure.telephone || structure.phone}</p>
                             </div>
                         </div>
@@ -122,7 +122,7 @@ function TeamTab({ structure }) {
                         <div className="flex items-start gap-4">
                             <Users className="h-5 w-5 text-emerald-500 mt-0.5 flex-shrink-0" />
                             <div className="flex-1">
-                                <Label className="text-sm font-medium">Membres de l'équipe</Label>
+                                <span className="text-sm font-medium">Membres de l'équipe</span>
                                 <p className="text-xs text-slate-500 mt-1">
                                     Gérez les accès de votre équipe à l'espace professionnel.
                                 </p>
@@ -140,7 +140,7 @@ function TeamTab({ structure }) {
                         <div className="flex items-start gap-4">
                             <UserPlus className="h-5 w-5 text-emerald-500 mt-0.5 flex-shrink-0" />
                             <div className="flex-1">
-                                <Label className="text-sm font-medium">Inviter un collaborateur</Label>
+                                <span className="text-sm font-medium">Inviter un collaborateur</span>
                                 <p className="text-xs text-slate-500 mt-1">
                                     Envoyez un lien d'invitation pour ajouter un membre à votre structure.
                                 </p>
@@ -196,10 +196,11 @@ function RdvTab() {
                 <div className="space-y-3">
                     <div className="flex items-center justify-between p-4 rounded-lg border bg-white">
                         <div className="space-y-0.5">
-                            <Label className="text-sm font-medium">Rappels 24h avant</Label>
+                            <Label htmlFor="sw-pro-rdv-24h" className="text-sm font-medium">Rappels 24h avant</Label>
                             <p className="text-xs text-slate-500">Envoyer un rappel automatique aux bénéficiaires</p>
                         </div>
                         <Switch
+                            id="sw-pro-rdv-24h"
                             checked={prefs.rdvReminders24h}
                             onCheckedChange={() => handleToggle('rdvReminders24h')}
                         />
@@ -207,10 +208,11 @@ function RdvTab() {
 
                     <div className="flex items-center justify-between p-4 rounded-lg border bg-white">
                         <div className="space-y-0.5">
-                            <Label className="text-sm font-medium">Rappels 1h avant</Label>
+                            <Label htmlFor="sw-pro-rdv-1h" className="text-sm font-medium">Rappels 1h avant</Label>
                             <p className="text-xs text-slate-500">Notification de rappel de dernière minute</p>
                         </div>
                         <Switch
+                            id="sw-pro-rdv-1h"
                             checked={prefs.rdvReminders1h}
                             onCheckedChange={() => handleToggle('rdvReminders1h')}
                         />
@@ -218,10 +220,11 @@ function RdvTab() {
 
                     <div className="flex items-center justify-between p-4 rounded-lg border bg-white">
                         <div className="space-y-0.5">
-                            <Label className="text-sm font-medium">Confirmation automatique</Label>
+                            <Label htmlFor="sw-pro-auto-confirm" className="text-sm font-medium">Confirmation automatique</Label>
                             <p className="text-xs text-slate-500">Confirmer les RDV automatiquement sans validation manuelle</p>
                         </div>
                         <Switch
+                            id="sw-pro-auto-confirm"
                             checked={prefs.autoConfirm}
                             onCheckedChange={() => handleToggle('autoConfirm')}
                         />
@@ -272,42 +275,42 @@ function NotificationsProTab() {
                 <div className="space-y-3">
                     <div className="flex items-center justify-between p-4 rounded-lg border bg-white">
                         <div className="space-y-0.5">
-                            <Label className="text-sm font-medium">Nouveau rendez-vous</Label>
+                            <Label htmlFor="sw-pro-new-rdv" className="text-sm font-medium">Nouveau rendez-vous</Label>
                             <p className="text-xs text-slate-500">Email quand un bénéficiaire prend RDV</p>
                         </div>
-                        <Switch checked={prefs.emailNewRdv} onCheckedChange={() => handleToggle('emailNewRdv')} />
+                        <Switch id="sw-pro-new-rdv" checked={prefs.emailNewRdv} onCheckedChange={() => handleToggle('emailNewRdv')} />
                     </div>
 
                     <div className="flex items-center justify-between p-4 rounded-lg border bg-white">
                         <div className="space-y-0.5">
-                            <Label className="text-sm font-medium">Annulations</Label>
+                            <Label htmlFor="sw-pro-cancel" className="text-sm font-medium">Annulations</Label>
                             <p className="text-xs text-slate-500">Notification quand un RDV est annulé</p>
                         </div>
-                        <Switch checked={prefs.emailCancellation} onCheckedChange={() => handleToggle('emailCancellation')} />
+                        <Switch id="sw-pro-cancel" checked={prefs.emailCancellation} onCheckedChange={() => handleToggle('emailCancellation')} />
                     </div>
 
                     <div className="flex items-center justify-between p-4 rounded-lg border bg-white">
                         <div className="space-y-0.5">
-                            <Label className="text-sm font-medium">Nouveaux messages</Label>
+                            <Label htmlFor="sw-pro-new-msg" className="text-sm font-medium">Nouveaux messages</Label>
                             <p className="text-xs text-slate-500">Email quand un bénéficiaire vous écrit</p>
                         </div>
-                        <Switch checked={prefs.emailNewMessage} onCheckedChange={() => handleToggle('emailNewMessage')} />
+                        <Switch id="sw-pro-new-msg" checked={prefs.emailNewMessage} onCheckedChange={() => handleToggle('emailNewMessage')} />
                     </div>
 
                     <div className="flex items-center justify-between p-4 rounded-lg border bg-white">
                         <div className="space-y-0.5">
-                            <Label className="text-sm font-medium">Rappels SMS</Label>
+                            <Label htmlFor="sw-pro-sms" className="text-sm font-medium">Rappels SMS</Label>
                             <p className="text-xs text-slate-500">Rappels par SMS pour les RDV du jour</p>
                         </div>
-                        <Switch checked={prefs.smsReminders} onCheckedChange={() => handleToggle('smsReminders')} />
+                        <Switch id="sw-pro-sms" checked={prefs.smsReminders} onCheckedChange={() => handleToggle('smsReminders')} />
                     </div>
 
                     <div className="flex items-center justify-between p-4 rounded-lg border bg-white">
                         <div className="space-y-0.5">
-                            <Label className="text-sm font-medium">Résumé quotidien</Label>
+                            <Label htmlFor="sw-pro-digest" className="text-sm font-medium">Résumé quotidien</Label>
                             <p className="text-xs text-slate-500">Email récapitulatif chaque matin</p>
                         </div>
-                        <Switch checked={prefs.dailyDigest} onCheckedChange={() => handleToggle('dailyDigest')} />
+                        <Switch id="sw-pro-digest" checked={prefs.dailyDigest} onCheckedChange={() => handleToggle('dailyDigest')} />
                     </div>
                 </div>
             </div>
@@ -330,7 +333,7 @@ function SecurityProTab({ user }) {
                     <div className="flex items-start gap-4 p-4 rounded-lg border bg-white">
                         <Mail className="h-5 w-5 text-emerald-500 mt-0.5 flex-shrink-0" />
                         <div className="flex-1">
-                            <Label className="text-sm font-medium">Email professionnel</Label>
+                            <span className="text-sm font-medium">Email professionnel</span>
                             <p className="text-sm text-slate-900 mt-0.5">{user?.email || '-'}</p>
                         </div>
                     </div>
@@ -339,7 +342,7 @@ function SecurityProTab({ user }) {
                         <div className="flex items-start gap-4">
                             <Shield className="h-5 w-5 text-emerald-500 mt-0.5 flex-shrink-0" />
                             <div>
-                                <Label className="text-sm font-medium">Mot de passe</Label>
+                                <span className="text-sm font-medium">Mot de passe</span>
                                 <p className="text-xs text-slate-500 mt-0.5">Modifiez votre mot de passe régulièrement</p>
                             </div>
                         </div>
@@ -355,7 +358,7 @@ function SecurityProTab({ user }) {
                         <div className="flex items-start gap-4">
                             <Shield className="h-5 w-5 text-emerald-500 mt-0.5 flex-shrink-0" />
                             <div>
-                                <Label className="text-sm font-medium">Authentification à deux facteurs (2FA)</Label>
+                                <span className="text-sm font-medium">Authentification à deux facteurs (2FA)</span>
                                 <p className="text-xs text-slate-500 mt-0.5">Renforcez la sécurité de votre compte</p>
                             </div>
                         </div>
@@ -370,7 +373,7 @@ function SecurityProTab({ user }) {
                         <div className="flex items-start gap-4 mb-3">
                             <Eye className="h-5 w-5 text-emerald-500 mt-0.5 flex-shrink-0" />
                             <div className="flex-1">
-                                <Label className="text-sm font-medium">Journal d'audit</Label>
+                                <span className="text-sm font-medium">Journal d'audit</span>
                                 <p className="text-xs text-slate-500 mt-0.5">Historique des actions sur votre compte</p>
                             </div>
                         </div>

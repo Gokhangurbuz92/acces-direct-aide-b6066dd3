@@ -58,7 +58,7 @@ function ProfilTab({ user }) {
                     <div className="flex items-start gap-4 p-4 rounded-lg border bg-white">
                         <Mail className="h-5 w-5 text-blue-500 mt-0.5 flex-shrink-0" />
                         <div className="flex-1 min-w-0">
-                            <Label className="text-sm font-medium text-slate-500">Adresse email</Label>
+                            <span className="text-sm font-medium text-slate-500">Adresse email</span>
                             <p className="text-sm font-semibold text-slate-900 break-all">{user?.email || '-'}</p>
                             <div className="flex items-center gap-1.5 mt-1">
                                 {user?.emailVerifiedAt ? (
@@ -80,7 +80,7 @@ function ProfilTab({ user }) {
                     <div className="flex items-start gap-4 p-4 rounded-lg border bg-white">
                         <Phone className="h-5 w-5 text-blue-500 mt-0.5 flex-shrink-0" />
                         <div className="flex-1">
-                            <Label className="text-sm font-medium text-slate-500">Téléphone</Label>
+                            <span className="text-sm font-medium text-slate-500">Téléphone</span>
                             <p className="text-sm font-semibold text-slate-900">
                                 {user?.phone || <span className="text-slate-400 font-normal italic">Non renseigné</span>}
                             </p>
@@ -194,7 +194,7 @@ function SecurityTab({ user }) {
                     <div className="flex items-start gap-4 p-4 rounded-lg border bg-white">
                         <Mail className="h-5 w-5 text-blue-500 mt-0.5 flex-shrink-0" />
                         <div className="flex-1">
-                            <Label className="text-sm font-medium">Email vérifié</Label>
+                            <span className="text-sm font-medium">Email vérifié</span>
                             <div className="mt-1">
                                 {user?.emailVerifiedAt ? (
                                     <span className="inline-flex items-center gap-1.5 text-sm text-green-700">
@@ -221,7 +221,7 @@ function SecurityTab({ user }) {
                         <div className="flex items-start gap-4">
                             <Shield className="h-5 w-5 text-blue-500 mt-0.5 flex-shrink-0" />
                             <div>
-                                <Label className="text-sm font-medium">Mot de passe</Label>
+                                <span className="text-sm font-medium">Mot de passe</span>
                                 <p className="text-xs text-slate-500 mt-0.5">Modifiez votre mot de passe régulièrement</p>
                             </div>
                         </div>
@@ -238,7 +238,7 @@ function SecurityTab({ user }) {
                         <div className="flex items-start gap-4 mb-3">
                             <Eye className="h-5 w-5 text-blue-500 mt-0.5 flex-shrink-0" />
                             <div className="flex-1">
-                                <Label className="text-sm font-medium">Sessions actives</Label>
+                                <span className="text-sm font-medium">Sessions actives</span>
                                 <p className="text-xs text-slate-500 mt-0.5">Appareils connectés à votre compte</p>
                             </div>
                         </div>
@@ -295,7 +295,7 @@ function AccessibilityTab() {
                         <div className="flex items-center gap-4 mb-3">
                             <Type className="h-5 w-5 text-blue-500 flex-shrink-0" />
                             <div>
-                                <Label className="text-sm font-medium">Taille du texte</Label>
+                                <span className="text-sm font-medium">Taille du texte</span>
                                 <p className="text-xs text-slate-500 mt-0.5">Ajuster la taille de l'interface ({prefs.fontSize}%)</p>
                             </div>
                         </div>
@@ -407,7 +407,7 @@ function DataTab({ user }) {
                         <div className="flex items-start gap-4">
                             <Download className="h-5 w-5 text-blue-500 mt-0.5 flex-shrink-0" />
                             <div className="flex-1">
-                                <Label className="text-sm font-medium">Exporter mes données</Label>
+                                <span className="text-sm font-medium">Exporter mes données</span>
                                 <p className="text-xs text-slate-500 mt-1">
                                     Téléchargez une copie de toutes vos données personnelles (RGPD Art. 20).
                                 </p>
@@ -430,7 +430,7 @@ function DataTab({ user }) {
                         <div className="flex items-start gap-4">
                             <Trash2 className="h-5 w-5 text-red-500 mt-0.5 flex-shrink-0" />
                             <div className="flex-1">
-                                <Label className="text-sm font-medium text-red-800">Supprimer mon compte</Label>
+                                <span className="text-sm font-medium text-red-800">Supprimer mon compte</span>
                                 <p className="text-xs text-red-700/80 mt-1">
                                     Cette action est irréversible. Toutes vos données, rendez-vous et messages seront supprimés.
                                 </p>

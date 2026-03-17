@@ -14,12 +14,19 @@ let db: ReturnType<typeof drizzle<typeof schema>>;
 if (connectionString) {
   const isLocal = connectionString.includes('localhost') || connectionString.includes('127.0.0.1');
 
-  // For remote connections, ensure sslmode=verify-full is explicit in the URL
-  // to suppress pg v8+ security warning about implicit SSL modes.
+  // Suppress pg v8+ SECURITY WARNING about implicit SSL modes.
+  // The warning fires when sslmode is 'prefer', 'require', or 'verify-ca'
+  // without 'uselibpqcompat=true'. Cloud providers (Neon, Supabase) often set
+  // sslmode=require in their DATABASE_URL by default.
   let finalConnectionString = connectionString;
-  if (!isLocal && !connectionString.includes('sslmode=')) {
+  if (!isLocal && !connectionString.includes('uselibpqcompat=')) {
     const separator = connectionString.includes('?') ? '&' : '?';
-    finalConnectionString = `${connectionString}${separator}sslmode=require&uselibpqcompat=true`;
+    if (connectionString.includes('sslmode=')) {
+      // sslmode already set (e.g. Neon's ?sslmode=require) — just add compat flag
+      finalConnectionString = `${connectionString}&uselibpqcompat=true`;
+    } else {
+      finalConnectionString = `${connectionString}${separator}sslmode=require&uselibpqcompat=true`;
+    }
   }
 
   const pool = new pg.Pool({

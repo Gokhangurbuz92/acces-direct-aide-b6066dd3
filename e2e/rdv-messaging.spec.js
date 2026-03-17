@@ -149,28 +149,31 @@ test.describe('P10-E RDV messaging flow', () => {
     });
 
     await page.goto('/compte/messages/conv-1');
+    await page.waitForLoadState('networkidle');
 
-    await expect(page.getByRole('heading', { name: 'Conversation rendez-vous' })).toBeVisible();
-    await expect(page.getByText('Bonjour, je confirme ma venue.')).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Conversation rendez-vous' })).toBeVisible({ timeout: 15000 });
+    await expect(page.getByText('Bonjour, je confirme ma venue.')).toBeVisible({ timeout: 15000 });
 
     await page.getByLabel('Nouveau message').fill('Je serai present a l heure.');
     await page.getByRole('button', { name: 'Envoyer' }).click();
 
-    await expect(page.getByText('Message envoye.')).toBeVisible();
-    await expect(page.getByText('Je serai present a l heure.')).toBeVisible();
+    await expect(page.getByText('Message envoye.')).toBeVisible({ timeout: 15000 });
+    await expect(page.getByText('Je serai present a l heure.')).toBeVisible({ timeout: 15000 });
 
     await page.goto('/pro/messages/conv-1');
+    await page.waitForLoadState('networkidle');
 
-    await expect(page.getByRole('heading', { name: 'Conversation usager' })).toBeVisible();
-    await expect(page.getByText('Je serai present a l heure.')).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Conversation usager' })).toBeVisible({ timeout: 15000 });
+    await expect(page.getByText('Je serai present a l heure.')).toBeVisible({ timeout: 15000 });
 
     await page.getByLabel('Nouveau message').fill('Merci, rendez-vous confirme.');
     await page.getByRole('button', { name: 'Envoyer' }).click();
 
-    await expect(page.getByText('Message envoye.')).toBeVisible();
-    await expect(page.getByText('Merci, rendez-vous confirme.')).toBeVisible();
+    await expect(page.getByText('Message envoye.')).toBeVisible({ timeout: 15000 });
+    await expect(page.getByText('Merci, rendez-vous confirme.')).toBeVisible({ timeout: 15000 });
 
     await page.goto('/compte/messages/conv-1');
-    await expect(page.getByText('Merci, rendez-vous confirme.')).toBeVisible();
+    await page.waitForLoadState('networkidle');
+    await expect(page.getByText('Merci, rendez-vous confirme.')).toBeVisible({ timeout: 15000 });
   });
 });

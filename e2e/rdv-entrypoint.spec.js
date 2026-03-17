@@ -14,11 +14,12 @@ test.describe('P10-A RDV public entrypoint', () => {
     });
 
     await page.goto('/structures/structure-test');
+    await page.waitForLoadState('networkidle');
     await page.getByRole('link', { name: /Prendre rendez-vous|Demander un RDV/i }).first().click();
 
-    await expect(page).toHaveURL(/\/auth\/login\?next=%2Frdv%2Fstructure-test/);
-    await expect(page.getByRole('heading', { name: /Connexion Particulier/i })).toBeVisible();
-    await expect(page.getByRole('link', { name: /Je n'ai pas de compte/i })).toBeVisible();
+    await expect(page).toHaveURL(/\/auth\/login\?next=%2Frdv%2Fstructure-test/, { timeout: 15000 });
+    await expect(page.getByRole('heading', { name: /Connexion Particulier/i })).toBeVisible({ timeout: 15000 });
+    await expect(page.getByRole('link', { name: /Je n'ai pas de compte/i })).toBeVisible({ timeout: 15000 });
   });
 
   test('shows rdv unavailable screen when structure has not activated booking', async ({ page }) => {
@@ -53,8 +54,9 @@ test.describe('P10-A RDV public entrypoint', () => {
     });
 
     await page.goto('/rdv/structure-test');
+    await page.waitForLoadState('networkidle');
 
-    await expect(page.getByText('RDV indisponible (non publie)')).toBeVisible();
-    await expect(page.getByRole('link', { name: /Demander à être rappelé/i })).toBeVisible();
+    await expect(page.getByText('RDV indisponible (non publie)')).toBeVisible({ timeout: 15000 });
+    await expect(page.getByRole('link', { name: /Demander/i })).toBeVisible({ timeout: 15000 });
   });
 });

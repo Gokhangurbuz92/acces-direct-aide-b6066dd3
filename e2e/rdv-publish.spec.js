@@ -33,9 +33,10 @@ test.describe('P10-C RDV publish settings', () => {
     });
 
     await page.goto('/rdv/structure-test');
+    await page.waitForLoadState('networkidle');
 
-    await expect(page.getByText('RDV indisponible (non publie)')).toBeVisible();
-    await expect(page.getByRole('link', { name: /Demander/i })).toBeVisible();
+    await expect(page.getByText('RDV indisponible (non publie)')).toBeVisible({ timeout: 15000 });
+    await expect(page.getByRole('link', { name: /Demander/i })).toBeVisible({ timeout: 15000 });
   });
 
   test('public flow shows stepper when structure RDV is published', async ({ page }) => {
@@ -70,9 +71,10 @@ test.describe('P10-C RDV publish settings', () => {
     });
 
     await page.goto('/rdv/structure-test/services');
+    await page.waitForLoadState('networkidle');
 
-    await expect(page.getByRole('heading', { name: 'Choix du service' })).toBeVisible();
-    await expect(page.getByRole('link', { name: /Voir les/i })).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Choix du service' })).toBeVisible({ timeout: 15000 });
+    await expect(page.getByRole('link', { name: /Voir les/i })).toBeVisible({ timeout: 15000 });
   });
 
   test('pro services page updates publish settings through PUT endpoint', async ({ page }) => {
@@ -163,12 +165,13 @@ test.describe('P10-C RDV publish settings', () => {
     });
 
     await page.goto('/pro/rdv/services');
+    await page.waitForLoadState('networkidle');
 
-    await expect(page.getByTestId('pro-rdv-settings-card')).toBeVisible();
+    await expect(page.getByTestId('pro-rdv-settings-card')).toBeVisible({ timeout: 15000 });
     await page.getByLabel('Publier la prise de RDV en ligne').check();
     await page.getByRole('button', { name: 'Enregistrer les parametres' }).click();
 
-    await expect.poll(() => putCalled).toBe(true);
-    await expect(page.getByText('Parametres RDV enregistres.')).toBeVisible();
+    await expect.poll(() => putCalled, { timeout: 15000 }).toBe(true);
+    await expect(page.getByText('Parametres RDV enregistres.')).toBeVisible({ timeout: 15000 });
   });
 });

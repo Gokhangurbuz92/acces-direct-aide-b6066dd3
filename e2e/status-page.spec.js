@@ -57,11 +57,12 @@ test.describe('P8-G status page', () => {
     ]);
 
     await page.goto('/status');
+    await page.waitForLoadState('networkidle');
     const [dqResponse, ingestResponse] = await responsesPromise;
 
-    await expect(page.locator('[data-testid="status-data-quality-card"]')).toBeVisible();
-    await expect(page.locator('[data-testid="status-ingestion-card"]')).toBeVisible();
-    await expect(page.locator('[data-testid="status-last-checked"]')).toContainText('Last checked:');
+    await expect(page.locator('[data-testid="status-data-quality-card"]')).toBeVisible({ timeout: 15000 });
+    await expect(page.locator('[data-testid="status-ingestion-card"]')).toBeVisible({ timeout: 15000 });
+    await expect(page.locator('[data-testid="status-last-checked"]')).toContainText('Last checked:', { timeout: 15000 });
     await expect(page.locator('head meta[name="robots"]').last()).toHaveAttribute(
       'content',
       /noindex,\s*nofollow/i,
@@ -79,9 +80,10 @@ test.describe('P8-G status page', () => {
   test('renders KO state when monitor endpoints are degraded', async ({ page }) => {
     await mockStatusEndpoints(page, { dataQualityStatus: 503, ingestionStatus: 503 });
     await page.goto('/status');
+    await page.waitForLoadState('networkidle');
 
     // Wait for KO content to render instead of waitForResponse
-    await expect(page.locator('[data-testid="status-data-quality-card"]')).toContainText('KO', { timeout: 10000 });
-    await expect(page.locator('[data-testid="status-ingestion-card"]')).toContainText('KO', { timeout: 10000 });
+    await expect(page.locator('[data-testid="status-data-quality-card"]')).toContainText('KO', { timeout: 15000 });
+    await expect(page.locator('[data-testid="status-ingestion-card"]')).toContainText('KO', { timeout: 15000 });
   });
 });

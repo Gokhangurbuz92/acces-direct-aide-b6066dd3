@@ -15,21 +15,15 @@ import { getCsrfHeaders } from './csrf';
  *     method: 'POST',
  *     body: JSON.stringify({ rating: 5 }),
  *   });
- *
- *   // With abort signal
- *   const controller = new AbortController();
- *   const data = await apiFetch('/api/chat', {
- *     method: 'POST',
- *     body: JSON.stringify({ message: 'hello' }),
- *     signal: controller.signal,
- *   });
  */
 
 const MUTATING_METHODS = new Set(['POST', 'PUT', 'PATCH', 'DELETE']);
 
+type FetchOptions = NonNullable<Parameters<typeof fetch>[1]>;
+
 export async function apiFetch(
   url: string,
-  options: RequestInit = {},
+  options: FetchOptions = {},
 ): Promise<Response> {
   const method = (options.method || 'GET').toUpperCase();
 
@@ -49,3 +43,4 @@ export async function apiFetch(
 
   return fetch(url, options);
 }
+

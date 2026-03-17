@@ -140,7 +140,7 @@ test.describe('Vital Paths', () => {
     });
 
     await page.goto('/pro/login');
-    await page.getByLabel(/email/i).fill('pro@test.com');
+    await page.getByLabel(/identifiant/i).fill('pro@test.com');
     await page.getByLabel(/mot de passe/i).fill('password');
     await page.getByRole('button', { name: /se connecter/i }).click();
 

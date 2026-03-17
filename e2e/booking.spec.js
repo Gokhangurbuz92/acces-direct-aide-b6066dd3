@@ -41,8 +41,6 @@ test('Pro Login Flow', async ({ page }) => {
   // Use correct route
   await page.goto('/pro/login');
 
-  // Use correct heading from ProLogin.jsx
-  await expect(page.getByText('AccesDirect Pro')).toBeVisible();
-  // Or by role if you prefer strictness:
-  // await expect(page.getByRole('heading', { name: 'AccesDirect Pro' })).toBeVisible();
+  // Match heading from redesigned ProLogin.jsx
+  await expect(page.getByRole('heading', { name: 'Espace Pro' })).toBeVisible();
 });

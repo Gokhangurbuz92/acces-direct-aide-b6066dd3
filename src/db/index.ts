@@ -12,11 +12,19 @@ const connectionString = process.env.DATABASE_URL || process.env.DATABASE_URL_TE
 let db: ReturnType<typeof drizzle<typeof schema>>;
 
 if (connectionString) {
+  const isLocal = connectionString.includes('localhost') || connectionString.includes('127.0.0.1');
+
+  // For remote connections, ensure sslmode=verify-full is explicit in the URL
+  // to suppress pg v8+ security warning about implicit SSL modes.
+  let finalConnectionString = connectionString;
+  if (!isLocal && !connectionString.includes('sslmode=')) {
+    const separator = connectionString.includes('?') ? '&' : '?';
+    finalConnectionString = `${connectionString}${separator}sslmode=require&uselibpqcompat=true`;
+  }
+
   const pool = new pg.Pool({
-    connectionString,
-    ssl: connectionString.includes('localhost') || connectionString.includes('127.0.0.1')
-      ? false
-      : { rejectUnauthorized: false },
+    connectionString: finalConnectionString,
+    ssl: isLocal ? false : { rejectUnauthorized: false },
   });
   db = drizzle(pool, { schema });
 } else if (process.env.USE_MOCKS === 'true' || process.env.VITE_SKIP_DB === 'true') {

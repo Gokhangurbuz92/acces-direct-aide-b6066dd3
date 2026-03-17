@@ -6,12 +6,12 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { AlertCircle, Loader2, ShieldCheck, Building2, Lock, Mail, PlayCircle, ArrowRight } from 'lucide-react';
+import { AlertCircle, Loader2, ShieldCheck, Building2, Lock, Mail, ArrowRight } from 'lucide-react';
 import { appendNext, normalizeNextPath } from '@/lib/rdvRouting';
 
 /**
  * ProLogin — Page de connexion Espace Professionnel
- * Design premium avec support MFA + bouton Mode Démo.
+ * Design premium avec support MFA.
  */
 export default function ProLogin() {
     const [email, setEmail] = useState('');
@@ -89,12 +89,6 @@ export default function ProLogin() {
         }
     };
 
-    const handleDemoAccess = () => {
-        setLoading(true);
-        setTimeout(() => {
-            window.location.href = '/pro/dashboard?demo=pro';
-        }, 600);
-    };
 
     return (
         <div className="min-h-screen flex flex-col items-center justify-center bg-slate-50 p-4">
@@ -234,42 +228,12 @@ export default function ProLogin() {
                         </form>
                     )}
 
-                    {/* Separator */}
+                    {/* Security badge */}
                     {!isMfaStep && (
-                        <>
-                            <div className="relative my-10">
-                                <div className="absolute inset-0 flex items-center">
-                                    <span className="w-full border-t border-slate-100" />
-                                </div>
-                                <div className="relative flex justify-center text-[10px] uppercase">
-                                    <span className="bg-white px-6 text-slate-400 font-black tracking-[0.3em]">Module de Validation</span>
-                                </div>
-                            </div>
-
-                            {/* Demo Button */}
-                            <div className="space-y-4">
-                                <Button
-                                    variant="outline"
-                                    onClick={handleDemoAccess}
-                                    disabled={loading}
-                                    className="w-full h-16 border-2 border-emerald-100 bg-emerald-50/30 text-emerald-800 hover:bg-emerald-50 hover:border-emerald-300 gap-4 rounded-2xl transition-all group overflow-hidden relative shadow-sm"
-                                >
-                                    <div className="p-2.5 bg-emerald-100 rounded-xl group-hover:scale-110 transition-transform">
-                                        <PlayCircle className="w-6 h-6 text-emerald-600" />
-                                    </div>
-                                    <div className="flex flex-col items-start text-left leading-tight">
-                                        <span className="font-black text-sm uppercase tracking-tight">Accéder au Mode Démo</span>
-                                        <span className="text-[10px] opacity-70 font-bold">Validation immédiate des interfaces</span>
-                                    </div>
-                                    <ArrowRight className="ml-auto w-5 h-5 opacity-30 group-hover:opacity-100 group-hover:translate-x-1 transition-all" />
-                                </Button>
-
-                                <p className="text-center text-[9px] text-slate-400 uppercase tracking-[0.25em] font-black flex items-center justify-center gap-2 pt-4">
-                                    <ShieldCheck size={14} className="text-emerald-500" />
-                                    Sécurité Renforcée · MFA · Chiffrement E2E
-                                </p>
-                            </div>
-                        </>
+                        <p className="text-center text-[9px] text-slate-400 uppercase tracking-[0.25em] font-black flex items-center justify-center gap-2 pt-8">
+                            <ShieldCheck size={14} className="text-emerald-500" />
+                            Sécurité Renforcée · MFA · Chiffrement E2E
+                        </p>
                     )}
                 </div>
             </div>

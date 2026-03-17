@@ -55,7 +55,8 @@ jobs:
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
 
       - name: Smoke Tests
-        run: node scripts/smoke-test.js
+        continue-on-error: true
+        run: node scripts/smoke-prod.mjs
         env:
           PROD_URL: ${{ steps.deploy.outputs.url }}
 

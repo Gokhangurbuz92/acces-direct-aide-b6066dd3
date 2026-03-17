@@ -456,7 +456,7 @@ function PagesContent() {
                                 <Route path="/sources" element={<Sources />} />
                                 <Route path="/securite-et-rgpd" element={<Security />} />
                                 <Route path="/partenaires" element={<Partners />} />
-                                <Route path="/proposer-une-structure" element={<SuggestStructure />} />
+                                <Route path="/proposer-une-structure" element={<RouteErrorBoundary><SuggestStructure /></RouteErrorBoundary>} />
                                 <Route path="/dossier-subventions" element={<SubventionDossier />} />
                                 <Route path="/status" element={<Status />} />
                                 <Route path="/diagnostic" element={<DiagnosticPage />} />

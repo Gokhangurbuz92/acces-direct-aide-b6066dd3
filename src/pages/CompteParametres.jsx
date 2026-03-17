@@ -1,5 +1,5 @@
 import { SkeletonList } from '@/components/ui/skeleton';
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo } from 'react';
 import { Navigate, useLocation, Link } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import {
@@ -129,10 +129,11 @@ function NotificationsTab({ user }) {
                 <div className="space-y-3">
                     <div className="flex items-center justify-between p-4 rounded-lg border bg-white">
                         <div className="space-y-0.5">
-                            <Label className="text-sm font-medium">Notifications par email</Label>
+                            <Label htmlFor="sw-email-notif" className="text-sm font-medium">Notifications par email</Label>
                             <p className="text-xs text-slate-500">Recevoir les mises à jour par email</p>
                         </div>
                         <Switch
+                            id="sw-email-notif"
                             checked={prefs.emailNotifications}
                             onCheckedChange={() => handleToggle('emailNotifications')}
                         />
@@ -140,10 +141,11 @@ function NotificationsTab({ user }) {
 
                     <div className="flex items-center justify-between p-4 rounded-lg border bg-white">
                         <div className="space-y-0.5">
-                            <Label className="text-sm font-medium">Notifications SMS</Label>
+                            <Label htmlFor="sw-sms-notif" className="text-sm font-medium">Notifications SMS</Label>
                             <p className="text-xs text-slate-500">Rappels rendez-vous par SMS</p>
                         </div>
                         <Switch
+                            id="sw-sms-notif"
                             checked={prefs.smsNotifications}
                             onCheckedChange={() => handleToggle('smsNotifications')}
                         />
@@ -151,10 +153,11 @@ function NotificationsTab({ user }) {
 
                     <div className="flex items-center justify-between p-4 rounded-lg border bg-white">
                         <div className="space-y-0.5">
-                            <Label className="text-sm font-medium">Rappels rendez-vous</Label>
+                            <Label htmlFor="sw-rdv-remind" className="text-sm font-medium">Rappels rendez-vous</Label>
                             <p className="text-xs text-slate-500">Rappel 24h et 1h avant chaque RDV</p>
                         </div>
                         <Switch
+                            id="sw-rdv-remind"
                             checked={prefs.rdvReminders}
                             onCheckedChange={() => handleToggle('rdvReminders')}
                         />
@@ -162,10 +165,11 @@ function NotificationsTab({ user }) {
 
                     <div className="flex items-center justify-between p-4 rounded-lg border bg-white">
                         <div className="space-y-0.5">
-                            <Label className="text-sm font-medium">Newsletter hebdomadaire</Label>
+                            <Label htmlFor="sw-newsletter" className="text-sm font-medium">Newsletter hebdomadaire</Label>
                             <p className="text-xs text-slate-500">Nouvelles aides et actualités</p>
                         </div>
                         <Switch
+                            id="sw-newsletter"
                             checked={prefs.newsletterWeekly}
                             onCheckedChange={() => handleToggle('newsletterWeekly')}
                         />
@@ -326,11 +330,12 @@ function AccessibilityTab() {
                         <div className="flex items-start gap-4">
                             <Minus className="h-5 w-5 text-blue-500 mt-0.5 flex-shrink-0" />
                             <div>
-                                <Label className="text-sm font-medium">Réduire les animations</Label>
+                                <Label htmlFor="sw-reduce-motion" className="text-sm font-medium">Réduire les animations</Label>
                                 <p className="text-xs text-slate-500 mt-0.5">Désactiver les transitions et effets visuels</p>
                             </div>
                         </div>
                         <Switch
+                            id="sw-reduce-motion"
                             checked={prefs.reduceMotion}
                             onCheckedChange={(v) => handleChange('reduceMotion', v)}
                         />
@@ -341,11 +346,12 @@ function AccessibilityTab() {
                         <div className="flex items-start gap-4">
                             <Sun className="h-5 w-5 text-blue-500 mt-0.5 flex-shrink-0" />
                             <div>
-                                <Label className="text-sm font-medium">Contraste élevé</Label>
+                                <Label htmlFor="sw-high-contrast" className="text-sm font-medium">Contraste élevé</Label>
                                 <p className="text-xs text-slate-500 mt-0.5">Augmenter le contraste des couleurs</p>
                             </div>
                         </div>
                         <Switch
+                            id="sw-high-contrast"
                             checked={prefs.highContrast}
                             onCheckedChange={(v) => handleChange('highContrast', v)}
                         />

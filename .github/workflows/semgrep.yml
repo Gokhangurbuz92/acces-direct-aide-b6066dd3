@@ -1,5 +1,8 @@
 name: "\U0001F6E1\uFE0F Security Scan (Semgrep)"
 
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
 on:
   push:
     branches: [main]

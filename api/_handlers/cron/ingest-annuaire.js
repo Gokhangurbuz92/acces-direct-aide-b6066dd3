@@ -298,7 +298,7 @@ export default async function handler(req, res) {
         return res.status(401).json({ error: 'Unauthorized' });
     }
 
-    const limit = req.query.limit ? parseInt(req.query.limit, 10) : undefined;
+    const limit = req.query.limit ? parseInt(req.query.limit, 10) : 200; // Default 200 to fit within Vercel timeout
     const runId = crypto.randomUUID();
 
     try {

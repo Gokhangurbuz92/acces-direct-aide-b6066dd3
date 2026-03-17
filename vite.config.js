@@ -211,6 +211,22 @@ export default defineConfig({
             return 'utils-vendor';
           }
 
+          // ── Lodash (heavy, tree-shake resistant) ────────────
+          if (id.includes('node_modules/lodash')) {
+            return 'lodash-vendor';
+          }
+
+          // ── Motion DOM (framer-motion runtime deps) ─────────
+          if (id.includes('node_modules/motion-dom') ||
+            id.includes('node_modules/motion-utils')) {
+            return 'motion-vendor';
+          }
+
+          // ── Core-JS polyfills ───────────────────────────────
+          if (id.includes('node_modules/core-js')) {
+            return 'polyfills-vendor';
+          }
+
           // ── Catch-all for remaining node_modules ───────────
           if (id.includes('node_modules/')) {
             return 'vendor';

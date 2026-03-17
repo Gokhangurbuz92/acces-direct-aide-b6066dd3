@@ -9,6 +9,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Loader2 } from 'lucide-react';
 import { FormSkeleton } from '@/components/pro/ProPageSkeletons';
 
+import { getCsrfHeaders } from '@/lib/csrf';
 export default function ProStructure() {
     useOutletContext();
     const [structure, setStructure] = useState(null);
@@ -61,7 +62,8 @@ export default function ProStructure() {
                 method: 'PUT',
                 headers: {
                     'Content-Type': 'application/json',
-                    Authorization: `Bearer ${token}`
+                    Authorization: `Bearer ${token}`,
+                    ...getCsrfHeaders(),
                 },
                 body: JSON.stringify({
                     summary_falc: summaryFalc,

@@ -3,6 +3,7 @@ import { Video, Loader2, ExternalLink, CheckCircle2, AlertCircle } from 'lucide-
 import { Button } from '@/components/ui/button';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 
+import { getCsrfHeaders } from '@/lib/csrf';
 /**
  * VisioTrigger — Inline button to start a video call from a ProAppointment.
  *
@@ -30,6 +31,7 @@ export default function VisioTrigger({ appointmentId, existingRoomId }) {
                 headers: {
                     'Content-Type': 'application/json',
                     ...(token ? { Authorization: `Bearer ${token}` } : {}),
+                    ...getCsrfHeaders(),
                 },
                 body: JSON.stringify({ appointmentId }),
             });

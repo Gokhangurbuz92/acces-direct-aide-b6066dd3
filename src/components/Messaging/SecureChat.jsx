@@ -4,6 +4,7 @@ import { cryptoE2EE } from '@/lib/crypto-messaging.js';
 import { Button } from '@/components/ui/button';
 import { sanitizeHtml } from '@/lib/sanitize';
 
+import { getCsrfHeaders } from '@/lib/csrf';
 /**
  * SecureChat
  * Messagerie asynchrone avec chiffrement de bout en bout (E2EE).
@@ -84,7 +85,7 @@ export default function SecureChat({ shareId, senderId, receiverId }) {
             // 2. Envoi du blob chiffré au serveur
             const res = await fetch('/api/secure-messages', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: { 'Content-Type': 'application/json', ...getCsrfHeaders() },
                 body: JSON.stringify({
                     shareId,
                     senderId,
@@ -123,7 +124,7 @@ export default function SecureChat({ shareId, senderId, receiverId }) {
             // Les envoyer temporairement au proxy Gemini
             const res = await fetch('/api/pro/ai/assist', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: { 'Content-Type': 'application/json', ...getCsrfHeaders() },
                 body: JSON.stringify({
                     messages: clearMessages,
                     action: action

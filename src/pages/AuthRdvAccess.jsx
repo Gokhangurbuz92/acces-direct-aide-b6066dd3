@@ -9,6 +9,7 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 
+import { getCsrfHeaders } from '@/lib/csrf';
 /**
  * @param {{ mode?: 'login' | 'signup' }} props
  */
@@ -61,7 +62,7 @@ export default function AuthRdvAccess({ mode = 'login' }) {
       const response = await fetch(endpoint, {
         method: 'POST',
         credentials: 'include',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', ...getCsrfHeaders() },
         body: JSON.stringify({ email, password, next }),
       });
 
@@ -107,7 +108,7 @@ export default function AuthRdvAccess({ mode = 'login' }) {
       await fetch('/api/auth/resend-verification', {
         method: 'POST',
         credentials: 'include',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', ...getCsrfHeaders() },
         body: JSON.stringify({ email, next }),
       });
       setInfo("Si l'email est valide, un lien de verification vient d'etre renvoye.");

@@ -11,6 +11,7 @@ import {
 import { useQuery } from '@tanstack/react-query';
 import { rdvMessagingClient } from '@/api/rdv-messaging-client';
 
+import { getCsrfHeaders } from '@/lib/csrf';
 /**
  * AuthHeaderActions — Menus "Se connecter" / "S'inscrire" unifiés
  * 

@@ -6,6 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { cn } from '@/lib/utils';
+import { getCsrfHeaders } from '@/lib/csrf';
 import {
     Building2,
     MapPin,
@@ -83,7 +84,7 @@ export default function SuggestStructure() {
         try {
             const response = await fetch('/api/public/suggest-structure', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: { 'Content-Type': 'application/json', ...getCsrfHeaders() },
                 body: JSON.stringify(formData),
             });
 

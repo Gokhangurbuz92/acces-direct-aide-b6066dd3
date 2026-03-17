@@ -8,6 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Button } from "@/components/ui/button";
 import { useState } from 'react';
 
+import { getCsrfHeaders } from '@/lib/csrf';
 const SUJETS = [
   { value: 'question', label: 'J\'ai une question' },
   { value: 'signalement_erreur', label: 'Je signale une erreur ou une info obsolète' },
@@ -46,7 +47,7 @@ export default function Contact() {
       // ou supabase insert direct ici selon architecture)
       const res = await fetch('/api/contact', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', ...getCsrfHeaders() },
         body: JSON.stringify(form)
       }).catch(() => null);
 

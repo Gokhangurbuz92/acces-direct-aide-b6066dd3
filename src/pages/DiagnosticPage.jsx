@@ -24,6 +24,7 @@ import QRCode from 'react-qr-code';
 import { Button } from '@/components/ui/button';
 import { useSituation } from '@/hooks/useSituation';
 
+import { getCsrfHeaders } from '@/lib/csrf';
 const HOUSING_OPTIONS = [
     { key: 'tenant', label: 'Locataire' },
     { key: 'tenant_hlm', label: 'Locataire HLM' },
@@ -76,7 +77,7 @@ export default function DiagnosticPage() {
         try {
             const response = await fetch('/api/diagnostic', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: { 'Content-Type': 'application/json', ...getCsrfHeaders() },
                 body: JSON.stringify({
                     answers: {
                         birthDate: situation.birthDate,
@@ -406,7 +407,7 @@ function ResultsDisplay({ results, situation }) {
         try {
             const res = await fetch('/api/share/create', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: { 'Content-Type': 'application/json', ...getCsrfHeaders() },
                 body: JSON.stringify({ situation: situation || {}, results }),
             });
             const json = await res.json();

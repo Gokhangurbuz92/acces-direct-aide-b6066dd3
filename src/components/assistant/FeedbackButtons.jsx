@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { ThumbsUp, ThumbsDown, Send, CheckCircle2 } from 'lucide-react';
 
+import { getCsrfHeaders } from '@/lib/csrf';
 /**
  * FeedbackButtons
  *
@@ -20,7 +21,7 @@ export default function FeedbackButtons({ logId }) {
         try {
             await fetch('/api/assistant/feedback', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: { 'Content-Type': 'application/json', ...getCsrfHeaders() },
                 body: JSON.stringify({ logId, rating, comment: text || undefined }),
             });
         } catch (err) {

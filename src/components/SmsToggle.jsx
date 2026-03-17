@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import { getCsrfHeaders } from '@/lib/csrf';
 import {
     Smartphone,
     BellRing,
@@ -37,7 +38,7 @@ export default function SmsToggle({ appointmentId, initialPhone = '' }) {
         try {
             const res = await fetch('/api/public/sms-notify', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: { 'Content-Type': 'application/json', ...getCsrfHeaders() },
                 body: JSON.stringify({ appointmentId, phoneNumber: phone, action: 'subscribe' }),
             });
 

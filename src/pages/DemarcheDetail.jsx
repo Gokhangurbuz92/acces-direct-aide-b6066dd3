@@ -34,6 +34,7 @@ import { getProvenance } from '@/lib/provenance';
 import CategoryChip, { resolveCategory } from '@/components/ui/CategoryChip';
 import { useFalc } from '@/contexts/FalcContext';
 
+import { getCsrfHeaders } from '@/lib/csrf';
 /** @typedef {Error & { status?: number, payload?: unknown }} ApiError */
 /** @typedef {{ numero?: number, titre?: string, title?: string, nom?: string, description?: string, contenu?: string, text?: string, conseils?: string }} DemarcheStep */
 /** @typedef {{ url?: string, nom?: string }} DemarcheSource */
@@ -265,7 +266,7 @@ export default function DemarcheDetail() {
                 try {
                   const res = await fetch('/api/public/falc/summarize', {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
+                    headers: { 'Content-Type': 'application/json', ...getCsrfHeaders() },
                     body: JSON.stringify({ entityId: demarche.id, type: 'demarche' }),
                   });
                   if (res.ok) {

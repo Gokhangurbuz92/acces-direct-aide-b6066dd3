@@ -15,6 +15,7 @@ import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Input } from '@/components/ui/input';
 import { toast } from 'sonner';
 
+import { getCsrfHeaders } from '@/lib/csrf';
 const REPORT_REASONS = [
   { value: 'LIEN_MORT', label: 'Lien mort ou ne fonctionne plus' },
   { value: 'HORAIRES_FAUX', label: 'Horaires incorrects' },
@@ -69,8 +70,7 @@ export default function ReportContentButton({
       const response = await fetch('/api/reports', {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/json',
-        },
+          'Content-Type': 'application/json', ...getCsrfHeaders() },
         body: JSON.stringify({
           contentType: CONTENT_TYPE_MAP[contentType] || contentType,
           contentId,

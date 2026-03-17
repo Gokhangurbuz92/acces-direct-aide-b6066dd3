@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { X, Copy, Check } from 'lucide-react';
 
+import { getCsrfHeaders } from '@/lib/csrf';
 /**
  * Modal for pro/admin users to view the OpenFisca trace detail.
  * Calls POST /api/diagnostic/trace and displays the result.
@@ -20,7 +21,7 @@ export default function DiagnosticTraceModal({ answers, onClose }) {
             try {
                 const res = await fetch('/api/diagnostic/trace', {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
+                    headers: { 'Content-Type': 'application/json', ...getCsrfHeaders() },
                     body: JSON.stringify({ answers }),
                     signal: abortController.signal,
                 });

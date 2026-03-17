@@ -1,6 +1,7 @@
 import { useRef, useState, useCallback } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import { getCsrfHeaders } from '@/lib/csrf';
 import {
     Scale,
     PenTool,
@@ -96,7 +97,7 @@ export default function ConsentPad({ shareId, onSigned }) {
 
             const res = await fetch('/api/pro/consent', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: { 'Content-Type': 'application/json', ...getCsrfHeaders() },
                 body: JSON.stringify({ shareId, signatureData }),
             });
 

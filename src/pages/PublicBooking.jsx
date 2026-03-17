@@ -18,6 +18,7 @@ import {
 import { track } from '@vercel/analytics';
 import SEO from '@/components/SEO';
 
+import { getCsrfHeaders } from '@/lib/csrf';
 /**
  * PublicBooking
  *
@@ -119,6 +120,7 @@ export default function PublicBooking() {
                 headers: {
                     'Content-Type': 'application/json',
                     ...(token ? { Authorization: `Bearer ${token}` } : {}),
+                    ...getCsrfHeaders(),
                 },
                 body: JSON.stringify({
                     structureSlug,

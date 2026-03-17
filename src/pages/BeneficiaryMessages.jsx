@@ -3,6 +3,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { useParams } from 'react-router-dom';
 import ChatWindow from '@/components/Messaging/ChatWindow';
 
+import { getCsrfHeaders } from '@/lib/csrf';
 export default function BeneficiaryMessages() {
     const { token } = useParams();
     const [messages, setMessages] = useState([]);
@@ -74,7 +75,7 @@ export default function BeneficiaryMessages() {
         try {
             const res = await fetch(`${API_BASE}/public/messages?token=${token}`, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: { 'Content-Type': 'application/json', ...getCsrfHeaders() },
                 body: JSON.stringify({ content }) // Sender inferred as BEN
             });
             if (res.ok) {

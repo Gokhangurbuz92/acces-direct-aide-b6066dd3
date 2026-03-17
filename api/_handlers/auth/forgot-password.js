@@ -3,6 +3,7 @@ import { CitizenUser, AuthToken } from '../../../src/db/schema.js';
 import { eq, and, isNull } from 'drizzle-orm';
 import { checkRateLimit, getRateLimitStatus } from '../../_utils/rateLimit.js';
 import { sendMail } from '../../_utils/mailer.js';
+import { templates } from '../../lib/email-service.js';
 import {
   buildAppUrl,
   generateAuthToken,
@@ -70,10 +71,13 @@ export default async function handler(req, res) {
     });
 
     const resetUrl = buildAppUrl(`/auth/reset?token=${encodeURIComponent(rawToken)}`);
+    const emailTemplate = templates.resetPassword(user.email.split('@')[0], rawToken);
+
     await sendMail({
       to: email,
-      subject: 'Reinitialisation du mot de passe',
+      subject: emailTemplate.subject,
       text: `Lien de reinitialisation: ${resetUrl}`,
+      html: emailTemplate.html,
       category: 'password_reset',
     });
 

@@ -6,6 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 
+import { getCsrfHeaders } from '@/lib/csrf';
 /**
  * @param {string} status
  */
@@ -61,7 +62,7 @@ export default function AuthVerifyEmail() {
       await fetch('/api/auth/resend-verification', {
         method: 'POST',
         credentials: 'include',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', ...getCsrfHeaders() },
         body: JSON.stringify({ email, next }),
       });
       setMessage("Si l'email est valide, un nouveau lien vient d'etre envoye.");

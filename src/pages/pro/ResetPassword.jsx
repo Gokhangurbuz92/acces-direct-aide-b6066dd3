@@ -8,6 +8,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { AlertCircle, CheckCircle, Loader2 } from 'lucide-react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 
+import { getCsrfHeaders } from '@/lib/csrf';
 export default function ResetPassword() {
     const [searchParams] = useSearchParams();
     const token = searchParams.get('token');
@@ -46,7 +47,7 @@ export default function ResetPassword() {
         try {
             const res = await fetch('/api/pro/auth/reset-password', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: { 'Content-Type': 'application/json', ...getCsrfHeaders() },
                 body: JSON.stringify({ token, password })
             });
             const data = await res.json();

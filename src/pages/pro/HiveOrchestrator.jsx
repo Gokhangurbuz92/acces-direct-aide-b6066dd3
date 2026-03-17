@@ -3,6 +3,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import SEO from '@/components/SEO';
+import { getCsrfHeaders } from '@/lib/csrf';
 import {
     Network,
     Search,
@@ -79,7 +80,7 @@ export default function HiveOrchestrator() {
         try {
             const res = await fetch('/api/pro/agent-discovery', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json', ...getAuthHeaders() },
+                headers: { 'Content-Type': 'application/json', ...getAuthHeaders(), ...getCsrfHeaders() },
                 body: JSON.stringify({ category: activeCategory, submit: true }),
             });
             const data = await res.json();

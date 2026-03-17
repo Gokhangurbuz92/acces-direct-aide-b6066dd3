@@ -8,6 +8,7 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 
+import { getCsrfHeaders } from '@/lib/csrf';
 export default function AuthForgotPassword() {
   const [searchParams] = useSearchParams();
   const [email, setEmail] = useState('');
@@ -30,7 +31,7 @@ export default function AuthForgotPassword() {
       const response = await fetch('/api/auth/forgot-password', {
         method: 'POST',
         credentials: 'include',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', ...getCsrfHeaders() },
         body: JSON.stringify({ email }),
       });
 

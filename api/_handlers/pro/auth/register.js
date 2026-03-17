@@ -1,7 +1,9 @@
 import logger from '../../../_utils/logger.js';
-import { hashPassword } from '../../../_utils/user-auth.js';
+import { hashPassword, buildAppUrl } from '../../../_utils/user-auth.js';
 import { signProToken, logProAudit } from '../../../_utils/auth.js';
 import { checkRateLimit, getClientIp } from '../../../_utils/rateLimit.js';
+import { sendMail } from '../../../_utils/mailer.js';
+import { templates } from '../../../lib/email-service.js';
 import { db } from '../../../../src/db/index.js';
 import { Structure, ProUser } from '../../../../src/db/schema.js';
 import { eq } from 'drizzle-orm';
@@ -83,6 +85,16 @@ export default async function handler(req, res) {
         const token = signProToken(result.user);
 
         await logProAudit('REGISTER_SUCCESS', result.user.id, result.structure.id, {}, ip);
+
+        // Send welcome email to new pro user
+        const emailTemplate = templates.welcome(structureName, `pro-${result.user.id}`);
+        await sendMail({
+            to: email,
+            subject: `[PRO] Bienvenue sur Accès Direct Aide — ${structureName}`,
+            text: `Bienvenue sur Accès Direct Aide ! Votre espace professionnel pour "${structureName}" est maintenant actif.`,
+            html: emailTemplate.html,
+            category: 'pro_welcome',
+        }).catch(err => logger.warn({ msg: 'Pro welcome email failed (non-blocking)', err: err.message }));
 
         return res.status(200).json({
             token,

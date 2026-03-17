@@ -9,6 +9,7 @@ import { fr } from 'date-fns/locale';
 import ChatWindow from '@/components/Messaging/ChatWindow';
 import VisioTrigger from '@/components/pro/VisioTrigger';
 
+import { getCsrfHeaders } from '@/lib/csrf';
 export default function ProAppointmentDetail() {
     const { id } = useParams();
     const [appointment, setAppointment] = useState(null);
@@ -60,7 +61,8 @@ export default function ProAppointmentDetail() {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
-                    Authorization: `Bearer ${token}`
+                    Authorization: `Bearer ${token}`,
+                    ...getCsrfHeaders(),
                 },
                 body: JSON.stringify({ content })
             });

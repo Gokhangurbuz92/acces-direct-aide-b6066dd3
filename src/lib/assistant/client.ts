@@ -6,6 +6,7 @@
  */
 
 import { getApiBaseUrl } from '../api/config';
+import { getCsrfHeaders } from '../csrf';
 
 // ---------------------------------------------------------------------------
 // Types
@@ -99,6 +100,7 @@ export async function sendMessage(
             headers: {
                 'Content-Type': 'application/json',
                 Accept: 'application/json',
+                ...getCsrfHeaders(),
             },
             body: JSON.stringify(body),
             signal: controller.signal,

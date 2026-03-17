@@ -9,6 +9,7 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { AlertCircle, Loader2, ShieldCheck, Building2, Lock, Mail, ArrowRight } from 'lucide-react';
 import { appendNext, normalizeNextPath } from '@/lib/rdvRouting';
 
+import { getCsrfHeaders } from '@/lib/csrf';
 /**
  * ProLogin — Page de connexion Espace Professionnel
  * Design premium avec support MFA.
@@ -37,7 +38,7 @@ export default function ProLogin() {
         try {
             const res = await fetch('/api/pro/auth/login', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: { 'Content-Type': 'application/json', ...getCsrfHeaders() },
                 body: JSON.stringify({ email, password }),
             });
 
@@ -70,7 +71,7 @@ export default function ProLogin() {
         try {
             const res = await fetch('/api/pro/auth/mfa-verify', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: { 'Content-Type': 'application/json', ...getCsrfHeaders() },
                 body: JSON.stringify({ mfa_token: mfaToken, code: mfaCode }),
             });
 

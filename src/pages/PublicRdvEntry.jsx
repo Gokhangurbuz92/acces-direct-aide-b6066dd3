@@ -11,6 +11,7 @@ import { Input } from '@/components/ui/input';
 import { client } from '@/api/client';
 import { appendNext, normalizeNextPath } from '@/lib/rdvRouting';
 
+import { getCsrfHeaders } from '@/lib/csrf';
 /**
  * @returns {string | null}
  */

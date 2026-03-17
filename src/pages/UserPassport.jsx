@@ -5,6 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import SEO from '@/components/SEO';
 import SmsToggle from '@/components/SmsToggle';
+import { getCsrfHeaders } from '@/lib/csrf';
 import {
     ShieldCheck,
     Calendar,
@@ -68,7 +69,7 @@ export default function UserPassport() {
         try {
             const res = await fetch('/api/public/dossier-revoke', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: { 'Content-Type': 'application/json', ...getCsrfHeaders() },
                 body: JSON.stringify({ shareId }),
             });
             if (res.ok) {

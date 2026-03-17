@@ -4,6 +4,7 @@ import { Loader2, CheckCircle2, CalendarClock, AlertCircle } from 'lucide-react'
 import { Button } from '@/components/ui/button';
 import SEO from '@/components/SEO';
 
+import { getCsrfHeaders } from '@/lib/csrf';
 /**
  * AppointmentReschedule — Citizen rescheduling via secure token link
  *
@@ -84,7 +85,7 @@ export default function AppointmentReschedule() {
     try {
       const res = await fetch('/api/appointments/reschedule', {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', ...getCsrfHeaders() },
         body: JSON.stringify({
           token,
           newStartAt: newStartAt.toISOString(),

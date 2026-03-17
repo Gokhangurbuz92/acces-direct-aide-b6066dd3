@@ -73,7 +73,7 @@ export function ensureCsrfCookie(req, res) {
   if (!cookies['__csrf']) {
     const token = randomUUID();
     res.setHeader('Set-Cookie', [
-      `__csrf=${token}; Path=/; HttpOnly; SameSite=Strict; Secure; Max-Age=86400`,
+      `__csrf=${token}; Path=/; SameSite=Lax; Secure; Max-Age=86400`,
     ]);
   }
 }

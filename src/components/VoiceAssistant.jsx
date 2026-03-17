@@ -2,6 +2,7 @@ import { useState, useRef, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
 import { Volume2, VolumeX, Loader2 } from 'lucide-react';
 
+import { getCsrfHeaders } from '@/lib/csrf';
 /**
  * VoiceAssistant — Bouton d'aide vocale accessible
  *
@@ -77,7 +78,7 @@ export default function VoiceAssistant({ text, label = 'Écouter', size = 'sm' }
         try {
             const res = await fetch('/api/tts', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: { 'Content-Type': 'application/json', ...getCsrfHeaders() },
                 body: JSON.stringify({ text: text.slice(0, 500) }),
             });
 

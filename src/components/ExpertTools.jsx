@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import { getCsrfHeaders } from '@/lib/csrf';
 import {
     Sparkles,
     FileCheck,
@@ -34,7 +35,7 @@ export default function ExpertTools({ shareId }) {
         try {
             const res = await fetch('/api/pro/dossier-synthesis', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: { 'Content-Type': 'application/json', ...getCsrfHeaders() },
                 credentials: 'include',
                 body: JSON.stringify({ shareId }),
             });

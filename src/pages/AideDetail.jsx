@@ -37,6 +37,7 @@ import { useFalc } from '@/contexts/FalcContext';
 
 
 
+import { getCsrfHeaders } from '@/lib/csrf';
 export default function AideDetail() {
   const { slug } = useParams();
   const navigate = useNavigate();
@@ -307,7 +308,7 @@ export default function AideDetail() {
                 try {
                   const res = await fetch('/api/public/falc/summarize', {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
+                    headers: { 'Content-Type': 'application/json', ...getCsrfHeaders() },
                     body: JSON.stringify({ aideId: aide.id }),
                   });
                   if (res.ok) {

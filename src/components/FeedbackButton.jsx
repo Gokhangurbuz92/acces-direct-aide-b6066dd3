@@ -15,6 +15,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 
+import { getCsrfHeaders } from '@/lib/csrf';
 /**
  * @param {{
  *   type: 'aide' | 'demarche',
@@ -54,7 +55,7 @@ export default function FeedbackButton({
     try {
       const response = await fetch('/api/feedback', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', ...getCsrfHeaders() },
         body: JSON.stringify({
           type,
           id: entityId || undefined,

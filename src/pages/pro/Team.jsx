@@ -38,6 +38,7 @@ import {
 } from '@/components/ui/select';
 import { toast } from 'sonner';
 
+import { getCsrfHeaders } from '@/lib/csrf';
 /**
  * ProTeam — Page enrichie de gestion d'équipe
  *
@@ -96,7 +97,7 @@ export default function ProTeam() {
         try {
             const res = await fetch('/api/pro/invite', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json', ...headers },
+                headers: { 'Content-Type': 'application/json', ...headers, ...getCsrfHeaders() },
                 body: JSON.stringify({ email: inviteEmail, role: inviteRole }),
             });
             if (res.ok) {
@@ -141,7 +142,7 @@ export default function ProTeam() {
         try {
             const res = await fetch('/api/pro/resend-invite', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json', ...headers },
+                headers: { 'Content-Type': 'application/json', ...headers, ...getCsrfHeaders() },
                 body: JSON.stringify({ invitationId }),
             });
             if (res.ok) {

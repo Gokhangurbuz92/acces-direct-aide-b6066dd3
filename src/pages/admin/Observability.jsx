@@ -5,9 +5,10 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { Loader2, RefreshCw } from 'lucide-react';
+import { Loader2, RefreshCw, Database, Mail, Bot, Globe } from 'lucide-react';
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
+import { getCsrfHeaders } from '@/lib/csrf';
 
 /** @param {unknown} value */
 function formatOk(value) {
@@ -45,18 +46,23 @@ export default function AdminObservability() {
   const [cronRuns, setCronRuns] = useState(/** @type {any[]} */ ([]));
   const [healthPublic, setHealthPublic] = useState(/** @type {any} */ (null));
   const [healthDeep, setHealthDeep] = useState(/** @type {any} */ (null));
+  const [adminStats, setAdminStats] = useState(/** @type {any} */ (null));
+  const [selectedCron, setSelectedCron] = useState('actualites');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [liveMessage, setLiveMessage] = useState('');
+
+  const CRON_JOBS = ['actualites', 'ingest-demarches', 'ingest-annuaire', 'ingest-aids', 'hive-scan'];
 
   const load = useCallback(async () => {
     setLoading(true);
     let nextError = '';
 
-    const [publicRes, deepRes, runsRes] = await Promise.allSettled([
+    const [publicRes, deepRes, runsRes, statsRes] = await Promise.allSettled([
       apiClient.health.check(),
       apiClient.health.deep(),
-      apiClient.admin.getCronRuns('actualites', 20),
+      apiClient.admin.getCronRuns(selectedCron, 20),
+      fetch('/api/admin/stats', { headers: { ...getCsrfHeaders() } }).then(r => r.ok ? r.json() : null),
     ]);
 
     if (publicRes.status === 'fulfilled') {
@@ -77,10 +83,14 @@ export default function AdminObservability() {
       nextError = nextError || 'Impossible de charger /api/admin/cron-runs';
     }
 
+    if (statsRes.status === 'fulfilled' && statsRes.value?.data) {
+      setAdminStats(statsRes.value.data);
+    }
+
     setError(nextError);
     setLiveMessage('Données mises à jour à ' + format(new Date(), 'HH:mm:ss', { locale: fr }));
     setLoading(false);
-  }, []);
+  }, [selectedCron]);
 
   useEffect(() => {
     load();
@@ -243,9 +253,87 @@ export default function AdminObservability() {
         </CardContent>
       </Card>
 
+      {/* ── Data Inventory (answers "are pages populated?") ── */}
+      {adminStats && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Database className="h-4 w-4" />
+              Inventaire des données
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              {[
+                { label: 'Aides', count: adminStats.counts?.aides, warn: 10 },
+                { label: 'Démarches', count: adminStats.counts?.demarches, warn: 5 },
+                { label: 'Structures', count: adminStats.counts?.structures || 0, warn: 10 },
+                { label: 'Citoyens', count: adminStats.counts?.citizens, warn: 0 },
+              ].map(({ label, count: val, warn }) => (
+                <div key={label} className="rounded-xl border p-4 text-center">
+                  <p className="text-xs font-bold uppercase text-slate-400 mb-1">{label}</p>
+                  <p className={`text-2xl font-black ${
+                    val === 0 ? 'text-red-500' : val < warn ? 'text-amber-500' : 'text-slate-900'
+                  }`}>{val?.toLocaleString() ?? '—'}</p>
+                  {val === 0 && <Badge className="mt-1 border-red-200 bg-red-50 text-red-700">VIDE</Badge>}
+                </div>
+              ))}
+            </div>
+            {adminStats.rag && (
+              <div className="mt-4 flex items-center gap-4 text-xs">
+                <span className="text-slate-500">RAG Embeddings :</span>
+                <Badge className={adminStats.rag.missing > 0 ? 'border-amber-200 bg-amber-50 text-amber-900' : 'border-emerald-200 bg-emerald-50 text-emerald-900'}>
+                  {adminStats.rag.indexed}/{adminStats.rag.total} indexés ({adminStats.rag.missing} manquants)
+                </Badge>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      )}
+
+      {/* ── Email Provider Health ── */}
       <Card>
         <CardHeader>
-          <CardTitle>Cron actualites</CardTitle>
+          <CardTitle className="flex items-center gap-2">
+            <Mail className="h-4 w-4" />
+            Infrastructure Email
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-2 text-sm">
+          <div className="flex items-center justify-between">
+            <span>Provider</span>
+            <Badge className={healthDeep?.deps?.mailer?.provider && healthDeep.deps.mailer.provider !== 'noop'
+              ? 'border-emerald-200 bg-emerald-50 text-emerald-900'
+              : 'border-amber-200 bg-amber-50 text-amber-900'
+            }>
+              {healthDeep?.deps?.mailer?.provider || 'non configuré'}
+            </Badge>
+          </div>
+          <div className="flex items-center justify-between">
+            <span>FROM configuré</span>
+            <Badge className={badgeClassForOk(Boolean(healthDeep?.deps?.mailer?.fromPresent))}>
+              {healthDeep?.deps?.mailer?.fromPresent ? 'OUI' : 'NON'}
+            </Badge>
+          </div>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader className="flex flex-row items-center justify-between">
+          <CardTitle>Historique Crons</CardTitle>
+          <div className="flex gap-1">
+            {CRON_JOBS.map(job => (
+              <Button
+                key={job}
+                variant={selectedCron === job ? 'default' : 'outline'}
+                size="sm"
+                className="text-xs"
+                onClick={() => setSelectedCron(job)}
+              >
+                {job}
+              </Button>
+            ))}
+          </div>
         </CardHeader>
         <CardContent>
           <Table>

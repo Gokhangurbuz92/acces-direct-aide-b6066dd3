@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import SEO from '@/components/SEO';
+import { getCsrfHeaders } from '@/lib/csrf';
 import {
     Loader2,
     ShieldCheck,
@@ -89,7 +90,7 @@ export default function RegisterPro() {
         try {
             const res = await fetch('/api/pro/auth/register-invite', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: { 'Content-Type': 'application/json', ...getCsrfHeaders() },
                 body: JSON.stringify({ token, password }),
             });
 

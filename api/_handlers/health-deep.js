@@ -174,6 +174,10 @@ export default async function handler(req, res) {
         actualites: cronActualites,
       },
       geminiKeyPresent,
+      mailer: {
+        provider: String(env.mailer?.provider || 'noop'),
+        fromPresent: Boolean(env.mailer?.from),
+      },
       sentry: {
         dsnPresent: Boolean(env.sentry.dsn),
         environment: env.runtime.vercelEnv,

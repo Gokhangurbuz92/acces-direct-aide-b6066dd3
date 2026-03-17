@@ -13,6 +13,7 @@ import { format, parseISO } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { client } from '@/api/client';
 
+import { getCsrfHeaders } from '@/lib/csrf';
 export default function AppointmentRequest() {
     const [searchParams] = useSearchParams();
     const structureId = searchParams.get('structure_id');
@@ -48,7 +49,7 @@ export default function AppointmentRequest() {
         mutationFn: async (payload) => {
             const res = await fetch('/api/appointments', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: { 'Content-Type': 'application/json', ...getCsrfHeaders() },
                 body: JSON.stringify(payload)
             });
             const data = await res.json();

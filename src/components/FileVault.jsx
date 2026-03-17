@@ -2,6 +2,7 @@ import { useState, useRef } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { encryptFile } from '@/lib/crypto-files';
+import { getCsrfHeaders } from '@/lib/csrf';
 import {
     ShieldCheck,
     Upload,

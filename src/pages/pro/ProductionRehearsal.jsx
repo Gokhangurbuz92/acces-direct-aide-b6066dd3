@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import SEO from '@/components/SEO';
+import { getCsrfHeaders } from '@/lib/csrf';
 import {
     ShieldCheck,
     Mail,
@@ -64,7 +65,7 @@ const TEST_DEFS = [
         run: async () => {
             const res = await fetch('/api/pro/agent-discovery', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json', ...getAuthHeaders() },
+                headers: { 'Content-Type': 'application/json', ...getAuthHeaders(), ...getCsrfHeaders() },
                 body: JSON.stringify({ category: 'LOGEMENT', submit: false }),
             });
             const data = await res.json();

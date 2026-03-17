@@ -9,6 +9,7 @@ import StepDiagnostic from './StepDiagnostic';
 import ResultPanel from './ResultPanel';
 import DiagnosticResults from './DiagnosticResults';
 
+import { getCsrfHeaders } from '@/lib/csrf';
 const NEED_LABELS = {
     logement: 'logement',
     sante: 'santé',
@@ -113,7 +114,7 @@ export default function Wizard() {
         try {
             const res = await fetch('/api/diagnostic', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: { 'Content-Type': 'application/json', ...getCsrfHeaders() },
                 body: JSON.stringify({ answers: wizardData }),
                 signal: controller.signal,
             });

@@ -24,6 +24,7 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 
+import { getCsrfHeaders } from '@/lib/csrf';
 /**
  * ContentFactory — Autonomous content orchestration center
  *
@@ -147,7 +148,7 @@ export default function ContentFactory() {
         try {
             const res = await fetch('/api/admin/validate-publication', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json', ...headers },
+                headers: { 'Content-Type': 'application/json', ...headers, ...getCsrfHeaders() },
                 body: JSON.stringify({ entityType, entityId }),
             });
             if (res.ok) {

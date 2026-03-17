@@ -3,6 +3,7 @@ import { CitizenUser, AuthToken } from '../../../src/db/schema.js';
 import { eq, and, isNull } from 'drizzle-orm';
 import { checkRateLimit, getRateLimitStatus } from '../../_utils/rateLimit.js';
 import { sendMail } from '../../_utils/mailer.js';
+import { templates } from '../../lib/email-service.js';
 import {
   buildAppUrl,
   generateAuthToken,
@@ -94,10 +95,13 @@ export default async function handler(req, res) {
       "Si vous n'etes pas a l'origine de cette demande, ignorez cet email.",
     ].join('\n');
 
+    const emailTemplate = templates.welcome(email.split('@')[0], rawToken);
+
     await sendMail({
       to: email,
-      subject: 'Verification de votre compte',
+      subject: emailTemplate.subject,
       text,
+      html: emailTemplate.html,
       category: 'email_verify',
     });
 

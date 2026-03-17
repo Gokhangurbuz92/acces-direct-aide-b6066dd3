@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import { CheckCircle2, XCircle, Eye, RefreshCw, RotateCcw, Share2, Copy, Check } from 'lucide-react';
 import DiagnosticTraceModal from './DiagnosticTraceModal';
 
+import { getCsrfHeaders } from '@/lib/csrf';
 /**
  * Displays OpenFisca diagnostic results as cards with FALC toggle and CTA.
  */
@@ -33,7 +34,7 @@ export default function DiagnosticResults({
         try {
             const res = await fetch('/api/share/create', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: { 'Content-Type': 'application/json', ...getCsrfHeaders() },
                 body: JSON.stringify({
                     situation: answers,
                     results: { rights, period, meta }

@@ -5,6 +5,7 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 
+import { getCsrfHeaders } from '@/lib/csrf';
 export default function EntityHistory({ entityType, entityId, onRestored }) {
     const [versions, setVersions] = useState([]);
     const [loading, setLoading] = useState(true);

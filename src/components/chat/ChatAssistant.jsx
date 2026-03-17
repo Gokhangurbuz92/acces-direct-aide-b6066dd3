@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
 import { Compass, Send, X, Loader2, RefreshCw, ExternalLink, MapPin, Sparkles } from 'lucide-react';
 import FeedbackButtons from '@/components/assistant/FeedbackButtons';
+import { getCsrfHeaders } from '@/lib/csrf';
 
 /**
  * ChatAssistant v2 — La Boussole Sociale
@@ -77,7 +78,7 @@ export default function ChatAssistant({ embedded = false }) {
       try {
         const res = await fetch('/api/public/assistant/orient', {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: { 'Content-Type': 'application/json', ...getCsrfHeaders() },
           body: JSON.stringify({
             message: trimmedValue,
             territory,
@@ -136,7 +137,7 @@ export default function ChatAssistant({ embedded = false }) {
 
       fetch('/api/public/assistant/orient', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', ...getCsrfHeaders() },
         body: JSON.stringify({ message: prompt, territory, sessionId }),
         signal: controller.signal,
       })

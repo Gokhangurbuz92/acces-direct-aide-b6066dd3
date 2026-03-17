@@ -9,6 +9,7 @@ import { AlertCircle, Loader2 } from 'lucide-react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { appendNext, normalizeNextPath } from '@/lib/rdvRouting';
 
+import { getCsrfHeaders } from '@/lib/csrf';
 export default function ProRegister() {
     const [structureName, setStructureName] = useState('');
     const [email, setEmail] = useState('');
@@ -28,7 +29,7 @@ export default function ProRegister() {
         try {
             const res = await fetch('/api/pro/auth/register', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: { 'Content-Type': 'application/json', ...getCsrfHeaders() },
                 body: JSON.stringify({ structureName, email, password })
             });
 

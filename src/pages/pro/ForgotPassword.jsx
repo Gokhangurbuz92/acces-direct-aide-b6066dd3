@@ -8,6 +8,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { AlertCircle, CheckCircle, Loader2 } from 'lucide-react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 
+import { getCsrfHeaders } from '@/lib/csrf';
 export default function ForgotPassword() {
     const [email, setEmail] = useState('');
     const [status, setStatus] = useState({ type: '', message: '' });
@@ -21,7 +22,7 @@ export default function ForgotPassword() {
         try {
             const res = await fetch('/api/pro/auth/forgot-password', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: { 'Content-Type': 'application/json', ...getCsrfHeaders() },
                 body: JSON.stringify({ email })
             });
             const data = await res.json();

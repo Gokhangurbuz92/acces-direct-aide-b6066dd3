@@ -1,7 +1,7 @@
 import { checkRateLimit, getClientIp, getRateLimitStatus } from '../../_utils/rateLimit.js';
 import logger from '../../_utils/logger.js';
 import { db } from '../../../src/db/index.js';
-import { Aide, Demarche, AdminUser, CitizenUser, CronRun, ImportLog } from '../../../src/db/schema.js';
+import { Aide, Demarche, AdminUser, CitizenUser, CronRun, ImportLog, Structure } from '../../../src/db/schema.js';
 import { count, sql } from 'drizzle-orm';
 import { verifyAdmin } from '../../_utils/auth.js';
 import { getAllFlags } from '@ada/shared/features';
@@ -40,6 +40,7 @@ export default async function handler(req, res) {
             adminCount,
             citizenCount,
             cronRunCount,
+            structureCount,
             recentCrons,
             recentImports,
             ragHealth,
@@ -49,6 +50,7 @@ export default async function handler(req, res) {
             db.select({ value: count() }).from(AdminUser).then(res => res[0].value),
             db.select({ value: count() }).from(CitizenUser).then(res => res[0].value),
             db.select({ value: count() }).from(CronRun).then(res => res[0].value),
+            db.select({ value: count() }).from(Structure).then(res => res[0].value),
             db.query.CronRun.findMany({
                 orderBy: (cr, { desc }) => [desc(cr.startedAt)],
                 limit: 5,
@@ -108,6 +110,7 @@ export default async function handler(req, res) {
                     admins: adminCount,
                     citizens: citizenCount,
                     cronRuns: cronRunCount,
+                    structures: structureCount,
                 },
                 features: featureFlags,
                 rag: ragHealth,

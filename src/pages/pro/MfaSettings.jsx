@@ -19,6 +19,7 @@ import {
 } from 'lucide-react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 
+import { getCsrfHeaders } from '@/lib/csrf';
 /**
  * MfaSettings — TOTP setup / disable page
  *
@@ -87,7 +88,7 @@ export default function MfaSettings() {
         try {
             const res = await fetch('/api/pro/mfa-setup', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json', ...getAuthHeaders() },
+                headers: { 'Content-Type': 'application/json', ...getAuthHeaders(), ...getCsrfHeaders() },
                 body: JSON.stringify({ code }),
             });
             const data = await res.json();
@@ -107,7 +108,7 @@ export default function MfaSettings() {
         try {
             const res = await fetch('/api/pro/mfa-setup', {
                 method: 'DELETE',
-                headers: { 'Content-Type': 'application/json', ...getAuthHeaders() },
+                headers: { 'Content-Type': 'application/json', ...getAuthHeaders(), ...getCsrfHeaders() },
                 body: JSON.stringify({ code }),
             });
             const data = await res.json();

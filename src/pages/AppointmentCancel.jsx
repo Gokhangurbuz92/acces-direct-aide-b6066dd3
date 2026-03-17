@@ -4,6 +4,7 @@ import { Loader2, CheckCircle2, AlertCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import SEO from '@/components/SEO';
 
+import { getCsrfHeaders } from '@/lib/csrf';
 /**
  * AppointmentCancel — Citizen cancellation via secure token link
  *
@@ -28,7 +29,7 @@ export default function AppointmentCancel() {
     try {
       const res = await fetch('/api/appointments/cancel', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', ...getCsrfHeaders() },
         body: JSON.stringify({ token, reason: reason.trim() || undefined }),
       });
 

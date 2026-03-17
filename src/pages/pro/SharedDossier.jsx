@@ -13,6 +13,7 @@ import {
 import SecureChat from '@/components/Messaging/SecureChat';
 import FileVault from '@/components/FileVault';
 import ExpertTools from '@/components/ExpertTools';
+import { getCsrfHeaders } from '@/lib/csrf';
 import {
     FileText,
     User,
@@ -94,6 +95,7 @@ export default function SharedDossier() {
                     headers: {
                         'Content-Type': 'application/json',
                         Authorization: `Bearer ${token}`,
+                        ...getCsrfHeaders(),
                     },
                     body: JSON.stringify({ status: followUp }),
                 }

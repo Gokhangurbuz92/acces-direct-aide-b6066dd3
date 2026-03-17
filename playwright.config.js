@@ -50,10 +50,15 @@ export default defineConfig({
 
   webServer: SHOULD_START_WEBSERVER
     ? {
-      command: 'npx vite --port 3000 --host 127.0.0.1',
+      // In CI, use `vite preview` (serves pre-built dist — starts instantly).
+      // Locally, use `vite` (dev server with HMR).
+      command: process.env.CI
+        ? 'npx vite preview --port 3000 --host 127.0.0.1'
+        : 'npx vite --port 3000 --host 127.0.0.1',
       url: LOCAL_BASE_URL,
       reuseExistingServer: !process.env.CI,
       timeout: 180 * 1000, // 3min for slow CI containers
+      stdout: 'pipe',
       env: {
         VITE_USE_MOCKS: 'true',
         USE_MOCKS: 'true',

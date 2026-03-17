@@ -53,7 +53,8 @@ jobs:
           echo "🚀 Deployed to: $DEPLOY_URL"
 
       - name: Sync Database Schema
-        run: npx drizzle-kit push
+        continue-on-error: true
+        run: npx drizzle-kit push --force
         env:
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
 

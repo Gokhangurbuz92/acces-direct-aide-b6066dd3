@@ -37,7 +37,7 @@ export default function EmptyState({
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 transition={{ delay: 0.2 }}
-                className="text-2xl font-bold text-slate-800 mb-3"
+                className="text-2xl font-bold text-slate-900 mb-3"
             >
                 {title}
             </motion.h3>

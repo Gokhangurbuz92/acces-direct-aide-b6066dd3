@@ -1,6 +1,7 @@
 import { logger } from '../logger.js';
 import { SourceConnector } from './SourceConnector.js';
 import crypto from 'crypto';
+import JSZip from 'jszip';
 
 /**
  * Default dataset URL — DILA "Fiches pratiques particuliers" from data.gouv.fr.
@@ -13,7 +14,7 @@ import crypto from 'crypto';
  * License: Licence Ouverte v2.0 — Attribution "Service-Public.gouv.fr / DILA"
  */
 const DEFAULT_DATASET_URL =
-    'https://www.data.gouv.fr/fr/datasets/r/4afe86da-211a-49f5-a4f2-dea85e69d0f1';
+    'https://www.data.gouv.fr/fr/datasets/r/0ed10f28-d197-4324-97b3-037f625095ac';
 
 const MAX_ITEMS = 10000; // Safety cap
 const FETCH_TIMEOUT_MS = 45_000; // 45s (Vercel limit is 50s)
@@ -100,7 +101,7 @@ export class ServicePublicDemarchesConnector extends SourceConnector {
         logger.info(`[ServicePublic] Fetching dataset from: ${this._datasetUrl}`);
 
         const response = await fetch(this._datasetUrl, {
-            headers: { Accept: 'application/json, application/xml, text/xml' },
+            headers: { Accept: 'application/json, application/xml, text/xml, application/zip' },
             signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
             redirect: 'follow',
         });
@@ -110,13 +111,18 @@ export class ServicePublicDemarchesConnector extends SourceConnector {
         }
 
         const contentType = (response.headers.get('content-type') || '').toLowerCase();
-        const body = await response.text();
 
         let items;
-        if (contentType.includes('json') || body.trimStart().startsWith('[') || body.trimStart().startsWith('{')) {
-            items = this._parseJSON(body);
+        if (contentType.includes('zip') || contentType.includes('octet-stream')) {
+            // ZIP archive — extract XML files and parse them
+            items = await this._parseZip(response);
         } else {
-            items = this._parseXML(body);
+            const body = await response.text();
+            if (contentType.includes('json') || body.trimStart().startsWith('[') || body.trimStart().startsWith('{')) {
+                items = this._parseJSON(body);
+            } else {
+                items = this._parseXML(body);
+            }
         }
 
         logger.info(`[ServicePublic] Parsed ${items.length} fiches from dataset`);
@@ -190,6 +196,44 @@ export class ServicePublicDemarchesConnector extends SourceConnector {
     // -----------------------------------------------------------------------
     // Parsers
     // -----------------------------------------------------------------------
+
+    /**
+     * Parse a ZIP response containing XML files.
+     * Extracts all .xml files, concatenates their contents, and parses them.
+     * @param {Response} response
+     * @returns {Promise<object[]>}
+     */
+    async _parseZip(response) {
+        try {
+            const buffer = await response.arrayBuffer();
+            logger.info(`[ServicePublic] ZIP downloaded: ${(buffer.byteLength / 1024 / 1024).toFixed(1)}MB`);
+
+            const zip = await JSZip.loadAsync(buffer);
+            const xmlFiles = Object.keys(zip.files)
+                .filter(name => name.endsWith('.xml') && !zip.files[name].dir)
+                .sort((a, b) => (zip.files[b].uncompressedSize || 0) - (zip.files[a].uncompressedSize || 0))
+                .slice(0, 500); // Safety cap to stay within Vercel memory
+
+            logger.info(`[ServicePublic] ZIP contains ${xmlFiles.length} XML files`);
+
+            const allItems = [];
+            for (const fileName of xmlFiles) {
+                try {
+                    const xmlContent = await zip.files[fileName].async('string');
+                    const items = this._parseXML(xmlContent);
+                    allItems.push(...items);
+                } catch (err) {
+                    logger.warn(`[ServicePublic] Failed to parse ${fileName}: ${err.message}`);
+                }
+            }
+
+            logger.info(`[ServicePublic] Parsed ${allItems.length} fiches from ${xmlFiles.length} XML files`);
+            return allItems;
+        } catch (err) {
+            logger.error('[ServicePublic] ZIP parse error:', err.message);
+            return [];
+        }
+    }
 
     /**
      * Parse JSON dataset. Handles both array format and {results:[]} format.

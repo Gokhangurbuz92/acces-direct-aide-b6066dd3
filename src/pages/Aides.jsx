@@ -298,7 +298,7 @@ export default function Aides() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col gap-4">
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-end gap-3">
             <div className="flex items-center gap-2">
-              <Link to="/recherche" className="text-sm font-semibold text-blue-700 hover:text-blue-800">
+              <Link to="/recherche" className="text-sm font-semibold text-blue-900 hover:text-blue-950">
                 Recherche intelligente
               </Link>
               <Button

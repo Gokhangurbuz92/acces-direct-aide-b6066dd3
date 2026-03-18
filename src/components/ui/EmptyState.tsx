@@ -2,11 +2,14 @@ import * as React from "react"
 import { cn } from "@/lib/utils"
 import { motion } from "framer-motion"
 
-export interface EmptyStateProps extends React.HTMLAttributes<HTMLDivElement> {
+export interface EmptyStateProps {
     title: string;
     description?: string;
     icon?: React.ReactNode;
     actions?: React.ReactNode;
+    className?: string;
+    role?: string;
+    "data-testid"?: string;
 }
 
 const EmptyState = React.forwardRef<HTMLDivElement, EmptyStateProps>(
@@ -17,12 +20,12 @@ const EmptyState = React.forwardRef<HTMLDivElement, EmptyStateProps>(
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.4, ease: "easeOut" }}
-                data-testid="empty-state"
+                data-testid={props["data-testid"] || "empty-state"}
+                role={props.role}
                 className={cn(
                     "flex flex-col items-center justify-center text-center py-16 px-6 rounded-3xl border border-dashed border-slate-200/60 bg-slate-50/80 shadow-sm backdrop-blur-sm",
                     className
                 )}
-                {...props}
             >
                 {icon && (
                     <motion.div
@@ -40,7 +43,7 @@ const EmptyState = React.forwardRef<HTMLDivElement, EmptyStateProps>(
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
                     transition={{ delay: 0.2 }}
-                    className="text-2xl font-bold text-slate-800 mb-3"
+                    className="text-2xl font-bold text-slate-900 mb-3"
                 >
                     {title}
                 </motion.h3>
@@ -71,3 +74,4 @@ const EmptyState = React.forwardRef<HTMLDivElement, EmptyStateProps>(
 EmptyState.displayName = "EmptyState"
 
 export default EmptyState
+

@@ -58,6 +58,7 @@ const Aides = lazy(() => import("./Aides.jsx"));
 const Recherche = lazy(() => import("./Recherche.jsx"));
 const Annuaire = lazy(() => import("./Annuaire.jsx"));
 const Confidentialite = lazy(() => import("./Confidentialite.jsx"));
+const CGU = lazy(() => import("./CGU.jsx"));
 const Contact = lazy(() => import("./Contact.jsx"));
 const Cookies = lazy(() => import("./Cookies.jsx"));
 const DemarcheDetail = lazy(() => import("./DemarcheDetail.jsx"));
@@ -435,6 +436,8 @@ function PagesContent() {
                                 <Route path="/demarches" element={<Demarches />} />
                                 <Route path="/home" element={<Navigate to="/" replace />} />
                                 <Route path="/mentions-legales" element={<MentionsLegales />} />
+                                <Route path="/cgu" element={<CGU />} />
+                                <Route path="/conditions-generales" element={<Navigate to="/cgu" replace />} />
                                 <Route path="/sourcesmethode" element={<SourcesMethode />} />
                                 <Route path="/sentry-test" element={<SentryTest />} />
                                 <Route path="/r/:token/messages" element={<BeneficiaryMessages />} />

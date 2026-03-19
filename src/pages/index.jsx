@@ -1,7 +1,11 @@
 import { Suspense, lazy, Component } from "react";
 import { BrowserRouter, MemoryRouter, Route, Routes, useLocation, Navigate, useParams } from 'react-router-dom';
-import { m, LazyMotion, domAnimation, AnimatePresence, useReducedMotion } from 'framer-motion';
+import { m, LazyMotion, AnimatePresence, useReducedMotion } from 'framer-motion';
 import { frontendEnv } from "@/config/env";
+
+// Lazy-load framer-motion features (~122KB) — not needed before first paint
+const loadMotionFeatures = () =>
+  import('framer-motion').then((mod) => mod.domAnimation);
 
 /**
  * ErrorBoundary — catches chunk-load or mount errors in lazy-loaded routes.
@@ -250,7 +254,7 @@ function PagesContent() {
     if (location.pathname.startsWith('/admin')) {
         return (
             <Suspense fallback={<PageLoader />}>
-                <LazyMotion features={domAnimation} strict>
+                <LazyMotion features={loadMotionFeatures} strict>
                     <AnimatePresence mode="wait">
                         <m.div
                             key={location.pathname}
@@ -302,7 +306,7 @@ function PagesContent() {
     if (location.pathname.startsWith('/pro')) {
         return (
             <Suspense fallback={<PageLoader />}>
-                <LazyMotion features={domAnimation} strict>
+                <LazyMotion features={loadMotionFeatures} strict>
                     <AnimatePresence mode="wait">
                         <m.div
                             key={location.pathname}
@@ -362,7 +366,7 @@ function PagesContent() {
     return (
         <Suspense fallback={<PageLoader />}>
             <Layout currentPageName={currentPage}>
-                <LazyMotion features={domAnimation} strict>
+                <LazyMotion features={loadMotionFeatures} strict>
                     <AnimatePresence mode="wait">
                         <m.div
                             key={location.pathname}

@@ -34,7 +34,7 @@ export default function ChatAssistant({ embedded = false }) {
   const [messages, setMessages] = useState([BOUSSOLE_GREETING]);
   const [territory, setTerritory] = useState(/** @type {string | null} */(null));
   const [sessionId] = useState(() => `compass-${Date.now()}`);
-  const [rgpdDismissed, setRgpdDismissed] = useState(() => !!localStorage.getItem('ada_chatbot_rgpd_dismissed'));
+  const [rgpdDismissed, setRgpdDismissed] = useState(() => typeof window !== 'undefined' && !!localStorage.getItem('ada_chatbot_rgpd_dismissed'));
   const endOfMessagesRef = useRef(null);
   const inputRef = useRef(null);
   const fabRef = useRef(null);

@@ -298,7 +298,7 @@ export default function Aides() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col gap-4">
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-end gap-3">
             <div className="flex items-center gap-2">
-              <Link to="/recherche" className="text-sm font-semibold text-blue-900 hover:text-blue-950">
+              <Link to="/recherche" className="text-sm font-semibold text-blue-700 hover:text-blue-900">
                 Recherche intelligente
               </Link>
               <Button
@@ -326,7 +326,7 @@ export default function Aides() {
                 className="pl-10 h-11 bg-slate-50 border-slate-200 focus:bg-white transition-colors"
               />
             </div>
-            <Button type="submit" className="h-11 bg-slate-900 text-white hover:bg-slate-800">
+            <Button type="submit" className="h-11 bg-slate-950 text-white hover:bg-slate-800">
               Rechercher
             </Button>
           </form>

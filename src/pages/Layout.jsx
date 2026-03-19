@@ -266,6 +266,7 @@ export default function Layout({ children, currentPageName }) {
                           }`}
                         aria-haspopup="menu"
                         aria-controls={`nav-${item.page.toLowerCase()}-menu`}
+                        aria-current={currentPageName === item.page ? 'page' : undefined}
                       >
                         {item.label}
                         <ChevronDown className="h-4 w-4" />
@@ -298,6 +299,7 @@ export default function Layout({ children, currentPageName }) {
                           ? 'text-brand-primary after:absolute after:bottom-0 after:left-3 after:right-3 after:h-0.5 after:bg-brand-primary'
                           : 'text-text-body hover:text-brand-primary hover:bg-brand-highlight/10'
                         }`}
+                      aria-current={currentPageName === item.page ? 'page' : undefined}
                     >
                       {item.label}
                     </Link>

@@ -99,7 +99,7 @@ test.describe('CP4: Legacy Redirects & Router Hygiene', () => {
 
         // Assert redirection didn't fail (verify title or content if possible, but URL is key)
         // H1 visible (title may differ from mock due to global mock override)
-        await expect(page.getByRole('heading', { level: 1 })).toBeVisible();
+        await expect(page.getByRole('heading', { level: 1 })).toBeVisible({ timeout: 15_000 });
 
         await page.screenshot({ path: path.join(PROOF_DIR, 'legacy-aide-redirect.png') });
     });

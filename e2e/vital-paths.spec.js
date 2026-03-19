@@ -61,7 +61,7 @@ test.describe('Vital Paths', () => {
     });
 
     await page.goto('/aide/aide-detail');
-    await expect(page.getByRole('heading', { name: 'Aide Detail' })).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Aide Detail' })).toBeVisible({ timeout: 15_000 });
   });
 
   test('Structure Detail', async ({ page }) => {

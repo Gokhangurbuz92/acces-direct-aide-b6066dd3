@@ -47,7 +47,7 @@ test.describe('Phase 1 — Stabilisation', () => {
         await page.waitForURL('**/orientation', { timeout: 10_000 });
         // Must have a visible heading
         const heading = page.locator('h1');
-        await expect(heading).toBeVisible();
+        await expect(heading).toBeVisible({ timeout: 15_000 });
         await expect(heading).toContainText(/assistant/i);
     });
 

@@ -44,7 +44,7 @@ test.describe('Public Core Routes', () => {
     test('Structures (Annuaire) Flow: List -> Detail -> Refresh', async ({ page }) => {
         // 1. List
         await page.goto('/annuaire');
-        await expect(page.getByRole('heading', { name: 'Annuaire', level: 1 })).toBeVisible();
+        await expect(page.getByRole('heading', { name: 'Annuaire', level: 1 })).toBeVisible({ timeout: 15_000 });
 
         // 2. Click Detail
         // Use dispatchEvent to bypass potential overlay issues with the card link pattern

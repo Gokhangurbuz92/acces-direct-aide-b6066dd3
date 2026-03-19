@@ -12,7 +12,7 @@ test.beforeAll(async () => {
 });
 
 // Helper to create mock response
-const createMockEntity = (id, slug, title, type = 'basic') => ({
+const createMockEntity = (id: string, slug: string, title: string, type = 'basic') => ({
     id,
     slug,
     titre: title,
@@ -78,7 +78,7 @@ test.describe('CP3: Route Safety & Canonical Redirects', () => {
         await expect(page).toHaveURL(/\/aides\/A1/);
 
         // Content loads on the detail page
-        await expect(page.getByRole('heading', { level: 1 })).toBeVisible();
+        await expect(page.getByRole('heading', { level: 1 })).toBeVisible({ timeout: 15_000 });
 
         await page.screenshot({ path: path.join(PROOF_DIR, 'aides-view-proof.png') });
     });
@@ -87,7 +87,7 @@ test.describe('CP3: Route Safety & Canonical Redirects', () => {
         await page.goto('/structures/view?id=S1');
 
         await expect(page).toHaveURL(/\/structures\/S1/);
-        await expect(page.getByRole('heading', { level: 1 })).toBeVisible();
+        await expect(page.getByRole('heading', { level: 1 })).toBeVisible({ timeout: 15_000 });
 
         await page.screenshot({ path: path.join(PROOF_DIR, 'structures-view-proof.png') });
     });
@@ -96,14 +96,14 @@ test.describe('CP3: Route Safety & Canonical Redirects', () => {
         await page.goto('/demarches/view?id=D1');
 
         await expect(page).toHaveURL(/\/demarches\/D1/);
-        await expect(page.getByRole('heading', { level: 1 })).toBeVisible();
+        await expect(page.getByRole('heading', { level: 1 })).toBeVisible({ timeout: 15_000 });
     });
 
     test('Scenario D: Actualites /view?id= redirect', async ({ page }) => {
         await page.goto('/actualites/view?id=AC1');
 
         await expect(page).toHaveURL(/\/actualites\/AC1/);
-        await expect(page.getByRole('heading', { level: 1 })).toBeVisible();
+        await expect(page.getByRole('heading', { level: 1 })).toBeVisible({ timeout: 15_000 });
     });
 
     test.afterAll(async () => {

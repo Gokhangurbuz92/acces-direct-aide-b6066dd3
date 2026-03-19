@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
-import { Compass, Send, X, Loader2, RefreshCw, ExternalLink, MapPin, Sparkles } from 'lucide-react';
+import { Compass, Send, X, Loader2, RefreshCw, ExternalLink, MapPin, Sparkles, ShieldCheck } from 'lucide-react';
 import FeedbackButtons from '@/components/assistant/FeedbackButtons';
 import { getCsrfHeaders } from '@/lib/csrf';
 
@@ -34,6 +34,7 @@ export default function ChatAssistant({ embedded = false }) {
   const [messages, setMessages] = useState([BOUSSOLE_GREETING]);
   const [territory, setTerritory] = useState(/** @type {string | null} */(null));
   const [sessionId] = useState(() => `compass-${Date.now()}`);
+  const [rgpdDismissed, setRgpdDismissed] = useState(() => !!localStorage.getItem('ada_chatbot_rgpd_dismissed'));
   const endOfMessagesRef = useRef(null);
   const inputRef = useRef(null);
   const fabRef = useRef(null);
@@ -233,6 +234,8 @@ export default function ChatAssistant({ embedded = false }) {
           onPromptClick={handlePromptClick}
           endOfMessagesRef={endOfMessagesRef}
           territory={territory}
+          rgpdDismissed={rgpdDismissed}
+          onDismissRgpd={() => { localStorage.setItem('ada_chatbot_rgpd_dismissed', new Date().toISOString()); setRgpdDismissed(true); }}
         />
         <CompassInput
           inputValue={inputValue}
@@ -279,6 +282,8 @@ export default function ChatAssistant({ embedded = false }) {
             onPromptClick={handlePromptClick}
             endOfMessagesRef={endOfMessagesRef}
             territory={territory}
+            rgpdDismissed={rgpdDismissed}
+            onDismissRgpd={() => { localStorage.setItem('ada_chatbot_rgpd_dismissed', new Date().toISOString()); setRgpdDismissed(true); }}
           />
           <CompassInput
             inputValue={inputValue}
@@ -335,7 +340,7 @@ function CompassHeader({ onClose, territory }) {
   );
 }
 
-function CompassMessages({ messages, isLoading, error, onRetry, onPromptClick, endOfMessagesRef, territory }) {
+function CompassMessages({ messages, isLoading, error, onRetry, onPromptClick, endOfMessagesRef, territory, rgpdDismissed, onDismissRgpd }) {
   const showInitialPrompts = messages.length <= 1 && !isLoading;
 
   return (
@@ -398,6 +403,30 @@ function CompassMessages({ messages, isLoading, error, onRetry, onPromptClick, e
           </div>
         </div>
       ))}
+
+      {/* RGPD notice — shown only before first interaction and if not dismissed */}
+      {showInitialPrompts && !rgpdDismissed && (
+        <div className="rounded-xl border border-blue-100 bg-blue-50/60 px-3 py-2.5 text-[11px] leading-relaxed text-slate-500">
+          <div className="flex items-start gap-2">
+            <ShieldCheck className="mt-0.5 h-3.5 w-3.5 flex-shrink-0 text-blue-400" aria-hidden="true" />
+            <div className="flex-1">
+              <p>
+                Vos échanges sont enregistrés de manière anonyme (tronqués à 500 caractères) et supprimés après 90 jours.
+                <strong className="text-slate-600"> Ne communiquez aucune donnée personnelle</strong> (n° sécu, IBAN, etc.).
+                {' '}<a href="/confidentialite" className="font-medium text-blue-600 hover:underline">Politique de confidentialité</a>
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={onDismissRgpd}
+              className="ml-1 mt-0.5 rounded p-0.5 text-slate-400 hover:text-slate-600 hover:bg-blue-100 transition-colors"
+              aria-label="Fermer la notice RGPD"
+            >
+              <X className="h-3 w-3" />
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Initial suggested prompts */}
       {showInitialPrompts && (

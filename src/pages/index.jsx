@@ -56,6 +56,7 @@ const ActualiteDetail = lazy(() => import("./ActualiteDetail.jsx"));
 const AideDetail = lazy(() => import("./AideDetail.jsx"));
 const Aides = lazy(() => import("./Aides.jsx"));
 const Recherche = lazy(() => import("./Recherche.jsx"));
+const RechercheAide = lazy(() => import("./RechercheAide.jsx"));
 const Annuaire = lazy(() => import("./Annuaire.jsx"));
 const Confidentialite = lazy(() => import("./Confidentialite.jsx"));
 const CGU = lazy(() => import("./CGU.jsx"));
@@ -414,6 +415,7 @@ function PagesContent() {
                                 <Route path="/aides/:slug" element={<AideDetail />} />
                                 <Route path="/aides" element={<Aides />} />
                                 <Route path="/recherche" element={<Recherche />} />
+                                <Route path="/trouver-aide" element={<RechercheAide />} />
                                 <Route path="/categories/:slug" element={<Aides />} />
                                 <Route path="/situations/:slug" element={<Aides />} />
 

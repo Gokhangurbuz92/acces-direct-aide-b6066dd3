@@ -36,6 +36,13 @@
       "when": 1773564905531,
       "tag": "0004_confused_korvac",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1774036250665,
+      "tag": "0005_low_firebird",
+      "breakpoints": true
     }
   ]
 }

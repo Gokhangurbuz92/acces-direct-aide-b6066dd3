@@ -94,6 +94,7 @@ export const routes = [
     { path: 'aides', match: 'prefix', handler: () => import('./_handlers/aides.js') },
     { path: 'aids', match: 'prefix', handler: () => import('./_handlers/aides.js') },
     { path: 'drees', match: 'prefix', handler: () => import('./_handlers/drees.js') },
+    { path: 'search-pro', match: 'exact', handler: () => import('./_handlers/search-pro.js') },
     { path: 'search', match: 'exact', handler: () => import('./_handlers/search.js') },
     { path: 'structures', match: 'prefix', handler: () => import('./_handlers/structures.js') },
     { path: 'demarches', match: 'prefix', handler: () => import('./_handlers/demarches.js') },

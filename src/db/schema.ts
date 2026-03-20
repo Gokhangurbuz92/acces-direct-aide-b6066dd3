@@ -1059,6 +1059,158 @@ export const AideToLifeSituation = pgTable('_AideToLifeSituation', {
 		.onUpdate('cascade')
 }));
 
+// ═══════════════════════════════════════════════════════════════════
+// CITIZEN SEARCH MVP — Taxonomy, ProProfile & Junction Tables
+// ═══════════════════════════════════════════════════════════════════
+
+export const NeedCategory = pgTable('NeedCategory', {
+	id: text('id').notNull().primaryKey().$defaultFn(() => crypto.randomUUID()),
+	slug: text('slug').notNull().unique(),
+	label: text('label').notNull(),
+	description: text('description'),
+	icon: text('icon'),
+	color: text('color'),
+	keywords: text('keywords').array().notNull().default(sql`'{}'`),
+	sortOrder: integer('sortOrder').notNull().default(0),
+	isActive: boolean('isActive').notNull().default(true),
+	createdAt: timestamp('createdAt', { precision: 3 }).notNull().defaultNow(),
+	updatedAt: timestamp('updatedAt', { precision: 3, mode: 'date' }).$defaultFn(() => new Date()).$onUpdate(() => new Date()).notNull()
+});
+
+export const AudienceCategory = pgTable('AudienceCategory', {
+	id: text('id').notNull().primaryKey().$defaultFn(() => crypto.randomUUID()),
+	slug: text('slug').notNull().unique(),
+	label: text('label').notNull(),
+	sortOrder: integer('sortOrder').notNull().default(0),
+	isActive: boolean('isActive').notNull().default(true),
+	createdAt: timestamp('createdAt', { precision: 3 }).notNull().defaultNow(),
+	updatedAt: timestamp('updatedAt', { precision: 3, mode: 'date' }).$defaultFn(() => new Date()).$onUpdate(() => new Date()).notNull()
+});
+
+export const ModalityType = pgTable('ModalityType', {
+	id: text('id').notNull().primaryKey().$defaultFn(() => crypto.randomUUID()),
+	slug: text('slug').notNull().unique(),
+	label: text('label').notNull(),
+	icon: text('icon'),
+	sortOrder: integer('sortOrder').notNull().default(0),
+	isActive: boolean('isActive').notNull().default(true),
+	createdAt: timestamp('createdAt', { precision: 3 }).notNull().defaultNow(),
+	updatedAt: timestamp('updatedAt', { precision: 3, mode: 'date' }).$defaultFn(() => new Date()).$onUpdate(() => new Date()).notNull()
+});
+
+export const ProProfile = pgTable('ProProfile', {
+	id: text('id').notNull().primaryKey().$defaultFn(() => crypto.randomUUID()),
+	proUserId: text('proUserId').notNull().unique(),
+	displayName: text('displayName'),
+	jobTitle: text('jobTitle'),
+	descriptionPublic: text('descriptionPublic'),
+	photoUrl: text('photoUrl'),
+	isPubliclyVisible: boolean('isPubliclyVisible').notNull().default(false),
+	acceptsNewClients: boolean('acceptsNewClients').notNull().default(true),
+	contactMode: text('contactMode').notNull().default('both'),
+	createdAt: timestamp('createdAt', { precision: 3 }).notNull().defaultNow(),
+	updatedAt: timestamp('updatedAt', { precision: 3, mode: 'date' }).$defaultFn(() => new Date()).$onUpdate(() => new Date()).notNull()
+}, (ProProfile) => ({
+	'ProProfile_proUser_fkey': foreignKey({
+		name: 'ProProfile_proUser_fkey',
+		columns: [ProProfile.proUserId],
+		foreignColumns: [ProUser.id]
+	})
+		.onDelete('cascade')
+		.onUpdate('cascade')
+}));
+
+// ── Junction Tables ──────────────────────────────────────────────
+
+export const StructureNeed = pgTable('StructureNeed', {
+	structureId: text('structureId').notNull(),
+	needCategoryId: text('needCategoryId').notNull()
+}, (StructureNeed) => ({
+	'StructureNeed_pk': uniqueIndex('StructureNeed_pk').on(StructureNeed.structureId, StructureNeed.needCategoryId),
+	'StructureNeed_structure_fkey': foreignKey({
+		name: 'StructureNeed_structure_fkey',
+		columns: [StructureNeed.structureId],
+		foreignColumns: [Structure.id]
+	}).onDelete('cascade').onUpdate('cascade'),
+	'StructureNeed_need_fkey': foreignKey({
+		name: 'StructureNeed_need_fkey',
+		columns: [StructureNeed.needCategoryId],
+		foreignColumns: [NeedCategory.id]
+	}).onDelete('cascade').onUpdate('cascade')
+}));
+
+export const StructureAudience = pgTable('StructureAudience', {
+	structureId: text('structureId').notNull(),
+	audienceCategoryId: text('audienceCategoryId').notNull()
+}, (StructureAudience) => ({
+	'StructureAudience_pk': uniqueIndex('StructureAudience_pk').on(StructureAudience.structureId, StructureAudience.audienceCategoryId),
+	'StructureAudience_structure_fkey': foreignKey({
+		name: 'StructureAudience_structure_fkey',
+		columns: [StructureAudience.structureId],
+		foreignColumns: [Structure.id]
+	}).onDelete('cascade').onUpdate('cascade'),
+	'StructureAudience_audience_fkey': foreignKey({
+		name: 'StructureAudience_audience_fkey',
+		columns: [StructureAudience.audienceCategoryId],
+		foreignColumns: [AudienceCategory.id]
+	}).onDelete('cascade').onUpdate('cascade')
+}));
+
+export const StructureModality = pgTable('StructureModality', {
+	structureId: text('structureId').notNull(),
+	modalityTypeId: text('modalityTypeId').notNull()
+}, (StructureModality) => ({
+	'StructureModality_pk': uniqueIndex('StructureModality_pk').on(StructureModality.structureId, StructureModality.modalityTypeId),
+	'StructureModality_structure_fkey': foreignKey({
+		name: 'StructureModality_structure_fkey',
+		columns: [StructureModality.structureId],
+		foreignColumns: [Structure.id]
+	}).onDelete('cascade').onUpdate('cascade'),
+	'StructureModality_modality_fkey': foreignKey({
+		name: 'StructureModality_modality_fkey',
+		columns: [StructureModality.modalityTypeId],
+		foreignColumns: [ModalityType.id]
+	}).onDelete('cascade').onUpdate('cascade')
+}));
+
+export const ProProfileNeed = pgTable('ProProfileNeed', {
+	proProfileId: text('proProfileId').notNull(),
+	needCategoryId: text('needCategoryId').notNull()
+}, (ProProfileNeed) => ({
+	'ProProfileNeed_pk': uniqueIndex('ProProfileNeed_pk').on(ProProfileNeed.proProfileId, ProProfileNeed.needCategoryId),
+	'ProProfileNeed_profile_fkey': foreignKey({
+		name: 'ProProfileNeed_profile_fkey',
+		columns: [ProProfileNeed.proProfileId],
+		foreignColumns: [ProProfile.id]
+	}).onDelete('cascade').onUpdate('cascade'),
+	'ProProfileNeed_need_fkey': foreignKey({
+		name: 'ProProfileNeed_need_fkey',
+		columns: [ProProfileNeed.needCategoryId],
+		foreignColumns: [NeedCategory.id]
+	}).onDelete('cascade').onUpdate('cascade')
+}));
+
+export const ProProfileAudience = pgTable('ProProfileAudience', {
+	proProfileId: text('proProfileId').notNull(),
+	audienceCategoryId: text('audienceCategoryId').notNull()
+}, (ProProfileAudience) => ({
+	'ProProfileAudience_pk': uniqueIndex('ProProfileAudience_pk').on(ProProfileAudience.proProfileId, ProProfileAudience.audienceCategoryId),
+	'ProProfileAudience_profile_fkey': foreignKey({
+		name: 'ProProfileAudience_profile_fkey',
+		columns: [ProProfileAudience.proProfileId],
+		foreignColumns: [ProProfile.id]
+	}).onDelete('cascade').onUpdate('cascade'),
+	'ProProfileAudience_audience_fkey': foreignKey({
+		name: 'ProProfileAudience_audience_fkey',
+		columns: [ProProfileAudience.audienceCategoryId],
+		foreignColumns: [AudienceCategory.id]
+	}).onDelete('cascade').onUpdate('cascade')
+}));
+
+// ═══════════════════════════════════════════════════════════════════
+// RELATIONS
+// ═══════════════════════════════════════════════════════════════════
+
 export const SourceDocumentRelations = relations(SourceDocument, ({ many }) => ({
 	aides: many(Aide, {
 		relationName: 'AideToSourceDocument'
@@ -1173,6 +1325,16 @@ export const StructureRelations = relations(Structure, ({ one, many }) => ({
 	}),
 	rdvConversations: many(RdvConversation, {
 		relationName: 'RdvConversationToStructure'
+	}),
+	// Citizen Search MVP
+	needs: many(StructureNeed, {
+		relationName: 'StructureToStructureNeed'
+	}),
+	audiences: many(StructureAudience, {
+		relationName: 'StructureToStructureAudience'
+	}),
+	modalities: many(StructureModality, {
+		relationName: 'StructureToStructureModality'
 	})
 }));
 
@@ -1244,6 +1406,12 @@ export const ProUserRelations = relations(ProUser, ({ many, one }) => ({
 		relationName: 'ProUserToStructure',
 		fields: [ProUser.structureId],
 		references: [Structure.id]
+	}),
+	// Citizen Search MVP
+	proProfile: one(ProProfile, {
+		relationName: 'ProUserToProProfile',
+		fields: [ProUser.id],
+		references: [ProProfile.proUserId]
 	})
 }));
 
@@ -1421,5 +1589,110 @@ export const AideToLifeSituationRelations = relations(AideToLifeSituation, ({ on
 		relationName: 'AideToAideToLifeSituation',
 		fields: [AideToLifeSituation.AideId],
 		references: [Aide.id]
+	})
+}));
+
+// ── Citizen Search MVP Relations ─────────────────────────────────
+
+export const NeedCategoryRelations = relations(NeedCategory, ({ many }) => ({
+	structureNeeds: many(StructureNeed, {
+		relationName: 'NeedCategoryToStructureNeed'
+	}),
+	proProfileNeeds: many(ProProfileNeed, {
+		relationName: 'NeedCategoryToProProfileNeed'
+	})
+}));
+
+export const AudienceCategoryRelations = relations(AudienceCategory, ({ many }) => ({
+	structureAudiences: many(StructureAudience, {
+		relationName: 'AudienceCategoryToStructureAudience'
+	}),
+	proProfileAudiences: many(ProProfileAudience, {
+		relationName: 'AudienceCategoryToProProfileAudience'
+	})
+}));
+
+export const ModalityTypeRelations = relations(ModalityType, ({ many }) => ({
+	structureModalities: many(StructureModality, {
+		relationName: 'ModalityTypeToStructureModality'
+	})
+}));
+
+export const ProProfileRelations = relations(ProProfile, ({ one, many }) => ({
+	proUser: one(ProUser, {
+		relationName: 'ProUserToProProfile',
+		fields: [ProProfile.proUserId],
+		references: [ProUser.id]
+	}),
+	needs: many(ProProfileNeed, {
+		relationName: 'ProProfileToProProfileNeed'
+	}),
+	audiences: many(ProProfileAudience, {
+		relationName: 'ProProfileToProProfileAudience'
+	})
+}));
+
+export const StructureNeedRelations = relations(StructureNeed, ({ one }) => ({
+	structure: one(Structure, {
+		relationName: 'StructureToStructureNeed',
+		fields: [StructureNeed.structureId],
+		references: [Structure.id]
+	}),
+	needCategory: one(NeedCategory, {
+		relationName: 'NeedCategoryToStructureNeed',
+		fields: [StructureNeed.needCategoryId],
+		references: [NeedCategory.id]
+	})
+}));
+
+export const StructureAudienceRelations = relations(StructureAudience, ({ one }) => ({
+	structure: one(Structure, {
+		relationName: 'StructureToStructureAudience',
+		fields: [StructureAudience.structureId],
+		references: [Structure.id]
+	}),
+	audienceCategory: one(AudienceCategory, {
+		relationName: 'AudienceCategoryToStructureAudience',
+		fields: [StructureAudience.audienceCategoryId],
+		references: [AudienceCategory.id]
+	})
+}));
+
+export const StructureModalityRelations = relations(StructureModality, ({ one }) => ({
+	structure: one(Structure, {
+		relationName: 'StructureToStructureModality',
+		fields: [StructureModality.structureId],
+		references: [Structure.id]
+	}),
+	modalityType: one(ModalityType, {
+		relationName: 'ModalityTypeToStructureModality',
+		fields: [StructureModality.modalityTypeId],
+		references: [ModalityType.id]
+	})
+}));
+
+export const ProProfileNeedRelations = relations(ProProfileNeed, ({ one }) => ({
+	proProfile: one(ProProfile, {
+		relationName: 'ProProfileToProProfileNeed',
+		fields: [ProProfileNeed.proProfileId],
+		references: [ProProfile.id]
+	}),
+	needCategory: one(NeedCategory, {
+		relationName: 'NeedCategoryToProProfileNeed',
+		fields: [ProProfileNeed.needCategoryId],
+		references: [NeedCategory.id]
+	})
+}));
+
+export const ProProfileAudienceRelations = relations(ProProfileAudience, ({ one }) => ({
+	proProfile: one(ProProfile, {
+		relationName: 'ProProfileToProProfileAudience',
+		fields: [ProProfileAudience.proProfileId],
+		references: [ProProfile.id]
+	}),
+	audienceCategory: one(AudienceCategory, {
+		relationName: 'AudienceCategoryToProProfileAudience',
+		fields: [ProProfileAudience.audienceCategoryId],
+		references: [AudienceCategory.id]
 	})
 }));

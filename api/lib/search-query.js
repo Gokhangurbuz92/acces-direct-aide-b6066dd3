@@ -314,7 +314,15 @@ export async function searchDemarches(params) {
   }
 
   if (q) {
-    conditions.push(sql`"search_vector" @@ plainto_tsquery('french', unaccent(${q}))`);
+    // Fallback: use ILIKE on titre + description if search_vector column is missing
+    conditions.push(sql`(
+      ("titre" ILIKE ${'%' + q + '%'})
+      OR ("description_courte" ILIKE ${'%' + q + '%'})
+      OR (CASE WHEN EXISTS (
+        SELECT 1 FROM information_schema.columns
+        WHERE table_name = 'Demarche' AND column_name = 'search_vector'
+      ) THEN "search_vector" @@ plainto_tsquery('french', unaccent(${q})) ELSE false END)
+    )`);
   }
 
   if (effectiveCategory) {
@@ -378,7 +386,8 @@ export async function searchDemarches(params) {
   };
 
   if (q && (effectiveSort === 'pertinence' || sortField === 'pertinence')) {
-    selectRank = sql`, ts_rank_cd("search_vector", plainto_tsquery('french', unaccent(${q}))) as rank`;
+    // Use simple ordering by titre match when search_vector is missing
+    selectRank = sql`, CASE WHEN "titre" ILIKE ${'%' + q + '%'} THEN 2 WHEN "description_courte" ILIKE ${'%' + q + '%'} THEN 1 ELSE 0 END as rank`;
     orderBy = sql`ORDER BY rank DESC, published_at DESC, id ASC`;
   } else if (sortField === 'pertinence') {
     // Relevance sorting requires q. Without q we fallback to date.
@@ -397,7 +406,7 @@ export async function searchDemarches(params) {
         : sql`ORDER BY ${safeColumn} ASC, id ASC`;
     }
   } else if (q) {
-    selectRank = sql`, ts_rank_cd("search_vector", plainto_tsquery('french', unaccent(${q}))) as rank`;
+    selectRank = sql`, CASE WHEN "titre" ILIKE ${'%' + q + '%'} THEN 2 WHEN "description_courte" ILIKE ${'%' + q + '%'} THEN 1 ELSE 0 END as rank`;
     orderBy = sql`ORDER BY rank DESC, published_at DESC, id ASC`;
   } else {
     // Default without q: quality first, then recent.

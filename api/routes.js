@@ -77,6 +77,9 @@ export const routes = [
     { path: 'pro/agent-scheduler', match: 'exact', handler: () => import('./_handlers/pro/agent-scheduler.js') },
     { path: 'pro/health-check', match: 'exact', handler: () => import('./_handlers/pro/health-check.js') },
     { path: 'pro/outlook', match: 'exact', handler: () => import('./_handlers/pro/outlook.js') },
+    { path: 'pro/appointments', match: 'exact', handler: () => import('./_handlers/pro/appointments.js') },
+    { path: 'pro/services', match: 'exact', handler: () => import('./_handlers/pro/services.js') },
+    { path: 'pro/messages/conversations', match: 'exact', handler: () => import('./_handlers/pro/messages/conversations.js') },
     { path: 'tts', match: 'exact', handler: () => import('./_handlers/tts.js') },
 
     // --- Public Content ---

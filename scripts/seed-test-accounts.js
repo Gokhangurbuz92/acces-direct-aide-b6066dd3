@@ -38,7 +38,7 @@ const TEST_ACCOUNTS = {
     email: 'pro-test@accesdirectaide.fr',
     password: getOrGeneratePassword('TEST_PRO_PASSWORD'),
     role: 'PRO',
-    status: 'approved',
+    status: 'active',
     structureName: 'CCAS de Strasbourg (Test)',
   },
 };

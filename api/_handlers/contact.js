@@ -95,7 +95,10 @@ ${message}
     `.trim();
 
     // Send email to admin inbox
-    const adminEmail = env.contactEmail || 'contact@accesdirectaide.fr';
+    const adminEmail = 'contact@accesdirectaide.fr';
+
+    logger.info(`[contact] Sending email: provider=${env.mailer.provider} from=${env.mailer.from} apiKeySet=${!!env.mailer.apiKey} to=${adminEmail}`);
+
     const result = await sendMail({
       to: adminEmail,
       subject: `[Contact] ${sujetLabel} — ${nomDisplay}`,
@@ -104,7 +107,7 @@ ${message}
       category: 'contact-form',
     });
 
-    logger.info(`[contact] Form submitted from=${email} sujet=${sujet} delivered=${result.delivered}`);
+    logger.info(`[contact] Form submitted from=${email} sujet=${sujet} delivered=${result.delivered} provider=${result.provider}`);
 
     // Send confirmation to the user
     if (result.delivered) {
@@ -130,7 +133,12 @@ ${message}
       });
     }
 
-    return res.status(200).json({ ok: true, delivered: result.delivered });
+    return res.status(200).json({
+      ok: true,
+      delivered: result.delivered,
+      provider: result.provider,
+      ...(result.provider === 'noop' ? { warning: 'MAILER_PROVIDER is not configured — email was NOT actually sent.' } : {}),
+    });
 
   } catch (err) {
     logger.error('[contact] Error:', err.message);

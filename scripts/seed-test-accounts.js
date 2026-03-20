@@ -139,9 +139,10 @@ async function main() {
 
     // ── 4. Pro ──
     const proHash = await hashPassword(TEST_ACCOUNTS.pro.password);
+    // Search by email ONLY (not email + structureId) to prevent duplicates across structures
     const existingPro = await pool.query(
-      `SELECT id, email FROM "ProUser" WHERE email = $1 AND "structureId" = $2 LIMIT 1`,
-      [TEST_ACCOUNTS.pro.email, structureId]
+      `SELECT id, email, "structureId" FROM "ProUser" WHERE email = $1 LIMIT 1`,
+      [TEST_ACCOUNTS.pro.email]
     );
     let proResult;
     if (existingPro.rows.length > 0) {

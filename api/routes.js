@@ -29,6 +29,7 @@ export const routes = [
     { path: 'login-pro-guard', match: 'exact', handler: () => import('./_handlers/login-pro-guard.js') },
     { path: 'taxonomy', match: 'exact', handler: () => import('./_handlers/taxonomy.js') },
     { path: 'pdf', match: 'prefix', handler: () => import('./_handlers/pdf.js') },
+    { path: 'contact', match: 'exact', handler: () => import('./_handlers/contact.js') },
 
     // --- Auth (Admin) ---
     { path: 'auth/login', match: 'exact', handler: () => import('./_handlers/auth/login.js') },

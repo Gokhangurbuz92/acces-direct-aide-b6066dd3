@@ -496,7 +496,7 @@ export default function CompteParametres() {
     });
 
     const isUser = authQuery.data?.session?.kind === 'user';
-    const user = authQuery.data?.session?.user;
+    const user = authQuery.data?.user;
 
     if (authQuery.isLoading) {
         return (

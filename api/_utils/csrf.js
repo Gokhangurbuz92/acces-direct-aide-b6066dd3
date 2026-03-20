@@ -22,8 +22,8 @@ export function csrfCheck(req, res) {
   const method = (req.method || 'GET').toUpperCase();
   const path = (req.url || '').replace(/^\/api\//, '/').replace(/\?.*$/, '');
 
-  // Exempt paths: health, cron, monitor, webhooks
-  const exemptPrefixes = ['/health', '/healthz', '/cron/', '/monitor/', '/docs/'];
+  // Exempt paths: health, cron, monitor, webhooks, login endpoints
+  const exemptPrefixes = ['/health', '/healthz', '/cron/', '/monitor/', '/docs/', '/auth/login', '/pro/auth/login'];
   if (exemptPrefixes.some(p => path.startsWith(p))) {
     return { ok: true };
   }

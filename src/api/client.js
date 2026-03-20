@@ -30,12 +30,23 @@ var shouldAttachAuth = function (path, opt) {
 };
 
 /**
+ * Read the __csrf cookie value for Double-Submit Cookie pattern.
+ * @returns {string|null}
+ */
+var getCsrfToken = function () {
+    if (typeof document === 'undefined') return null;
+    var match = document.cookie.match(/(?:^|;\s*)__csrf=([^;]+)/);
+    return match ? match[1] : null;
+};
+
+/**
  * @param {string} path
  * @param {ApiRequestOptions=} options
  * @returns {Promise<any>}
  */
 var apiRequest = async function (path, options) {
     var opt = options || {};
+    var method = (opt.method || 'GET').toUpperCase();
 
     /** @type {Record<string, string>} */
     var headers = {
@@ -49,8 +60,16 @@ var apiRequest = async function (path, options) {
         headers["Authorization"] = "Bearer " + token;
     }
 
+    // CSRF Double-Submit Cookie — attach token for mutating requests
+    if (method !== 'GET' && method !== 'HEAD') {
+        var csrfToken = getCsrfToken();
+        if (csrfToken) {
+            headers['x-csrf-token'] = csrfToken;
+        }
+    }
+
     var res = await fetch(path, {
-        method: opt.method || "GET",
+        method: method,
         headers: headers,
         body: opt.body ? JSON.stringify(opt.body) : undefined,
         signal: opt.signal,

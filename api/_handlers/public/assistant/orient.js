@@ -336,7 +336,7 @@ export default async function handler(req, res) {
         // ── 4. Generate answer with Gemini 2.5 Flash ──
         let data;
         try {
-            const raw = await generateText(fullPrompt, { temperature: 0.3, model: GEMINI_MODEL });
+            const raw = await generateText(fullPrompt, { temperature: 0.3, model: GEMINI_MODEL, metricType: 'discovery' });
 
             // Circuit breaker fallback returns a plain string message
             if (raw && raw.includes('temporairement indisponible')) {

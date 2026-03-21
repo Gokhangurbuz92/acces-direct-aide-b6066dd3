@@ -84,7 +84,7 @@ Ne mets aucun texte avant ou après le JSON.`;
             }
 
             try {
-                const responseText = await generateText(prompt, { useSearch: true });
+                const responseText = await generateText(prompt, { useSearch: true, metricType: 'hive-scan' });
                 const cleanJson = responseText.replace(/```json|```/g, '').trim();
                 const suggestion = JSON.parse(cleanJson);
 

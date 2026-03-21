@@ -5,6 +5,7 @@ import { env } from '../_utils/env.js';
 import logger from '../_utils/logger.js';
 import { db } from '../../src/db/index.js';
 import { getChatBreaker } from './gemini-circuit-breaker.js';
+import { recordMetric } from './gemini-metrics.js';
 import { sql } from 'drizzle-orm';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -177,6 +178,8 @@ async function fetchLexicalContext(message, limit = 5) {
  */
 export async function generateText(prompt, options = {}) {
     const modelName = options.model || 'gemini-2.0-flash';
+    const metricType = options.metricType || 'generate';
+    const startTime = Date.now();
     const genAIClient = await getGenAI();
     const model = genAIClient.getGenerativeModel({
         model: modelName,
@@ -196,10 +199,21 @@ export async function generateText(prompt, options = {}) {
 
     // Check for circuit breaker fallback
     if (result && result.fallback) {
+        recordMetric({ type: metricType, model: modelName, latencyMs: Date.now() - startTime, success: false, circuitBreakerOpen: true });
         return result.message;
     }
 
     const response = await result.response;
+    const usage = response.usageMetadata;
+    recordMetric({
+        type: metricType,
+        model: modelName,
+        promptTokens: usage?.promptTokenCount || 0,
+        completionTokens: usage?.candidatesTokenCount || 0,
+        totalTokens: usage?.totalTokenCount || 0,
+        latencyMs: Date.now() - startTime,
+        success: true,
+    });
     return response.text();
 }
 
@@ -258,8 +272,19 @@ export async function chatWithRulePack(message, history = []) {
             }
         });
 
+        const chatStartTime = Date.now();
         const result = await chat.sendMessage(message);
         const response = await result.response;
+        const chatUsage = response.usageMetadata;
+        recordMetric({
+            type: 'chat',
+            model: 'gemini-2.0-flash',
+            promptTokens: chatUsage?.promptTokenCount || 0,
+            completionTokens: chatUsage?.candidatesTokenCount || 0,
+            totalTokens: chatUsage?.totalTokenCount || 0,
+            latencyMs: Date.now() - chatStartTime,
+            success: true,
+        });
         return { answer: response.text(), meta };
     } catch (geminiError) {
         // ── 3. Static fallback when Gemini is down (429, network, etc.) ──

@@ -142,7 +142,7 @@ RÉPONDS UNIQUEMENT en JSON valide :
 
         // 5. Call Gemini 2.0 Flash
         logger.info(`[FALC] Generating for ${type}=${entityId} titre="${entity[config.titleField]}"`);
-        const responseText = await generateText(prompt);
+        const responseText = await generateText(prompt, { metricType: 'falc' });
 
         // 6. Parse JSON response (handle markdown code fences)
         let falcData;

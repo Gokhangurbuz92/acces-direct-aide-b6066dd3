@@ -78,7 +78,7 @@ Ne mets aucun texte avant ou après le JSON.`;
         }
 
         // 3. Call Gemini
-        const responseText = await generateText(prompt, { useSearch: true });
+        const responseText = await generateText(prompt, { useSearch: true, metricType: 'hive-scan' });
         const cleanJson = responseText.replace(/```json|```/g, '').trim();
 
         let suggestion;

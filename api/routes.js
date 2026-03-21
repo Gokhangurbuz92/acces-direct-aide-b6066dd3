@@ -148,6 +148,7 @@ export const routes = [
     { path: 'admin/bulk-repair', match: 'exact', handler: () => import('./_handlers/admin/bulk-repair.js') },
     { path: 'admin/mfa-setup', match: 'exact', handler: () => import('./_handlers/admin/mfa-setup.js') },
     { path: 'admin/mfa-verify', match: 'exact', handler: () => import('./_handlers/admin/mfa-verify.js') },
+    { path: 'admin/ai-metrics', match: 'exact', handler: () => import('./_handlers/admin/ai-metrics.js') },
 
     // --- Share ---
     { path: 'share/create', match: 'exact', handler: () => import('./_handlers/share/create.js') },

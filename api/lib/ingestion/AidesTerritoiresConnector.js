@@ -5,7 +5,7 @@ import crypto from 'crypto';
 const API_BASE = 'https://aides-territoires.beta.gouv.fr/api/aids/';
 const CONNEXION_URL = 'https://aides-territoires.beta.gouv.fr/api/connexion/';
 const PAGE_SIZE = 50;
-const PAGES_PER_RUN = 10; // 50 * 10 = 500 aides per run (safe within Vercel 300s timeout)
+const PAGES_PER_RUN = 20; // 50 * 20 = 1000 aides per run (safe within Vercel 300s timeout)
 const KV_CURSOR_KEY = 'at-connector:last-offset';
 
 /**
@@ -143,29 +143,27 @@ export class AidesTerritoiresConnector extends SourceConnector {
         // Step 1: Authenticate (exchange static token → 24h bearer)
         await this._authenticate();
 
-        // Step 2: Load cursor (resume from last run)
-        const startOffset = await this._loadCursor();
-        let currentOffset = startOffset;
+        // Step 2: Paginate through the API using 'next' URL
+        let nextUrl = `${API_BASE}?published=true&page_size=${PAGE_SIZE}`;
         let pagesProcessed = 0;
         let totalCount = null;
 
-        while (pagesProcessed < PAGES_PER_RUN) {
+        while (nextUrl && pagesProcessed < PAGES_PER_RUN) {
             pagesProcessed++;
-            const url = `${API_BASE}?published=true&page_size=${PAGE_SIZE}&offset=${currentOffset}`;
             let response;
             let retries = 0;
             const maxRetries = 1;
 
             while (retries <= maxRetries) {
                 try {
-                    response = await fetch(url, {
+                    response = await fetch(nextUrl, {
                         headers: this._buildHeaders(),
                         signal: AbortSignal.timeout(30_000),
                     });
                     if (response.ok) break;
                     if (response.status >= 500 && retries < maxRetries) {
                         retries++;
-                        logger.warn(`[AidesTerritoires] Retry ${retries}/${maxRetries} after ${response.status} at offset ${currentOffset}`);
+                        logger.warn(`[AidesTerritoires] Retry ${retries}/${maxRetries} after ${response.status}`);
                         await new Promise(r => setTimeout(r, 2000));
                         continue;
                     }
@@ -173,7 +171,7 @@ export class AidesTerritoiresConnector extends SourceConnector {
                 } catch (err) {
                     if (retries < maxRetries && err.name !== 'AbortError') {
                         retries++;
-                        logger.warn(`[AidesTerritoires] Retry ${retries}/${maxRetries} after error at offset ${currentOffset}: ${err.message}`);
+                        logger.warn(`[AidesTerritoires] Retry ${retries}/${maxRetries}: ${err.message}`);
                         await new Promise(r => setTimeout(r, 2000));
                         continue;
                     }
@@ -186,9 +184,7 @@ export class AidesTerritoiresConnector extends SourceConnector {
             if (totalCount === null) totalCount = data.count || 0;
 
             if (results.length === 0) {
-                // Reached the end of the catalogue — cycle back to 0
-                logger.info(`[AidesTerritoires] End of catalogue reached at offset ${currentOffset}, cycling to start`);
-                currentOffset = 0;
+                logger.info(`[AidesTerritoires] No more results on page ${pagesProcessed}`);
                 break;
             }
 
@@ -198,14 +194,13 @@ export class AidesTerritoiresConnector extends SourceConnector {
                 this._cache.set(virtualUrl, item);
             }
 
-            currentOffset += results.length;
+            // Use the API's 'next' URL for pagination (standard Django REST pattern)
+            nextUrl = data.next || null;
 
-            logger.info(`[AidesTerritoires] Page ${pagesProcessed}/${PAGES_PER_RUN}, offset ${currentOffset}/${totalCount || '?'}, cache: ${this._cache.size}`);
+            logger.info(`[AidesTerritoires] Page ${pagesProcessed}/${PAGES_PER_RUN}, total=${totalCount}, cache: ${this._cache.size}, hasNext: ${!!nextUrl}`);
         }
 
-        // Save cursor for next run
-        await this._saveCursor(currentOffset);
-        logger.info(`[AidesTerritoires] Total fetched: ${this._cache.size} aides (offset ${startOffset}→${currentOffset})`);
+        logger.info(`[AidesTerritoires] Total fetched: ${this._cache.size} aides (${pagesProcessed} pages, ${totalCount} available)`);
         return Array.from(this._cache.keys());
     }
 

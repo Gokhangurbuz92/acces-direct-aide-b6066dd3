@@ -8,7 +8,6 @@ if (process.env.NODE_ENV !== 'production') {
     dotenv.config({ path: '.env', override: false, quiet: true });
 }
 
-
 const PORT = 3000;
 
 const server = http.createServer(async (req, res) => {

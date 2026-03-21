@@ -14,49 +14,58 @@ import { ReviewQueueItem, CronRun } from '../../../src/db/schema.js';
  * Endpoint: GET/POST /api/cron/hive-scan
  * Auth: CRON_SECRET (header, bearer, or query param)
  *
- * Uses the same Gemini REST API pattern as agent-discovery.js.
+ * Uses the @google/generative-ai SDK (secure, no API key in URL).
  */
 
-const GEMINI_URL =
-    'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent';
+const AGENT_TIMEOUT_MS = 30_000;
+
+/** @type {import('@google/generative-ai').GoogleGenerativeAI | null} */
+let genAI = null;
+
+/** @returns {Promise<import('@google/generative-ai').GoogleGenerativeAI>} */
+async function getGenAI() {
+    if (genAI) return genAI;
+    const apiKey = env.ai?.geminiKey || process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY || '';
+    if (!apiKey) throw new Error('GEMINI_API_KEY not configured');
+    const { GoogleGenerativeAI } = await import('@google/generative-ai');
+    genAI = new GoogleGenerativeAI(apiKey);
+    return genAI;
+}
 
 const CATEGORIES = ['LOGEMENT', 'SANTE', 'EMPLOI', 'FAMILLE'];
 
 /**
  * @param {string} category
- * @param {string} apiKey
  * @returns {Promise<Array<{title: string, source: string, summary: string}>>}
  */
-async function scanCategory(category, apiKey) {
+async function scanCategory(category) {
     const prompt = `En tant qu'Agent Chercheur de AccesDirectAide (association solidaire), trouve les 3 dernières nouveautés ou changements concernant les aides sociales en France pour la catégorie "${category}". Pour chaque aide, donne : titre, source officielle, résumé court des critères d'éligibilité. Réponds en JSON : un tableau d'objets avec les clés "title", "source", "summary".`;
 
-    const response = await fetch(`${GEMINI_URL}?key=${apiKey}`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-            contents: [{ parts: [{ text: prompt }] }],
-            tools: [{ google_search: {} }],
-            systemInstruction: {
-                parts: [
-                    {
-                        text: 'Tu es un agent de veille sociale automatisé. Fournis des informations vérifiées et sourcées. Réponds UNIQUEMENT en JSON valide.',
-                    },
-                ],
-            },
-            generationConfig: {
-                temperature: 0.2,
-                maxOutputTokens: 1024,
-            },
-        }),
+    const ai = await getGenAI();
+    const model = ai.getGenerativeModel({
+        model: 'gemini-2.0-flash',
+        systemInstruction: {
+            parts: [
+                {
+                    text: 'Tu es un agent de veille sociale automatisé. Fournis des informations vérifiées et sourcées. Réponds UNIQUEMENT en JSON valide.',
+                },
+            ],
+        },
+        generationConfig: {
+            temperature: 0.2,
+            maxOutputTokens: 1024,
+        },
     });
 
-    if (!response.ok) {
-        const errText = await response.text();
-        throw new Error(`Gemini API ${response.status}: ${errText.slice(0, 200)}`);
-    }
+    const result = await Promise.race([
+        model.generateContent(prompt),
+        new Promise((_, reject) =>
+            setTimeout(() => reject(new Error('Gemini timeout (30s)')), AGENT_TIMEOUT_MS)
+        ),
+    ]);
 
-    const result = await response.json();
-    const raw = result?.candidates?.[0]?.content?.parts?.[0]?.text || '[]';
+    const response = await result.response;
+    const raw = response.text() || '[]';
     const cleaned = raw.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
 
     try {
@@ -102,11 +111,6 @@ export default async function handler(req, res) {
         return res.status(401).json({ error: 'Unauthorized', requestId });
     }
 
-    const apiKey = env.ai?.geminiKey || process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY || '';
-    if (!apiKey) {
-        return res.status(500).json({ error: 'GEMINI_API_KEY not configured', requestId });
-    }
-
     const startedAt = new Date();
     let totalFound = 0;
     const perCategory = {};
@@ -116,7 +120,7 @@ export default async function handler(req, res) {
             logger.info({ requestId, category }, 'cron.hive_scan.scanning');
 
             try {
-                const findings = await scanCategory(category, apiKey);
+                const findings = await scanCategory(category);
                 let created = 0;
 
                 for (const item of findings) {

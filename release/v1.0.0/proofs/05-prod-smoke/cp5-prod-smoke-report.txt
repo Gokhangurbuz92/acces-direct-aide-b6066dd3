@@ -1,9 +1,2 @@
-[2026-03-09T22:15:52.266Z] Starting CP5 Smoke Tests. Target: (from playwright.config.ts use.baseURL)
-[2026-03-09T22:15:52.267Z] ✅ Preflight skipped (no env URL). Using playwright.config.ts baseURL/webServer.
-[2026-03-09T22:15:53.476Z] Home Page: OK
-[2026-03-09T22:15:55.726Z] Aides: No detail links found (empty state or no data).
-[2026-03-09T22:15:57.515Z] Demarches: No detail links found.
-[2026-03-09T22:16:00.457Z] Structures: Found 12 structure cards. Clicking first.
-[2026-03-09T22:16:00.707Z] Structures Detail: OK
-[2026-03-09T22:16:04.393Z] Actualites: Found 10 detail links. Clicking first.
-[2026-03-09T22:16:05.158Z] Actualites Detail: OK
+[2026-03-17T16:53:43.322Z] Starting CP5 Smoke Tests. Target: (from playwright.config.ts use.baseURL)
+[2026-03-17T16:53:43.322Z] ✅ Preflight skipped (no env URL). Using playwright.config.ts baseURL/webServer.

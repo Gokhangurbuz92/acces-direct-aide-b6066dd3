@@ -1,8 +1,8 @@
 import logger from '../../_utils/logger.js';
-// @ts-nocheck
 import { db } from '../../../src/db/index.js';
 import { ReviewQueueItem, AuditLog } from '../../../src/db/schema.js';
 import { requireProAuth } from '../../_utils/auth.js';
+
 /**
  * Agent Scheduler API (Pro-only)
  *
@@ -16,8 +16,20 @@ import { requireProAuth } from '../../_utils/auth.js';
  *   3. Grand Chef logs audit trail
  */
 
-const GEMINI_URL =
-    'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent';
+const AGENT_TIMEOUT_MS = 30_000;
+
+/** @type {import('@google/generative-ai').GoogleGenerativeAI | null} */
+let genAI = null;
+
+/** @returns {Promise<import('@google/generative-ai').GoogleGenerativeAI>} */
+async function getGenAI() {
+    if (genAI) return genAI;
+    const apiKey = process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY || '';
+    if (!apiKey) return null;
+    const { GoogleGenerativeAI } = await import('@google/generative-ai');
+    genAI = new GoogleGenerativeAI(apiKey);
+    return genAI;
+}
 
 async function handler(req, res) {
     if (req.method !== 'POST') {
@@ -29,35 +41,39 @@ async function handler(req, res) {
         return res.status(400).json({ error: 'poleId requis.' });
     }
 
-    const apiKey = process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY || '';
     const category = categoryId || 'toutes catégories';
 
     try {
         // 1. Real sub-agent discovery via Gemini 2.0 Flash
         let discoveries = [];
 
-        if (apiKey) {
+        const ai = await getGenAI();
+        if (ai) {
             const prompt = `Trouve les 5 dernières nouveautés ou changements concernant les aides sociales en France pour la catégorie "${category}". Pour chaque aide, donne : titre, source officielle, résumé court des critères d'éligibilité, et un score de confiance (0-100). Réponds en JSON : un tableau d'objets avec les clés "title", "source", "summary", "confidence".`;
 
-            const response = await fetch(`${GEMINI_URL}?key=${apiKey}`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    contents: [{ parts: [{ text: prompt }] }],
-                    tools: [{ google_search: {} }],
-                    generationConfig: { temperature: 0.2, maxOutputTokens: 1024 },
-                }),
+            const model = ai.getGenerativeModel({
+                model: 'gemini-2.0-flash',
+                generationConfig: { temperature: 0.2, maxOutputTokens: 1024 },
             });
 
-            if (response.ok) {
-                const result = await response.json();
-                const raw = result?.candidates?.[0]?.content?.parts?.[0]?.text || '[]';
+            try {
+                const result = await Promise.race([
+                    model.generateContent(prompt),
+                    new Promise((_, reject) =>
+                        setTimeout(() => reject(new Error('Gemini timeout (30s)')), AGENT_TIMEOUT_MS)
+                    ),
+                ]);
+
+                const response = await result.response;
+                const raw = response.text() || '[]';
                 const cleaned = raw.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
                 try {
                     discoveries = JSON.parse(cleaned);
                 } catch {
                     discoveries = [{ title: 'Résultat brut', source: 'Gemini', summary: cleaned, confidence: 50 }];
                 }
+            } catch (geminiErr) {
+                logger.warn({ err: geminiErr }, '[Scheduler] Gemini call failed, continuing with empty discoveries');
             }
         }
 
@@ -102,7 +118,7 @@ async function handler(req, res) {
                     autoValidated: validated.length,
                     pendingReview: pending.length,
                     submitted,
-                    aiPowered: Boolean(apiKey),
+                    aiPowered: Boolean(ai),
                 }),
                 ipHash: 'AI_ORCHESTRATOR',
         });
@@ -124,3 +140,4 @@ async function handler(req, res) {
 }
 
 export default requireProAuth(handler);
+

@@ -1,8 +1,8 @@
 import logger from '../../_utils/logger.js';
-// @ts-nocheck
 import { requireProAuth } from '../../_utils/auth.js';
 import { db } from '../../../src/db/index.js';
 import { ReviewQueueItem } from '../../../src/db/schema.js';
+
 /**
  * Agent Discovery API (Pro-only)
  *
@@ -17,8 +17,20 @@ import { ReviewQueueItem } from '../../../src/db/schema.js';
  * for admin validation before publication.
  */
 
-const GEMINI_URL =
-    'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent';
+const AGENT_TIMEOUT_MS = 30_000;
+
+/** @type {import('@google/generative-ai').GoogleGenerativeAI | null} */
+let genAI = null;
+
+/** @returns {Promise<import('@google/generative-ai').GoogleGenerativeAI>} */
+async function getGenAI() {
+    if (genAI) return genAI;
+    const apiKey = process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY || '';
+    if (!apiKey) throw new Error('Clé API IA non configurée.');
+    const { GoogleGenerativeAI } = await import('@google/generative-ai');
+    genAI = new GoogleGenerativeAI(apiKey);
+    return genAI;
+}
 
 async function handler(req, res) {
     if (req.method !== 'POST') {
@@ -30,42 +42,34 @@ async function handler(req, res) {
         return res.status(400).json({ error: 'Catégorie requise.' });
     }
 
-    const apiKey = process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY || '';
-    if (!apiKey) {
-        return res.status(500).json({ error: 'Clé API IA non configurée.' });
-    }
-
     const prompt = `Trouve les 5 dernières nouveautés ou changements concernant les aides sociales en France pour la catégorie "${category}". Pour chaque aide, donne : titre, source officielle, résumé court des critères d'éligibilité. Réponds en JSON : un tableau d'objets avec les clés "title", "source", "summary".`;
 
     try {
-        const response = await fetch(`${GEMINI_URL}?key=${apiKey}`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                contents: [{ parts: [{ text: prompt }] }],
-                tools: [{ google_search: {} }],
-                systemInstruction: {
-                    parts: [
-                        {
-                            text: 'Tu es l\'Agent Chercheur de AccesDirectAide, une association solidaire. Fournis des informations sociales vérifiées et sourcées.',
-                        },
-                    ],
-                },
-                generationConfig: {
-                    temperature: 0.2,
-                    maxOutputTokens: 1024,
-                },
-            }),
+        const ai = await getGenAI();
+        const model = ai.getGenerativeModel({
+            model: 'gemini-2.0-flash',
+            systemInstruction: {
+                parts: [
+                    {
+                        text: 'Tu es l\'Agent Chercheur de AccesDirectAide, une association solidaire. Fournis des informations sociales vérifiées et sourcées.',
+                    },
+                ],
+            },
+            generationConfig: {
+                temperature: 0.2,
+                maxOutputTokens: 1024,
+            },
         });
 
-        if (!response.ok) {
-            const errText = await response.text();
-            logger.error({ status: response.status, body: errText?.slice(0, 200) }, '[Discovery] Gemini error');
-            return res.status(502).json({ error: 'Erreur IA lors du scan.' });
-        }
+        const result = await Promise.race([
+            model.generateContent(prompt),
+            new Promise((_, reject) =>
+                setTimeout(() => reject(new Error('Gemini timeout (30s)')), AGENT_TIMEOUT_MS)
+            ),
+        ]);
 
-        const result = await response.json();
-        const raw = result?.candidates?.[0]?.content?.parts?.[0]?.text || '[]';
+        const response = await result.response;
+        const raw = response.text() || '[]';
 
         // Parse JSON from AI response (strip markdown fences if present)
         const cleaned = raw.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
@@ -115,7 +119,10 @@ async function handler(req, res) {
         });
     } catch (error) {
         logger.error({ err: error }, '[Discovery] Erreur');
-        return res.status(500).json({ error: 'Échec du scan autonome.' });
+        const isTimeout = error?.message?.includes('timeout');
+        return res.status(isTimeout ? 504 : 500).json({
+            error: isTimeout ? 'Le scan a expiré (30s). Réessayez.' : 'Échec du scan autonome.',
+        });
     }
 }
 

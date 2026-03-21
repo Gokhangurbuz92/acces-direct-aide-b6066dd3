@@ -47,7 +47,9 @@ export default async function handler(req, res) {
       );
     }
 
-    return res.status(ok ? 200 : 503).json({
+    // Return 200 even when not ready — the `ok: false` flag indicates schema is not deployed.
+    // 503 should be reserved for runtime errors in the catch block below.
+    return res.status(200).json({
       ok,
       missingTables: readiness.missingTables,
       prismaMigrationsOk: readiness.prismaMigrationsOk,
@@ -55,7 +57,7 @@ export default async function handler(req, res) {
       checkedAt,
       env: runtimeEnv,
       requestId,
-      ...(ok ? {} : { error: 'unavailable' }),
+      ...(ok ? {} : { status: 'schema_not_deployed' }),
     });
   } catch (error) {
     logger.warn(

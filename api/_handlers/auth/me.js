@@ -60,6 +60,8 @@ export default async function handler(req, res) {
             id: true,
             email: true,
             emailVerifiedAt: true,
+            phone: true,
+            createdAt: true,
         },
     });
     if (!user || !user.emailVerifiedAt || normalizeEmail(user.email) !== normalizeEmail(userClaims.email)) {
@@ -75,8 +77,11 @@ export default async function handler(req, res) {
         user: {
             id: user.id,
             email: user.email,
-            role: 'user',
+            phone: user.phone || null,
+            createdAt: user.createdAt || null,
+            emailVerifiedAt: user.emailVerifiedAt || null,
             emailVerified: true,
+            role: 'user',
             authType: 'user_cookie',
         },
     });

@@ -337,15 +337,40 @@ export default async function handler(req, res) {
         let data;
         try {
             const raw = await generateText(fullPrompt, { temperature: 0.3, model: GEMINI_MODEL });
-            const cleaned = raw.replace(/```json\s*/gi, '').replace(/```\s*/g, '').trim();
-            data = JSON.parse(cleaned);
-        } catch {
+
+            // Circuit breaker fallback returns a plain string message
+            if (raw && raw.includes('temporairement indisponible')) {
+                log.warn({ msg: 'compass.circuit_breaker_fallback', requestId });
+                const allSources = [...aides.map((a) => `• "${a.titre}"`), ...demarches.map((d) => `• "${d.titre}"`)];
+                data = {
+                    answer: allSources.length > 0
+                        ? `Le service IA est momentanément surchargé, mais voici ce que j'ai trouvé pour vous :\n\n${allSources.join('\n')}\n\nConsultez les fiches pour plus de détails.`
+                        : 'Le service IA est momentanément surchargé. Veuillez réessayer dans quelques instants.',
+                    suggestions: ['Quelles sont les aides au logement ?', 'Où trouver un travailleur social ?', 'Comment faire une demande RSA ?'],
+                    links: aides.slice(0, 3).map((a) => ({
+                        title: a.titre,
+                        url: a.slug ? `/aides/${a.slug}` : `/aides/view?id=${a.id}`,
+                        type: 'aide',
+                    })),
+                };
+            } else {
+                const cleaned = raw.replace(/```json\s*/gi, '').replace(/```\s*/g, '').trim();
+                data = JSON.parse(cleaned);
+            }
+        } catch (geminiErr) {
+            // Log the actual error for debugging in production
+            log.warn({
+                msg: 'compass.gemini_parse_failed',
+                error: geminiErr instanceof Error ? geminiErr.message : String(geminiErr),
+                requestId,
+            });
+
             // Fallback: Build structured response from RAG results
             const allSources = [...aides.map((a) => `• "${a.titre}"`), ...demarches.map((d) => `• "${d.titre}"`)];
             data = {
                 answer: allSources.length > 0
-                    ? `Je rencontre une difficulté technique, mais voici ce que j'ai trouvé pour vous :\n\n${allSources.join('\n')}\n\nConsultez les fiches pour plus de détails.`
-                    : 'Je rencontre une difficulté technique. Pouvez-vous reformuler votre question ?',
+                    ? `Voici ce que j'ai trouvé pour vous :\n\n${allSources.join('\n')}\n\nConsultez les fiches pour plus de détails.`
+                    : 'Je n\'ai pas trouvé d\'informations correspondant à votre demande. Pouvez-vous reformuler votre question ?',
                 suggestions: ['Quelles sont les aides au logement ?', 'Où trouver un travailleur social ?', 'Comment faire une demande RSA ?'],
                 links: aides.slice(0, 3).map((a) => ({
                     title: a.titre,

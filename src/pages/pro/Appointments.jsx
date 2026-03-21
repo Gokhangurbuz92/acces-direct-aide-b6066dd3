@@ -1,7 +1,7 @@
 // @ts-nocheck
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Calendar, CheckCircle, Loader2, RefreshCw, XCircle } from 'lucide-react';
+import { Calendar, CheckCircle, Loader2, Plus, RefreshCw, XCircle } from 'lucide-react';
 import { ListSkeleton } from '@/components/pro/ProPageSkeletons';
 
 import { Button } from '@/components/ui/button';
@@ -181,10 +181,25 @@ export default function ProAppointments() {
       {loading ? (
         <ListSkeleton count={4} />
       ) : appointments.length === 0 ? (
-        <Card>
-          <CardContent className="flex flex-col items-center gap-2 py-8 text-sm text-slate-600">
-            <Calendar className="h-10 w-10 text-slate-300" />
-            Aucun rendez-vous sur cette periode.
+        <Card className="border-dashed">
+          <CardContent className="flex flex-col items-center gap-2 py-12 text-center">
+            <Calendar className="h-12 w-12 text-slate-300 mb-2" />
+            <p className="text-sm font-medium text-slate-600">
+              Aucun rendez-vous sur cette période.
+            </p>
+            <p className="text-xs text-slate-400 max-w-xs">
+              Configurez vos disponibilités pour recevoir des demandes de rendez-vous.
+            </p>
+            <Button
+              size="sm"
+              variant="outline"
+              className="mt-3"
+              asChild
+            >
+              <Link to="/pro/rdv/new">
+                <Plus className="mr-2 h-3 w-3" /> Créer un créneau
+              </Link>
+            </Button>
           </CardContent>
         </Card>
       ) : (

@@ -361,8 +361,21 @@ export default function ProServices() {
       {loading ? (
         <ListSkeleton count={3} />
       ) : services.length === 0 ? (
-        <Card>
-          <CardContent className="py-6 text-sm text-slate-600">Aucun service configure.</CardContent>
+        <Card className="border-dashed">
+          <CardContent className="flex flex-col items-center justify-center py-12 text-center">
+            <Plus className="h-12 w-12 text-slate-300 mb-4" />
+            <p className="text-sm font-medium text-slate-600">
+              Aucun service configuré.
+            </p>
+            <p className="text-xs text-slate-400 mt-1 max-w-xs">
+              Ajoutez vos services pour permettre la prise de rendez-vous en ligne par vos bénéficiaires.
+            </p>
+            {canEdit ? (
+              <Button size="sm" variant="outline" className="mt-4" onClick={openCreate}>
+                <Plus className="mr-2 h-3 w-3" /> Ajouter un service
+              </Button>
+            ) : null}
+          </CardContent>
         </Card>
       ) : (
         <div className="grid gap-4 md:grid-cols-2">

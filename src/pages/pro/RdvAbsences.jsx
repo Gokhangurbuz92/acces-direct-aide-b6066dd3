@@ -178,7 +178,15 @@ export default function ProRdvAbsences() {
           {loading ? (
             <ListSkeleton count={3} />
           ) : items.length === 0 ? (
-            <p className="text-sm text-slate-600">Aucune absence configuree.</p>
+            <div className="flex flex-col items-center justify-center py-10 text-center">
+              <Pencil className="h-10 w-10 text-slate-300 mb-3" />
+              <p className="text-sm font-medium text-slate-600">
+                Aucune absence configurée.
+              </p>
+              <p className="text-xs text-slate-400 mt-1">
+                Utilisez le formulaire ci-dessus pour déclarer vos indisponibilités.
+              </p>
+            </div>
           ) : (
             <div className="space-y-2">
               {items.map((item) => (

@@ -50,9 +50,15 @@ export default function ProMessages() {
           ) : null}
 
           {!conversationsQuery.isLoading && !conversationsQuery.error && items.length === 0 ? (
-            <p className="rounded-md border border-slate-200 bg-white p-3 text-sm text-slate-700">
-              Aucune conversation pour le moment.
-            </p>
+            <div className="flex flex-col items-center justify-center py-12 text-center">
+              <MessageCircle className="h-12 w-12 text-slate-300 mb-4" />
+              <p className="text-sm font-medium text-slate-600">
+                Aucune conversation pour le moment.
+              </p>
+              <p className="text-xs text-slate-400 mt-1 max-w-xs">
+                Les messages de vos bénéficiaires apparaîtront ici lorsqu'ils vous contacteront via la prise de rendez-vous.
+              </p>
+            </div>
           ) : null}
 
           {items.length > 0 ? (

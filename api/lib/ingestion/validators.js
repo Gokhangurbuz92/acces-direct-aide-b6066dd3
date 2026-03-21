@@ -8,8 +8,8 @@ export const AidIngestSchema = z.object({
     title: z.string().min(3, "Title must be at least 3 characters").max(500),
     description: z.string().nullable().optional(),
     content: z.string().nullable().optional(),
-    source_url: z.string().trim().url("Must be a valid URL").or(z.literal('')).nullable().optional(),
-    apply_url: z.string().trim().url("Must be a valid URL").or(z.literal('')).nullable().optional(),
+    source_url: z.string().trim().nullable().optional(),
+    apply_url: z.string().trim().nullable().optional(),
     theme: z.string().nullable().optional(),
     fetched_at: z.union([z.date(), z.string()]).optional().transform((v) => (v ? new Date(v) : new Date())),
     

@@ -5,11 +5,7 @@ import pg from 'pg';
 const rawUrl = process.env.DATABASE_URL || '';
 const isLocal = rawUrl.includes('localhost') || rawUrl.includes('127.0.0.1');
 
-// Debug: log which DB host we're connecting to (safe: no password exposed)
-try {
-  const u = new URL(rawUrl);
-  logger.info({ msg: 'search-pro DB', host: u.hostname, db: u.pathname, user: u.username });
-} catch (e) { logger.info({ msg: 'search-pro DB', raw: rawUrl.substring(0, 40) }); }
+
 
 // Strip Prisma-specific ?schema=public param — pg.Pool doesn't support it
 const cleanUrl = rawUrl.replace(/[?&]schema=\w+/g, '');
@@ -256,9 +252,7 @@ export default async function handler(req, res) {
     });
   } catch (error) {
     logger.error('search-pro handler error:', { message: error.message, stack: error.stack });
-    let dbHost = 'unknown';
-    try { dbHost = new URL(rawUrl).hostname; } catch (e) { /* ignore */ }
-    return res.status(500).json({ error: 'Internal server error', details: error.message, dbHost });
+    return res.status(500).json({ error: 'Internal server error', details: error.message });
   }
 }
 

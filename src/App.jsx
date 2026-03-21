@@ -14,6 +14,7 @@ const Analytics = lazy(() =>
 const SpeedInsights = lazy(() =>
   import('@vercel/speed-insights/react').then((mod) => ({ default: mod.SpeedInsights }))
 );
+const CookieBanner = lazy(() => import('@/components/CookieBanner'));
 
 function App({ url }) {
   return (
@@ -26,6 +27,9 @@ function App({ url }) {
             <SpeedInsights />
           </Suspense>
           <Toaster />
+          <Suspense fallback={null}>
+            <CookieBanner />
+          </Suspense>
         </HelmetProvider>
       </QueryClientProvider>
     </ErrorBoundary>

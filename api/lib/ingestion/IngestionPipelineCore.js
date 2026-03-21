@@ -7,6 +7,7 @@ import { upsertSourceDocument } from '../../_utils/sourceDocument.js';
 import { db } from '../../../src/db/index.js';
 import { Aide, Demarche, Structure, SyncRun, ImportLog, SourceDocument } from '../../../src/db/schema.js';
 import { eq, and, or, count } from 'drizzle-orm';
+import { computeQualityScore } from '../quality-score.js';
 
 const MODEL_MAP = {
     'aide': Aide,
@@ -238,7 +239,8 @@ export class IngestionPipelineCore {
             content_hash: contentHash,
             source_document_id: sourceDocumentId,
             statut: 'publie',
-            last_checked_at: new Date()
+            last_checked_at: new Date(),
+            quality_score: computeQualityScore(normalizedItem).score,
         };
 
         // Inject provider fields if not specified otherwise

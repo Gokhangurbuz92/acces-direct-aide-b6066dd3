@@ -1,5 +1,6 @@
 import logger from '../../_utils/logger.js';
 import { requireProAuth } from '../../_utils/auth.js';
+import { createGeminiBreaker } from '../../lib/gemini-circuit-breaker.js';
 import { db } from '../../../src/db/index.js';
 import { ReviewQueueItem } from '../../../src/db/schema.js';
 
@@ -61,12 +62,13 @@ async function handler(req, res) {
             },
         });
 
-        const result = await Promise.race([
-            model.generateContent(prompt),
-            new Promise((_, reject) =>
-                setTimeout(() => reject(new Error('Gemini timeout (30s)')), AGENT_TIMEOUT_MS)
-            ),
-        ]);
+        const breaker = createGeminiBreaker((p) => model.generateContent(p));
+        const result = await breaker.fire(prompt);
+
+        // Check for circuit breaker fallback
+        if (result && result.fallback) {
+            return res.status(200).json({ discoveries: [], fallback: true, message: result.message });
+        }
 
         const response = await result.response;
         const raw = response.text() || '[]';

@@ -2,6 +2,7 @@ import logger from '../../_utils/logger.js';
 import { randomUUID } from 'crypto';
 import { getCronAuth, getHeader } from '../../_utils/cronAuth.js';
 import { env } from '../../_utils/env.js';
+import { createGeminiBreaker } from '../../lib/gemini-circuit-breaker.js';
 import { db } from '../../../src/db/index.js';
 import { ReviewQueueItem, CronRun } from '../../../src/db/schema.js';
 
@@ -57,12 +58,13 @@ async function scanCategory(category) {
         },
     });
 
-    const result = await Promise.race([
-        model.generateContent(prompt),
-        new Promise((_, reject) =>
-            setTimeout(() => reject(new Error('Gemini timeout (30s)')), AGENT_TIMEOUT_MS)
-        ),
-    ]);
+    const breaker = createGeminiBreaker((p) => model.generateContent(p));
+    const result = await breaker.fire(prompt);
+
+    // Check for circuit breaker fallback
+    if (result && result.fallback) {
+        return [];
+    }
 
     const response = await result.response;
     const raw = response.text() || '[]';

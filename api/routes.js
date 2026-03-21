@@ -40,6 +40,7 @@ export const routes = [
     { path: 'auth/resend-verification', match: 'exact', handler: () => import('./_handlers/auth/resend-verification.js') },
     { path: 'auth/forgot-password', match: 'exact', handler: () => import('./_handlers/auth/forgot-password.js') },
     { path: 'auth/reset-password', match: 'exact', handler: () => import('./_handlers/auth/reset-password.js') },
+    { path: 'auth/delete-account', match: 'exact', handler: () => import('./_handlers/auth/delete-account.js') },
 
     // --- Pro Module ---
     { path: 'pro/auth/login', match: 'exact', handler: () => import('./_handlers/pro/auth/login.js') },
@@ -126,6 +127,7 @@ export const routes = [
     { path: 'cron/ingest-demarches', match: 'exact', handler: () => import('./_handlers/cron/ingest-demarches.js') },
     { path: 'cron/ingest-annuaire', match: 'exact', handler: () => import('./_handlers/cron/ingest-annuaire.js') },
     { path: 'cron/backup-db', match: 'exact', handler: () => import('./_handlers/cron/backup-db.js') },
+    { path: 'cron/gdpr-purge', match: 'exact', handler: () => import('./_handlers/cron/gdpr-purge.js') },
 
     // --- Admin ---
     { path: 'admin/inbox', match: 'exact', handler: () => import('./_handlers/admin/inbox.js') },

@@ -236,7 +236,11 @@ export class AidesTerritoiresConnector extends SourceConnector {
         const title = (item.name || '').trim();
         const description = this._cleanHtml(item.description || '').substring(0, 500);
         const content = this._cleanHtml(item.description || '');
-        const sourceUrl = item.url || url;
+        let sourceUrl = item.url || url;
+        // Ensure source_url is always absolute
+        if (sourceUrl && !sourceUrl.startsWith('http')) {
+            sourceUrl = `https://aides-territoires.beta.gouv.fr${sourceUrl.startsWith('/') ? '' : '/'}${sourceUrl}`;
+        }
         const applyUrl = item.application_url || item.origin_url || null;
 
         // Map AT categories to our themes

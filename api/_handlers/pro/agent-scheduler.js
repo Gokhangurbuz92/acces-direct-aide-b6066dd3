@@ -1,5 +1,6 @@
 import logger from '../../_utils/logger.js';
 import { db } from '../../../src/db/index.js';
+import { createGeminiBreaker } from '../../lib/gemini-circuit-breaker.js';
 import { ReviewQueueItem, AuditLog } from '../../../src/db/schema.js';
 import { requireProAuth } from '../../_utils/auth.js';
 
@@ -57,20 +58,22 @@ async function handler(req, res) {
             });
 
             try {
-                const result = await Promise.race([
-                    model.generateContent(prompt),
-                    new Promise((_, reject) =>
-                        setTimeout(() => reject(new Error('Gemini timeout (30s)')), AGENT_TIMEOUT_MS)
-                    ),
-                ]);
+                const breaker = createGeminiBreaker((p) => model.generateContent(p));
+                const result = await breaker.fire(prompt);
 
-                const response = await result.response;
-                const raw = response.text() || '[]';
-                const cleaned = raw.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
-                try {
-                    discoveries = JSON.parse(cleaned);
-                } catch {
-                    discoveries = [{ title: 'Résultat brut', source: 'Gemini', summary: cleaned, confidence: 50 }];
+                // Check for circuit breaker fallback
+                if (result && result.fallback) {
+                    logger.warn('[Scheduler] Circuit breaker fallback — skipping Gemini');
+                    discoveries = [];
+                } else {
+                    const response = await result.response;
+                    const raw = response.text() || '[]';
+                    const cleaned = raw.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
+                    try {
+                        discoveries = JSON.parse(cleaned);
+                    } catch {
+                        discoveries = [{ title: 'Résultat brut', source: 'Gemini', summary: cleaned, confidence: 50 }];
+                    }
                 }
             } catch (geminiErr) {
                 logger.warn({ err: geminiErr }, '[Scheduler] Gemini call failed, continuing with empty discoveries');

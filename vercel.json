@@ -43,6 +43,10 @@
     {
       "path": "/api/cron/backup-db",
       "schedule": "0 1 * * 0"
+    },
+    {
+      "path": "/api/cron/gdpr-purge",
+      "schedule": "0 3 * * 0"
     }
   ],
   "redirects": [

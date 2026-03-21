@@ -1,11 +1,23 @@
 import logger from '../../_utils/logger.js';
 import { db } from '../../../src/db/index.js';
-import { EntityVersion, UpdateLog, AuditLog } from '../../../src/db/schema.js';
+import { EntityVersion, UpdateLog, AuditLog, ConversationLog, SharedDiagnostic, AuthToken } from '../../../src/db/schema.js';
 import { lt } from 'drizzle-orm';
 import { getCronAuth } from '../../_utils/cronAuth.js';
+import * as Sentry from '@sentry/node';
 
 const RETENTION_DAYS = 90;
 /**
+ * GDPR Purge Cron
+ *
+ * Automatically purges expired/old data to comply with RGPD:
+ *   - EntityVersion     > 90 days
+ *   - UpdateLog         > 90 days
+ *   - AuditLog          > 90 days
+ *   - ConversationLog   > 90 days
+ *   - SharedDiagnostic  > 90 days
+ *   - AuthToken         where expiresAt < NOW()
+ *
+ * Schedule: every Sunday at 03:00 (vercel.json)
  * @param {import('../../_utils/http-types').ApiRequest} req
  * @param {import('../../_utils/http-types').ApiResponse} res
  */
@@ -13,8 +25,6 @@ const RETENTION_DAYS = 90;
 export default async function handler(req, res) {
     if (req.method !== 'GET') return res.status(405).json({ error: 'Method not allowed' });
 
-    // Backward compatibility: this endpoint historically used `?key=...`.
-    // We now standardize on cronAuth (`x-cron-secret: <CRON_SECRET>`, `Authorization: Bearer <CRON_SECRET>`, or `?secret=...`).
     const secret = req.query?.secret ?? req.query?.key;
     const authReq = { headers: req.headers, query: { secret }, url: req.url };
     const auth = getCronAuth(authReq);
@@ -39,24 +49,50 @@ export default async function handler(req, res) {
         const deletedLogs = await db.delete(UpdateLog).where(lt(UpdateLog.createdAt, cutoff));
         const deletedLogsCount = deletedLogs.length;
 
-        // 3. Purge sensitive logs if they exist (AuditLog)
+        // 3. Purge sensitive AuditLog
         let deletedAuditCount = 0;
         try {
             const auditRes = await db.delete(AuditLog).where(lt(AuditLog.timestamp, cutoff));
             deletedAuditCount = auditRes.length;
         } catch { /* Might not exist yet */ }
 
+        // 4. Purge Old Conversation Logs (RGPD — citizen data)
+        let deletedConversationsCount = 0;
+        try {
+            const convRes = await db.delete(ConversationLog).where(lt(ConversationLog.createdAt, cutoff));
+            deletedConversationsCount = convRes.length;
+        } catch { /* Table might not have data yet */ }
+
+        // 5. Purge Old Shared Diagnostics (RGPD — citizen data)
+        let deletedDiagnosticsCount = 0;
+        try {
+            const diagRes = await db.delete(SharedDiagnostic).where(lt(SharedDiagnostic.createdAt, cutoff));
+            deletedDiagnosticsCount = diagRes.length;
+        } catch { /* Table might not have data yet */ }
+
+        // 6. Purge Expired Auth Tokens
+        let deletedTokensCount = 0;
+        try {
+            const tokenRes = await db.delete(AuthToken).where(lt(AuthToken.expiresAt, new Date()));
+            deletedTokensCount = tokenRes.length;
+        } catch { /* Table might not have data yet */ }
+
         const summary = {
             versions_deleted: deletedVersionsCount,
             update_logs_deleted: deletedLogsCount,
             audit_logs_deleted: deletedAuditCount,
-            status: 'success'
+            conversation_logs_deleted: deletedConversationsCount,
+            diagnostics_deleted: deletedDiagnosticsCount,
+            tokens_deleted: deletedTokensCount,
+            status: 'success',
         };
 
-        logger.info('✅ Purge complete:', summary);
+        logger.info('✅ GDPR Purge complete:', summary);
         return res.status(200).json(summary);
     } catch (e) {
-        logger.error('Purge Failed:', e);
+        logger.error('GDPR Purge Failed:', e);
+        Sentry.captureException(e);
         return res.status(500).json({ error: e.message });
     }
 }
+

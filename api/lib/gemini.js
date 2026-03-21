@@ -4,6 +4,7 @@ import { dirname, join } from 'path';
 import { env } from '../_utils/env.js';
 import logger from '../_utils/logger.js';
 import { db } from '../../src/db/index.js';
+import { getChatBreaker } from './gemini-circuit-breaker.js';
 import { sql } from 'drizzle-orm';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -190,7 +191,14 @@ export async function generateText(prompt, options = {}) {
         ? '\nIMPORTANT : Utilise tes connaissances les plus récentes et les sources officielles françaises (.gouv.fr, service-public.fr).\n'
         : '';
 
-    const result = await model.generateContent(searchHint + prompt);
+    const breaker = getChatBreaker((p) => model.generateContent(p));
+    const result = await breaker.fire(searchHint + prompt);
+
+    // Check for circuit breaker fallback
+    if (result && result.fallback) {
+        return result.message;
+    }
+
     const response = await result.response;
     return response.text();
 }

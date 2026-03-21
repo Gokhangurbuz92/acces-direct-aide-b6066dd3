@@ -257,7 +257,7 @@ export default async function handler(req, res) {
   } catch (error) {
     logger.error('search-pro handler error:', { message: error.message, stack: error.stack });
     let dbHost = 'unknown';
-    try { dbHost = new URL(rawUrl).hostname; } catch (e) {}
+    try { dbHost = new URL(rawUrl).hostname; } catch (e) { /* ignore */ }
     return res.status(500).json({ error: 'Internal server error', details: error.message, dbHost });
   }
 }

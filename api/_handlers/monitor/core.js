@@ -81,28 +81,32 @@ export default async function handler(req, res) {
     return res.status(405).json({ error: 'Method not allowed', requestId });
   }
 
-  const [db, kvCheck] = await Promise.all([probeDb(), probeKv(requestId)]);
-  const ok = db.ok === true && kvCheck.ok === true;
+  const [dbCheck, kvCheck] = await Promise.all([probeDb(), probeKv(requestId)]);
+  const dbOk = dbCheck.ok === true;
+  const kvOk = kvCheck.ok === true;
+  // DB is critical (503 if down), KV is best-effort (degraded but 200)
+  const ok = dbOk;
   const payload = {
     ok,
+    status: dbOk && kvOk ? 'healthy' : dbOk ? 'degraded' : 'unavailable',
     requestId,
     deps: {
-      db,
+      db: dbCheck,
       kv: kvCheck,
     },
   };
 
-  if (!ok) {
+  if (!dbOk) {
     logger.warn(
       {
         requestId,
         route: 'monitor/core',
-        db: db.ok,
+        db: dbCheck.ok,
         kv: kvCheck.ok,
       },
       'monitor.core.unavailable',
     );
-    return res.status(503).json({ ...payload, error: 'unavailable' });
+    return res.status(503).json({ ...payload, error: 'database_unavailable' });
   }
 
   return res.status(200).json(payload);

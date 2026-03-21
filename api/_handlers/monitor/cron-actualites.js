@@ -15,21 +15,36 @@ export default async function handler(req, res) {
   }
 
   const requestId = typeof req.requestId === 'string' ? req.requestId : randomUUID();
-  const freshness = await getActualitesCronFreshness();
-  const isFresh = freshness.state === 'fresh';
 
   res.setHeader('x-request-id', requestId);
   res.setHeader('Cache-Control', 'no-store');
   res.setHeader('Content-Type', 'application/json; charset=utf-8');
   applyNoIndex(res);
 
-  return res.status(isFresh ? 200 : 503).json({
-    ok: isFresh,
-    job: 'actualites',
-    state: freshness.state,
-    ageMinutes: freshness.ageMinutes,
-    lastSuccessAt: freshness.lastSuccessAt,
-    thresholds: freshness.thresholds,
-    requestId,
-  });
+  try {
+    const freshness = await getActualitesCronFreshness();
+
+    // Return 200 always — freshness state is informational, not a reason to alarm.
+    // The `ok` and `state` fields communicate the actual health.
+    return res.status(200).json({
+      ok: freshness.state === 'fresh',
+      job: 'actualites',
+      state: freshness.state,
+      ageMinutes: freshness.ageMinutes,
+      lastSuccessAt: freshness.lastSuccessAt,
+      thresholds: freshness.thresholds,
+      requestId,
+    });
+  } catch (error) {
+    return res.status(200).json({
+      ok: false,
+      job: 'actualites',
+      state: 'error',
+      ageMinutes: null,
+      lastSuccessAt: null,
+      thresholds: null,
+      requestId,
+      error: 'freshness_check_failed',
+    });
+  }
 }

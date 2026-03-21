@@ -6,7 +6,7 @@ import { kv } from '../../_utils/kv.js';
 import { env } from '../../_utils/env.js';
 import { applyNoIndex } from '../../_utils/robots.js';
 
-const TIMEOUT_MS = 2000;
+const TIMEOUT_MS = 5000;
 
 /**
  * @template T

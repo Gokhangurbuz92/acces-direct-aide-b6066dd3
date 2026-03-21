@@ -14,6 +14,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import CategoryChip from "@/components/ui/CategoryChip";
 import { formatProvenanceDate, getProvenance } from '@/lib/provenance';
+import { buildPublicRdvPath } from '@/lib/rdvRouting';
 import { useFalc } from '@/contexts/FalcContext';
 import AnimatedCard from '@/components/ui/AnimatedCard';
 
@@ -84,6 +85,12 @@ export default function StructureCard({ structure, compact = false, index = 0 })
                 {structure.coverage === 'SUGGESTED_NEEDS_REVIEW' && (
                   <Badge variant="outline" className="text-orange-700 border-orange-300">
                     Contribution
+                  </Badge>
+                )}
+                {structure.is_pro_enabled && (
+                  <Badge className="bg-indigo-100 text-indigo-800 border-indigo-200 flex items-center gap-1">
+                    <Calendar className="h-3 w-3" />
+                    RDV en ligne
                   </Badge>
                 )}
               </div>
@@ -164,6 +171,18 @@ export default function StructureCard({ structure, compact = false, index = 0 })
 
             {/* Actions */}
             <div className="flex flex-wrap gap-2 mt-2">
+              {structure.is_pro_enabled && (
+                <Button
+                  size="sm"
+                  asChild
+                  className="relative z-20 bg-indigo-600 hover:bg-indigo-700 text-white"
+                >
+                  <Link to={buildPublicRdvPath(structure)} onClick={(e) => e.stopPropagation()}>
+                    <Calendar className="h-4 w-4 mr-1" />
+                    Prendre RDV
+                  </Link>
+                </Button>
+              )}
               {structure.site_web && (
                 <Button
                   variant="outline"

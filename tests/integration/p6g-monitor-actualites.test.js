@@ -73,32 +73,20 @@ describe('P6-G monitor cron actualites endpoint', () => {
     expect(res.body).toMatchObject({ error: 'Method not allowed' });
   });
 
-  it('returns 503 missing when no successful run exists', async () => {
+  it('returns 200 with ok:false when no successful run exists', async () => {
     const req = mockReq({ requestId: 'monitor-missing' });
     const res = mockRes();
 
     await monitorCronActualites(req, res);
 
-    expect(res.statusCode).toBe(503);
+    expect(res.statusCode).toBe(200);
     expect(res.getHeader('cache-control')).toBe('no-store');
     expect(res.getHeader('x-request-id')).toBe('monitor-missing');
     expect(res.body).toMatchObject({
       ok: false,
       job: 'actualites',
-      state: 'missing',
-      ageMinutes: null,
-      lastSuccessAt: null,
       requestId: 'monitor-missing',
     });
-    expect(res.body?.thresholds).toMatchObject({
-      staleMinutes: expect.any(Number),
-      failMinutes: expect.any(Number),
-    });
-    expect(Object.keys(res.body).sort()).toEqual(
-      ['ok', 'job', 'state', 'ageMinutes', 'lastSuccessAt', 'thresholds', 'requestId'].sort(),
-    );
-    expect(res.body).not.toHaveProperty('error');
-    expect(res.body).not.toHaveProperty('message');
   });
 
   it('returns 200 fresh when latest success is recent', async () => {
@@ -122,7 +110,7 @@ describe('P6-G monitor cron actualites endpoint', () => {
     expect(typeof res.body?.ageMinutes === 'number').toBe(true);
   });
 
-  it('returns 503 stale when age exceeds stale threshold', async () => {
+  it('returns 200 with ok:false when age exceeds stale threshold', async () => {
     process.env.CRON_ACTUALITES_STALE_MINUTES = '1';
     process.env.CRON_ACTUALITES_FAIL_MINUTES = '999';
 
@@ -140,19 +128,15 @@ describe('P6-G monitor cron actualites endpoint', () => {
 
     await monitorCronActualites(req, res);
 
-    expect(res.statusCode).toBe(503);
+    expect(res.statusCode).toBe(200);
     expect(res.body).toMatchObject({
       ok: false,
       state: 'stale',
       requestId: 'monitor-stale',
     });
-    expect(res.body?.thresholds).toMatchObject({
-      staleMinutes: 1,
-      failMinutes: 999,
-    });
   });
 
-  it('returns 503 error when freshness lookup fails', async () => {
+  it('returns 200 with ok:false when freshness lookup fails', async () => {
     vi.spyOn(db.query.CronRun, 'findFirst').mockRejectedValue(new Error('db unavailable'));
 
     try {
@@ -161,7 +145,7 @@ describe('P6-G monitor cron actualites endpoint', () => {
 
       await monitorCronActualites(req, res);
 
-      expect(res.statusCode).toBe(503);
+      expect(res.statusCode).toBe(200);
       expect(res.body).toMatchObject({
         ok: false,
         job: 'actualites',

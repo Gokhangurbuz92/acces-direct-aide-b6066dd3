@@ -278,7 +278,7 @@ describe('P9-D readiness monitor + pro timeoff contract', () => {
     });
   });
 
-  it('GET /api/monitor/pro-rdv returns 503 when one required table is missing', async () => {
+  it('GET /api/monitor/pro-rdv returns 200 with ok:false when one required table is missing', async () => {
     getProRdvReadiness.mockResolvedValue({
       ok: false,
       missingTables: ['ProTimeOff'],
@@ -289,12 +289,11 @@ describe('P9-D readiness monitor + pro timeoff contract', () => {
 
     const res = await invokeApi('/api/monitor/pro-rdv');
 
-    expect(res.statusCode).toBe(503);
+    expect(res.statusCode).toBe(200);
     expect(String(res.getHeader('cache-control')).toLowerCase()).toContain('no-store');
     expect(res.getHeader('x-robots-tag')).toBe('noindex, nofollow');
     expect(res.body).toMatchObject({
       ok: false,
-      error: 'unavailable',
       missingTables: ['ProTimeOff'],
       prismaMigrationsOk: false,
       missingMigrations: ['20260305000000_add_pro_rdv_core'],

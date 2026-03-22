@@ -14,9 +14,11 @@ import { setupPublicMocks } from './_mocks/publicApiMocks.js';
 
 const test = base.extend({
     page: async ({ page }, use) => {
-        // Dismiss the OnboardingTour welcome dialog so it doesn't block clicks
+        // Dismiss the OnboardingTour welcome dialog and cookie banner
+        // so they don't block clicks or add unexpected role="dialog" elements
         await page.addInitScript(() => {
             window.localStorage.setItem('ada_onboarding_done', 'true');
+            window.localStorage.setItem('ada_cookie_consent', JSON.stringify({ accepted: true, date: new Date().toISOString() }));
         });
         if (process.env.USE_MOCKS === 'true') {
             await setupPublicMocks(page);

@@ -105,18 +105,13 @@ test.describe('SEO Runtime - Aides', () => {
     await expect(page.locator('[data-testid="aide-breadcrumb"]')).toBeVisible();
 
     const scripts = page.locator('script[type="application/ld+json"]');
-    await expect(scripts.first()).toBeAttached();
-
-    // Poll JSON-LD until it updates with actual aide data (React may need an extra render cycle)
-    await expect.poll(async () => {
-      const entries = parseJsonLdEntries(await scripts.allTextContents());
-      const webPageEntry = entries.find((entry) => entry?.['@type'] === 'WebPage');
-      return webPageEntry?.mainEntity?.name;
-    }, { timeout: 10000 }).toBe('Aide SEO Test');
+    await expect(scripts.first()).toBeAttached({ timeout: 10000 });
 
     const entries = parseJsonLdEntries(await scripts.allTextContents());
     expect(entries.some((entry) => entry?.['@type'] === 'BreadcrumbList')).toBe(true);
+
     const webPageEntry = entries.find((entry) => entry?.['@type'] === 'WebPage');
     expect(webPageEntry?.mainEntity?.['@type']).toBe('GovernmentService');
+    expect(webPageEntry?.mainEntity?.name).toBe('Aide SEO Test');
   });
 });

@@ -19,18 +19,27 @@
 import { writeFileSync, unlinkSync, existsSync, statSync } from 'fs';
 import { join } from 'path';
 
-const DATABASE_URL = process.env.DATABASE_URL;
+const DATABASE_URL = process.env.DATABASE_URL_TEST || process.env.DATABASE_URL;
 
 if (!DATABASE_URL) {
   console.error('❌ DATABASE_URL not set. Add it to .env.local or export it.');
   process.exit(1);
 }
 
-async function query(sql) {
-  // Dynamic import to avoid bundling issues
-  const { neon } = await import('@neondatabase/serverless');
-  const db = neon(DATABASE_URL);
-  return db(sql);
+let client;
+async function getClient() {
+  if (client) return client;
+  const pg = await import('pg');
+  const Client = pg.default?.Client || pg.Client;
+  client = new Client({ connectionString: DATABASE_URL, ssl: DATABASE_URL.includes('neon.tech') ? { rejectUnauthorized: false } : false });
+  await client.connect();
+  return client;
+}
+
+async function query(sqlString) {
+  const c = await getClient();
+  const result = await c.query(sqlString);
+  return result.rows;
 }
 
 async function main() {

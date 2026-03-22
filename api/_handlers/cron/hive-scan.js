@@ -5,6 +5,7 @@ import { env } from '../../_utils/env.js';
 import { createGeminiBreaker } from '../../lib/gemini-circuit-breaker.js';
 import { db } from '../../../src/db/index.js';
 import { ReviewQueueItem, CronRun } from '../../../src/db/schema.js';
+import { recordMetric } from '../../lib/gemini-metrics.js';
 
 /**
  * Hive Scan — Automated AI discovery cron
@@ -59,16 +60,28 @@ async function scanCategory(category) {
     });
 
     const breaker = createGeminiBreaker((p) => model.generateContent(p));
+    const startTime = Date.now();
     const result = await breaker.fire(prompt);
 
     // Check for circuit breaker fallback
     if (result && result.fallback) {
+        recordMetric({ type: 'hive-scan', model: 'gemini-2.0-flash', latencyMs: Date.now() - startTime, success: false, circuitBreakerOpen: true });
         return [];
     }
 
     const response = await result.response;
     const raw = response.text() || '[]';
     const cleaned = raw.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
+
+    recordMetric({
+        type: 'hive-scan',
+        model: 'gemini-2.0-flash',
+        promptTokens: response.usageMetadata?.promptTokenCount || 0,
+        completionTokens: response.usageMetadata?.candidatesTokenCount || 0,
+        totalTokens: response.usageMetadata?.totalTokenCount || 0,
+        latencyMs: Date.now() - startTime,
+        success: true,
+    });
 
     try {
         const parsed = JSON.parse(cleaned);
@@ -111,6 +124,11 @@ export default async function handler(req, res) {
 
     if (!auth.ok && !vercelCronOk) {
         return res.status(401).json({ error: 'Unauthorized', requestId });
+    }
+
+    // Feature flag — agents can be disabled without redeployment
+    if (process.env.ENABLE_AI_AGENT !== 'true') {
+        return res.status(503).json({ error: 'AI agents are disabled', flag: 'ENABLE_AI_AGENT', requestId });
     }
 
     const startedAt = new Date();

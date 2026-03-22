@@ -128,6 +128,7 @@ export const routes = [
     { path: 'cron/ingest-annuaire', match: 'exact', handler: () => import('./_handlers/cron/ingest-annuaire.js') },
     { path: 'cron/backup-db', match: 'exact', handler: () => import('./_handlers/cron/backup-db.js') },
     { path: 'cron/gdpr-purge', match: 'exact', handler: () => import('./_handlers/cron/gdpr-purge.js') },
+    { path: 'cron/health-alert', match: 'exact', handler: () => import('./_handlers/cron/health-alert.js') },
 
     // --- Admin ---
     { path: 'admin/inbox', match: 'exact', handler: () => import('./_handlers/admin/inbox.js') },
@@ -149,6 +150,7 @@ export const routes = [
     { path: 'admin/mfa-setup', match: 'exact', handler: () => import('./_handlers/admin/mfa-setup.js') },
     { path: 'admin/mfa-verify', match: 'exact', handler: () => import('./_handlers/admin/mfa-verify.js') },
     { path: 'admin/ai-metrics', match: 'exact', handler: () => import('./_handlers/admin/ai-metrics.js') },
+    { path: 'admin/alerts', match: 'exact', handler: () => import('./_handlers/admin/alerts.js') },
 
     // --- Share ---
     { path: 'share/create', match: 'exact', handler: () => import('./_handlers/share/create.js') },

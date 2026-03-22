@@ -129,7 +129,8 @@ export default async function handler(req, res) {
         const isAllowedOrigin =
             origin === 'https://accesdirectaide.fr' ||
             origin === 'https://www.accesdirectaide.fr' ||
-            (origin.endsWith('.vercel.app') && origin.startsWith('https://')) ||
+            // Only allow this project's Vercel preview deployments (not any *.vercel.app)
+            (origin.startsWith('https://acces-direct-aide') && origin.endsWith('.vercel.app')) ||
             (env.runtime.nodeEnv !== 'production' && (
                 origin === 'http://localhost:5173' ||
                 origin === 'http://localhost:3000' ||

@@ -3,6 +3,7 @@ import { requireProAuth } from '../../_utils/auth.js';
 import { createGeminiBreaker } from '../../lib/gemini-circuit-breaker.js';
 import { db } from '../../../src/db/index.js';
 import { ReviewQueueItem } from '../../../src/db/schema.js';
+import { recordMetric } from '../../lib/gemini-metrics.js';
 
 /**
  * Agent Discovery API (Pro-only)
@@ -38,12 +39,20 @@ async function handler(req, res) {
         return res.status(405).json({ error: 'Méthode non autorisée' });
     }
 
+    // Feature flag — agents can be disabled without redeployment
+    if (process.env.ENABLE_AI_AGENT !== 'true') {
+        return res.status(503).json({ error: 'AI agents are disabled', flag: 'ENABLE_AI_AGENT' });
+    }
+
     const { category, submit } = req.body || {};
     if (!category) {
         return res.status(400).json({ error: 'Catégorie requise.' });
     }
 
-    const prompt = `Trouve les 5 dernières nouveautés ou changements concernant les aides sociales en France pour la catégorie "${category}". Pour chaque aide, donne : titre, source officielle, résumé court des critères d'éligibilité. Réponds en JSON : un tableau d'objets avec les clés "title", "source", "summary".`;
+    // Sanitize category input against prompt injection
+    const safeCategory = String(category).replace(/<[^>]*>/g, '').slice(0, 100);
+
+    const prompt = `Trouve les 5 dernières nouveautés ou changements concernant les aides sociales en France pour la catégorie "${safeCategory}". Pour chaque aide, donne : titre, source officielle, résumé court des critères d'éligibilité. Réponds en JSON : un tableau d'objets avec les clés "title", "source", "summary".`;
 
     try {
         const ai = await getGenAI();
@@ -63,15 +72,28 @@ async function handler(req, res) {
         });
 
         const breaker = createGeminiBreaker((p) => model.generateContent(p));
+        const startTime = Date.now();
         const result = await breaker.fire(prompt);
 
         // Check for circuit breaker fallback
         if (result && result.fallback) {
+            recordMetric({ type: 'discovery', model: 'gemini-2.0-flash', latencyMs: Date.now() - startTime, success: false, circuitBreakerOpen: true });
             return res.status(200).json({ discoveries: [], fallback: true, message: result.message });
         }
 
         const response = await result.response;
         const raw = response.text() || '[]';
+
+        // Record metrics
+        recordMetric({
+            type: 'discovery',
+            model: 'gemini-2.0-flash',
+            promptTokens: response.usageMetadata?.promptTokenCount || 0,
+            completionTokens: response.usageMetadata?.candidatesTokenCount || 0,
+            totalTokens: response.usageMetadata?.totalTokenCount || 0,
+            latencyMs: Date.now() - startTime,
+            success: true,
+        });
 
         // Parse JSON from AI response (strip markdown fences if present)
         const cleaned = raw.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();

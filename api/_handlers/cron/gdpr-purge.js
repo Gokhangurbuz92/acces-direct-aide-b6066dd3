@@ -1,6 +1,6 @@
 import logger from '../../_utils/logger.js';
 import { db } from '../../../src/db/index.js';
-import { EntityVersion, UpdateLog, AuditLog, ConversationLog, SharedDiagnostic, AuthToken } from '../../../src/db/schema.js';
+import { EntityVersion, UpdateLog, AuditLog, ConversationLog, SharedDiagnostic, AuthToken, AiMetric } from '../../../src/db/schema.js';
 import { lt } from 'drizzle-orm';
 import { getCronAuth } from '../../_utils/cronAuth.js';
 import * as Sentry from '@sentry/node';
@@ -77,6 +77,13 @@ export default async function handler(req, res) {
             deletedTokensCount = tokenRes.length;
         } catch { /* Table might not have data yet */ }
 
+        // 7. Purge Old AI Metrics (non-personal but storage hygiene)
+        let deletedAiMetricsCount = 0;
+        try {
+            const aiRes = await db.delete(AiMetric).where(lt(AiMetric.createdAt, cutoff));
+            deletedAiMetricsCount = aiRes.length;
+        } catch { /* Table might not exist yet */ }
+
         const summary = {
             versions_deleted: deletedVersionsCount,
             update_logs_deleted: deletedLogsCount,
@@ -84,6 +91,7 @@ export default async function handler(req, res) {
             conversation_logs_deleted: deletedConversationsCount,
             diagnostics_deleted: deletedDiagnosticsCount,
             tokens_deleted: deletedTokensCount,
+            ai_metrics_deleted: deletedAiMetricsCount,
             status: 'success',
         };
 

@@ -1696,3 +1696,18 @@ export const ProProfileAudienceRelations = relations(ProProfileAudience, ({ one 
 		references: [AudienceCategory.id]
 	})
 }));
+
+// ─── AI Metrics ─────────────────────────────────────────────────────────────
+export const AiMetric = pgTable('AiMetric', {
+	id: text('id').notNull().primaryKey().$defaultFn(() => crypto.randomUUID()),
+	type: text('type').notNull(),           // chat, discovery, scheduler, hive-scan, falc
+	model: text('model').notNull(),         // gemini-2.0-flash
+	promptTokens: integer('prompt_tokens').notNull().default(0),
+	completionTokens: integer('completion_tokens').notNull().default(0),
+	totalTokens: integer('total_tokens').notNull().default(0),
+	latencyMs: integer('latency_ms').notNull().default(0),
+	success: boolean('success').notNull().default(true),
+	circuitBreakerOpen: boolean('circuit_breaker_open').notNull().default(false),
+	errorMessage: text('error_message'),
+	createdAt: timestamp('createdAt', { precision: 3 }).notNull().defaultNow(),
+});

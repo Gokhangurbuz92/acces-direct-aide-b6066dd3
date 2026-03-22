@@ -4,6 +4,8 @@ import * as Sentry from '@sentry/node';
 
 import { checkRateLimit, getClientIp, getRateLimitStatus } from '../../_utils/rateLimit.js';
 import { chatWithRulePack } from '../../lib/gemini.js';
+import { recordMetric } from '../../lib/gemini-metrics.js';
+import { storeLog } from '../../lib/log-store.js';
 import { db } from '../../../src/db/index.js';
 import { ConversationLog } from '../../../src/db/schema.js';
 
@@ -238,6 +240,7 @@ export default async function handler(req, res) {
         const errorName = error instanceof Error ? error.name : 'unknown';
         const errorMsg = error instanceof Error ? error.message : String(error);
         log.error({ msg: 'assistant.chat_failed', errorName, errorMsg, requestId });
+        storeLog('error', 'Chat failed', { error: errorMsg, requestId }).catch(() => {});
 
         Sentry.captureException(error, {
             tags: {

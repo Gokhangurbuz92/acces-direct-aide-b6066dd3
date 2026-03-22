@@ -151,6 +151,8 @@ export const routes = [
     { path: 'admin/mfa-verify', match: 'exact', handler: () => import('./_handlers/admin/mfa-verify.js') },
     { path: 'admin/ai-metrics', match: 'exact', handler: () => import('./_handlers/admin/ai-metrics.js') },
     { path: 'admin/alerts', match: 'exact', handler: () => import('./_handlers/admin/alerts.js') },
+    { path: 'admin/logs', match: 'exact', handler: () => import('./_handlers/admin/logs.js') },
+    { path: 'admin/dashboard', match: 'exact', handler: () => import('./_handlers/admin/dashboard.js') },
 
     // --- Share ---
     { path: 'share/create', match: 'exact', handler: () => import('./_handlers/share/create.js') },

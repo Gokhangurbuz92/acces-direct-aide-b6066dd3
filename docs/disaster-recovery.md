@@ -1,19 +1,21 @@
 # Disaster Recovery — Accès Direct Aide
 
-## Backup
+## Méthodes de backup
 
-### Automatique (Cron Vercel)
+| Méthode | Fréquence | Stockage | Contenu |
+|---------|-----------|----------|---------|
+| **Neon PITR** | Continu (WAL) | Neon Cloud | Base complète |
+| `backup-db.js` cron | Hebdo (dimanche 01:00 UTC) | Cloudflare R2 | Aide + ConversationLog (JSON) |
+| Neon branch snapshot | Manuel | Neon Cloud | Fork complet |
 
-| Paramètre | Valeur |
-|-----------|--------|
-| **Fichier** | `api/_handlers/cron/backup-db.js` |
-| **Fréquence** | Chaque dimanche à 01:00 UTC |
-| **Stockage** | Cloudflare R2 (S3-compatible) |
-| **Format** | JSON (`ada-backup-{timestamp}.json`) |
-| **Données** | Aides, ConversationLogs |
-| **Auth** | `CRON_SECRET` (header ou query param) |
+### Neon PITR (méthode principale)
 
-### Contenu du backup
+Neon conserve les WAL automatiquement → restauration à la seconde près.
+
+- **Console** : https://console.neon.tech
+- **Rétention** : 7j (Free) / 30j (Pro)
+
+### Backup JSON (cron)
 
 ```json
 {
@@ -22,65 +24,84 @@
     "timestamp": "2026-03-21T01:00:00.000Z",
     "counts": { "aides": 987, "conversationLogs": 42 }
   },
-  "data": {
-    "aides": [...],
-    "conversationLogs": [...]
-  }
+  "data": { "aides": [...], "conversationLogs": [...] }
 }
 ```
 
-### Manuel (CLI)
+⚠️ **Limitation** : ne couvre pas Structure, Demarche, Users, etc. Complémentaire à Neon PITR.
+
+### Backup manuel (CLI)
 
 ```bash
-# Backup complet via pg_dump (Neon)
+# pg_dump complet
 pg_dump "$DATABASE_URL" --format=custom --file=backup-$(date +%Y%m%d).dump
 
-# Backup data-only
-pg_dump "$DATABASE_URL" --data-only --format=custom --file=data-$(date +%Y%m%d).dump
+# Neon branch
+npx neonctl branches create --name backup-$(date +%Y-%m-%d)
+
+# Déclencher le cron JSON manuellement
+curl -X POST https://www.accesdirectaide.fr/api/cron/backup-db \
+  -H "x-cron-secret: $CRON_SECRET"
 ```
 
 ---
 
-## Restore
+## Restauration
 
-### Depuis le backup JSON (R2)
+### Depuis Neon PITR (recommandé)
 
-1. **Télécharger** le dernier backup depuis Cloudflare R2
-2. **Créer une branche Neon** (console.neon.tech → Branches → Create)
-3. **Importer** les données :
-
-```bash
-# Via le script de restore
-npx tsx scripts/test-backup-restore.js --restore <fichier-backup.json>
-```
+1. console.neon.tech → **Branches** → **Create Branch**
+2. Choisir **Point in Time** → date/heure cible
+3. Nommer : `restore-YYYY-MM-DD-HHmm`
+4. Copier la connection string
+5. Mettre à jour `DATABASE_URL` sur Vercel
+6. Redéployer
 
 ### Depuis pg_dump
 
 ```bash
-# 1. Créer une branche Neon de test
-#    → console.neon.tech → Branches → "restore-test"
+# 1. Nouvelle branche Neon
+npx neonctl branches create --name restore-$(date +%Y%m%d)
 
 # 2. Restaurer
-pg_restore --dbname="$DATABASE_URL_STAGING" --clean --if-exists backup.dump
+pg_restore --clean --no-owner --dbname="<NEW_CONNECTION_STRING>" backup.dump
 
-# 3. Vérifier les données
-psql "$DATABASE_URL_STAGING" -c "SELECT COUNT(*) FROM \"Aide\";"
-psql "$DATABASE_URL_STAGING" -c "SELECT COUNT(*) FROM \"ConversationLog\";"
+# 3. Vérifier
+psql "<NEW_CONNECTION_STRING>" -c \
+  "SELECT 'Aide', COUNT(*) FROM \"Aide\" UNION ALL SELECT 'Structure', COUNT(*) FROM \"Structure\";"
 
-# 4. Si OK → basculer DATABASE_URL dans Vercel
-#    → Vercel → Settings → Environment Variables → DATABASE_URL
+# 4. Basculer DATABASE_URL sur Vercel → Redéployer
 ```
+
+---
+
+## Test de vérification DR
+
+```bash
+node scripts/test-disaster-recovery.mjs
+```
+
+Vérifie : connectivité DB, counts sur 11 tables critiques, création + validation backup JSON.
+
+**Fréquence recommandée** : mensuel.
 
 ---
 
 ## Checklist post-restore
 
-- [ ] Vérifier le nombre d'aides (`SELECT COUNT(*) FROM "Aide"`)
-- [ ] Vérifier les logs de conversation
-- [ ] Tester la recherche (`POST /api/search`)
-- [ ] Tester le chatbot
-- [ ] Vérifier les crons (ingestion, purge RGPD)
-- [ ] Monitorer Sentry pendant 1h
+- [ ] Aides présentes (`SELECT COUNT(*) FROM "Aide"` → ~987+)
+- [ ] Structures présentes
+- [ ] `/api/health` → 200
+- [ ] `/api/monitor/core` → `ok: true`
+- [ ] `/api/aides` retourne des données
+- [ ] `/api/search?q=logement` retourne des résultats
+- [ ] Login admin fonctionne
+- [ ] Chatbot fonctionne
+- [ ] Déclencher un cron manuellement
+- [ ] `DATABASE_URL` Vercel mis à jour si branche changée
+- [ ] Redéployer sur Vercel
+- [ ] Surveiller Sentry 1h
+- [ ] Documenter l'incident (date, cause, durée, actions)
 
 ---
 
@@ -88,7 +109,8 @@ psql "$DATABASE_URL_STAGING" -c "SELECT COUNT(*) FROM \"ConversationLog\";"
 
 | Rôle | Contact |
 |------|---------|
-| **DB Neon** | console.neon.tech |
-| **Storage R2** | Cloudflare Dashboard |
-| **Hosting** | Vercel Dashboard |
-| **Monitoring** | sentry.io |
+| Responsable technique | gokhangurbuz92@gmail.com |
+| DB Neon | console.neon.tech / support@neon.tech |
+| Hosting Vercel | vercel.com/dashboard |
+| Monitoring | sentry.io |
+| Storage R2 | Cloudflare Dashboard |

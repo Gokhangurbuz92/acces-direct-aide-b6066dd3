@@ -92,8 +92,8 @@ test.describe('SEO Runtime - Aides', () => {
 
   test('/aides/:slug updates metadata from loaded aide data', async ({ page }) => {
     await page.goto('/aides/aide-seo-test');
-    // Wait for content to render instead of waitForResponse
-    await expect(page.locator('h1')).toBeVisible({ timeout: 10000 });
+    // Wait for the actual aide data to render (not just loading skeleton)
+    await expect(page.locator('h1')).toContainText('Aide SEO Test', { timeout: 15000 });
 
     const origin = new URL(page.url()).origin;
     const expectedCanonical = `${origin}/aides/aide-seo-test`;
@@ -106,11 +106,17 @@ test.describe('SEO Runtime - Aides', () => {
 
     const scripts = page.locator('script[type="application/ld+json"]');
     await expect(scripts.first()).toBeAttached();
+
+    // Poll JSON-LD until it updates with actual aide data (React may need an extra render cycle)
+    await expect.poll(async () => {
+      const entries = parseJsonLdEntries(await scripts.allTextContents());
+      const webPageEntry = entries.find((entry) => entry?.['@type'] === 'WebPage');
+      return webPageEntry?.mainEntity?.name;
+    }, { timeout: 10000 }).toBe('Aide SEO Test');
+
     const entries = parseJsonLdEntries(await scripts.allTextContents());
     expect(entries.some((entry) => entry?.['@type'] === 'BreadcrumbList')).toBe(true);
-
     const webPageEntry = entries.find((entry) => entry?.['@type'] === 'WebPage');
     expect(webPageEntry?.mainEntity?.['@type']).toBe('GovernmentService');
-    expect(webPageEntry?.mainEntity?.name).toBe('Aide SEO Test');
   });
 });

@@ -68,9 +68,10 @@ describe('Vault — AES-256-GCM Resilience', () => {
         const plaintext = 'important-token';
         const { content, iv } = encrypt(plaintext, key);
 
-        // Tamper with the ciphertext
-        const tampered = 'ff' + content.slice(2);
-        expect(() => decrypt(tampered, iv, key)).toThrow();
+        // Completely mangle the ciphertext portion to guarantee GCM auth failure
+        const [encrypted, authTag] = content.split(':');
+        const mangled = encrypted.split('').reverse().join('');
+        expect(() => decrypt(mangled + ':' + authTag, iv, key)).toThrow();
     });
 
     it('detects tampered authTag (authentication check)', () => {

@@ -1,5 +1,6 @@
 import CircuitBreaker from 'opossum';
 import { logger } from './logger.js';
+import { storeLog } from './log-store.js';
 
 /**
  * Gemini Circuit Breaker
@@ -34,6 +35,7 @@ export function createGeminiBreaker(fn, options = {}) {
 
     breaker.on('open', () => {
         logger.warn('[CIRCUIT-BREAKER] Gemini circuit OPEN — fallback actif');
+        storeLog('critical', 'Circuit breaker OPEN — Gemini fallback actif').catch(() => {});
     });
 
     breaker.on('halfOpen', () => {

@@ -899,6 +899,42 @@
         "responses": { "200": { "description": "MFA validé" } }
       }
     },
+    "/admin/ai-metrics": {
+      "get": {
+        "tags": ["Admin"],
+        "summary": "Métriques IA (tokens, coûts, latence)",
+        "security": [{ "AdminToken": [] }],
+        "responses": { "200": { "description": "Métriques Gemini" } }
+      }
+    },
+    "/admin/alerts": {
+      "get": {
+        "tags": ["Admin"],
+        "summary": "Historique des alertes santé",
+        "security": [{ "AdminToken": [] }],
+        "responses": { "200": { "description": "Alertes récentes" } }
+      }
+    },
+    "/admin/logs": {
+      "get": {
+        "tags": ["Admin"],
+        "summary": "Logs centralisés (Redis)",
+        "security": [{ "AdminToken": [] }],
+        "parameters": [
+          { "name": "count", "in": "query", "schema": { "type": "integer", "default": 50 }, "description": "Nombre de logs" },
+          { "name": "level", "in": "query", "schema": { "type": "string", "enum": ["info", "warn", "error", "critical"] }, "description": "Filtrer par niveau" }
+        ],
+        "responses": { "200": { "description": "Entrées de log" } }
+      }
+    },
+    "/admin/dashboard": {
+      "get": {
+        "tags": ["Admin"],
+        "summary": "Dashboard opérationnel (santé, données, IA, crons, erreurs)",
+        "security": [{ "AdminToken": [] }],
+        "responses": { "200": { "description": "Métriques agrégées" } }
+      }
+    },
     "/monitor/cron/actualites": {
       "get": {
         "tags": ["Monitor"],

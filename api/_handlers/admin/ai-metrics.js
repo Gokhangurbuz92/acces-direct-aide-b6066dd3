@@ -23,6 +23,6 @@ export default async function handler(req, res) {
     return res.status(401).json({ error: 'Unauthorized' });
   }
 
-  const metrics = getMetrics();
+  const metrics = await getMetrics();
   return res.status(200).json(metrics);
 }

@@ -114,6 +114,55 @@ export default function Confidentialite() {
             <section className="space-y-4">
               <div className="flex items-center gap-3 border-b border-slate-100 pb-4">
                 <div className="p-2 bg-blue-50 rounded-lg">
+                  <HelpCircle className="w-5 h-5 text-blue-600" />
+                </div>
+                <h2 className="text-xl font-bold text-slate-900">Cookies et stockage local</h2>
+              </div>
+
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm text-left border border-slate-200 rounded-lg overflow-hidden">
+                  <thead className="bg-slate-50">
+                    <tr>
+                      <th className="px-4 py-2 font-semibold text-slate-900 border-b border-slate-200">Cookie / Clé</th>
+                      <th className="px-4 py-2 font-semibold text-slate-900 border-b border-slate-200">Finalité</th>
+                      <th className="px-4 py-2 font-semibold text-slate-900 border-b border-slate-200">Durée</th>
+                    </tr>
+                  </thead>
+                  <tbody className="text-slate-700 divide-y divide-slate-100">
+                    <tr><td className="px-4 py-2 font-mono text-xs">ada_session</td><td className="px-4 py-2">Session utilisateur (JWT)</td><td className="px-4 py-2">7 jours</td></tr>
+                    <tr><td className="px-4 py-2 font-mono text-xs">csrf_token</td><td className="px-4 py-2">Protection CSRF</td><td className="px-4 py-2">Session</td></tr>
+                    <tr><td className="px-4 py-2 font-mono text-xs">ada_cookie_consent</td><td className="px-4 py-2">Mémorisation du consentement cookies</td><td className="px-4 py-2">1 an (localStorage)</td></tr>
+                    <tr><td className="px-4 py-2 font-mono text-xs">ada.falc</td><td className="px-4 py-2">Préférence lecture simplifiée</td><td className="px-4 py-2">Persistant (localStorage)</td></tr>
+                  </tbody>
+                </table>
+              </div>
+              <p className="text-sm text-slate-600 px-2">Aucun cookie de traçage, de publicité ou d'analyse n'est utilisé.</p>
+            </section>
+
+            <section className="space-y-4">
+              <div className="flex items-center gap-3 border-b border-slate-100 pb-4">
+                <div className="p-2 bg-blue-50 rounded-lg">
+                  <Database className="w-5 h-5 text-blue-600" />
+                </div>
+                <h2 className="text-xl font-bold text-slate-900">Purge automatique et suppression</h2>
+              </div>
+
+              <div className="space-y-3 text-slate-700 leading-relaxed px-2 text-sm">
+                <p>Un processus automatique (<strong>GDPR Purge</strong>) s'exécute chaque dimanche à 3h du matin et supprime :</p>
+                <ul className="list-disc pl-5 space-y-1">
+                  <li>Les journaux de conversation de plus de <strong>90 jours</strong></li>
+                  <li>Les diagnostics partagés de plus de <strong>90 jours</strong></li>
+                  <li>Les journaux d'audit de plus de <strong>90 jours</strong></li>
+                  <li>Les jetons d'authentification expirés</li>
+                </ul>
+                <p>Vous pouvez à tout moment <strong>supprimer immédiatement votre compte</strong> et toutes les données associées depuis les paramètres de votre espace personnel. Cette action est irréversible et supprime : vos conversations, diagnostics, jetons d'accès et votre compte utilisateur.</p>
+                <p>Contact DPO : <a href="mailto:dpo@accesdirectaide.fr" className="text-blue-600 hover:underline">dpo@accesdirectaide.fr</a> — Contact général : <a href="mailto:contact@accesdirectaide.fr" className="text-blue-600 hover:underline">contact@accesdirectaide.fr</a></p>
+              </div>
+            </section>
+
+            <section className="space-y-4">
+              <div className="flex items-center gap-3 border-b border-slate-100 pb-4">
+                <div className="p-2 bg-blue-50 rounded-lg">
                   <EyeOff className="w-5 h-5 text-blue-600" />
                 </div>
                 <h2 className="text-xl font-bold text-slate-900">Ce que nous ne ferons JAMAIS</h2>

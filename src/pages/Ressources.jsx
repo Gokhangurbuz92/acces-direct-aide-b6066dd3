@@ -51,6 +51,7 @@ export default function Ressources() {
                     className="border p-2 rounded"
                     value={filterType}
                     onChange={(e) => setFilterType(e.target.value)}
+                    aria-label="Filtrer par type de ressource"
                 >
                     <option value="">Tous les types</option>
                     <option value="guide">Guides</option>

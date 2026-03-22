@@ -54,7 +54,16 @@ export default async function handler(req, res) {
             conversationCount = convRes.length;
         } catch { /* Table might not have matching data */ }
 
-        // 2. Delete auth tokens for this user
+        // 2. Delete shared diagnostics linked to this user (RGPD)
+        let diagnosticCount = 0;
+        try {
+            const diagRes = await db.delete(SharedDiagnostic)
+                .where(eq(SharedDiagnostic.userId, userId))
+                .returning({ id: SharedDiagnostic.id });
+            diagnosticCount = diagRes.length;
+        } catch { /* Table might not have matching data or FK */ }
+
+        // 3. Delete auth tokens for this user
         let tokenCount = 0;
         try {
             const tokenRes = await db.delete(AuthToken)
@@ -63,14 +72,15 @@ export default async function handler(req, res) {
             tokenCount = tokenRes.length;
         } catch { /* FK cascade might handle this */ }
 
-        // 3. Delete the citizen user record
+        // 4. Delete the citizen user record
         await db.delete(CitizenUser).where(eq(CitizenUser.id, userId));
 
-        // 4. Clear the session cookie
+        // 5. Clear the session cookie
         res.setHeader('Set-Cookie', buildUserSessionCookieClear());
 
         logger.info(`[GDPR] ✅ Account deleted for user ${userId}`, {
             conversationLogs: conversationCount,
+            sharedDiagnostics: diagnosticCount,
             authTokens: tokenCount,
         });
 

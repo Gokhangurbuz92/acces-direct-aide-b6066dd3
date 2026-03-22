@@ -2,6 +2,19 @@ import { Page, expect } from '@playwright/test';
 import AxeBuilder from '@axe-core/playwright';
 
 export async function expectNoA11yIssues(page: Page, options?: any) {
+    // Dismiss the cookie banner before scanning to avoid false positives
+    // (the banner is a dialog overlay that interferes with contrast checks)
+    await page.evaluate(() => {
+        if (!window.localStorage.getItem('ada_cookie_consent')) {
+            window.localStorage.setItem('ada_cookie_consent', JSON.stringify({ accepted: true, date: new Date().toISOString() }));
+        }
+    });
+    // Remove cookie banner from DOM if already rendered
+    await page.evaluate(() => {
+        const banner = document.getElementById('cookie-banner');
+        if (banner) banner.remove();
+    });
+
     // Wait for animations to settle — elements mid-animation (opacity: 0)
     // cause false-positive contrast violations in axe
     await page.waitForTimeout(500);

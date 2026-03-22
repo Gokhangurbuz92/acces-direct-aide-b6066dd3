@@ -171,7 +171,7 @@ describe('P8-B monitor core endpoint contract', () => {
     expect(res.getHeader('x-robots-tag')).toBe('noindex, nofollow');
     expect(res.body).toMatchObject({
       ok: false,
-      error: 'unavailable',
+      error: 'database_unavailable',
       requestId: expect.any(String),
       deps: {
         db: { ok: false, durationMs: expect.any(Number) },

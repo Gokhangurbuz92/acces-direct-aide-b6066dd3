@@ -9,6 +9,12 @@ vi.stubEnv('KV_REST_API_TOKEN', 'mock-token');
  */
 import { describe, it, expect, beforeEach } from 'vitest';
 
+// Mock rate limiter to always allow
+vi.mock('../../api/_utils/rateLimit.js', () => ({
+    checkRateLimit: vi.fn().mockResolvedValue({ allowed: true }),
+    getClientIp: vi.fn().mockReturnValue('127.0.0.1'),
+}));
+
 // Mock embedding and hybrid search to isolate search logic
 vi.mock('../../api/lib/gemini-embedding.js', () => ({
     generateEmbedding: vi.fn().mockResolvedValue(new Array(768).fill(0.01)),
@@ -16,6 +22,22 @@ vi.mock('../../api/lib/gemini-embedding.js', () => ({
 
 vi.mock('../../api/lib/hybrid-search.js', () => ({
     searchAidesHybrid: vi.fn(),
+}));
+
+// Mock cachedSearch to bypass cache layer and call the callback directly
+vi.mock('../../api/lib/search-cache.js', () => ({
+    cachedSearch: vi.fn(async (_key, cb) => ({ data: await cb(), cached: false })),
+}));
+
+// Mock DB queries for cross-entity search (demarches, structures, actualites)
+vi.mock('../../src/db/index.js', () => ({
+    db: {
+        query: {
+            Demarche: { findMany: vi.fn().mockResolvedValue([]) },
+            Structure: { findMany: vi.fn().mockResolvedValue([]) },
+            Actualite: { findMany: vi.fn().mockResolvedValue([]) },
+        },
+    },
 }));
 
 import handler from '../../api/_handlers/search.js';

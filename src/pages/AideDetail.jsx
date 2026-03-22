@@ -105,7 +105,6 @@ export default function AideDetail() {
           description={seoDescription}
           path={canonicalPath}
           ogType="article"
-          schema={schema}
         />
         <main className="min-h-screen bg-slate-50">
           <div className="bg-white border-b border-slate-200">

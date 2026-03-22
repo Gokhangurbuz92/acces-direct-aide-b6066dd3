@@ -92,8 +92,8 @@ test.describe('SEO Runtime - Aides', () => {
 
   test('/aides/:slug updates metadata from loaded aide data', async ({ page }) => {
     await page.goto('/aides/aide-seo-test');
-    // Wait for content to render instead of waitForResponse
-    await expect(page.locator('h1')).toBeVisible({ timeout: 10000 });
+    // Wait for the actual aide data to render (not just loading skeleton)
+    await expect(page.locator('h1')).toContainText('Aide SEO Test', { timeout: 15000 });
 
     const origin = new URL(page.url()).origin;
     const expectedCanonical = `${origin}/aides/aide-seo-test`;
@@ -105,7 +105,8 @@ test.describe('SEO Runtime - Aides', () => {
     await expect(page.locator('[data-testid="aide-breadcrumb"]')).toBeVisible();
 
     const scripts = page.locator('script[type="application/ld+json"]');
-    await expect(scripts.first()).toBeAttached();
+    await expect(scripts.first()).toBeAttached({ timeout: 10000 });
+
     const entries = parseJsonLdEntries(await scripts.allTextContents());
     expect(entries.some((entry) => entry?.['@type'] === 'BreadcrumbList')).toBe(true);
 

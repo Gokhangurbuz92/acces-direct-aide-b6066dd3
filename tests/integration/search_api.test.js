@@ -2,24 +2,12 @@ import { vi } from "vitest";
 vi.stubEnv("KV_REST_API_URL", "http://localhost");
 vi.stubEnv("KV_REST_API_TOKEN", "mock-token");
 
-import { db } from '../../src/db/index.js';
-import * as schema from '../../src/db/schema.js';
-import { eq, inArray, and, or, sql } from 'drizzle-orm';
 import { beforeEach, describe, expect, it } from 'vitest';
-import handler from '../../api/_handlers/search.js';
 
-vi.mock('../../api/_utils/db.query.Js', () => ({
-  default: {
-    demarche: {
-      findMany: vi.fn().mockResolvedValue([]),
-    },
-    structure: {
-      findMany: vi.fn().mockResolvedValue([]),
-    },
-    actualite: {
-      findMany: vi.fn().mockResolvedValue([]),
-    },
-  },
+// Mock rate limiter to always allow
+vi.mock('../../api/_utils/rateLimit.js', () => ({
+    checkRateLimit: vi.fn().mockResolvedValue({ allowed: true }),
+    getClientIp: vi.fn().mockReturnValue('127.0.0.1'),
 }));
 
 vi.mock('../../api/lib/gemini-embedding.js', () => ({
@@ -30,6 +18,23 @@ vi.mock('../../api/lib/hybrid-search.js', () => ({
   searchAidesHybrid: vi.fn(),
 }));
 
+// Mock cachedSearch to bypass Redis and call the callback directly
+vi.mock('../../api/lib/search-cache.js', () => ({
+    cachedSearch: vi.fn(async (_key, cb) => ({ data: await cb(), cached: false })),
+}));
+
+// Mock DB queries for cross-entity search (demarches, structures, actualites)
+vi.mock('../../src/db/index.js', () => ({
+    db: {
+        query: {
+            Demarche: { findMany: vi.fn().mockResolvedValue([]) },
+            Structure: { findMany: vi.fn().mockResolvedValue([]) },
+            Actualite: { findMany: vi.fn().mockResolvedValue([]) },
+        },
+    },
+}));
+
+import handler from '../../api/_handlers/search.js';
 import { generateEmbedding } from '../../api/lib/gemini-embedding.js';
 import { searchAidesHybrid } from '../../api/lib/hybrid-search.js';
 

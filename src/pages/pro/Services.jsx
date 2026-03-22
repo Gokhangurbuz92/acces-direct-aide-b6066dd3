@@ -319,7 +319,7 @@ export default function ProServices() {
                   <a
                     href={publicRdvUrl}
                     target="_blank"
-                    rel="noreferrer"
+                    rel="noopener noreferrer"
                     className="inline-flex items-center gap-1 text-indigo-700 hover:underline"
                     aria-label="Ouvrir la page publique de prise de rendez-vous"
                   >

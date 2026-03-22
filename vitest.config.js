@@ -9,6 +9,10 @@ export default defineConfig({
   },
   test: {
     globals: true,
+    // Integration tests share a single DB — parallel file execution causes
+    // race conditions (e.g. afterEach deleting all rows from Aide table).
+    fileParallelism: false,
+    testTimeout: 30000,
     exclude: [
       'node_modules/**',
       'dist/**',

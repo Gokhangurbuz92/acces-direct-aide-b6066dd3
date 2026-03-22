@@ -132,17 +132,20 @@ const createdEntities = [];
 afterEach(async () => {
   if (createdEntities.length === 0) return;
 
+  // Delete only review queue items belonging to test entities (not all items)
   const entityIds = createdEntities.map((entry) => entry.id);
-  await await db.delete(schema.ReviewQueueItem);
+  for (const id of entityIds) {
+    await db.delete(schema.ReviewQueueItem).where(eq(schema.ReviewQueueItem.entityId, id));
+  }
 
   const aideIds = createdEntities.filter((entry) => entry.type === 'aide').map((entry) => entry.id);
   const demarcheIds = createdEntities.filter((entry) => entry.type === 'demarche').map((entry) => entry.id);
 
-  if (aideIds.length > 0) {
-    await await db.delete(schema.Aide);
+  for (const id of aideIds) {
+    await db.delete(schema.Aide).where(eq(schema.Aide.id, id));
   }
-  if (demarcheIds.length > 0) {
-    await await db.delete(schema.Demarche);
+  for (const id of demarcheIds) {
+    await db.delete(schema.Demarche).where(eq(schema.Demarche.id, id));
   }
 
   createdEntities.length = 0;

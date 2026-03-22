@@ -3,6 +3,7 @@ import { db } from '../../../src/db/index.js';
 import { createGeminiBreaker } from '../../lib/gemini-circuit-breaker.js';
 import { ReviewQueueItem, AuditLog } from '../../../src/db/schema.js';
 import { requireProAuth } from '../../_utils/auth.js';
+import { recordMetric } from '../../lib/gemini-metrics.js';
 
 /**
  * Agent Scheduler API (Pro-only)
@@ -37,12 +38,18 @@ async function handler(req, res) {
         return res.status(405).json({ error: 'Méthode non autorisée' });
     }
 
+    // Feature flag — agents can be disabled without redeployment
+    if (process.env.ENABLE_AI_AGENT !== 'true') {
+        return res.status(503).json({ error: 'AI agents are disabled', flag: 'ENABLE_AI_AGENT' });
+    }
+
     const { poleId, categoryId } = req.body || {};
     if (!poleId) {
         return res.status(400).json({ error: 'poleId requis.' });
     }
 
-    const category = categoryId || 'toutes catégories';
+    // Sanitize category input against prompt injection
+    const category = String(categoryId || 'toutes catégories').replace(/<[^>]*>/g, '').slice(0, 100);
 
     try {
         // 1. Real sub-agent discovery via Gemini 2.0 Flash
@@ -59,16 +66,29 @@ async function handler(req, res) {
 
             try {
                 const breaker = createGeminiBreaker((p) => model.generateContent(p));
+                const startTime = Date.now();
                 const result = await breaker.fire(prompt);
 
                 // Check for circuit breaker fallback
                 if (result && result.fallback) {
                     logger.warn('[Scheduler] Circuit breaker fallback — skipping Gemini');
+                    recordMetric({ type: 'scheduler', model: 'gemini-2.0-flash', latencyMs: Date.now() - startTime, success: false, circuitBreakerOpen: true });
                     discoveries = [];
                 } else {
                     const response = await result.response;
                     const raw = response.text() || '[]';
                     const cleaned = raw.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
+
+                    recordMetric({
+                        type: 'scheduler',
+                        model: 'gemini-2.0-flash',
+                        promptTokens: response.usageMetadata?.promptTokenCount || 0,
+                        completionTokens: response.usageMetadata?.candidatesTokenCount || 0,
+                        totalTokens: response.usageMetadata?.totalTokenCount || 0,
+                        latencyMs: Date.now() - startTime,
+                        success: true,
+                    });
+
                     try {
                         discoveries = JSON.parse(cleaned);
                     } catch {
@@ -80,13 +100,11 @@ async function handler(req, res) {
             }
         }
 
-        // 2. Superior agent analysis — auto-validate if confidence > 95
-        const validated = discoveries.filter((d) => (d.confidence || 0) > 95);
-        const pending = discoveries.filter((d) => (d.confidence || 0) <= 95);
-
-        // 3. Submit high-confidence findings to review queue
+        // 2. ALL discoveries go to review queue (NO auto-validation)
+        // Previously auto-validated at confidence > 95 — removed for safety.
+        // A human must always review AI-generated content.
         let submitted = 0;
-        for (const item of validated) {
+        for (const item of discoveries) {
             try {
                 const entityId = `sched-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
                 await db.insert(ReviewQueueItem).values({
@@ -96,13 +114,13 @@ async function handler(req, res) {
                         reason: 'AI_SCHEDULED_DISCOVERY',
                         severity: 'LOW',
                         status: 'OPEN',
-                        details: JSON.stringify({
+                        details: {
                             source: item.source || 'Gemini Search',
                             summary: item.summary || '',
                             category,
-                            confidence: item.confidence,
+                            confidence: item.confidence || 0,
                             scheduledBy: req.user?.userId || 'system',
-                        }),
+                        },
                 });
                 submitted++;
             } catch {
@@ -110,19 +128,21 @@ async function handler(req, res) {
             }
         }
 
-        // 4. Audit trail
+        logger.info({ poleId, category, discovered: discoveries.length, submitted }, '[Scheduler] All results queued for human review');
+
+        // 3. Audit trail
         await db.insert(AuditLog).values({
                 action: 'AI_HIVE_ENRICHMENT_CYCLE',
-                entityId: poleId,
+                entityId: String(poleId).slice(0, 255),
                 entityType: 'CONTENT_FACTORY',
-                details: JSON.stringify({
+                details: {
                     category,
                     discovered: discoveries.length,
-                    autoValidated: validated.length,
-                    pendingReview: pending.length,
+                    autoValidated: 0,  // No more auto-validation
+                    pendingReview: discoveries.length,
                     submitted,
                     aiPowered: Boolean(ai),
-                }),
+                },
                 ipHash: 'AI_ORCHESTRATOR',
         });
 
@@ -131,8 +151,8 @@ async function handler(req, res) {
             poleId,
             categoryId: category,
             discovered: discoveries.length,
-            autoValidated: validated.length,
-            pendingReview: pending.length,
+            autoValidated: 0,
+            pendingReview: discoveries.length,
             submitted,
             nextSchedule: 'Prochain cycle automatique',
         });

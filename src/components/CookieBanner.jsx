@@ -75,7 +75,7 @@ export default function CookieBanner() {
                 onClick={accept}
                 id="cookie-accept-btn"
                 style={{
-                    background: '#3b82f6',
+                    background: '#1d4ed8',
                     color: 'white',
                     border: 'none',
                     padding: '8px 24px',
@@ -86,10 +86,10 @@ export default function CookieBanner() {
                     transition: 'background 0.2s',
                     whiteSpace: 'nowrap',
                 }}
-                onMouseOver={(e) => { e.target.style.background = '#2563eb'; }}
-                onFocus={(e) => { e.target.style.background = '#2563eb'; }}
-                onMouseOut={(e) => { e.target.style.background = '#3b82f6'; }}
-                onBlur={(e) => { e.target.style.background = '#3b82f6'; }}
+                onMouseOver={(e) => { e.target.style.background = '#1e40af'; }}
+                onFocus={(e) => { e.target.style.background = '#1e40af'; }}
+                onMouseOut={(e) => { e.target.style.background = '#1d4ed8'; }}
+                onBlur={(e) => { e.target.style.background = '#1d4ed8'; }}
             >
                 Accepter
             </button>

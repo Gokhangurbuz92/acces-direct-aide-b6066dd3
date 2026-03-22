@@ -15,6 +15,7 @@ export function sanitizePromptInput(input, maxLength = 2000) {
     .replace(/```[\s\S]*?```/g, '')      // Strip markdown code blocks
     .replace(/\{[\s\S]*?\}/g, '')        // Strip JSON-like injections
     .replace(/\\/g, '')                  // Strip backslashes
+    // eslint-disable-next-line no-control-regex
     .replace(/[\x00-\x08\x0B\x0C\x0E-\x1F]/g, '') // Strip control chars
     .trim()
     .slice(0, maxLength);

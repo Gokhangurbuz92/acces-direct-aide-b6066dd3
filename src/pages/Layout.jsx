@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, lazy, Suspense } from 'react';
 import { Link } from 'react-router-dom';
 import Logo from '@/components/Brand/Logo';
 import { createPageUrl } from '@/utils';
@@ -19,12 +19,14 @@ import {
 } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { AuthHeaderActions, AuthMobileActions } from '@/components/auth/AuthHeaderActions';
-import AccessibilityPanel from '@/components/ui/AccessibilityPanel';
-import HideScreenButton from '@/components/ui/HideScreenButton';
 import DarkModeToggle from '@/components/ui/DarkModeToggle';
-import ChatAssistant from '@/components/chat/ChatAssistant';
 import { adminClient as client } from '@/api/client';
 import PropTypes from 'prop-types';
+
+// Lazy-load non-critical components to reduce first-paint bundle
+const AccessibilityPanel = lazy(() => import('@/components/ui/AccessibilityPanel'));
+const HideScreenButton = lazy(() => import('@/components/ui/HideScreenButton'));
+const ChatAssistant = lazy(() => import('@/components/chat/ChatAssistant'));
 
 const NAV_ITEMS = [
   { label: 'Accueil', page: 'Home', icon: Home },
@@ -237,7 +239,7 @@ export default function Layout({ children, currentPageName }) {
                 className="sm:hidden inline-flex items-center gap-2 rounded-full px-2.5 py-1.5 transition-colors hover:bg-slate-50/80 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-600 focus-visible:ring-offset-2"
                 aria-label="Aller à l’accueil"
               >
-                <img src="/favicon.svg" alt="Logo AccesDirectAide" className="h-8 w-8" />
+                <img src="/favicon.svg" alt="Logo AccesDirectAide" className="h-8 w-8" width="32" height="32" />
 
               </Link>
               {/* Desktop: Logo + Name */}
@@ -246,7 +248,7 @@ export default function Layout({ children, currentPageName }) {
                 className="hidden sm:inline-flex items-center gap-2.5 rounded-full px-2.5 py-1.5 transition-colors hover:bg-slate-50/80 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-600 focus-visible:ring-offset-2"
                 aria-label="Aller à l'accueil"
               >
-                <img src="/favicon.svg" alt="Logo AccesDirectAide" className="h-9 w-9" />
+                <img src="/favicon.svg" alt="Logo AccesDirectAide" className="h-9 w-9" width="36" height="36" />
                 <span className="text-sm font-bold" style={{ background: 'linear-gradient(135deg, #002D5A 0%, #1e40af 50%, #4F46E5 100%)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>AccesDirectAide</span>
               </Link>
             </div>
@@ -316,7 +318,9 @@ export default function Layout({ children, currentPageName }) {
             {/* Actions */}
             <div className="flex items-center gap-2">
               <DarkModeToggle />
-              <AccessibilityPanel />
+              <Suspense fallback={null}>
+                <AccessibilityPanel />
+              </Suspense>
 
               {/* Menu mobile */}
               <Button
@@ -415,7 +419,7 @@ export default function Layout({ children, currentPageName }) {
             <div>
               <div className="flex items-center gap-3 mb-4">
                 <div className="w-10 h-10 bg-white rounded-lg flex items-center justify-center flex-shrink-0">
-                  <img src="/favicon.svg" alt="Logo" className="h-6 w-6" />
+                  <img src="/favicon.svg" alt="Logo" className="h-6 w-6" width="24" height="24" />
                 </div>
                 <span className="text-xl font-bold text-white">AccesDirectAide</span>
               </div>
@@ -489,11 +493,15 @@ export default function Layout({ children, currentPageName }) {
         </div>
       </footer>
 
-      {/* Chat Assistant */}
-      <ChatAssistant />
+      {/* Chat Assistant — lazy-loaded (not needed for first paint) */}
+      <Suspense fallback={null}>
+        <ChatAssistant />
+      </Suspense>
 
       {/* Privacy Screen — Bouton "Cacher mon écran" */}
-      <HideScreenButton />
+      <Suspense fallback={null}>
+        <HideScreenButton />
+      </Suspense>
 
     </div>
   );

@@ -47,6 +47,10 @@
     {
       "path": "/api/cron/gdpr-purge",
       "schedule": "0 3 * * 0"
+    },
+    {
+      "path": "/api/cron/health-alert",
+      "schedule": "*/5 * * * *"
     }
   ],
   "redirects": [

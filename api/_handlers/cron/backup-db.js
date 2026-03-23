@@ -1,9 +1,10 @@
 import { getCronAuth } from '../../_utils/cronAuth.js';
 import { db } from '../../../src/db/index.js';
-import { Aide, ConversationLog } from '../../../src/db/schema.js';
+import { Aide, Structure, Demarche, Actualite, ConversationLog, AuditLog, CronRun, ReviewQueueItem, IngestJob } from '../../../src/db/schema.js';
 import { storage } from '../../lib/storage.js';
 import { logger } from '../../lib/logger.js';
 import * as Sentry from '@sentry/node';
+import { sql } from 'drizzle-orm';
 
 export default async function handler(req, res) {
     const auth = getCronAuth(req);
@@ -17,48 +18,80 @@ export default async function handler(req, res) {
 
     try {
         const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19);
-        const filename = `backups/ada-backup-${timestamp}.json`;
         
-        logger.info(`[BACKUP] 🚀 Démarrage de la sauvegarde Cloud...`);
+        logger.info(`[BACKUP] 🚀 Démarrage de la sauvegarde complète...`);
 
-        // 1. Catalogue d'aides
-        const aides = await db.query.Aide.findMany();
+        // Fetch all critical tables in parallel
+        const [aides, structures, demarches, actualites, conversationLogs, auditLogs, cronRuns, reviewItems, ingestJobs] = await Promise.all([
+            db.query.Aide.findMany(),
+            db.query.Structure.findMany(),
+            db.query.Demarche.findMany(),
+            db.query.Actualite.findMany(),
+            db.query.ConversationLog.findMany({ orderBy: (cl, { desc }) => [desc(cl.createdAt)] }),
+            db.query.AuditLog.findMany({ orderBy: (al, { desc }) => [desc(al.createdAt)], limit: 5000 }),
+            db.query.CronRun.findMany({ orderBy: (cr, { desc }) => [desc(cr.startedAt)], limit: 1000 }),
+            db.query.ReviewQueueItem.findMany(),
+            db.query.IngestJob.findMany({ orderBy: (ij, { desc }) => [desc(ij.createdAt)], limit: 500 }),
+        ]);
 
-        // 2. Logs de conversation
-        const logs = await db.query.ConversationLog.findMany({
-            orderBy: (cl, { desc }) => [desc(cl.createdAt)],
-        });
+        // User counts only (no PII in backup)
+        const userCounts = await db.execute(sql`
+            SELECT
+                (SELECT COUNT(*) FROM "CitizenUser") AS citizen_count,
+                (SELECT COUNT(*) FROM "ProUser") AS pro_count,
+                (SELECT COUNT(*) FROM "AdminUser") AS admin_count
+        `);
+        const counts = userCounts.rows?.[0] || {};
 
-        // 3. Build backup package
+        // Build backup package
         const backupData = {
             metadata: {
-                version: '1.0',
+                version: '2.0',
                 timestamp: new Date().toISOString(),
                 counts: {
                     aides: aides.length,
-                    conversationLogs: logs.length,
+                    structures: structures.length,
+                    demarches: demarches.length,
+                    actualites: actualites.length,
+                    conversationLogs: conversationLogs.length,
+                    auditLogs: auditLogs.length,
+                    cronRuns: cronRuns.length,
+                    reviewItems: reviewItems.length,
+                    ingestJobs: ingestJobs.length,
+                    citizenUsers: Number(counts.citizen_count || 0),
+                    proUsers: Number(counts.pro_count || 0),
+                    adminUsers: Number(counts.admin_count || 0),
                 },
             },
             data: {
                 aides,
-                conversationLogs: logs,
+                structures,
+                demarches,
+                actualites,
+                conversationLogs,
+                auditLogs,
+                cronRuns,
+                reviewItems,
+                ingestJobs,
+                // Note: User tables NOT included in backup (PII protection).
+                // Use Neon point-in-time recovery for user data restoration.
             },
         };
 
         const buffer = Buffer.from(JSON.stringify(backupData, null, 2), 'utf-8');
 
-        // 4. Upload to S3/R2 directly
+        // Upload to S3/R2
         const storageKey = await storage.upload(buffer, 'application/json');
 
         const sizeMB = (buffer.length / (1024 * 1024)).toFixed(2);
-        logger.info(`[BACKUP] ✅ Sauvegarde réussie sur le Cloud: ${storageKey} (${sizeMB} MB)`);
+        logger.info(`[BACKUP] ✅ Sauvegarde complète réussie: ${storageKey} (${sizeMB} MB, ${Object.keys(backupData.data).length} tables)`);
         
         return res.status(200).json({ 
             success: true, 
             filename: storageKey,
             sizeMB,
-            aides: aides.length,
-            logs: logs.length
+            tables: Object.keys(backupData.data).length,
+            counts: backupData.metadata.counts,
         });
 
     } catch (error) {

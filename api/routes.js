@@ -41,6 +41,7 @@ export const routes = [
     { path: 'auth/forgot-password', match: 'exact', handler: () => import('./_handlers/auth/forgot-password.js') },
     { path: 'auth/reset-password', match: 'exact', handler: () => import('./_handlers/auth/reset-password.js') },
     { path: 'auth/delete-account', match: 'exact', handler: () => import('./_handlers/auth/delete-account.js') },
+    { path: 'auth/export-data', match: 'exact', handler: () => import('./_handlers/auth/export-data.js') },
 
     // --- Pro Module ---
     { path: 'pro/auth/login', match: 'exact', handler: () => import('./_handlers/pro/auth/login.js') },

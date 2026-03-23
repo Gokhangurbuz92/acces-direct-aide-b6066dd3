@@ -2,7 +2,10 @@ import { env } from '../../_utils/env.js';
 import { signAdminSessionToken } from '../../_utils/auth.js';
 import { db } from '../../../src/db/index.js';
 import { AdminUser, CitizenUser } from '../../../src/db/schema.js';
-import { eq } from 'drizzle-orm';
+import { eq, sql } from 'drizzle-orm';
+
+const MAX_FAILED_ATTEMPTS = 5;
+const LOCKOUT_DURATION_MS = 15 * 60 * 1000; // 15 minutes
 import { checkRateLimit, getRateLimitStatus } from '../../_utils/rateLimit.js';
 import { validate } from '../../_utils/validate.js';
 import { loginSchema } from '../../_utils/schemas.js';
@@ -124,8 +127,32 @@ async function loginHandler(req, res) {
             return res.status(401).json({ error: 'Invalid credentials' });
         }
 
+        // Check if account is locked out
+        if (user.lockoutUntil && new Date(user.lockoutUntil) > new Date()) {
+            const remainingMs = new Date(user.lockoutUntil).getTime() - Date.now();
+            const remainingMin = Math.ceil(remainingMs / 60000);
+            return res.status(423).json({
+                error: 'Account temporarily locked',
+                code: 'ACCOUNT_LOCKED',
+                message: `Trop de tentatives. Réessayez dans ${remainingMin} minute(s).`,
+            });
+        }
+
         const passwordOk = await verifyPassword(password, user.passwordHash);
         if (!passwordOk) {
+            // Increment failed attempts
+            const newAttempts = (user.failedLoginAttempts || 0) + 1;
+            const updates = { failedLoginAttempts: newAttempts };
+
+            // Lock account after MAX_FAILED_ATTEMPTS
+            if (newAttempts >= MAX_FAILED_ATTEMPTS) {
+                updates.lockoutUntil = new Date(Date.now() + LOCKOUT_DURATION_MS);
+            }
+
+            await db.update(CitizenUser)
+                .set(updates)
+                .where(eq(CitizenUser.id, user.id));
+
             return res.status(401).json({ error: 'Invalid credentials' });
         }
 
@@ -134,6 +161,13 @@ async function loginHandler(req, res) {
                 error: 'Email verification required',
                 code: 'EMAIL_NOT_VERIFIED',
             });
+        }
+
+        // Reset failed attempts on successful login
+        if (user.failedLoginAttempts > 0 || user.lockoutUntil) {
+            await db.update(CitizenUser)
+                .set({ failedLoginAttempts: 0, lockoutUntil: null })
+                .where(eq(CitizenUser.id, user.id));
         }
 
         const sessionToken = signUserSessionToken({

@@ -486,6 +486,8 @@ export const CitizenUser = pgTable('CitizenUser', {
 	phone: text('phone'),
 	phoneVerifiedAt: timestamp('phoneVerifiedAt', { precision: 3 }),
 	notificationEmailEnabled: boolean('notificationEmailEnabled').notNull().default(true),
+	failedLoginAttempts: integer('failedLoginAttempts').notNull().default(0),
+	lockoutUntil: timestamp('lockoutUntil', { precision: 3 }),
 	createdAt: timestamp('createdAt', { precision: 3 }).notNull().defaultNow(),
 	updatedAt: timestamp('updatedAt', { precision: 3, mode: 'date' }).$defaultFn(() => new Date()).$onUpdate(() => new Date()).notNull()
 });

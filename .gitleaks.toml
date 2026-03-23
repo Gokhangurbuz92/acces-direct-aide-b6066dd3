@@ -28,3 +28,10 @@ id = "generic-api-key"
   paths = [
     '''api/_handlers/auth/outlook-callback\.js$''',
   ]
+
+  [[rules.allowlists]]
+  description = "False-positive: documentation files with example API commands and placeholder tokens"
+  paths = [
+    '''docs/secrets-rotation\.md$''',
+    '''docs/observability\.md$''',
+  ]

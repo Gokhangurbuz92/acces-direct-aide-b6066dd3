@@ -60,6 +60,13 @@
 - Si on dépasse 10 000 utilisateurs actifs
 - Si un audit de sécurité externe le recommande
 
+## CSP Nonce — Status
+
+**Actuel** : SHA-256 hashes statiques dans `vercel.json`
+**Idéal** : Nonce dynamique par requête (middleware edge Vercel)
+**Risque actuel** : Faible — les scripts sont tous connus et hashés
+**Quand** : Si audit sécurité le recommande ou ajout de scripts inline dynamiques
+
 ## Signalement vulnérabilité
 
 Si vous trouvez une vulnérabilité de sécurité :

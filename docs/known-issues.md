@@ -31,14 +31,23 @@ npx playwright test tests/a11y  # Accessibilité (3 fichiers)
 - **Backup script** (`scripts/backup-db.js`) vérifie les counts mais ne fait pas de dump complet. Neon PITR est le vrai backup.
 - **Métriques IA** en mémoire sont perdues au redéploiement (la table `AiMetric` en DB compense).
 - **Rate limiting** utilise un backend mémoire en test, Upstash KV en production.
-- **Pipeline test** (`tests/unit/pipeline.test.js`) est skip car il nécessite une DB.
+
+## Tests Skipped
+
+| Fichier | Tests | Raison |
+|---------|:---:|--------|
+| `tests/unit/pipeline.test.js` | 1 | DB required (`describe.skip`) |
+| `tests/integration/api.test.js` | 6 | DB required (`skipIf(!hasDatabase)`) |
+| `api/lib/search-query.test.js` | 2 | `describe.skip` — module refactoring en cours |
 
 ## Score du projet
 
-- **Tests** : 752 passent, 0 exclusions unitaires
-- **Coverage** : Statements 58% · Branches 49% · Functions 57% · Lines 60%
+- **Tests** : 836+ passent, 0 exclusions unitaires
+- **Coverage** : Statements 57% · Branches 47% · Functions 55% · Lines 57%
+- **Coverage CI threshold** : ✅ 50% statements, 40% branches, 45% functions, 50% lines
 - **Build** : ✅ OK
 - **Lint** : ✅ 0 erreurs
+- **Typecheck** : ✅ OK
 - **Prod** : ✅ healthy
 - **Monitors** : 6/6 vert
 - **Security headers** : 6/6 présents

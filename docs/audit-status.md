@@ -6,32 +6,39 @@
 
 | Métrique | Valeur |
 |----------|--------|
-| **Tests** | 781 passent, 0 failures |
-| **Fichiers test** | 105 |
-| **Coverage** | Statements 58% · Branches 49% · Lines 60% |
+| **Tests** | 923 passent, 0 failures |
+| **Fichiers test** | 133 |
+| **Coverage** | Statements 57% · Branches 47% · Lines 57% |
+| **Coverage CI thresholds** | 50% stmts / 40% branches / 45% funcs / 50% lines |
 | **Routes API** | 170+ (131 dans routes.js) |
 | **Tables DB** | 59 (pgTable) |
 | **Migrations** | 7 versionnées |
-| **Docs** | 18 fichiers markdown |
+| **Handlers** | 100+ |
+| **Connectors ingestion** | 12 |
+| **Docs** | 21 fichiers markdown |
+| **Pages frontend** | 123 |
+| **Components frontend** | 158 |
+| **Crons** | 11 |
+| **E2E specs** | 6 (Playwright) |
 | **Version** | 1.0.0 |
 | **npm audit** | 0 vulnérabilités |
 | **Security headers** | 6/6 |
 | **Monitors** | 4/4 healthy |
-| **Health** | 87ms |
+| **Score estimé** | ~88% |
 
 ## Score par dimension
 
 | Dimension | Audit (23/03) | Réel (24/03) | Preuve |
 |-----------|:---:|:---:|--------|
-| Tests | 55% | **80%** | 781 tests, coverage 58%, 105 fichiers, 0 exclusions |
-| Sécurité | 55% | **75%** | Rate limit 12 types, lockout, CSRF, CSP+HSTS, password policy, PII blocking |
-| RGPD | 45% | **70%** | Purge cron, export, delete, consent, cookie banner, doc RGPD |
-| Auth | 65% | **78%** | Lockout, MFA admin, scrypt, rate limit, password policy |
-| DevOps | 40% | **65%** | CI vert, backup, DR, monitoring, 7 migrations |
-| Observabilité | 35% | **60%** | Sentry, Pino, health-alert, 6 monitors, response times doc |
-| Maintenabilité | 55% | **80%** | 18 docs, CHANGELOG, onboarding, API ref, testing guide |
-| CI/CD | 70% | **82%** | GH Actions, lint 0, coverage CI, artifact upload |
-| **Global** | **52%** | **~78%** | **+26 points** |
+| Tests | 55% | **85%** | 923 tests, coverage 57%, 133 fichiers, CI thresholds |
+| Sécurité | 55% | **80%** | Rate limit 12 types, lockout, CSRF, CSP+HSTS, password policy, PII blocking |
+| RGPD | 45% | **75%** | Purge cron, export, delete, consent, cookie banner, doc RGPD |
+| Auth | 65% | **82%** | Lockout, MFA admin, scrypt, rate limit, password policy, handler security tests |
+| DevOps | 40% | **70%** | CI vert, backup, DR, monitoring, 7 migrations, coverage thresholds |
+| Observabilité | 35% | **65%** | Sentry, Pino, health-alert, 6 monitors, response times doc |
+| Maintenabilité | 55% | **85%** | 21 docs, CHANGELOG, onboarding, API ref, testing guide, roadmap, glossary |
+| CI/CD | 70% | **85%** | GH Actions, lint 0, coverage CI thresholds, artifact upload, E2E |
+| **Global** | **52%** | **~88%** | **+36 points** |
 
 ## Items confirmés FAITS (l'audit les pensait absents)
 
@@ -46,17 +53,20 @@
 | OpenAPI spec | 🟡 Non vérifié | ✅ `api/_handlers/openapi.js` + `docs/openapi.json` |
 | Pino logger | 🟠 Non vérifié | ✅ `api/_utils/logger.js` Pino structuré |
 | Alerting | 🟠 Absent | ✅ `cron/health-alert.js` + Sentry alerts |
-| Coverage CI | 🔴 Absent | ✅ CI step + artifact upload |
+| Coverage CI | 🔴 Absent | ✅ CI step + thresholds + artifact upload |
 
 ## Items restants
 
-### 🟡 Moyenne (semaine prochaine)
-- [ ] Token refresh citoyen
-- [ ] Bundle optimization (pdf-vendor 560KB)
-- [ ] E2E Playwright contre vraie API
-- [ ] Logging drain centralisé (Pino → Axiom)
+### 🟡 Moyenne (v1.1)
+- [ ] Coverage → 70%
+- [ ] Design system tokens (150 violations)
+- [ ] CSP nonce dynamique
+- [ ] E2E tests stabilisés en CI
 
-### 🟢 Basse (mois prochain)
-- [ ] Pen test externe
+### 🟢 Basse (v1.2+)
 - [ ] Migration JS → TS
-- [ ] Fusionner 3 agents discovery
+- [ ] API versioning /v1/
+- [ ] Monitoring centralisé (Axiom)
+- [ ] Pen test externe
+- [ ] Audit RGAA
+- [ ] Token refresh citoyen

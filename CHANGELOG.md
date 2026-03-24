@@ -2,6 +2,17 @@
 
 ## [Unreleased] — 2026-03-24
 
+### Added (Sprint 10)
+- Tests ingestion connectors (6), AI contracts (7), frontend structure (7), RGPD compliance (7), build config (5)
+- docs/audit-status.md — métriques finales
+
+### Added (Sprint 9)
+- Coverage CI thresholds (50/40/45/50) dans `vitest.config.js`
+- Tests handler security : auth (6), admin (3), pro (2), cron (all), critical (13), public (14), openapi (2)
+- docs/roadmap.md — v1.0, v1.1, v1.2, v2.0
+- docs/security.md — section CSP nonce status
+- docs/known-issues.md — table tests skipped, métriques mises à jour
+
 ### Added
 - docs/monitoring.md — documentation monitoring
 - docs/disaster-recovery.md — procédure DR

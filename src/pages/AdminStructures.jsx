@@ -25,10 +25,11 @@ export default function AdminStructures() {
     const queryClient = useQueryClient();
     const { toast } = useToast();
 
-    const { data: structures = [], isLoading } = useQuery({
+    const { data: rawStructures, isLoading } = useQuery({
         queryKey: ['admin-structures'],
-        queryFn: () => client.entities.Structure.list('-updated_date'),
+        queryFn: () => client.entities.Structure.list('-updatedAt'),
     });
+    const structures = Array.isArray(rawStructures) ? rawStructures : [];
 
     const deleteMutation = useMutation({
         mutationFn: (id) => client.entities.Structure.delete(id),

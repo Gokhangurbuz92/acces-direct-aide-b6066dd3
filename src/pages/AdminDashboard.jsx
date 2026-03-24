@@ -26,7 +26,7 @@ import {
  * Données live depuis GET /api/admin/stats.
  */
 export default function AdminDashboard() {
-    const { data, isLoading, error } = useQuery({
+    const { data: rawData, isLoading, error } = useQuery({
         queryKey: ['admin-stats'],
         queryFn: () => client.get('/api/admin/stats').then(r => r.data),
         refetchInterval: 30_000, // Refresh every 30s
@@ -52,11 +52,14 @@ export default function AdminDashboard() {
         );
     }
 
-    const stats = data?.counts || {};
-    const features = data?.features || {};
-    const infra = data?.infrastructure || {};
-    const activity = data?.activity || {};
-    const rag = data?.rag || { total: 0, indexed: 0, missing: 0 };
+    // API returns { success, data: { counts, features, ... } }
+    // client.get() wraps in { data: payload }, so rawData = { success, data: {...} }
+    const inner = rawData?.data || rawData || {};
+    const stats = inner.counts || {};
+    const features = inner.features || {};
+    const infra = inner.infrastructure || {};
+    const activity = inner.activity || {};
+    const rag = inner.rag || { total: 0, indexed: 0, missing: 0 };
 
     return (
         <div className="min-h-screen bg-slate-50">

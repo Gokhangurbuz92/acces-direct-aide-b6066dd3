@@ -73,6 +73,7 @@ const SIDEBAR_SECTIONS = [
         icon: Bot,
         items: [
             { label: 'Orchestrateur', to: '/admin/orchestrator', icon: Bot },
+            { label: 'Métriques IA', to: '/admin/ai-metrics', icon: Activity },
             { label: 'Features', to: '/admin/features', icon: ToggleRight },
             { label: 'Conversations', to: '/admin/conversations', icon: MessagesSquare },
             { label: 'Dashboard National', to: '/admin/national', icon: Globe },
@@ -86,6 +87,7 @@ const SIDEBAR_SECTIONS = [
             { label: 'Health', to: '/admin/health', icon: HeartPulse },
             { label: 'Observability', to: '/admin/observability', icon: Activity },
             { label: 'Runs', to: '/admin/runs', icon: Play },
+            { label: 'Logs', to: '/admin/logs', icon: ListChecks },
             { label: 'Audit', to: '/admin/audit', icon: Shield },
         ]
     },

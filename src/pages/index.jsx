@@ -144,6 +144,8 @@ const AdminFeatures = lazy(() => import("./AdminFeatures.jsx"));
 const AdminConversations = lazy(() => import("./AdminConversations.jsx"));
 const AdminNationalDashboard = lazy(() => import("./admin/NationalDashboard.jsx"));
 const AIOrchestrator = lazy(() => import("./admin/AIOrchestrator.jsx"));
+const AdminAiMetrics = lazy(() => import("./AdminAiMetrics.jsx"));
+const AdminLogs = lazy(() => import("./AdminLogs.jsx"));
 
 // Pro
 const ProLayout = lazy(() => import("./pro/ProLayout.jsx"));
@@ -289,6 +291,8 @@ function PagesContent() {
                                     <Route path="observability" element={<AdminObservability />} />
                                     <Route path="runs" element={<AdminRuns />} />
                                     <Route path="audit" element={<AdminAudit />} />
+                                    <Route path="ai-metrics" element={<AdminAiMetrics />} />
+                                    <Route path="logs" element={<AdminLogs />} />
                                     <Route path="parametres" element={<AdminParametres />} />
                                 </Route>
                             </Routes>

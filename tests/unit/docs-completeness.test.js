@@ -9,7 +9,7 @@ describe('Documentation completeness', () => {
     'README.md',
     'LICENSE',
     'CHANGELOG.md',
-    'docs/architecture.md',
+    'docs/ARCHITECTURE.md',
     'docs/CONTRIBUTING.md',
     'docs/api-reference.md',
     'docs/deployment.md',

@@ -103,3 +103,26 @@ Mission : Trouver et organiser des ressources fiables pour les pages du site.
 ### Contenu initial
 
 12 ressources pré-configurées dans `api/lib/seed-resources.js` — toutes sources gouvernementales vérifiées.
+
+## Activation en production
+
+### Étape 1 — Activer le feature flag
+Vercel → Settings → Environment Variables → `ENABLE_AI_AGENT=true` → Redéployer.
+
+### Étape 2 — Tester en dry-run
+```bash
+POST /api/admin/orchestrator
+Body : { "dryRun": true }
+```
+Vérifie que le pipeline tourne sans erreur.
+
+### Étape 3 — Lancer en réel
+```bash
+POST /api/admin/orchestrator
+Body : { "dryRun": false }
+```
+Les agents appellent Gemini → résultats dans ReviewQueue → validation humaine requise.
+
+### Étape 4 — Vérifier
+- `GET /api/admin/ai-metrics` → métriques par agent
+- `GET /api/admin/dashboard` → review queue items

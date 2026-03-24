@@ -5,6 +5,7 @@ import { ReviewQueueItem } from '../../../src/db/schema.js';
 import { eq } from 'drizzle-orm';
 import { verifyAdmin } from '../../_utils/auth.js';
 import { generateText } from '../../lib/gemini.js';
+import { recordMetric } from '../../lib/gemini-metrics.js';
 /**
  * hive-repair.js
  * AI-powered single-item repair agent.
@@ -83,7 +84,8 @@ Ne mets aucun texte avant ou après le JSON.`;
         }
 
         // 3. Call Gemini
-        const responseText = await generateText(prompt, { useSearch: true, metricType: 'hive-scan' });
+        const startTime = Date.now();
+        const responseText = await generateText(prompt, { useSearch: true, metricType: 'hive-repair' });
         const cleanJson = responseText.replace(/```json|```/g, '').trim();
 
         let suggestion;
@@ -112,6 +114,7 @@ Ne mets aucun texte avant ou après le JSON.`;
                 status: 'resolved_by_ai',
         }).where(eq(ReviewQueueItem.id, itemId)).returning();
 
+        recordMetric({ type: 'hive-repair', success: true, latencyMs: Date.now() - startTime });
         logger.info({ itemId, title: reviewItem.title }, 'hive_repair.success');
 
         return res.status(200).json({

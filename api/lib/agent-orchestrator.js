@@ -154,25 +154,61 @@ export class AgentOrchestrator {
     async runClassification(items) {
         if (!items?.length) return [];
         if (this.dryRun) return items.map(i => ({ id: i.id, status: 'dry-run' }));
-        // In production, this will call the Classifier agent
-        logger.info({ msg: 'orchestrator.classification', count: items.length });
-        return items;
+
+        const { Classifier } = await import('./agents/classifier.js');
+        const classifier = new Classifier();
+
+        const results = [];
+        for (const item of items) {
+            try {
+                const result = await classifier.classify(item);
+                results.push(result);
+            } catch (e) {
+                logger.error({ msg: 'orchestrator.classification.item_error', id: item.id, error: e.message });
+                results.push({ id: item.id, ok: false, error: e.message });
+            }
+        }
+        logger.info({ msg: 'orchestrator.classification', count: results.length });
+        return results;
     }
 
     async runFalc(items) {
         if (!items?.length) return [];
         if (this.dryRun) return items.map(i => ({ id: i.id, status: 'dry-run' }));
-        // In production, this will call the FalcWriter agent
-        logger.info({ msg: 'orchestrator.falc', count: items.length });
-        return items;
+
+        const { FalcWriter } = await import('./agents/falc-writer.js');
+        const writer = new FalcWriter();
+
+        const results = [];
+        for (const item of items) {
+            if (item.description_falc && item.description_falc.length > 10) continue;
+            try {
+                const result = await writer.simplify(item);
+                results.push(result);
+            } catch (e) {
+                logger.error({ msg: 'orchestrator.falc.item_error', id: item.id, error: e.message });
+                results.push({ id: item.id, ok: false, error: e.message });
+            }
+        }
+        logger.info({ msg: 'orchestrator.falc', count: results.length });
+        return results;
     }
 
     async runAlerting(items) {
         if (!items?.length) return [];
         if (this.dryRun) return [];
-        // In production, this will call the Alerter agent
-        logger.info({ msg: 'orchestrator.alerting', count: items.length });
-        return [];
+
+        const { Alerter } = await import('./agents/alerter.js');
+        const alerter = new Alerter();
+
+        try {
+            const result = await alerter.notify(items);
+            logger.info({ msg: 'orchestrator.alerting', notified: result.notified });
+            return [result];
+        } catch (e) {
+            logger.error({ msg: 'orchestrator.alerting.error', error: e.message });
+            return [{ ok: false, error: e.message }];
+        }
     }
 }
 

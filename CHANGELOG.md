@@ -2,6 +2,14 @@
 
 ## [Unreleased] — 2026-03-24
 
+### Corrections (Cross-vérification 24/03/2026)
+- Score ajusté : 88% → 80-83% (honnête, vérifié)
+- Bundle : 14 MB → ~2-3 MB (taille dist réelle)
+- Routes : 170+ → ~100-130 (comptage réel)
+- Migrations : 7 → 6 (drizzle/meta/)
+- Security headers : 6/6 → 5/6 (X-XSS déprécié)
+- Charts : pages lazy via React.lazy(), import direct dans la page
+
 ### Added (Sprint 10)
 - Tests ingestion connectors (6), AI contracts (7), frontend structure (7), RGPD compliance (7), build config (5)
 - docs/audit-status.md — métriques finales

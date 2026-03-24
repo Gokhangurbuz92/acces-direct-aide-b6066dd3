@@ -1,0 +1,52 @@
+# Sécurité
+
+> Dernière revue : 2026-03-24
+
+## Authentification
+
+| Type | Méthode | Durée session | MFA |
+|------|---------|:---:|:---:|
+| Admin | JWT (Bearer) | 24h | ✅ TOTP |
+| Pro | JWT (Bearer) | 24h | ✅ TOTP |
+| Citoyen | JWT (HttpOnly cookie) | 7j | ❌ |
+| Crons | `CRON_SECRET` header | N/A | N/A |
+
+## Protections actives
+
+| Mesure | Implémentation | Fichier |
+|--------|---------------|---------|
+| **CSRF** | Double-submit cookie | `api/_utils/csrf.js` |
+| **Rate limiting** | Upstash KV, 12 action types | `api/_utils/rateLimit.js` |
+| **Lockout citoyen** | 5 tentatives → 15min lock | `api/_handlers/auth/login.js` |
+| **Password policy** | 8+ chars, A-Z, a-z, 0-9 | `api/_handlers/auth/signup.js` |
+| **PII blocking** | NIR/IBAN/CB détectés et bloqués | `api/lib/prompt-sanitizer.js` |
+| **Chiffrement PII** | AES-256-GCM | `api/_utils/vault-crypto.js` |
+| **Circuit breaker** | Opossum (Gemini) | `api/_utils/circuit.js` |
+| **Secrets scan** | Gitleaks CI + GitGuardian | `.github/workflows/secrets-scan.yml` |
+| **SAST** | Semgrep CI | `.github/workflows/semgrep.yml` |
+
+## Security Headers (production)
+
+| Header | Valeur |
+|--------|--------|
+| `Strict-Transport-Security` | `max-age=63072000; includeSubDomains; preload` |
+| `X-Content-Type-Options` | `nosniff` |
+| `X-Frame-Options` | `DENY` |
+| `Content-Security-Policy` | `default-src 'self'; script-src 'self' sha256-...` |
+| `Referrer-Policy` | `strict-origin-when-cross-origin` |
+| `Permissions-Policy` | `camera=(), microphone=(), geolocation=()` |
+
+## Hashing
+
+| Usage | Algorithme |
+|-------|-----------|
+| Mots de passe | scrypt (salt + 64 bytes) |
+| Tokens auth | SHA-256 |
+| Chiffrement vault | AES-256-GCM |
+
+## Signalement vulnérabilité
+
+Si vous trouvez une vulnérabilité de sécurité :
+- **Email** : gokhangurbuz92@gmail.com
+- **Ne créez PAS** d'issue publique sur GitHub
+- Nous répondrons dans les 48h

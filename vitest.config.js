@@ -39,6 +39,12 @@ export default defineConfig({
         '*.config.*',
         'public/**',
       ],
+      thresholds: {
+        statements: 50,
+        branches: 40,
+        functions: 45,
+        lines: 50,
+      },
     },
   },
 });

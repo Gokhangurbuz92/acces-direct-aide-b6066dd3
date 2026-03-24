@@ -2,6 +2,15 @@
 
 ## [Unreleased] — 2026-03-24
 
+### Added (Sprint 12)
+- Tests redirects config (3), notification system (4), search/RAG (4)
+- Tests RDV system (7), audit trail (6), crypto contracts (3)
+
+### Added (Sprint 11)
+- Tests handlers avec mocks : login (3), signup (3), dashboard (1), gdpr-purge (1), chat (1)
+- Tests accessibilité contracts (5) : lang, viewport, charset, title, skip-to-content
+- CSP nonce documenté pour v1.1
+
 ### Corrections (Cross-vérification 24/03/2026)
 - Score ajusté : 88% → 80-83% (honnête, vérifié)
 - Bundle : 14 MB → ~2-3 MB (taille dist réelle)

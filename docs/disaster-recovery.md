@@ -30,6 +30,13 @@ Neon conserve les WAL automatiquement → restauration à la seconde près.
 
 ⚠️ **Limitation** : ne couvre pas Structure, Demarche, Users, etc. Complémentaire à Neon PITR.
 
+### Backup script execution status
+- **Script**: `scripts/backup-db.js`
+- **Current load**: Fails to import `src/db/index.js` (module not found). Requires database module to be present.
+- **Dry‑run**: Not available.
+- **Action**: Ensure `src/db/index.js` exists and exports the DB connection, or adjust import path.
+
+
 ### Backup manuel (CLI)
 
 ```bash

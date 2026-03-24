@@ -3,7 +3,7 @@ vi.stubEnv("KV_REST_API_URL", "http://localhost");
 vi.stubEnv("KV_REST_API_TOKEN", "mock-token");
 
 import crypto from 'node:crypto';
-import { afterAll, beforeAll, describe, expect, it } from 'vitest';
+import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 import demarchesHandler from '../../api/_handlers/demarches.js';
 import { db } from '../../src/db/index.js';
 import * as schema from '../../src/db/schema.js';
@@ -49,6 +49,10 @@ describe.skipIf(!hasDatabase)('P10-0 public credibility guards', () => {
   const visibleSlug = `demarche-visible-${suffix}`;
 
   beforeEach(async () => {
+    // Clean up any leftover test data first
+    await db.delete(schema.Demarche).where(eq(schema.Demarche.slug, hiddenSlug));
+    await db.delete(schema.Demarche).where(eq(schema.Demarche.slug, visibleSlug));
+
     const now = new Date();
     await db.insert(schema.Demarche).values([
       {
@@ -82,6 +86,11 @@ describe.skipIf(!hasDatabase)('P10-0 public credibility guards', () => {
         insee_codes: [],
       },
     ]);
+  });
+
+  afterEach(async () => {
+    await db.delete(schema.Demarche).where(eq(schema.Demarche.slug, hiddenSlug));
+    await db.delete(schema.Demarche).where(eq(schema.Demarche.slug, visibleSlug));
   });
 
   it('list endpoint excludes test-labeled demarches on public surface', async () => {

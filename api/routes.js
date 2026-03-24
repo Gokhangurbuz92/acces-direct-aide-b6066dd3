@@ -154,6 +154,7 @@ export const routes = [
     { path: 'admin/alerts', match: 'exact', handler: () => import('./_handlers/admin/alerts.js') },
     { path: 'admin/logs', match: 'exact', handler: () => import('./_handlers/admin/logs.js') },
     { path: 'admin/dashboard', match: 'exact', handler: () => import('./_handlers/admin/dashboard.js') },
+    { path: 'admin/orchestrator', match: 'exact', handler: () => import('./_handlers/admin/orchestrator.js') },
 
     // --- Share ---
     { path: 'share/create', match: 'exact', handler: () => import('./_handlers/share/create.js') },

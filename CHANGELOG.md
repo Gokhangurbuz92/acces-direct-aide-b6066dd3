@@ -2,6 +2,30 @@
 
 ## [Unreleased] — 2026-03-24
 
+### Agent 7 — Curateur de Ressources
+- `api/lib/agents/resource-curator.js` — sources gouv.fr uniquement, 4 types de contenu
+- `api/lib/seed-resources.js` — 12 ressources officielles pré-configurées
+- Tests curator + seed (12 tests)
+- Documentation mise à jour
+
+### 6 Agents spécialisés
+- Agent FALC Writer (`api/lib/agents/falc-writer.js`) — simplification FALC
+- Agent Classifier (`api/lib/agents/classifier.js`) — 12 catégories + 8 audiences
+- Agent Alerter (`api/lib/agents/alerter.js`) — notification pros
+- Orchestrateur étendu à 6 étapes (Discovery→Enrichment→Validation→Classification→FALC→Alerting)
+- Tests : falc-writer (4), classifier (5), alerter (4), orchestrator (+1)
+- Documentation complète (`docs/ai-agents.md`)
+
+### AI Agents Alignment
+- Orchestrateur central (`api/lib/agent-orchestrator.js`) — pipeline Discovery→Enrichment→Validation
+- Module partagé `ai-discovery-core.js` — Gemini logic DRY
+- Endpoint admin POST `/api/admin/orchestrator` (+route)
+- Feature flag `ENABLE_AI_AGENT` ajouté à `hive-repair.js`
+- `hive-scan.js` étendu de 4 à 12 catégories
+- `agent-scheduler.js` délègue à `ai-discovery-core` (supprimé 40 lignes dupliquées)
+- Tests orchestrateur (6) + alignment (9)
+- Documentation `docs/ai-agents.md`
+
 ### Added (Sprint 12)
 - Tests redirects config (3), notification system (4), search/RAG (4)
 - Tests RDV system (7), audit trail (6), crypto contracts (3)

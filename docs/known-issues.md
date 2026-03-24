@@ -28,7 +28,7 @@ npx playwright test tests/a11y  # Accessibilité (3 fichiers)
 
 ## Score du projet
 
-- **Tests** : 749 passent, 0 exclusions unitaires
+- **Tests** : 752 passent, 0 exclusions unitaires
 - **Coverage** : Statements 58% · Branches 49% · Functions 57% · Lines 60%
 - **Build** : ✅ OK
 - **Lint** : ✅ 0 erreurs
@@ -39,3 +39,23 @@ npx playwright test tests/a11y  # Accessibilité (3 fichiers)
 - **DB migrations** : ✅ 7 migrations versionnées
 - **Secrets rotation** : ✅ Documentée
 - **Dernière vérification** : 2026-03-24
+
+## Bundle Size
+
+| Chunk | Taille |
+|-------|--------|
+| `pdf-vendor` | 560 KB |
+| `charts-vendor` | 344 KB |
+| `vendor` (React core) | 240 KB |
+| `react-vendor` | 144 KB |
+| `ui-vendor` | 140 KB |
+| `motion-vendor` | 92 KB |
+| `index.css` | 140 KB |
+| **Total dist/** | **14 MB** |
+
+Date : 2026-03-24
+
+## npm audit
+
+- **Date** : 2026-03-24
+- **Résultat** : 0 vulnérabilités (production)

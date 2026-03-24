@@ -57,6 +57,35 @@ Implémenté via Upstash KV (prod) / mémoire (test). Double rate limit IP + cl�
 
 **50+ fichiers** utilisent `checkRateLimit`. Voir `api/_utils/rateLimit.js` pour la config complète.
 
+## SEO
+
+Vérifié en production — 2026-03-24 :
+
+| Check | Status | Détails |
+|-------|--------|---------|
+| `robots.txt` | ✅ | Allow: / · Disallow: /admin, /api/ |
+| `sitemap.xml` | ✅ | 2 URLs (/, /aides) |
+| HTTP → HTTPS | ✅ | 308 Permanent Redirect |
+| www redirect | ✅ | `accesdirectaide.fr` → `www.accesdirectaide.fr` (308) |
+| Meta tags | ✅ | OG, Twitter Cards, JSON-LD |
+| Canonical URL | ✅ | `<link rel="canonical">` |
+
+## Response Times (production)
+
+Mesuré le 2026-03-24 :
+
+| Endpoint | Temps |
+|----------|-------|
+| `GET /api/health` | ~87ms |
+| `GET /api/monitor/core` | ~851ms (includes DB + KV check) |
+
+## Error Pages
+
+| Scénario | Réponse |
+|----------|---------|
+| API route inexistante | `{"error":"Not Found"}` (JSON) |
+| Page inexistante | SPA client-side (200 + React Router) |
+
 ## Contacts
 - **On‑call Engineer**: `gokhangurbuz92@gmail.com`
 - **Sentry Alerts**: `#alerts` Slack channel

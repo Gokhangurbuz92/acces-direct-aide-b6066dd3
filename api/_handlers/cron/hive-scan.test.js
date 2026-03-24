@@ -73,23 +73,25 @@ describe('Hive Scan', () => {
     expect(res.status).toHaveBeenCalledWith(405);
   });
 
-  it('scans all 4 categories', async () => {
+  it('scans all 12 categories', async () => {
     const res = mockRes();
     await handler(mockReq(), res);
     expect(res.status).toHaveBeenCalledWith(200);
     const j = res.json.mock.calls[0][0];
     expect(j.ok).toBe(true);
-    expect(j.totalFound).toBe(4); // 4 categories × 1 finding
+    expect(j.totalFound).toBe(12); // 12 categories × 1 finding
     expect(j.perCategory).toHaveProperty('LOGEMENT');
     expect(j.perCategory).toHaveProperty('SANTE');
     expect(j.perCategory).toHaveProperty('EMPLOI');
     expect(j.perCategory).toHaveProperty('FAMILLE');
+    expect(j.perCategory).toHaveProperty('HANDICAP');
+    expect(j.perCategory).toHaveProperty('SENIORS');
   });
 
   it('calls recordMetric for each category', async () => {
     const res = mockRes();
     await handler(mockReq(), res);
-    expect(mocks.recordMetric).toHaveBeenCalledTimes(4);
+    expect(mocks.recordMetric).toHaveBeenCalledTimes(12);
     expect(mocks.recordMetric).toHaveBeenCalledWith(expect.objectContaining({ type: 'hive-scan', success: true }));
   });
 

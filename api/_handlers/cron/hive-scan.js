@@ -34,7 +34,11 @@ async function getGenAI() {
     return genAI;
 }
 
-const CATEGORIES = ['LOGEMENT', 'SANTE', 'EMPLOI', 'FAMILLE'];
+const CATEGORIES = [
+    'EMPLOI', 'LOGEMENT', 'SANTE', 'FAMILLE',
+    'HANDICAP', 'ETUDES', 'MOBILITE', 'ENERGIE',
+    'ALIMENTATION', 'NUMERIQUE', 'JUSTICE', 'SENIORS',
+];
 
 /**
  * @param {string} category

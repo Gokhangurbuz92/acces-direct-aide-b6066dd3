@@ -15,6 +15,11 @@ import { generateText } from '../../lib/gemini.js';
  * @param {import('../../_utils/http-types').ApiResponse} res
  */
 export default async function handler(req, res) {
+    // Feature flag — agents can be disabled without redeployment
+    if (process.env.ENABLE_AI_AGENT !== 'true') {
+        return res.status(503).json({ error: 'AI agents are disabled', flag: 'ENABLE_AI_AGENT' });
+    }
+
     const ip = getClientIp(req);
     const rateLimit = await checkRateLimit('ADMIN_API', ip);
     if (!rateLimit.allowed) {

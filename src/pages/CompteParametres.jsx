@@ -453,9 +453,23 @@ function DataTab({ user }) {
                                             <AlertDialogCancel>Annuler</AlertDialogCancel>
                                             <AlertDialogAction
                                                 className="bg-red-600 hover:bg-red-700"
-                                                onClick={() => {
-                                                    // TODO: Implement account deletion API
-                                                    alert('Fonctionnalité bientôt disponible. Contactez-nous via la page contact.');
+                                                onClick={async () => {
+                                                    try {
+                                                        const res = await fetch('/api/auth/delete-account', {
+                                                            method: 'DELETE',
+                                                            credentials: 'include',
+                                                            headers: { 'Content-Type': 'application/json' },
+                                                        });
+                                                        if (!res.ok) {
+                                                            const data = await res.json().catch(() => ({}));
+                                                            throw new Error(data.error || 'Erreur lors de la suppression');
+                                                        }
+                                                        localStorage.removeItem('token');
+                                                        localStorage.removeItem('ada_citizen_prefs');
+                                                        window.location.href = '/?deleted=true';
+                                                    } catch (err) {
+                                                        alert(err.message);
+                                                    }
                                                 }}
                                             >
                                                 Confirmer la suppression

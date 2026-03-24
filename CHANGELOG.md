@@ -9,6 +9,20 @@
 - docs/database.md — schema, migrations, procédures DB
 - docs/CONTRIBUTING.md — guide contribution (session précédente)
 - docs/architecture.md — architecture technique (session précédente)
+- docs/api-reference.md — 170+ routes documentées
+- docs/deployment.md — procédure déploiement, rollback, infra
+- docs/security.md — auth, CSRF, rate limit, headers, token refresh
+- docs/rgpd.md — données, purge, export, chiffrement
+- docs/testing.md — guide tests, conventions, E2E
+- docs/onboarding.md — plan onboarding 3 jours
+- docs/troubleshooting.md — 8 scénarios de debug
+- docs/glossary.md — 30 termes techniques
+- LICENSE (MIT)
+- E2E smoke tests Playwright (`e2e/smoke-prod.spec.js`)
+- Contract tests : cron, routes, OpenAPI, security headers, schema, rate limit, logger, handler, middleware, env, vercel config, package config, docs completeness
+- Account deletion connecté au handler API (`CompteParametres.jsx`)
+- Feature flags documentés (`ENABLE_AI_AGENT`, `ENABLE_DS_INGESTION`)
+- Token refresh décision documentée dans security.md
 - Prompt sanitizer (api/lib/prompt-sanitizer.js)
 - Log store centralisé (api/lib/log-store.js)
 - Dashboard opérationnel (/api/admin/dashboard)

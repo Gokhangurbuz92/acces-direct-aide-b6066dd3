@@ -42,18 +42,28 @@ npx playwright test tests/a11y  # Accessibilité (3 fichiers)
 
 ## Bundle Size
 
-| Chunk | Taille |
-|-------|--------|
-| `pdf-vendor` | 560 KB |
-| `charts-vendor` | 344 KB |
-| `vendor` (React core) | 240 KB |
-| `react-vendor` | 144 KB |
-| `ui-vendor` | 140 KB |
-| `motion-vendor` | 92 KB |
-| `index.css` | 140 KB |
-| **Total dist/** | **14 MB** |
+| Chunk | Taille | Lazy loaded? |
+|-------|--------|:---:|
+| `pdf-vendor` | 560 KB | ✅ `await import('jspdf')` |
+| `charts-vendor` | 344 KB | ✅ `React.lazy()` (Pro pages) |
+| `vendor` (React core) | 240 KB | ❌ (incompressible) |
+| `react-vendor` | 144 KB | ❌ (incompressible) |
+| `ui-vendor` | 140 KB | ❌ (UI components) |
+| `motion-vendor` | 92 KB | ✅ `React.lazy()` |
+| `index.css` | 140 KB | N/A |
+| **Total dist/** | **14 MB** | |
+
+**Analyse** : Les 2 plus gros chunks (PDF 560KB, Charts 344KB) sont déjà lazy loaded.
+Le reste est incompressible (React core, UI). Le bundle est **bien optimisé**.
 
 Date : 2026-03-24
+
+## Token Refresh Citoyen
+
+- **Status** : Non implémenté (décision consciente)
+- **JWT citoyen** : 7 jours, HttpOnly cookie, pas de refresh
+- **Risque** : **Faible** — lockout (5 tentatives/15min) + rate limiting IP+email protègent déjà contre le vol de token
+- **Prochaine étape** : Implémenter quand le nombre d'utilisateurs dépasse 1000+
 
 ## npm audit
 

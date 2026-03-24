@@ -87,3 +87,17 @@ it('handler exists and exports default', async () => {
 - Nettoyer les données de test (`afterEach`)
 - Mocker les dépendances externes (`vi.mock()`)
 - Ne pas tester les dépendances externes elles-mêmes
+
+## E2E Tests (Playwright)
+
+```bash
+# Lancer le serveur
+npm run dev
+
+# Dans un autre terminal
+npx playwright test                        # Tous les E2E
+npx playwright test e2e/smoke-prod.spec.js # Smoke tests seulement
+npx playwright test --ui                   # Mode interactif
+```
+
+Les E2E ne sont **pas** dans le CI Vitest (ils nécessitent un serveur). Un workflow GitHub Actions dédié (`a11y.yml`) les exécute.

@@ -6,10 +6,7 @@ import logger from '../../_utils/logger.js';
  * Mission : Notifier les pros des changements
  * pertinents pour leurs bénéficiaires.
  *
- * Note: In production, this will query ProUser and create
- * ProNotification records. Currently a skeleton that logs
- * changes without DB writes until the notification system
- * is fully wired.
+ * Crée des ProNotification en DB pour chaque changement détecté.
  */
 
 export class Alerter {
@@ -26,23 +23,48 @@ export class Alerter {
             return { ok: true, notified: 0 };
         }
 
-        // Log each change for audit trail
-        for (const change of changes) {
-            logger.info({
-                msg: 'agent.alerter.change_detected',
-                changeId: change.id,
-                titre: change.titre,
-                category: change.category,
+        let notified = 0;
+
+        try {
+            const { db } = await import('../../../src/db/index.js');
+            const { ProUser, ProNotification } = await import('../../../src/db/schema.js');
+
+            // Get all pro users (limited for safety)
+            const pros = await db.select({
+                id: ProUser.id,
+                structureId: ProUser.structureId,
+            }).from(ProUser).limit(50);
+
+            for (const change of changes) {
+                for (const pro of pros) {
+                    try {
+                        await db.insert(ProNotification).values({
+                            userId: pro.id,
+                            structureId: pro.structureId || pro.id,
+                            type: 'NEW_AIDE',
+                            title: `Nouvelle aide : ${String(change.titre || 'Sans titre').slice(0, 200)}`,
+                            message: `Une nouvelle aide a été détectée dans la catégorie ${change.category || 'Générale'}.`,
+                        }).onConflictDoNothing();
+                        notified++;
+                    } catch {
+                        // Skip duplicates or constraint violations
+                    }
+                }
+            }
+        } catch (error) {
+            logger.error({
+                msg: 'agent.alerter.db_error',
+                error: error.message,
+                note: 'DB access failed — notifications skipped',
             });
         }
 
         logger.info({
             msg: 'agent.alerter.complete',
             changes: changes.length,
-            notified: 0,
-            note: 'ProNotification creation deferred until notification system is fully wired',
+            notified,
         });
 
-        return { ok: true, notified: 0 };
+        return { ok: true, notified };
     }
 }

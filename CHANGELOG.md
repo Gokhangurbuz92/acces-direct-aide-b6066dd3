@@ -2,6 +2,20 @@
 
 ## [Unreleased] — 2026-03-24
 
+### Sprint final — Tests complets
+- Tests pipeline orchestrateur (7 tests : ordering, timestamps, error resilience)
+- Tests qualité prompts FALC/Classifier/Curator (15 tests)
+- Tests validation seed resources (9 tests : domain whitelist, duplicates)
+- Guide activation production (`docs/ai-agents.md`)
+
+### Agents branchés sur Gemini réel
+- Classifier, FALC Writer → `generateText()` avec `metricType` dédié
+- Alerter → créé réelles `ProNotification` en DB
+- Orchestrateur → importe dynamiquement Classifier, FalcWriter, Alerter
+- Hive Repair → `metricType: 'hive-repair'` + `recordMetric` dédié
+- Tests hive-repair handler (7) + alignment (+5)
+- Guide d'activation production dans `docs/ai-agents.md`
+
 ### Agent 7 — Curateur de Ressources
 - `api/lib/agents/resource-curator.js` — sources gouv.fr uniquement, 4 types de contenu
 - `api/lib/seed-resources.js` — 12 ressources officielles pré-configurées

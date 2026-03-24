@@ -5,6 +5,8 @@ import logger from '../../_utils/logger.js';
  *
  * Mission : Simplifier les textes en FALC
  * (Facile à Lire et à Comprendre)
+ *
+ * Appelle Gemini via generateText() pour simplifier en temps réel.
  */
 
 export const FALC_SYSTEM_PROMPT = `Tu es un expert en rédaction FALC (Facile à Lire et à Comprendre).
@@ -21,49 +23,42 @@ RÈGLES STRICTES :
 9. Commence par l'information la plus importante
 10. Termine par "Comment faire" (les étapes)
 
-FORMAT DE SORTIE JSON :
-{
-  "titre_falc": "Titre simplifié",
-  "description_falc": "Description en 3-5 phrases FALC",
-  "pour_qui": ["Liste des personnes concernées"],
-  "comment_faire": ["Étape 1", "Étape 2", "..."],
-  "montant": "En chiffres simples"
-}
-
-EXEMPLE :
-{
-  "titre_falc": "Aide au logement",
-  "description_falc": "Cette aide vous donne de l'argent pour payer votre loyer. Elle est pour les personnes qui ont peu de revenus. Vous pouvez la demander sur le site de la CAF.",
-  "pour_qui": ["Les locataires", "Les personnes avec peu de revenus"],
-  "comment_faire": ["Allez sur caf.fr", "Créez un compte", "Remplissez le formulaire", "Envoyez vos documents"],
-  "montant": "entre 50€ et 300€ par mois"
-}`;
+FORMAT DE SORTIE :
+TITRE SIMPLIFIÉ : [titre en mots simples]
+DESCRIPTION FALC : [3-5 phrases FALC]
+POUR QUI : [liste des personnes concernées]
+COMMENT FAIRE : [étapes numérotées, max 5]
+MONTANT : [en chiffres simples]`;
 
 export class FalcWriter {
-    constructor(geminiClient) {
-        this.gemini = geminiClient;
+    constructor() {
         this.name = 'falc-writer';
     }
 
     async simplify(aide) {
+        const safeTitle = String(aide.titre || '').slice(0, 255);
+        const safeDesc = String(aide.description || '').slice(0, 2000);
+
         const prompt = `Simplifie cette aide en FALC :
 
-Titre : ${String(aide.titre || '').slice(0, 255)}
-Description : ${String(aide.description || '').slice(0, 2000)}
+Titre : ${safeTitle}
+Description : ${safeDesc}
 Organisme : ${String(aide.organisme || 'Non précisé').slice(0, 100)}
 Montant : ${String(aide.montant || 'Non précisé').slice(0, 100)}
 Conditions : ${String(aide.conditions || 'Non précisé').slice(0, 500)}`;
 
         try {
-            const result = await this.gemini.generateContent({
-                systemInstruction: FALC_SYSTEM_PROMPT,
-                prompt,
-            });
+            const { generateText } = await import('../gemini.js');
+
+            const result = await generateText(
+                FALC_SYSTEM_PROMPT + '\n\n' + prompt,
+                { metricType: 'falc-writer' },
+            );
 
             logger.info({
                 msg: 'agent.falc-writer.success',
                 aideId: aide.id,
-                inputLength: aide.description?.length || 0,
+                inputLength: safeDesc.length,
                 outputLength: result?.length || 0,
             });
 

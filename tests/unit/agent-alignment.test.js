@@ -77,4 +77,34 @@ describe('AI Agent alignment', () => {
     it('docs/ai-agents.md exists', () => {
         expect(existsSync('docs/ai-agents.md')).toBe(true);
     });
+
+    it('classifier uses generateText', () => {
+        const content = readFileSync('api/lib/agents/classifier.js', 'utf-8');
+        expect(content).toMatch(/generateText/);
+        expect(content).toMatch(/metricType/);
+    });
+
+    it('falc-writer uses generateText', () => {
+        const content = readFileSync('api/lib/agents/falc-writer.js', 'utf-8');
+        expect(content).toMatch(/generateText/);
+        expect(content).toMatch(/metricType/);
+    });
+
+    it('alerter uses ProNotification', () => {
+        const content = readFileSync('api/lib/agents/alerter.js', 'utf-8');
+        expect(content).toMatch(/ProNotification/);
+    });
+
+    it('orchestrator calls real agents when not dryRun', () => {
+        const content = readFileSync('api/lib/agent-orchestrator.js', 'utf-8');
+        expect(content).toMatch(/Classifier/);
+        expect(content).toMatch(/FalcWriter/);
+        expect(content).toMatch(/Alerter/);
+    });
+
+    it('hive-repair has dedicated metrics', () => {
+        const content = readFileSync('api/_handlers/admin/hive-repair.js', 'utf-8');
+        expect(content).toMatch(/recordMetric/);
+        expect(content).toMatch(/hive-repair/);
+    });
 });

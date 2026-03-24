@@ -5,6 +5,8 @@ import logger from '../../_utils/logger.js';
  *
  * Mission : Catégoriser et taguer les aides
  * selon la taxonomie du projet.
+ *
+ * Appelle Gemini via generateText() pour classifier en temps réel.
  */
 
 export const CLASSIFIER_SYSTEM_PROMPT = `Tu es un expert en classification des aides sociales françaises.
@@ -46,26 +48,37 @@ Valeurs possibles pour urgence : "NORMALE", "HAUTE", "CRITIQUE"
 Le champ confiance est un nombre entre 0 et 1.`;
 
 export class Classifier {
-    constructor(geminiClient) {
-        this.gemini = geminiClient;
+    constructor() {
         this.name = 'classifier';
     }
 
     async classify(aide) {
-        const prompt = `Classifie cette aide :
+        const safeTitle = String(aide.titre || '').slice(0, 255);
+        const safeDesc = String(aide.description || '').slice(0, 2000);
 
-Titre : ${String(aide.titre || '').slice(0, 255)}
-Description : ${String(aide.description || '').slice(0, 2000)}
-Organisme : ${String(aide.organisme || '').slice(0, 100)}`;
+        const prompt = `Classifie cette aide sociale française.
+
+Titre : ${safeTitle}
+Description : ${safeDesc}
+Organisme : ${String(aide.organisme || '').slice(0, 100)}
+
+Réponds UNIQUEMENT en JSON valide.`;
 
         try {
-            const result = await this.gemini.generateContent({
-                systemInstruction: CLASSIFIER_SYSTEM_PROMPT,
-                prompt,
-                responseType: 'json',
-            });
+            const { generateText } = await import('../gemini.js');
 
-            const parsed = typeof result === 'string' ? JSON.parse(result) : result;
+            const result = await generateText(
+                CLASSIFIER_SYSTEM_PROMPT + '\n\n' + prompt,
+                { metricType: 'classifier' },
+            );
+
+            // Extract JSON from response
+            const jsonMatch = result.match(/\{[\s\S]*\}/);
+            if (!jsonMatch) {
+                throw new Error('No JSON found in classifier response');
+            }
+
+            const parsed = JSON.parse(jsonMatch[0]);
 
             logger.info({
                 msg: 'agent.classifier.success',

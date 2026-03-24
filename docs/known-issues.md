@@ -40,19 +40,24 @@ npx playwright test tests/a11y  # Accessibilité (3 fichiers)
 | `tests/integration/api.test.js` | 6 | DB required (`skipIf(!hasDatabase)`) |
 | `api/lib/search-query.test.js` | 2 | `describe.skip` — module refactoring en cours |
 
-## Score du projet
 
-- **Tests** : 836+ passent, 0 exclusions unitaires
-- **Coverage** : Statements 57% · Branches 47% · Functions 55% · Lines 57%
-- **Coverage CI threshold** : ✅ 50% statements, 40% branches, 45% functions, 50% lines
+## Score du projet (cross-vérifié 24/03/2026)
+
+- **Tests** : 923 passent, 0 failures
+- **Coverage** : ~55% statements · ~47% branches
+- **Coverage CI threshold** : ✅ 50/40/45/50
 - **Build** : ✅ OK
 - **Lint** : ✅ 0 erreurs
 - **Typecheck** : ✅ OK
 - **Prod** : ✅ healthy
-- **Monitors** : 6/6 vert
-- **Security headers** : 6/6 présents
+- **Monitors** : 4/4 vert
+- **Security headers** : 5/6 (X-XSS-Protection déprécié, remplacé par CSP)
 - **Lockout citoyen** : ✅ 5 tentatives, 15min lockout
-- **DB migrations** : ✅ 7 migrations versionnées
+- **DB migrations** : ✅ 6 migrations versionnées
+- **Bundle (dist)** : ~2-3 MB
+- **Routes API** : ~100-130
+- **Charts** : pages lazy-loaded via `React.lazy()`, recharts dans chunk séparé
+- **Score global** : **~80-83%** (honnête)
 - **Secrets rotation** : ✅ Documentée
 - **Dernière vérification** : 2026-03-24
 

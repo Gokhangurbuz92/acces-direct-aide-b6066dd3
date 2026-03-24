@@ -32,8 +32,21 @@ export default async function handler(req, res) {
   const phone = normalizePhone(req.body?.phone);
   const nextPath = normalizeNextPath(req.body?.next, '/annuaire');
 
-  if (!isValidEmail(email) || password.length < 8) {
-    return res.status(400).json({ error: 'Invalid input' });
+  if (!isValidEmail(email)) {
+    return res.status(400).json({ error: 'Email invalide' });
+  }
+
+  // Password policy: 8+ chars, at least 1 uppercase, 1 lowercase, 1 digit
+  const pwErrors = [];
+  if (!password || password.length < 8) pwErrors.push('8 caractères minimum');
+  if (!/[A-Z]/.test(password)) pwErrors.push('1 majuscule requise');
+  if (!/[a-z]/.test(password)) pwErrors.push('1 minuscule requise');
+  if (!/[0-9]/.test(password)) pwErrors.push('1 chiffre requis');
+  if (pwErrors.length > 0) {
+    return res.status(400).json({
+      error: 'Mot de passe trop faible',
+      details: pwErrors,
+    });
   }
 
   const ip = getClientIp(req);

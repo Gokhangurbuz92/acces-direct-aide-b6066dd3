@@ -39,6 +39,24 @@ Verified on production (`www.accesdirectaide.fr`) — 2026-03-24 :
 4. Restart the affected Vercel function via the dashboard or redeploy the latest build.
 5. Document the incident in `docs/incidents.md` with timestamps, root cause, and remediation steps.
 
+## Rate Limiting
+
+Implémenté via Upstash KV (prod) / mémoire (test). Double rate limit IP + clé par action.
+
+| Action | Limite | Fenêtre | Endpoints protégés |
+|--------|--------|---------|-------------------|
+| `LOGIN_USER` | 8 req | 15 min | `/api/auth/login` |
+| `SIGNUP_USER` | 5 req | 1h | `/api/auth/signup` |
+| `FORGOT_USER` | 5 req | 1h | `/api/auth/forgot-password` |
+| `RESET_PASSWORD` | 3 req | 1h | `/api/auth/reset-password` |
+| `ASSISTANT_CHAT` | 10 req | 1 min | `/api/assistant/chat` |
+| `ASSISTANT_RECOS` | 15 req | 1 min | `/api/assistant/recommendations` |
+| `DIAGNOSTIC` | 30 req | 1 min | `/api/diagnostic` |
+| `ADMIN_API` | 60 req | 1 min | `/api/admin/*` |
+| `RDV_PUBLIC_READ` | 60 req | 1 min | `/api/rdv` (lecture) |
+
+**50+ fichiers** utilisent `checkRateLimit`. Voir `api/_utils/rateLimit.js` pour la config complète.
+
 ## Contacts
 - **On‑call Engineer**: `gokhangurbuz92@gmail.com`
 - **Sentry Alerts**: `#alerts` Slack channel

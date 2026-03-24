@@ -1,11 +1,25 @@
 import { describe, it, expect, vi } from 'vitest';
 import React from 'react';
-import ErrorBoundary from '../../src/components/ErrorBoundary.jsx';
 
-// Mock Sentry
+// Mock all @/ dependencies used by ErrorBoundary.jsx
 vi.mock('@sentry/react', () => ({
   captureException: vi.fn(),
 }));
+vi.mock('@/observability/sentryRef', () => ({
+  sentryRef: { current: null },
+}));
+vi.mock('@/components/ui/button', () => ({
+  Button: (props) => React.createElement('button', props, props.children),
+}));
+vi.mock('@/components/ui/card', () => ({
+  Card: (props) => React.createElement('div', props, props.children),
+  CardContent: (props) => React.createElement('div', props, props.children),
+}));
+vi.mock('@/config/env', () => ({
+  frontendEnv: { VITE_APP_ENV: 'test' },
+}));
+
+import ErrorBoundary from '../../src/components/ErrorBoundary.jsx';
 
 describe('ErrorBoundary', () => {
   it('should be a React component', () => {

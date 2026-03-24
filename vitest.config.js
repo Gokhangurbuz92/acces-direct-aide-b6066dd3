@@ -1,7 +1,9 @@
 import { defineConfig } from 'vitest/config';
+import react from '@vitejs/plugin-react';
 import path from 'path';
 
 export default defineConfig({
+  plugins: [react()],
   resolve: {
     alias: {
       '@': path.resolve(__dirname, 'src'),
@@ -20,16 +22,8 @@ export default defineConfig({
       'e2e/**',
       // Playwright a11y tests
       'tests/a11y/**',
-      // Component tests needing jsdom + React JSX transform
+      // Component tests using @testing-library (need jsdom environment per-file)
       'tests/components/**',
-      // Unit tests with unresolved path aliases or missing globals
-      'tests/unit/errorBoundary.test.jsx',
-      'tests/unit/errorboundary.test.js',
-      'tests/unit/falcsummary.test.js',
-      'tests/unit/status-page.test.js',
-      'tests/unit/phase3-taxonomy.test.js',
-      // Integration test with missing vitest import
-      'tests/integration/p10-public-credibility.test.js',
     ],
     coverage: {
       provider: 'v8',

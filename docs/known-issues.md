@@ -28,10 +28,14 @@ npx playwright test tests/a11y  # Accessibilité (3 fichiers)
 
 ## Score du projet
 
-- **Tests** : 737 passent, 0 exclusions unitaires
+- **Tests** : 749 passent, 0 exclusions unitaires
+- **Coverage** : Statements 58% · Branches 49% · Functions 57% · Lines 60%
 - **Build** : ✅ OK
 - **Lint** : ✅ 0 erreurs
 - **Prod** : ✅ healthy
 - **Monitors** : 6/6 vert
 - **Security headers** : 6/6 présents
+- **Lockout citoyen** : ✅ 5 tentatives, 15min lockout
+- **DB migrations** : ✅ 7 migrations versionnées
+- **Secrets rotation** : ✅ Documentée
 - **Dernière vérification** : 2026-03-24

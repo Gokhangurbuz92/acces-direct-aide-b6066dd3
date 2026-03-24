@@ -15,16 +15,23 @@ npx playwright test tests/a11y  # Accessibilité (3 fichiers)
 
 ## TODOs dans le code
 
-| Fichier | Ligne | Description |
-|---------|-------|-------------|
-| `src/pages/CompteParametres.jsx` | 457 | `TODO: Implement account deletion API` |
+| Fichier | Ligne | Description | Status |
+|---------|-------|-------------|:---:|
+| ~~`src/pages/CompteParametres.jsx`~~ | ~~457~~ | ~~Account deletion API~~ | ✅ Connecté |
+
+## Feature Flags
+
+| Flag | Default | Description | Activation |
+|------|---------|-------------|------------|
+| `ENABLE_AI_AGENT` | `false` | Active les agents IA Pro (discovery, scheduler) | Vercel → Env vars → `true` → redéployer |
+| `ENABLE_DS_INGESTION` | `false` | Active l'ingestion Démarches Simplifiées | Vercel → Env vars → `true` → redéployer |
 
 ## Limitations connues
 
 - **Backup script** (`scripts/backup-db.js`) vérifie les counts mais ne fait pas de dump complet. Neon PITR est le vrai backup.
 - **Métriques IA** en mémoire sont perdues au redéploiement (la table `AiMetric` en DB compense).
-- **Agents IA** nécessitent `ENABLE_AI_AGENT=true` en variable d'environnement.
 - **Rate limiting** utilise un backend mémoire en test, Upstash KV en production.
+- **Pipeline test** (`tests/unit/pipeline.test.js`) est skip car il nécessite une DB.
 
 ## Score du projet
 

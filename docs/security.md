@@ -44,6 +44,22 @@
 | Tokens auth | SHA-256 |
 | Chiffrement vault | AES-256-GCM |
 
+## Token Refresh — Décision
+
+**Status** : Non implémenté (décision consciente)
+
+**Pourquoi c'est acceptable** :
+- JWT citoyen expire après 7 jours
+- Lockout après 5 tentatives (15 min)
+- Rate limiting sur login (IP + email)
+- Cookie HttpOnly + Secure + SameSite=Strict
+- Pas de données financières exposées
+
+**Quand l'implémenter** :
+- Si le site gère des données très sensibles
+- Si on dépasse 10 000 utilisateurs actifs
+- Si un audit de sécurité externe le recommande
+
 ## Signalement vulnérabilité
 
 Si vous trouvez une vulnérabilité de sécurité :

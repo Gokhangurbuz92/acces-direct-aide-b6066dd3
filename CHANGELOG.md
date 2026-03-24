@@ -1,5 +1,14 @@
 # Changelog
 
+## [Unreleased] — 2026-03-25
+
+### Admin Panel Complete
+- AdminAiMetrics page — Gemini token usage, costs, latency, per-agent breakdown
+- AdminLogs page — system log viewer with level filtering
+- Routes added for `/admin/ai-metrics` and `/admin/logs`
+- Sidebar navigation updated with Métriques IA and Logs links
+- Tests: admin-panel-complete (27 assertions), admin-api-complete (24 assertions)
+
 ## [Unreleased] — 2026-03-24
 
 ### Sprint final — Tests complets

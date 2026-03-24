@@ -27,8 +27,11 @@ import { Link } from 'react-router-dom';
 import { createPageUrl } from '@/utils';
 
 const STATUS_LABELS = {
-  draft: { label: 'Brouillon', color: 'bg-gray-100 text-gray-800' },
+  brouillon: { label: 'Brouillon', color: 'bg-gray-100 text-gray-800' },
   NeedsReview: { label: 'À vérifier', color: 'bg-orange-100 text-orange-800' },
+  publie: { label: 'Publié', color: 'bg-green-100 text-green-800' },
+  // Fallback aliases
+  draft: { label: 'Brouillon', color: 'bg-gray-100 text-gray-800' },
   published: { label: 'Publié', color: 'bg-green-100 text-green-800' }
 };
 
@@ -37,10 +40,11 @@ export default function AdminAides() {
   const [statusFilter, setStatusFilter] = useState('all');
   const queryClient = useQueryClient();
 
-  const { data: aides = [], isLoading } = useQuery({
+  const { data: rawAides, isLoading } = useQuery({
     queryKey: ['admin-aides'],
-    queryFn: () => client.entities.Aide.list('-updated_date'),
+    queryFn: () => client.entities.Aide.list('-updatedAt'),
   });
+  const aides = Array.isArray(rawAides) ? rawAides : [];
 
   // Secondary query: RAG embedding status per aide
   const { data: ragData } = useQuery({
@@ -64,16 +68,16 @@ export default function AdminAides() {
 
   const filteredAides = aides.filter(aide => {
     const matchesSearch = !searchQuery ||
-      aide.title?.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesStatus = statusFilter === 'all' || aide.status === statusFilter;
+      (aide.titre || aide.title || '').toLowerCase().includes(searchQuery.toLowerCase());
+    const matchesStatus = statusFilter === 'all' || aide.statut === statusFilter;
     return matchesSearch && matchesStatus;
   });
 
   const countByStatus = {
     all: aides.length,
-    draft: aides.filter(a => a.status === 'draft').length,
-    NeedsReview: aides.filter(a => a.status === 'NeedsReview').length,
-    published: aides.filter(a => a.status === 'published').length,
+    brouillon: aides.filter(a => a.statut === 'brouillon' || a.statut === 'draft').length,
+    NeedsReview: aides.filter(a => a.statut === 'NeedsReview').length,
+    publie: aides.filter(a => a.statut === 'publie' || a.statut === 'published').length,
   };
 
   const ragIndexed = ragData ? ragData.filter(r => r.hasEmbedding).length : '—';
@@ -106,7 +110,7 @@ export default function AdminAides() {
           <Card>
             <CardContent className="p-4">
               <p className="text-sm text-slate-600 mb-1">Brouillons</p>
-              <p className="text-2xl font-bold text-gray-900">{countByStatus.draft}</p>
+              <p className="text-2xl font-bold text-gray-900">{countByStatus.brouillon}</p>
             </CardContent>
           </Card>
           <Card>
@@ -118,7 +122,7 @@ export default function AdminAides() {
           <Card>
             <CardContent className="p-4">
               <p className="text-sm text-slate-600 mb-1">Publiés</p>
-              <p className="text-2xl font-bold text-green-600">{countByStatus.published}</p>
+              <p className="text-2xl font-bold text-green-600">{countByStatus.publie}</p>
             </CardContent>
           </Card>
           <Card>
@@ -152,9 +156,9 @@ export default function AdminAides() {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">Tous les statuts</SelectItem>
-                  <SelectItem value="draft">Brouillons</SelectItem>
+                  <SelectItem value="brouillon">Brouillons</SelectItem>
                   <SelectItem value="NeedsReview">À vérifier</SelectItem>
-                  <SelectItem value="published">Publiés</SelectItem>
+                  <SelectItem value="publie">Publiés</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -165,7 +169,7 @@ export default function AdminAides() {
         {isLoading ? <div className="p-6"><SkeletonList count={3} variant="card" /></div> : filteredAides.length > 0 ? (
           <div className="space-y-3">
             {filteredAides.map((aide) => {
-              const statusInfo = STATUS_LABELS[aide.status] || STATUS_LABELS.draft;
+              const statusInfo = STATUS_LABELS[aide.statut] || STATUS_LABELS.brouillon;
               return (
                 <Card key={aide.id} className="hover:shadow-md transition-shadow">
                   <CardContent className="p-4">
@@ -173,22 +177,22 @@ export default function AdminAides() {
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2 mb-2">
                           <h3 className="font-semibold text-slate-900 truncate">
-                            {aide.title}
+                            {aide.titre || aide.title}
                           </h3>
                           <Badge className={statusInfo.color}>
                             {statusInfo.label}
                           </Badge>
                         </div>
                         <p className="text-sm text-slate-600 line-clamp-2 mb-2">
-                          {aide.summary_falc || aide.content_falc?.cest_quoi}
+                          {aide.resume_falc || aide.summary_falc || aide.content_falc?.cest_quoi}
                         </p>
                         <div className="flex flex-wrap gap-2 text-xs text-slate-500">
-                          <span>Catégorie: {aide.category}</span>
-                          {aide.verified_at && (
-                            <span>• Vérifié: {new Date(aide.verified_at).toLocaleDateString('fr-FR')}</span>
+                          <span>Catégorie: {aide.categorie || aide.category}</span>
+                          {(aide.date_verification || aide.verified_at) && (
+                            <span>• Vérifié: {new Date(aide.date_verification || aide.verified_at).toLocaleDateString('fr-FR')}</span>
                           )}
-                          {aide.departments?.length > 0 && (
-                            <span>• {aide.departments.join(', ')}</span>
+                          {aide.departements?.length > 0 && (
+                            <span>• {aide.departements.join(', ')}</span>
                           )}
                         </div>
                         {/* RAG Status */}
@@ -215,18 +219,18 @@ export default function AdminAides() {
                             <Edit className="h-4 w-4" />
                           </Button>
                         </Link>
-                        {aide.status === 'NeedsReview' && (
+                        {aide.statut === 'NeedsReview' && (
                           <Button
                             size="sm"
                             variant="default"
-                            onClick={() => updateStatusMutation.mutate({ id: aide.id, status: 'published' })}
+                            onClick={() => updateStatusMutation.mutate({ id: aide.id, status: 'publie' })}
                             disabled={updateStatusMutation.isPending}
                           >
                             <CheckCircle className="h-4 w-4 mr-1" />
                             Publier
                           </Button>
                         )}
-                        {aide.status === 'published' && (
+                        {aide.statut === 'publie' && (
                           <Button
                             size="sm"
                             variant="outline"

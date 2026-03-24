@@ -94,6 +94,19 @@ var apiRequest = async function (path, options) {
     return payload;
 };
 
+/**
+ * Normalize API responses that may be paginated objects or flat arrays.
+ * Handles: { items: [...] }, { data: [...] }, plain array, or single object.
+ * @param {any} response
+ * @returns {any[]}
+ */
+var normalizeResponse = function (response) {
+    if (Array.isArray(response)) return response;
+    if (response && Array.isArray(response.items)) return response.items;
+    if (response && Array.isArray(response.data)) return response.data;
+    return response;
+};
+
 /** @param {string} endpoint */
 var createEntityClient = function (endpoint) {
     return {
@@ -103,7 +116,7 @@ var createEntityClient = function (endpoint) {
             if (sort) params.append('sort', sort);
             if (limit) params.append('limit', String(limit));
             var qs = params.toString();
-            return apiRequest('/api/' + endpoint + (qs ? '?' + qs : ''));
+            return apiRequest('/api/' + endpoint + (qs ? '?' + qs : '')).then(normalizeResponse);
         },
         /** @param {any} id */
         get: function (id) {

@@ -24,10 +24,11 @@ export default function AdminDemarches() {
     const queryClient = useQueryClient();
     const { toast } = useToast();
 
-    const { data: demarches = [], isLoading } = useQuery({
+    const { data: rawDemarches, isLoading } = useQuery({
         queryKey: ['admin-demarches'],
-        queryFn: () => client.entities.Demarche.list('-updated_date'),
+        queryFn: () => client.entities.Demarche.list('-updatedAt'),
     });
+    const demarches = Array.isArray(rawDemarches) ? rawDemarches : [];
 
     const deleteMutation = useMutation({
         mutationFn: (id) => client.entities.Demarche.delete(id),

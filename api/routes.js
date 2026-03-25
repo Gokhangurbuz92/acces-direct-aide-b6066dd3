@@ -107,6 +107,7 @@ export const routes = [
     { path: 'ressources', match: 'prefix', handler: () => import('./_handlers/ressources.js') },
     { path: 'reports', match: 'prefix', handler: () => import('./_handlers/reports.js') },
     { path: 'feedback', match: 'exact', handler: () => import('./_handlers/feedback.js') },
+    { path: 'glossaire', match: 'exact', handler: () => import('./_handlers/glossaire.js') },
     { path: 'rdv', match: 'prefix', handler: () => import('./_handlers/rdv.js') },
 
     // --- Assistant (AI) ---

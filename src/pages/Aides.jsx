@@ -93,7 +93,7 @@ export default function Aides() {
   const { status, items: apiItems, pagination, facets, errorMessage, refetch } = useAidesListing({
     q,
     theme: category,
-    urgent: false, // urgent filter handled locally
+    urgent: localFilters.urgentOnly ? 'true' : undefined,
     sort,
     page,
     pageSize: limit,
@@ -122,13 +122,7 @@ export default function Aides() {
     const localSearch = localFilters.search.trim().toLowerCase();
 
     return apiItems.filter((item) => {
-      if (localFilters.urgentOnly && !item.isUrgent) return false;
       if (localFilters.category) {
-        // Local category filter (rough match on href slug)
-        const itemSlug = item.href.split('/').pop() || '';
-        // This is a secondary local filter — if the API already filters by theme,
-        // this catches category-level refinement from the sidebar.
-        // Simple approach: skip items that don't contain the category in their summary/title
         const searchStr = `${item.title} ${item.summary || ''}`.toLowerCase();
         if (!searchStr.includes(localFilters.category.toLowerCase())) return false;
       }
@@ -330,6 +324,14 @@ export default function Aides() {
               Rechercher
             </Button>
           </form>
+
+          <p className="text-sm text-slate-500">
+            Astuce : consultez notre{' '}
+            <Link to="/glossaire" className="text-blue-600 hover:text-blue-800 underline">
+              glossaire
+            </Link>{' '}
+            pour comprendre les sigles (RSA, APL, AAH...)
+          </p>
 
           {/* Filters */}
           {isFiltersOpen && (

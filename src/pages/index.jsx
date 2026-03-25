@@ -177,6 +177,9 @@ const SentryTestPage = lazy(() => import("./SentryTestPage.jsx"));
 // Styleguide
 const StyleguideBranding = lazy(() => import("./StyleguideBranding.jsx"));
 
+// Glossaire
+const Glossaire = lazy(() => import("./Glossaire.jsx"));
+
 // Map for _getCurrentPage logic (keeping structure for logic compatibility)
 const PAGES = {
     AdminLogin, APropos, Accessibilite, Actualites, ActualiteDetail,
@@ -422,6 +425,7 @@ function PagesContent() {
                                 <Route path="/trouver-aide" element={<RechercheAide />} />
                                 <Route path="/categories/:slug" element={<Aides />} />
                                 <Route path="/situations/:slug" element={<Aides />} />
+                                <Route path="/glossaire" element={<Glossaire />} />
 
                                 <Route path="/structures" element={<Annuaire />} />
                                 <Route path="/annuaire" element={<Navigate to="/structures" replace />} />

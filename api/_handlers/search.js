@@ -5,6 +5,7 @@ import { hybridSearchSchema } from '../_utils/validators.js';
 import { searchAidesHybrid } from '../lib/hybrid-search.js';
 import { generateEmbedding } from '../lib/gemini-embedding.js';
 import { cachedSearch } from '../lib/search-cache.js';
+import { GLOSSAIRE } from '../lib/glossaire.js';
 
 /**
  * Universal search handler — searches Aides, Démarches, Structures, Actualités.
@@ -142,13 +143,31 @@ export default async function handler(req, res) {
 
       const totalResults = aideTotal + demarches.length + structures.length + actualites.length;
 
-      if (totalResults === 0 || (weakResult && demarches.length === 0 && structures.length === 0 && actualites.length === 0)) {
+      // 5. Match Glossaire terms
+      const queryLower = payload.query.toLowerCase();
+      const glossaireResults = GLOSSAIRE
+        .filter(g =>
+          g.terme.toLowerCase().includes(queryLower) ||
+          g.definition.toLowerCase().includes(queryLower),
+        )
+        .slice(0, 3)
+        .map(g => ({
+          id: g.terme,
+          title: g.terme,
+          description: g.definition,
+          category: g.categorie,
+          url: `/glossaire#${g.terme}`,
+          type: 'glossaire',
+        }));
+
+      if (totalResults === 0 && glossaireResults.length === 0 && (weakResult && demarches.length === 0 && structures.length === 0 && actualites.length === 0)) {
         return {
           items: [],
           total: 0,
           demarches: [],
           structures: [],
           actualites: [],
+          glossaire: [],
           message: 'not found',
         };
       }
@@ -182,6 +201,7 @@ export default async function handler(req, res) {
           date: a.date_publication,
           type: 'actualite',
         })),
+        glossaire: glossaireResults,
         message: null,
       };
     });

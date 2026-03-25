@@ -9,6 +9,14 @@
 - Sidebar navigation updated with Métriques IA and Logs links
 - Tests: admin-panel-complete (27 assertions), admin-api-complete (24 assertions)
 
+### Recherche et Glossaire
+- Glossaire (20 termes, `api/lib/glossaire.js` + `api/_handlers/glossaire.js`)
+- Page Glossaire frontend (`/glossaire`) avec recherche et filtres catégorie
+- Glossaire intégré dans la recherche universelle (5ème type de résultat)
+- Filtre urgence corrigé : API-side au lieu de client-side
+- Lien glossaire sous la barre de recherche des aides
+- Tests: glossaire (6 assertions), search-filters (14 assertions)
+
 ## [Unreleased] — 2026-03-24
 
 ### Sprint final — Tests complets

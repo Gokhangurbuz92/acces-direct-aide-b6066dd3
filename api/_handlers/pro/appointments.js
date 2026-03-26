@@ -21,7 +21,7 @@ export default async function handler(req, res) {
         const { structureId } = proCtx;
         const appointments = await db.query.ProAppointment.findMany({
             where: (appt, { eq }) => eq(appt.structureId, structureId),
-            orderBy: (appt, { desc }) => [desc(appt.startsAt)],
+            orderBy: (appt, { desc }) => [desc(appt.startAt)],
             limit: 50,
         });
 

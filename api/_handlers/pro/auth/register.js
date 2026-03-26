@@ -62,25 +62,24 @@ export default async function handler(req, res) {
         const hashedPassword = await hashPassword(password);
 
         // Transaction to ensure atomicity
-        const result = await db.transaction(async (tx) => {
-            const [structure] = await tx.insert(Structure).values({
-                nom: structureName,
-                slug: slug,
-                status: 'actif',
-                statut: 'brouillon',
-                is_pro_enabled: true // Enable pro module immediately
-            }).returning();
+        // Sequential operations (neon-http driver doesn't support transactions)
+        const [structure] = await db.insert(Structure).values({
+            nom: structureName,
+            slug: slug,
+            status: 'actif',
+            statut: 'brouillon',
+            is_pro_enabled: true
+        }).returning();
 
-            const [user] = await tx.insert(ProUser).values({
-                email,
-                password_hash: hashedPassword,
-                role: 'STRUCTURE_ADMIN',
-                status: 'active',
-                structureId: structure.id
-            }).returning();
+        const [user] = await db.insert(ProUser).values({
+            email,
+            password_hash: hashedPassword,
+            role: 'STRUCTURE_ADMIN',
+            status: 'active',
+            structureId: structure.id
+        }).returning();
 
-            return { structure, user };
-        });
+        const result = { structure, user };
 
         const token = signProToken(result.user);
 

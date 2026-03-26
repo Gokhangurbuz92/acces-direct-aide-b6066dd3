@@ -109,21 +109,20 @@ export default async function handler(req, res) {
         // 3. Create user + mark invitation in a transaction
         const hashedPassword = await hashPassword(password);
 
-        const result = await db.transaction(async (tx) => {
-            const [user] = await tx.insert(ProUser).values({
-                email: invitation.email,
-                password_hash: hashedPassword,
-                role: invitation.role || 'PRO',
-                status: 'active',
-                structureId: invitation.structureId,
-            }).returning();
+        // Sequential operations (neon-http driver doesn't support transactions)
+        const [user] = await db.insert(ProUser).values({
+            email: invitation.email,
+            password_hash: hashedPassword,
+            role: invitation.role || 'PRO',
+            status: 'active',
+            structureId: invitation.structureId,
+        }).returning();
 
-            await tx.update(Invitation).set({
-                used_at: new Date()
-            }).where(eq(Invitation.id, invitation.id));
+        await db.update(Invitation).set({
+            used_at: new Date()
+        }).where(eq(Invitation.id, invitation.id));
 
-            return user;
-        });
+        const result = user;
 
         // 4. Sign JWT
         const jwt = signProToken(result);

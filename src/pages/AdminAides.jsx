@@ -80,8 +80,8 @@ export default function AdminAides() {
     publie: aides.filter(a => a.statut === 'publie' || a.statut === 'published').length,
   };
 
-  const ragIndexed = ragData ? ragData.filter(r => r.hasEmbedding).length : '—';
-  const ragTotal = ragData ? ragData.length : '—';
+  const ragIndexed = Array.isArray(ragData) ? ragData.filter(r => r.hasEmbedding).length : '—';
+  const ragTotal = Array.isArray(ragData) ? ragData.length : '—';
 
   return (
     <div className="min-h-screen bg-slate-50">

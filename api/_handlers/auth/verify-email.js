@@ -62,10 +62,9 @@ export default async function handler(req, res) {
       return redirect(res, buildUiRedirect('expired', nextPath), 302);
     }
 
-    await db.transaction(async (tx) => {
-      await tx.update(AuthToken).set({ usedAt: new Date() }).where(eq(AuthToken.id, tokenRow.id));
-      await tx.update(CitizenUser).set({ emailVerifiedAt: tokenRow.user.emailVerifiedAt || new Date() }).where(eq(CitizenUser.id, tokenRow.user.id));
-    });
+    // Sequential operations (neon-http driver doesn't support transactions)
+    await db.update(AuthToken).set({ usedAt: new Date() }).where(eq(AuthToken.id, tokenRow.id));
+    await db.update(CitizenUser).set({ emailVerifiedAt: tokenRow.user.emailVerifiedAt || new Date() }).where(eq(CitizenUser.id, tokenRow.user.id));
 
     return redirect(res, buildUiRedirect('success', nextPath), 302);
   } catch {

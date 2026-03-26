@@ -39,10 +39,9 @@ export default async function handler(req, res) {
 
     const passwordHash = await hashPassword(password);
 
-    await db.transaction(async (tx) => {
-      await tx.update(CitizenUser).set({ passwordHash }).where(eq(CitizenUser.id, row.userId));
-      await tx.update(AuthToken).set({ usedAt: new Date() }).where(eq(AuthToken.id, row.id));
-    });
+    // Sequential operations (neon-http driver doesn't support transactions)
+    await db.update(CitizenUser).set({ passwordHash }).where(eq(CitizenUser.id, row.userId));
+    await db.update(AuthToken).set({ usedAt: new Date() }).where(eq(AuthToken.id, row.id));
 
     return res.status(200).json({ ok: true });
   } catch {

@@ -68,22 +68,21 @@ async function handler(req, res) {
       normalizedRules = slotsJsonToRules(/** @type {Record<string, unknown>} */ (data.slots_json), timezone);
     }
 
-    await db.transaction(async (tx) => {
-      await tx.delete(ProAvailabilityRule).where(eq(ProAvailabilityRule.structureId, proCtx.structureId));
+    // Sequential operations (no transaction needed — neon-http driver doesn't support them)
+    await db.delete(ProAvailabilityRule).where(eq(ProAvailabilityRule.structureId, proCtx.structureId));
 
-      if (normalizedRules.length > 0) {
-        await tx.insert(ProAvailabilityRule).values(
-            normalizedRules.map((rule) => ({
-              structureId: proCtx.structureId,
-              weekday: rule.weekday,
-              startTime: rule.startTime,
-              endTime: rule.endTime,
-              timezone: rule.timezone || timezone,
-              isActive: rule.isActive !== false,
-            }))
-        );
-      }
-    });
+    if (normalizedRules.length > 0) {
+      await db.insert(ProAvailabilityRule).values(
+          normalizedRules.map((rule) => ({
+            structureId: proCtx.structureId,
+            weekday: rule.weekday,
+            startTime: rule.startTime,
+            endTime: rule.endTime,
+            timezone: rule.timezone || timezone,
+            isActive: rule.isActive !== false,
+          }))
+      );
+    }
 
     return res.status(200).json({
       ok: true,

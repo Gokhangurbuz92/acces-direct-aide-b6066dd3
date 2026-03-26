@@ -22,35 +22,36 @@ async function handler(req, res) {
     const { summary_falc, is_pro_enabled } = req.body;
 
     try {
-        const updated = await db.transaction(async (tx) => {
-            const [structure] = await tx.update(Structure).set({
-                    summary_falc,
-                    is_pro_enabled
-            }).where(eq(Structure.id, structureId)).returning();
+        // Sequential operations (neon-http driver doesn't support transactions)
+        const [structure] = await db.update(Structure).set({
+                summary_falc,
+                is_pro_enabled
+        }).where(eq(Structure.id, structureId)).returning();
 
-            if (typeof is_pro_enabled === 'boolean') {
-                const existing = await tx.query.StructureRdvSettings.findFirst({
-                    where: eq(StructureRdvSettings.structureId, structureId),
-                    columns: { id: true, publishedAt: true },
+        if (typeof is_pro_enabled === 'boolean') {
+            const existing = await db.query.StructureRdvSettings.findFirst({
+                where: eq(StructureRdvSettings.structureId, structureId),
+                columns: { id: true, publishedAt: true },
+            });
+
+            if (existing) {
+                await db.update(StructureRdvSettings).set({
+                        isPublished: is_pro_enabled,
+                        publishedAt: is_pro_enabled ? existing.publishedAt || new Date() : existing.publishedAt,
+                }).where(eq(StructureRdvSettings.id, existing.id));
+            } else {
+                await db.insert(StructureRdvSettings).values({
+                        structureId,
+                        isPublished: is_pro_enabled,
+                        bookingMode: 'IN_PERSON',
+                        contactEmail: null,
+                        contactPhone: null,
+                        ...(is_pro_enabled ? { publishedAt: new Date() } : { publishedAt: null }),
                 });
-
-                if (existing) {
-                    await tx.update(StructureRdvSettings).set({
-                            isPublished: is_pro_enabled,
-                            publishedAt: is_pro_enabled ? existing.publishedAt || new Date() : existing.publishedAt,
-                    }).where(eq(StructureRdvSettings.id, existing.id));
-                } else {
-                    await tx.insert(StructureRdvSettings).values({
-                            structureId,
-                            isPublished: is_pro_enabled,
-                            bookingMode: 'IN_PERSON',
-                            ...(is_pro_enabled ? { publishedAt: new Date() } : {}),
-                    });
-                }
             }
+        }
 
-            return structure;
-        });
+        const updated = structure;
 
         await logProAudit('STRUCTURE_UPDATED', userId, structureId, { is_pro_enabled }, req.socket.remoteAddress);
         return res.status(200).json(updated);

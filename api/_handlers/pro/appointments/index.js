@@ -175,58 +175,59 @@ async function handler(req, res) {
       return res.status(409).json({ error: 'Slot is not available' });
     }
 
-    const conflictResult = await db.transaction(async (tx) => {
-      const existing = await tx.query.ProAppointment.findMany({
-        where: (pa, { and, eq, inArray, lt, gt }) => and(
-          eq(pa.structureId, proCtx.structureId),
-          inArray(pa.status, ACTIVE_APPOINTMENT_STATUSES),
-          lt(pa.startAt, endAt),
-          gt(pa.endAt, startAt)
-        ),
-        with: {
-          service: {
-            columns: {
-              bufferBeforeMinutes: true,
-              bufferAfterMinutes: true,
-            },
+    // Sequential operations (neon-http driver doesn't support transactions)
+    const existing = await db.query.ProAppointment.findMany({
+      where: (pa, { and, eq, inArray, lt, gt }) => and(
+        eq(pa.structureId, proCtx.structureId),
+        inArray(pa.status, ACTIVE_APPOINTMENT_STATUSES),
+        lt(pa.startAt, endAt),
+        gt(pa.endAt, startAt)
+      ),
+      with: {
+        service: {
+          columns: {
+            bufferBeforeMinutes: true,
+            bufferAfterMinutes: true,
           },
         },
-      });
-
-      const busyWindows = toBusyWindows(existing);
-      const requestedWindow = {
-        start: new Date(startAt.getTime() - service.bufferBeforeMinutes * 60_000),
-        end: new Date(endAt.getTime() + service.bufferAfterMinutes * 60_000),
-      };
-
-      const hasConflict = busyWindows.some((window) => requestedWindow.start < window.end && window.start < requestedWindow.end);
-      if (hasConflict) return { conflict: true, appointment: null };
-
-      const [appointment] = await tx.insert(ProAppointment).values({
-        structureId: proCtx.structureId,
-        serviceId: service.id,
-        startAt,
-        endAt,
-        status: 'booked',
-        beneficiaryName,
-        beneficiaryPhone,
-        notes,
-        createdByProUserId: proCtx.userId,
-      }).returning();
-
-      const fullAppointment = await tx.query.ProAppointment.findFirst({
-        where: (pa, { eq }) => eq(pa.id, appointment.id),
-        with: {
-          service: {
-            columns: {
-              id: true,
-              name: true,
-            },
-          },
-        },
-      });
-      return { conflict: false, appointment: fullAppointment };
+      },
     });
+
+    const busyWindows = toBusyWindows(existing);
+    const requestedWindow = {
+      start: new Date(startAt.getTime() - service.bufferBeforeMinutes * 60_000),
+      end: new Date(endAt.getTime() + service.bufferAfterMinutes * 60_000),
+    };
+
+    const hasConflict = busyWindows.some((window) => requestedWindow.start < window.end && window.start < requestedWindow.end);
+    if (hasConflict) {
+      return res.status(409).json({ error: 'Slot no longer available' });
+    }
+
+    const [appointment] = await db.insert(ProAppointment).values({
+      structureId: proCtx.structureId,
+      serviceId: service.id,
+      startAt,
+      endAt,
+      status: 'booked',
+      beneficiaryName,
+      beneficiaryPhone,
+      notes,
+      createdByProUserId: proCtx.userId,
+    }).returning();
+
+    const fullAppointment = await db.query.ProAppointment.findFirst({
+      where: (pa, { eq }) => eq(pa.id, appointment.id),
+      with: {
+        service: {
+          columns: {
+            id: true,
+            name: true,
+          },
+        },
+      },
+    });
+    const conflictResult = { conflict: false, appointment: fullAppointment };
 
     if (conflictResult.conflict || !conflictResult.appointment) {
       return res.status(409).json({ error: 'Slot no longer available' });

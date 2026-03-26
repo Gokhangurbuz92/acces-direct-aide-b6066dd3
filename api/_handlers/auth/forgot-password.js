@@ -54,20 +54,19 @@ export default async function handler(req, res) {
     const tokenHash = hashAuthToken(rawToken);
     const expiresAt = new Date(Date.now() + RESET_TOKEN_TTL_MS);
 
-    await db.transaction(async (tx) => {
-      await tx.update(AuthToken).set({ usedAt: new Date() }).where(
-        and(
-          eq(AuthToken.userId, user.id),
-          eq(AuthToken.type, 'PASSWORD_RESET'),
-          isNull(AuthToken.usedAt)
-        )
-      );
-      await tx.insert(AuthToken).values({
-          userId: user.id,
-          type: 'PASSWORD_RESET',
-          tokenHash,
-          expiresAt,
-      });
+    // Sequential operations (neon-http driver doesn't support transactions)
+    await db.update(AuthToken).set({ usedAt: new Date() }).where(
+      and(
+        eq(AuthToken.userId, user.id),
+        eq(AuthToken.type, 'PASSWORD_RESET'),
+        isNull(AuthToken.usedAt)
+      )
+    );
+    await db.insert(AuthToken).values({
+        userId: user.id,
+        type: 'PASSWORD_RESET',
+        tokenHash,
+        expiresAt,
     });
 
     const resetUrl = buildAppUrl(`/auth/reset?token=${encodeURIComponent(rawToken)}`);

@@ -104,7 +104,7 @@ var normalizeResponse = function (response) {
     if (Array.isArray(response)) return response;
     if (response && Array.isArray(response.items)) return response.items;
     if (response && Array.isArray(response.data)) return response.data;
-    return response;
+    return [];
 };
 
 /** @param {string} endpoint */

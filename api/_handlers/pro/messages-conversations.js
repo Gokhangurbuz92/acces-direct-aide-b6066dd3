@@ -173,47 +173,41 @@ async function sendMessage(req, res, proCtx, conversationId) {
     return res.status(400).json({ error: 'Message body is required' });
   }
 
-  const created = await db.transaction(async (tx) => {
-    const conversation = await tx.query.RdvConversation.findFirst({
-      where: eq(RdvConversation.id, conversationId),
-      with: {
-        structure: { columns: { id: true, nom: true } },
-        appointment: { columns: { id: true, startAt: true } },
-        citizenUser: {
-          columns: {
-            email: true,
-            emailVerifiedAt: true,
-            notificationEmailEnabled: true,
-          },
+  // Sequential operations (neon-http driver doesn't support transactions)
+  const conversation = await db.query.RdvConversation.findFirst({
+    where: eq(RdvConversation.id, conversationId),
+    with: {
+      structure: { columns: { id: true, nom: true } },
+      appointment: { columns: { id: true, startAt: true } },
+      citizenUser: {
+        columns: {
+          email: true,
+          emailVerifiedAt: true,
+          notificationEmailEnabled: true,
         },
       },
-    });
-
-    if (!conversation) return null;
-    if (conversation.structureId !== proCtx.structureId) {
-      return { forbidden: true };
-    }
-
-    const [message] = await tx.insert(RdvConversationMessage).values({
-        conversationId: conversation.id,
-        senderType: 'PRO',
-        senderProUserId: proCtx.userId,
-        body: encrypt(body),
-    }).returning();
-
-    await tx.update(RdvConversation).set({
-        lastMessageAt: message.createdAt,
-    }).where(eq(RdvConversation.id, conversation.id));
-
-    return { conversation, message, forbidden: false };
+    },
   });
 
-  if (!created) {
+  if (!conversation) {
     return res.status(404).json({ error: 'Conversation not found' });
   }
-  if (created.forbidden) {
+  if (conversation.structureId !== proCtx.structureId) {
     return res.status(403).json({ error: 'Forbidden' });
   }
+
+  const [message] = await db.insert(RdvConversationMessage).values({
+      conversationId: conversation.id,
+      senderType: 'PRO',
+      senderProUserId: proCtx.userId,
+      body: encrypt(body),
+  }).returning();
+
+  await db.update(RdvConversation).set({
+      lastMessageAt: message.createdAt,
+  }).where(eq(RdvConversation.id, conversation.id));
+
+  const created = { conversation, message, forbidden: false };
 
   try {
     await notifyConversationMessage({

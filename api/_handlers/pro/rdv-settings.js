@@ -190,21 +190,20 @@ async function handler(req, res) {
   }
 
   const now = new Date();
-  const updated = await db.transaction(async (tx) => {
-    const [settings] = await tx.update(StructureRdvSettings).set({
-        isPublished: requestedPublished,
-        bookingMode: nextBookingMode,
-        contactEmail: nextContactEmail || null,
-        contactPhone: nextContactPhone || null,
-        publishedAt: requestedPublished ? current.publishedAt || now : current.publishedAt,
-    }).where(eq(StructureRdvSettings.id, current.id)).returning();
+  // Sequential operations (neon-http driver doesn't support transactions)
+  const [settings] = await db.update(StructureRdvSettings).set({
+      isPublished: requestedPublished,
+      bookingMode: nextBookingMode,
+      contactEmail: nextContactEmail || null,
+      contactPhone: nextContactPhone || null,
+      publishedAt: requestedPublished ? current.publishedAt || now : current.publishedAt,
+  }).where(eq(StructureRdvSettings.id, current.id)).returning();
 
-    await tx.update(Structure).set({
-        is_pro_enabled: requestedPublished,
-    }).where(eq(Structure.id, structureId));
+  await db.update(Structure).set({
+      is_pro_enabled: requestedPublished,
+  }).where(eq(Structure.id, structureId));
 
-    return settings;
-  });
+  const updated = settings;
 
   return res.status(200).json(serialize(updated));
 }

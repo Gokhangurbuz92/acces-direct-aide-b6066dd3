@@ -46,7 +46,7 @@ export default async function handler(req, res) {
         const deletedVersionsCount = deletedVersions.length;
 
         // 2. Purge Old Update Logs
-        const deletedLogs = await db.delete(UpdateLog).where(lt(UpdateLog.createdAt, cutoff));
+        const deletedLogs = await db.delete(UpdateLog).where(lt(UpdateLog.ran_at, cutoff));
         const deletedLogsCount = deletedLogs.length;
 
         // 3. Purge sensitive AuditLog

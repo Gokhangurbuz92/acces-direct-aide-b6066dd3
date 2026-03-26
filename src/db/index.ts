@@ -32,6 +32,9 @@ if (connectionString) {
   const pool = new pg.Pool({
     connectionString: finalConnectionString,
     ssl: isLocal ? false : { rejectUnauthorized: false },
+    max: 5,
+    idleTimeoutMillis: 10000,
+    connectionTimeoutMillis: 10000,
   });
   db = drizzle(pool, { schema });
 } else if (process.env.USE_MOCKS === 'true' || process.env.VITE_SKIP_DB === 'true') {

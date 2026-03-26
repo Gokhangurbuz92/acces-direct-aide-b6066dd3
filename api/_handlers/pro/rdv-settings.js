@@ -97,8 +97,10 @@ async function getOrCreateSettings(structureId) {
       structureId,
       isPublished: initialPublished,
       bookingMode: 'IN_PERSON',
+      contactEmail: null,
+      contactPhone: null,
       updatedAt: new Date(),
-      ...(initialPublished ? { publishedAt: new Date() } : {}),
+      ...(initialPublished ? { publishedAt: new Date() } : { publishedAt: null }),
   }).returning();
   
   settings = newSettings;

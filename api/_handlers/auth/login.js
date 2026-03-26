@@ -1,3 +1,4 @@
+import logger from '../../_utils/logger.js';
 import { env } from '../../_utils/env.js';
 import { signAdminSessionToken } from '../../_utils/auth.js';
 import { db } from '../../../src/db/index.js';
@@ -188,8 +189,9 @@ async function loginHandler(req, res) {
                 role: 'user',
             },
         });
-    } catch {
-        return res.status(500).json({ error: 'Internal error' });
+    } catch (err) {
+        logger.error({ err }, '[login] Authentication failed');
+        return res.status(500).json({ error: 'Erreur interne du serveur' });
     }
 }
 

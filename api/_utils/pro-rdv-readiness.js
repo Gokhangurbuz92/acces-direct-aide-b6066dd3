@@ -122,7 +122,9 @@ export async function getProRdvReadiness(dbClient = defaultDb, timeoutMs = DEFAU
   ]);
 
   const missingTables = REQUIRED_PRO_RDV_TABLES.filter((tableName) => !existingTables.has(tableName));
-  const ok = missingTables.length === 0 && migrationStatus.prismaMigrationsOk;
+  // Tables physically present = functional readiness. Migration record is informational only
+  // (project uses Drizzle, not Prisma migrations).
+  const ok = missingTables.length === 0;
 
   return {
     ok,

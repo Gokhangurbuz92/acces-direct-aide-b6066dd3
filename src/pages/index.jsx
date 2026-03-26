@@ -313,7 +313,7 @@ function PagesContent() {
                 <LazyMotion features={domAnimation} strict>
                     <AnimatePresence mode="wait">
                         <m.div
-                            key={location.pathname}
+                            key="pro-shell"
                             initial={shouldReduceMotion ? false : { opacity: 0, scale: 0.98 }}
                             animate={{ opacity: 1, scale: 1 }}
                             exit={shouldReduceMotion ? undefined : { opacity: 0, scale: 0.98 }}

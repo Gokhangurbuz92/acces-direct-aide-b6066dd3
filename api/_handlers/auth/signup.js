@@ -1,3 +1,4 @@
+import logger from '../../_utils/logger.js';
 import { db } from '../../../src/db/index.js';
 import { CitizenUser, AuthToken } from '../../../src/db/schema.js';
 import { eq, and, isNull } from 'drizzle-orm';
@@ -122,7 +123,13 @@ export default async function handler(req, res) {
       ok: true,
       message: "Si l'email est valide, un lien a été envoyé.",
     });
-  } catch {
-    return res.status(500).json({ error: 'Internal error' });
+  } catch (err) {
+    const message = String(err?.message || '');
+    // Duplicate email: don't leak account existence — return same generic OK
+    if (message.includes('unique') || message.includes('duplicate')) {
+      return res.status(200).json({ ok: true, message: "Si l'email est valide, un lien a été envoyé." });
+    }
+    logger.error({ err, email }, '[signup] Registration failed');
+    return res.status(500).json({ error: 'Erreur interne du serveur' });
   }
 }

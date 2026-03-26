@@ -14,6 +14,8 @@ import { signProToken } from '../../api/_utils/auth.js';
 
 vi.mock('../../api/_utils/pro-rdv-readiness.js', () => ({
   getProRdvReadiness: vi.fn(),
+  REQUIRED_PRO_RDV_TABLES: ['ProRdvService', 'ProAvailabilityRule', 'ProAppointment', 'ProTimeOff'],
+  REQUIRED_PRO_RDV_MIGRATIONS: ['20260305000000_add_pro_rdv_core'],
 }));
 
 /**

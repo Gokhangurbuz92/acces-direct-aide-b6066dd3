@@ -31,18 +31,20 @@ export async function searchAides(params) {
   const conditions = [sql`statut = ${statut}`];
 
   // 1. Full Text Search with Synonym Expansion
+  // Use ILIKE fallback when search_vector or unaccent extension is missing
   if (q) {
     const expandedTerms = expandQueryWithSynonyms(q);
 
-    // If we have expanded terms, create an OR condition for all variants
     if (expandedTerms.length > 1) {
       const searchConditions = expandedTerms.map(term =>
-        sql`"search_vector" @@ plainto_tsquery('french', unaccent(${term}))`
+        sql`("titre" ILIKE ${'%' + term + '%'} OR "cest_quoi" ILIKE ${'%' + term + '%'} OR (CASE WHEN EXISTS (SELECT 1 FROM pg_extension WHERE extname = 'unaccent') THEN "search_vector" @@ plainto_tsquery('french', unaccent(${term})) ELSE false END))`
       );
       conditions.push(sql`(${sql.join(searchConditions, sql.raw(' OR '))})`);
     } else {
-      // Single term or no expansion
-      conditions.push(sql`"search_vector" @@ plainto_tsquery('french', unaccent(${q}))`);
+      conditions.push(sql`(
+        ("titre" ILIKE ${'%' + q + '%'}) OR ("cest_quoi" ILIKE ${'%' + q + '%'})
+        OR (CASE WHEN EXISTS (SELECT 1 FROM pg_extension WHERE extname = 'unaccent') THEN "search_vector" @@ plainto_tsquery('french', unaccent(${q})) ELSE false END)
+      )`);
     }
   }
 
@@ -137,7 +139,7 @@ export async function searchAides(params) {
   };
 
   if (q && (effectiveSort === 'pertinence' || sortField === 'pertinence')) {
-    selectRank = sql`, ts_rank_cd("search_vector", plainto_tsquery('french', unaccent(${q}))) as rank`;
+    selectRank = sql`, CASE WHEN EXISTS (SELECT 1 FROM pg_extension WHERE extname = 'unaccent') THEN ts_rank_cd("search_vector", plainto_tsquery('french', unaccent(${q}))) ELSE CASE WHEN "titre" ILIKE ${'%' + q + '%'} THEN 2 WHEN "cest_quoi" ILIKE ${'%' + q + '%'} THEN 1 ELSE 0 END END as rank`;
     orderBy = sql`ORDER BY rank DESC, published_at DESC`;
   } else if (sortField === 'pertinence') {
     // Relevance sorting requires q. Without q we fallback to date.
@@ -499,7 +501,10 @@ export async function searchStructures(params) {
   const conditions = [sql`statut = 'actif'`];
 
   if (q) {
-    conditions.push(sql`"search_vector" @@ plainto_tsquery('french', unaccent(${q}))`);
+    conditions.push(sql`(
+      ("nom" ILIKE ${'%' + q + '%'}) OR ("description_courte" ILIKE ${'%' + q + '%'})
+      OR (CASE WHEN EXISTS (SELECT 1 FROM pg_extension WHERE extname = 'unaccent') THEN "search_vector" @@ plainto_tsquery('french', unaccent(${q})) ELSE false END)
+    )`);
   }
 
   if (city) {
@@ -556,7 +561,7 @@ export async function searchStructures(params) {
   };
 
   if (q && (effectiveSort === 'pertinence' || sortField === 'pertinence')) {
-    selectRank = sql`, ts_rank_cd("search_vector", plainto_tsquery('french', unaccent(${q}))) as rank`;
+    selectRank = sql`, CASE WHEN EXISTS (SELECT 1 FROM pg_extension WHERE extname = 'unaccent') THEN ts_rank_cd("search_vector", plainto_tsquery('french', unaccent(${q}))) ELSE CASE WHEN "nom" ILIKE ${'%' + q + '%'} THEN 2 WHEN "description_courte" ILIKE ${'%' + q + '%'} THEN 1 ELSE 0 END END as rank`;
     orderBy = sql`ORDER BY rank DESC, quality_score DESC, nom ASC, id ASC`;
   } else if (sortField === 'pertinence') {
     // Relevance sorting requires q. Without q we fallback to quality.

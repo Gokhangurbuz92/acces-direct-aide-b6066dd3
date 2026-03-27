@@ -104,3 +104,13 @@ exports/
 
 # k6 load test results
 tests/load/results.json
+
+# Security: files that leaked secrets in git history (never recommit)
+*.bak
+*.env.bak
+smoke-staging.sh
+BLACKBOX_AI_INTEGRATION.md
+RELEASE_P0_PROOF.md
+CI.md
+cookies_stg.txt
+cookies_deploy.txt

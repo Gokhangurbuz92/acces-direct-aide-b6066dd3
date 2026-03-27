@@ -52,7 +52,7 @@
 
 ## Email non reçu (inscription, reset pwd)
 
-1. Vérifier `RESEND_API_KEY` dans env vars
-2. Vérifier le domain sender dans Resend dashboard
+1. Vérifier `MAILJET_API_KEY` et `MAILJET_SECRET_KEY` dans env vars
+2. Vérifier le domaine expéditeur dans Mailjet dashboard (app.mailjet.com → Sender domains)
 3. Check spam/indésirables
-4. Logs Resend : resend.com → Emails → Logs
+4. Logs Mailjet : app.mailjet.com → Email Logs

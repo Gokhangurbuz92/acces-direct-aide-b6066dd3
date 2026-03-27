@@ -278,6 +278,15 @@ export const env = {
     },
   },
 
+  mailjet: {
+    get apiKey() {
+      return getEnv('MAILJET_API_KEY');
+    },
+    get secretKey() {
+      return getEnv('MAILJET_SECRET_KEY');
+    },
+  },
+
   ai: {
     get geminiKey() {
       return envAliases('GEMINI_API_KEY', ['GOOGLE_API_KEY']);

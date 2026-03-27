@@ -1,7 +1,7 @@
 /**
- * Email Service — Transactional email delivery via Resend.
+ * Email Service — Transactional email delivery via Mailjet.
  *
- * Falls back to console logging when RESEND_API_KEY is not configured,
+ * Falls back to console logging when MAILJET_API_KEY / MAILJET_SECRET_KEY are not configured,
  * allowing local development without an email provider.
  *
  * Usage:
@@ -11,50 +11,80 @@
 
 import logger from '../_utils/logger.js';
 
-const RESEND_API_KEY = process.env.RESEND_API_KEY;
+const MAILJET_API_KEY = process.env.MAILJET_API_KEY;
+const MAILJET_SECRET_KEY = process.env.MAILJET_SECRET_KEY;
 const FROM_ADDRESS = process.env.EMAIL_FROM || 'Accès Direct Aide <notifications@accesdirectaide.fr>';
-const APP_URL = process.env.NEXT_PUBLIC_APP_URL || 'https://www.accesdirectaide.fr';
+const APP_URL = process.env.PUBLIC_BASE_URL || 'https://www.accesdirectaide.fr';
 
 /**
- * Send a transactional email.
+ * Extrait le nom et l'email de la chaîne "Nom <email@domaine.com>"
+ */
+function parseFromAddress(fromStr) {
+  const match = fromStr.match(/(.*)<(.+)>/);
+  if (match) {
+    return { Name: match[1].trim(), Email: match[2].trim() };
+  }
+  return { Email: fromStr.trim(), Name: 'Accès Direct Aide' };
+}
+
+/**
+ * Send a transactional email using Mailjet.
  *
  * @param {{ to: string | string[], subject: string, html: string, text?: string }} params
  * @returns {Promise<{ id: string, success: boolean }>}
  */
 export async function sendEmail({ to, subject, html, text }) {
-  if (!RESEND_API_KEY) {
+  if (!MAILJET_API_KEY || !MAILJET_SECRET_KEY) {
     logger.warn({
-      msg: 'EMAIL_MOCK — RESEND_API_KEY not configured',
+      msg: 'EMAIL_MOCK — MAILJET credentials not configured',
       to: Array.isArray(to) ? to.join(', ') : to,
       subject,
     });
     return { id: `mock-${Date.now()}`, success: true };
   }
 
-  const response = await fetch('https://api.resend.com/emails', {
+  // Mailjet attend un tableau d'objets pour les destinataires
+  const toArray = Array.isArray(to) ? to : [to];
+  const toPayload = toArray.map(email => ({ Email: email }));
+  const fromPayload = parseFromAddress(FROM_ADDRESS);
+
+  // Construction du corps de la requête selon l'API v3.1 de Mailjet
+  const payload = {
+    Messages: [
+      {
+        From: fromPayload,
+        To: toPayload,
+        Subject: subject,
+        HTMLPart: html,
+        TextPart: text || stripHtml(html),
+      }
+    ]
+  };
+
+  // Encodage en base64 pour l'authentification "Basic"
+  const auth = Buffer.from(`${MAILJET_API_KEY}:${MAILJET_SECRET_KEY}`).toString('base64');
+
+  const response = await fetch('https://api.mailjet.com/v3.1/send', {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
-      Authorization: `Bearer ${RESEND_API_KEY}`,
+      'Authorization': `Basic ${auth}`,
     },
-    body: JSON.stringify({
-      from: FROM_ADDRESS,
-      to: Array.isArray(to) ? to : [to],
-      subject,
-      html,
-      text: text || stripHtml(html),
-    }),
+    body: JSON.stringify(payload),
   });
 
   const data = await response.json();
 
   if (!response.ok) {
     logger.error({ msg: 'EMAIL_SEND_FAILED', status: response.status, error: data });
-    throw new Error(data.message || `Resend error: ${response.status}`);
+    throw new Error(data.ErrorMessage || `Mailjet error: ${response.status}`);
   }
 
-  logger.info({ msg: 'EMAIL_SENT', id: data.id, to: Array.isArray(to) ? to[0] : to });
-  return { id: data.id, success: true };
+  // Mailjet retourne un tableau "Messages" avec le statut
+  const messageId = data.Messages[0]?.To[0]?.MessageID || `mailjet-${Date.now()}`;
+  logger.info({ msg: 'EMAIL_SENT', id: messageId, to: toArray[0] });
+
+  return { id: messageId, success: true };
 }
 
 /**

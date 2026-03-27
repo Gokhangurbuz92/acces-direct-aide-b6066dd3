@@ -278,21 +278,60 @@ export function buildAppUrl(path) {
 }
 
 /**
+ * Allowlist of domains that are safe redirect targets.
+ * Everything else is rewritten to '/' to prevent open redirect attacks.
+ */
+const ALLOWED_REDIRECT_HOSTS = new Set([
+  'accesdirectaide.fr',
+  'www.accesdirectaide.fr',
+]);
+
+/**
+ * Validate a redirect URL to prevent open redirect attacks.
+ * Only allows:
+ *  - Relative paths (starts with '/' but not '//')
+ *  - Absolute URLs to allowed hosts
+ *
+ * @param {string} location
+ * @param {string} fallback
+ * @returns {string}
+ */
+export function safeRedirectUrl(location, fallback = '/') {
+  if (typeof location !== 'string' || !location.trim()) return fallback;
+  const loc = location.trim();
+
+  // Relative path — safe (normalizeNextPath already blocks '//')
+  if (loc.startsWith('/') && !loc.startsWith('//')) return loc;
+
+  // Absolute URL — validate host against allowlist
+  try {
+    const parsed = new URL(loc);
+    if (ALLOWED_REDIRECT_HOSTS.has(parsed.hostname)) return loc;
+  } catch {
+    // Malformed URL — reject
+  }
+
+  return fallback;
+}
+
+/**
  * @param {import('./http-types').ApiResponse} res
  * @param {string} location
  * @param {number=} statusCode
  */
 export function redirect(res, location, statusCode = 302) {
   const code = Number(statusCode || 302);
+  const safeLocation = safeRedirectUrl(location);
+
   if (typeof res.redirect === 'function') {
-    return res.redirect(code, location);
+    return res.redirect(code, safeLocation);
   }
   if (typeof res.writeHead === 'function') {
-    res.writeHead(code, { Location: location });
+    res.writeHead(code, { Location: safeLocation });
     return res.end();
   }
   res.status(code);
-  res.setHeader('Location', location);
+  res.setHeader('Location', safeLocation);
   return res.end();
 }
 

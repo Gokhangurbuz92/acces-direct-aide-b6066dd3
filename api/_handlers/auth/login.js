@@ -191,7 +191,10 @@ async function loginHandler(req, res) {
         });
     } catch (err) {
         logger.error({ err }, '[login] Authentication failed');
-        return res.status(500).json({ error: 'Erreur interne du serveur' });
+        return res.status(500).json({
+            error: 'Erreur interne du serveur',
+            _debug: `${err?.constructor?.name}: ${err?.message}`.slice(0, 300),
+        });
     }
 }
 
